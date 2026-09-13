@@ -1,0 +1,195 @@
+name: connectome smoke
+
+# Smoke-tests the PUBLISHED connectome stack (npm) and, separately, the
+# repos' main branches laid out the way fleet boxes deploy them.
+#
+# Triggers
+#   schedule            every 30 min: poll the registry; run only when the set
+#                       of published versions changed since the last tested
+#                       set AND nothing was published in the last DEBOUNCE
+#                       minutes (a release usually cascades membrane → cm →
+#                       af → host over ~30-60 min; we test the settled set).
+#   workflow_dispatch   manual: runs unconditionally (pick lanes).
+#   repository_dispatch type `npm-publish` — a publish workflow elsewhere can
+#                       poke us; treated like a poll tick (still debounced).
+
+on:
+  schedule:
+    - cron: '*/30 * * * *'
+  workflow_dispatch:
+    inputs:
+      lanes:
+        description: 'comma list: published,latest,source'
+        default: 'published,latest,source'
+      force:
+        description: 'run even if nothing changed'
+        type: boolean
+        default: true
+  repository_dispatch:
+    types: [npm-publish]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: connectome-smoke
+  cancel-in-progress: false
+
+env:
+  DEBOUNCE_MINUTES: '20'
+
+jobs:
+  gate:
+    name: Poll registry / decide
+    runs-on: ubuntu-latest
+    outputs:
+      run: ${{ steps.decide.outputs.run }}
+      manifest: ${{ steps.decide.outputs.manifest }}
+      reason: ${{ steps.decide.outputs.reason }}
+      lanes: ${{ steps.decide.outputs.lanes }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Compute published manifest
+        id: manifest
+        run: |
+          node scripts/manifest.mjs > manifest.json
+          echo "hash=$(sha256sum manifest.json | cut -c1-16)" >> "$GITHUB_OUTPUT"
+          cat manifest.json
+      # The cache is our "last tested set" memory: a hit on tested-<hash>
+      # means this exact set already ran. (Cache eviction just means one
+      # redundant run — acceptable.)
+      - name: Look up whether this set was already tested
+        id: tested
+        uses: actions/cache/restore@v4
+        with:
+          path: tested.marker
+          key: tested-${{ steps.manifest.outputs.hash }}
+          lookup-only: true
+      - name: Decide
+        id: decide
+        env:
+          EVENT: ${{ github.event_name }}
+          FORCE: ${{ github.event.inputs.force }}
+          LANES_IN: ${{ github.event.inputs.lanes }}
+          HIT: ${{ steps.tested.outputs.cache-hit }}
+        run: |
+          set -e
+          manifest=$(cat manifest.json | tr -d '\n')
+          echo "manifest=$manifest" >> "$GITHUB_OUTPUT"
+          lanes="${LANES_IN:-published,latest,source}"
+          echo "lanes=$lanes" >> "$GITHUB_OUTPUT"
+          newest_age=$(node -e "const m=require('./manifest.json');const t=Math.max(...Object.values(m.packages).map(p=>Date.parse(p.modified)));console.log(Math.floor((Date.now()-t)/60000))")
+          if [ "$EVENT" = "workflow_dispatch" ] && [ "$FORCE" != "false" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"; echo "reason=manual" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          if [ "$HIT" = "true" ]; then
+            echo "run=false" >> "$GITHUB_OUTPUT"; echo "reason=already tested this set" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          if [ "$newest_age" -lt "$DEBOUNCE_MINUTES" ]; then
+            echo "run=false" >> "$GITHUB_OUTPUT"; echo "reason=settling: newest publish ${newest_age}m ago (< ${DEBOUNCE_MINUTES}m)" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          echo "run=true" >> "$GITHUB_OUTPUT"; echo "reason=new published set (newest publish ${newest_age}m ago)" >> "$GITHUB_OUTPUT"
+      - name: Summary
+        run: echo "decision: run=${{ steps.decide.outputs.run }} — ${{ steps.decide.outputs.reason }}"
+
+  published:
+    name: Published lane (${{ matrix.lane }})
+    needs: gate
+    if: needs.gate.outputs.run == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        lane: [published, latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
+      - name: Run lane
+        if: contains(needs.gate.outputs.lanes, matrix.lane)
+        run: node lanes/published.mjs --lane ${{ matrix.lane }} --workdir "$RUNNER_TEMP/smoke-${{ matrix.lane }}" --report "$PWD/report-${{ matrix.lane }}.json" --summary "$PWD/summary-${{ matrix.lane }}.md" --keep
+      - name: Job summary
+        if: always() && contains(needs.gate.outputs.lanes, matrix.lane)
+        run: cat "summary-${{ matrix.lane }}.md" >> "$GITHUB_STEP_SUMMARY" || true
+      - name: Upload evidence
+        if: always() && contains(needs.gate.outputs.lanes, matrix.lane)
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.lane }}-evidence
+          if-no-files-found: ignore
+          path: |
+            report-${{ matrix.lane }}.json
+            summary-${{ matrix.lane }}.md
+            ${{ runner.temp }}/smoke-${{ matrix.lane }}/*.log
+            ${{ runner.temp }}/smoke-${{ matrix.lane }}/*.events.jsonl
+            ${{ runner.temp }}/smoke-${{ matrix.lane }}/data/**/*.log
+
+  source:
+    name: Source-main lane
+    needs: gate
+    if: needs.gate.outputs.run == 'true' && contains(needs.gate.outputs.lanes, 'source')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
+      - name: Run lane
+        run: node lanes/source.mjs --workdir "$RUNNER_TEMP/smoke-source" --report "$PWD/report-source.json" --summary "$PWD/summary-source.md" --keep
+      - name: Job summary
+        if: always()
+        run: cat summary-source.md >> "$GITHUB_STEP_SUMMARY" || true
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: source-evidence
+          if-no-files-found: ignore
+          path: |
+            report-source.json
+            summary-source.md
+            ${{ runner.temp }}/smoke-source/*.log
+            ${{ runner.temp }}/smoke-source/*.events.jsonl
+
+  report:
+    name: Notify + remember
+    needs: [gate, published, source]
+    if: always() && needs.gate.outputs.run == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/download-artifact@v4
+        with:
+          path: evidence
+      - name: Post to Discord
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          REASON: ${{ needs.gate.outputs.reason }}
+          RESULT_PUBLISHED: ${{ needs.published.result }}
+          RESULT_SOURCE: ${{ needs.source.result }}
+        run: node scripts/notify.mjs evidence
+      # Remember this set as tested only when every requested lane actually
+      # ran to completion (pass OR fail — a failed set is still "tested"; a
+      # cancelled/errored run is not, so the next poll retries it).
+      - name: Mark set as tested
+        if: needs.published.result != 'cancelled' && needs.source.result != 'cancelled'
+        run: echo "${{ needs.gate.outputs.manifest }}" > tested.marker
+      - uses: actions/cache/save@v4
+        if: needs.published.result != 'cancelled' && needs.source.result != 'cancelled'
+        with:
+          path: tested.marker
+          key: tested-${{ fromJSON(needs.gate.outputs.manifest).hash }}

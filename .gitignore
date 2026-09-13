@@ -1,0 +1,6 @@
+node_modules/
+run*/
+*.log
+report*.json
+summary*.md
+evidence/
