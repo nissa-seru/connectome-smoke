@@ -93,7 +93,8 @@ jobs:
           fi
           echo "run=true" >> "$GITHUB_OUTPUT"; echo "reason=new published set (newest publish ${newest_age}m ago)" >> "$GITHUB_OUTPUT"
       - name: Summary
-        run: echo "decision: run=${{ steps.decide.outputs.run }} — ${{ steps.decide.outputs.reason }}"
+        run: |
+          echo "decision run=${{ steps.decide.outputs.run }} — ${{ steps.decide.outputs.reason }}"
 
   published:
     name: Published lane (${{ matrix.lane }})
