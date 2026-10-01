@@ -22,6 +22,7 @@ import { mkdtempSync, mkdirSync, existsSync, rmSync, symlinkSync, readdirSync, r
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { makeReport, sh, bootTwice, finish, parseArgs } from '../lib/common.mjs';
+import { REPOS, repoUrl } from '../lib/repos.mjs';
 
 const { opt } = parseArgs(process.argv.slice(2));
 const WORK = opt('workdir') ? resolve(opt('workdir')) : mkdtempSync(join(tmpdir(), 'connectome-smoke-source-'));
@@ -31,24 +32,8 @@ const ORG = opt('org', 'anima-research');
 const ONLY = opt('only') ? opt('only').split(',') : null;   // debug: subset of repos
 const SRC = join(WORK, 'src');
 
-/**
- * Repos in build order. `dir` = checkout name (what `file:` links expect).
- * `pkgDirs` = sub-packages for monorepos, in build order. `test` false =
- * no test script worth running here (or none). `sibling` = which checkouts
- * a `file:` link needs (documentation; order already satisfies it).
- */
-const REPOS = [
-  { repo: 'voice-kit',        dir: 'voice-kit' },
-  { repo: 'mcpl-core-ts',     dir: 'mcpl-core-ts' },
-  { repo: 'membrane',         dir: 'membrane', owner: 'antra-tess' },   // canonical home per the npm repository field
-  { repo: 'context-manager',  dir: 'context-manager' },
-  { repo: 'agent-framework',  dir: 'agent-framework' },
-  { repo: 'connectome-host',  dir: 'connectome-host', install: 'npm install', build: 'npm run build:web:ci', test: 'npm test' },
-  { repo: 'mcpl-harness',     dir: 'mcpl-harness', test: false },   // heartbeat-mcpl's reminders harness loads ../mcpl-harness/src/session.ts
-  { repo: 'heartbeat-mcpl',   dir: 'heartbeat-mcpl', sibling: ['mcpl-harness'] },
-  { repo: 'discord-mcpl',     dir: 'discord-mcpl', sibling: ['voice-kit'] },
-  { repo: 'portal',           dir: 'portal', pkgDirs: ['portal-protocol', 'portal-client', 'portal-mcpl', 'portal-relay'], sibling: ['voice-kit'] },
-];
+// REPOS lives in ../lib/repos.mjs so the workflow gate can fingerprint the
+// same set of mains this lane clones (scripts/source-heads.mjs).
 
 const { report, step, log, t0 } = makeReport('source', { workdir: WORK, heads: {}, chronicle: null });
 
@@ -85,7 +70,7 @@ function testSummary(r) {
     for (const r of REPOS) {
       if (ONLY && !ONLY.includes(r.repo)) continue;
       const dst = join(SRC, r.dir);
-      sh('git', ['clone', '--quiet', '--depth', '1', '--branch', 'main', `https://github.com/${r.owner ?? ORG}/${r.repo}.git`, dst], { cwd: SRC, timeout: 300_000 });
+      sh('git', ['clone', '--quiet', '--depth', '1', '--branch', 'main', repoUrl(r, ORG), dst], { cwd: SRC, timeout: 300_000 });
       const head = sh('git', ['log', '-1', '--format=%h %cs %s'], { cwd: dst }).stdout.trim();
       report.heads[r.repo] = head;
       lines.push(`${r.repo}: ${head.slice(0, 80)}`);

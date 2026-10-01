@@ -47,6 +47,10 @@ jobs:
       manifest: ${{ steps.decide.outputs.manifest }}
       reason: ${{ steps.decide.outputs.reason }}
       lanes: ${{ steps.decide.outputs.lanes }}
+      # The one key both ends use — restore (above) and save (report job).
+      # Composing it twice from different ingredients is how the original
+      # restore/save mismatch happened.
+      testkey: tested-${{ steps.manifest.outputs.hash }}-${{ steps.heads.outputs.hash }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -56,17 +60,30 @@ jobs:
         id: manifest
         run: |
           node scripts/manifest.mjs > manifest.json
-          echo "hash=$(sha256sum manifest.json | cut -c1-16)" >> "$GITHUB_OUTPUT"
+          # The manifest's own `hash` field (version set only). Hashing the
+          # FILE here is the bug this replaced: manifest.json embeds
+          # `generatedAt`, so a file hash differs on every poll, the restore
+          # key below never matches the save key, and the gate re-runs the
+          # same set forever (observed: full suite every 30m for days, and
+          # one #alerts post per run once a lane went red).
+          echo "hash=$(node -p "require('./manifest.json').hash")" >> "$GITHUB_OUTPUT"
           cat manifest.json
-      # The cache is our "last tested set" memory: a hit on tested-<hash>
-      # means this exact set already ran. (Cache eviction just means one
-      # redundant run — acceptable.)
+      - name: Fingerprint source mains
+        id: heads
+        # The source lane's inputs are branch heads, not npm versions — fold
+        # them into the tested-key so a push to a stack repo's main (a fix OR
+        # a fresh breakage) retests promptly instead of waiting for the next
+        # npm publish to change the manifest.
+        run: echo "hash=$(node scripts/source-heads.mjs)" >> "$GITHUB_OUTPUT"
+      # The cache is our "last tested set" memory: a hit on the combined key
+      # means this exact set (published versions + source mains) already ran.
+      # (Cache eviction just means one redundant run — acceptable.)
       - name: Look up whether this set was already tested
         id: tested
         uses: actions/cache/restore@v4
         with:
           path: tested.marker
-          key: tested-${{ steps.manifest.outputs.hash }}
+          key: tested-${{ steps.manifest.outputs.hash }}-${{ steps.heads.outputs.hash }}
           lookup-only: true
       - name: Decide
         id: decide
@@ -91,7 +108,7 @@ jobs:
           if [ "$newest_age" -lt "$DEBOUNCE_MINUTES" ]; then
             echo "run=false" >> "$GITHUB_OUTPUT"; echo "reason=settling: newest publish ${newest_age}m ago (< ${DEBOUNCE_MINUTES}m)" >> "$GITHUB_OUTPUT"; exit 0
           fi
-          echo "run=true" >> "$GITHUB_OUTPUT"; echo "reason=new published set (newest publish ${newest_age}m ago)" >> "$GITHUB_OUTPUT"
+          echo "run=true" >> "$GITHUB_OUTPUT"; echo "reason=untested set: published versions or source mains changed (newest publish ${newest_age}m ago)" >> "$GITHUB_OUTPUT"
       - name: Summary
         run: |
           echo "decision run=${{ steps.decide.outputs.run }} — ${{ steps.decide.outputs.reason }}"
@@ -193,4 +210,8 @@ jobs:
         if: needs.published.result != 'cancelled' && needs.source.result != 'cancelled'
         with:
           path: tested.marker
-          key: tested-${{ fromJSON(needs.gate.outputs.manifest).hash }}
+          # Must byte-match the gate's restore key — gate.outputs.testkey is
+          # that key. (The old `fromJSON(manifest).hash` was the version-set
+          # hash while restore hashed the manifest FILE, timestamp included:
+          # keys never matched, every poll re-ran and re-alerted.)
+          key: ${{ needs.gate.outputs.testkey }}
