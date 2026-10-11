@@ -88,7 +88,8 @@ const REPOS = [
 const LIMITS = [
   'The resolution proof runs under node and bun. vitest (membrane\'s tests) resolves through vite\'s resolver, which the proof does not cover.',
   'The combined tree links each main whatever range the dependent declares; `links` marks each link the declared range does not admit, where a combined failure may reflect an unreleased version rather than the change.',
-  'chronicle comes from the host\'s npm install unless chronicle is the change.',
+  'chronicle comes from the host\'s npm install unless chronicle is the change or pinned with --main.',
+  'The resolution proof writes .smoke-resolve.mjs into each checkout it probes and removes it afterwards; a run killed mid-probe leaves it in the work tree.',
 ];
 
 mkdirSync(LOGS, { recursive: true });
@@ -123,11 +124,17 @@ function runCmd(id, cwd, argv, { timeout = 900_000, env = {} } = {}) {
   return { ...r, all, cmdline: [cmd, ...args].join(' '), timedOut: r.error?.code === 'ETIMEDOUT' };
 }
 
-/** Throw the step's failure, classified: a missing tool or a full disk means the check couldn't run. */
+/**
+ * Throw the step's failure, classified. A missing tool, a full disk, or a
+ * SIGKILL it didn't time out on (the OOM killer, or someone outside) means
+ * the check couldn't run. Any other signal, such as a crash, stays a break:
+ * the code under test can cause it.
+ */
 function fail(r, cwd, extra = {}) {
   if (r.error?.code === 'ENOENT') throw smokeError(`\`${r.cmdline}\`: command not found`, { cause: 'toolchain', infra: true });
   if (/ENOSPC|no space left on device/i.test(r.all)) throw smokeError(`\`${r.cmdline}\`: the disk is full`, { cause: 'disk', infra: true });
   if (r.timedOut) throw smokeError(`\`${r.cmdline}\` in ${rel(cwd)} timed out`, { cause: 'timeout', ...extra });
+  if (r.signal === 'SIGKILL') throw smokeError(`\`${r.cmdline}\` in ${rel(cwd)} was killed (SIGKILL) from outside`, { cause: 'killed', infra: true });
   const lines = r.all.trim().split('\n');
   const interesting = lines.filter((l) => /error|fail|✗|not ok|Error:/i.test(l)).slice(-30);
   throw smokeError(`\`${r.cmdline}\` in ${rel(cwd)} exited ${r.status}${r.signal ? ` ${r.signal}` : ''}\n${(interesting.length ? interesting : lines.slice(-30)).join('\n')}`, extra);
@@ -204,8 +211,11 @@ const MAINS = new Map();   // --main <repo>=<commit>: a repository's main pinned
     if (!REPOS.some((r) => r.repo === c.repo)) return fatal(`--change ${c.repo}: not a stack repository (${REPOS.map((r) => r.repo).join(', ')})`);
   }
   if (!report.toolchain.bun) return fatal('bun is not on PATH (the host runs under bun)');
-  if (CHANGES.some((c) => c.repo === 'chronicle') && !report.toolchain.cargo) return fatal('cargo is not on PATH, and chronicle is built from source when it is the change');
   const changedRepos = new Set(CHANGES.map((c) => c.repo));
+  // A pinned repository that is cloned only when it's the change (chronicle)
+  // is cloned at its pin, so a baseline that pins it covers it.
+  const cloneOnly = new Set([...changedRepos, ...MAINS.keys()]);
+  if (cloneOnly.has('chronicle') && !report.toolchain.cargo) return fatal('cargo is not on PATH, and chronicle is built from source when it is the change or pinned');
   log(`workdir ${WORK} · out ${OUT} · ${report.mode}${CHANGES.length ? ': ' + CHANGES.map((c) => `${c.repo}=${c.spec}`).join(' ') : ''}`);
   flush();
 
@@ -213,7 +223,7 @@ const MAINS = new Map();   // --main <repo>=<commit>: a repository's main pinned
   const cloned = [];
   for (const R of REPOS) {
     const changes = report.change.filter((c) => c.repo === R.repo);
-    if (R.onlyWhenChanged && !changes.length) continue;
+    if (R.onlyWhenChanged && !cloneOnly.has(R.repo)) continue;
     const id = `${R.repo}:clone`;
     const ok = await step(`${R.repo}: clone main${changes.length ? `, merge ${changes.map((c) => c.spec).join(' then ')}` : ''}`,
       () => cloneRepo(R, changes, id), { id, repo: R.repo, stage: 'clone', log: logFile(id) });
@@ -237,7 +247,10 @@ const MAINS = new Map();   // --main <repo>=<commit>: a repository's main pinned
   report.dependents = deps;
   const ownSet = new Set(report.mode === 'main' ? PKGS.map((p) => p.key) : changedKeys);
   const combinedSet = new Set(report.mode === 'main' ? PKGS.map((p) => p.key) : [...changedKeys, ...deps.map((d) => d.pkg), HOST]);
-  const pkgMeta = (p, tree, stage) => ({ repo: p.repo, pkg: p.key, tree, stage });
+  // `changed`: whether the package's repository is a change. In change mode
+  // an unchanged package's own install and build take nothing from the
+  // change, so their failure is main's or the machine's, not the change's.
+  const pkgMeta = (p, tree, stage) => ({ repo: p.repo, pkg: p.key, tree, stage, changed: changedRepos.has(p.repo) });
   const script = (p, name) => p.pj.scripts?.[name];
   const typecheckCmd = (p) => (script(p, 'typecheck') ? 'npm run typecheck' : p.R.typecheck ?? null);
   const testCmd = (p) => (script(p, 'test') ? 'npm test' : null);
@@ -256,7 +269,7 @@ const MAINS = new Map();   // --main <repo>=<commit>: a repository's main pinned
     };
     const ok = await step(`${p.key}: ${cmd}`, () => {
       const r = runCmd(id, p.dir, cmd);
-      if (r.status !== 0 || r.error) fail(r, p.dir, classifyInstallFailure(r.all));
+      if (r.status !== 0 || r.error) fail(r, p.dir, r.all.trim() ? classifyInstallFailure(r.all) : { cause: 'no-output', infra: true });
       if (!lock) entry.resolved = topLevelVersions(p.dir, id);
       return lock ? 'from the lockfile' : 'resolved at run time';
     }, { id, ...pkgMeta(p, 'own', 'install'), log: logFile(id) });
@@ -289,7 +302,7 @@ const MAINS = new Map();   // --main <repo>=<commit>: a repository's main pinned
   if (ownSet.has(HOST)) await boots(hostPkg, 'own', installed, heartbeatEntry);
 
   // -- 3. compose one tree --
-  const composed = await step('compose: link every stack package under one @animalabs root', () => compose(changedRepos),
+  const composed = await step('compose: link every stack package under one @animalabs root', () => compose(),
     { id: 'compose:link', stage: 'compose', log: logFile('compose:link') });
   flush();
   if (!composed) { skip('compose: resolution proof', 'compose failed', { id: 'compose:resolution', stage: 'compose' }); return done(); }
@@ -395,13 +408,13 @@ function topLevelVersions(dir, id) {
 }
 
 /** Link every stack package under one root, remove every nested copy, and record each link against its declared range. */
-function compose(changedRepos) {
+function compose() {
   const id = 'compose:link';
   const root = join(SRC, 'node_modules', '@animalabs');
   mkdirSync(root, { recursive: true });
   const provided = new Map();
   for (const p of PKGS) if (p.name?.startsWith('@animalabs/')) provided.set(p.name, realpathSync(p.dir));
-  if (!changedRepos.has('chronicle')) {
+  if (!provided.has('@animalabs/chronicle')) {   // not cloned: link the host's npm copy
     const chr = join(SRC, HOST, 'node_modules', '@animalabs', 'chronicle');
     if (!existsSync(chr)) throw smokeError(`the host's install has no @animalabs/chronicle to link (${rel(chr)})`);
     provided.set('@animalabs/chronicle', realpathSync(chr));
@@ -519,6 +532,13 @@ function fatal(message) {
 function outcome() {
   if (report.steps.some((s) => s.cause === 'conflict')) return 'conflict';
   if (report.fatal || report.steps.some((s) => s.status === 'fail' && s.infra)) return 'error';
+  // In change mode, an unchanged package failing in its own tree is main's
+  // failure (or the network's), and leaves the combined tree untrustworthy:
+  // the change can't be judged. Main mode reports such a failure as a break.
+  if (report.mode === 'change') {
+    const mainSide = report.steps.filter((s) => s.status === 'fail' && s.tree === 'own' && s.changed === false);
+    if (mainSide.length) { report.unjudged = mainSide.map((s) => s.id); return 'error'; }
+  }
   if (report.steps.some((s) => s.status === 'fail')) return 'break';
   return 'pass';
 }
@@ -542,6 +562,7 @@ function done() {
       : `main: host ${short(HOST)} · af ${short('agent-framework')} · cm ${short('context-manager')} · membrane ${short('membrane')} · mcpl-core ${short('mcpl-core-ts')} · heartbeat ${short('heartbeat-mcpl')} · discord-mcpl ${short('discord-mcpl')} · portal ${short('portal')} · voice-kit ${short('voice-kit')}`,
   ];
   if (report.fatal) lines.push(`fatal: ${report.fatal.split('\n')[0]}`);
+  if (report.unjudged) lines.push(`the change couldn't be judged: unchanged packages failed in their own install or build, which take nothing from the change: ${report.unjudged.join(', ')}`);
   if (report.conflict) lines.push(`✗ conflict: ${report.conflict.change} onto ${report.conflict.against}: ${report.conflict.files.join(', ') || '(no file list)'}`);
   const failed = report.steps.filter((s) => s.status === 'fail');
   for (const s of failed) lines.push(`✗ ${s.id ?? s.name}${s.cause ? ` [${s.cause}]` : ''} — ${s.detail.split('\n')[0].slice(0, 300)}${s.log ? ` (${s.log.replace(OUT + sep, '')})` : ''}`);
