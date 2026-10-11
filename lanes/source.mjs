@@ -46,6 +46,8 @@ import { tmpdir, release, cpus } from 'node:os';
 import { join, resolve, sep } from 'node:path';
 import { createHash } from 'node:crypto';
 import { makeReport, bootTwice, parseArgs } from '../lib/common.mjs';
+import { checkStores, listFixtures } from '../lib/stores.mjs';
+import { fileURLToPath as pathOfUrl } from 'node:url';
 import { parseChange, satisfies, buildGraph, dependentsOf, topoOrder, classifyInstallFailure, parseTestFailures } from '../lib/stack.mjs';
 
 const { opt, opts } = parseArgs(process.argv.slice(2));
@@ -508,16 +510,28 @@ function resolutionProof() {
   return `${report.resolution.length} resolutions from ${pkgs} packages, all to the linked checkouts`;
 }
 
+// Stores that earlier host releases wrote: checked on the combined tree's host, the tree every change is in.
+const STORE_FIXTURES = pathOfUrl(new URL('../fixtures/stores', import.meta.url));
+
 async function boots(hostPkg, tree, installed, heartbeatEntry) {
   const meta = { idPrefix: `${HOST}:${tree}`, repo: HOST, pkg: HOST, tree };
   const label = `${HOST}-${tree}-boot-`;
+  const fixtures = tree === 'combined' ? listFixtures(STORE_FIXTURES) : [];
+  const skipStores = (why) => {
+    for (const f of fixtures) skip(`stores:${f.version}`, why, { ...meta, id: `${meta.idPrefix}:stores:${f.version}`, stage: `stores:${f.version}` });
+  };
   if (!hostPkg || !installed.has(HOST) || !existsSync(heartbeatEntry)) {
     const why = !hostPkg ? 'no host checkout' : !installed.has(HOST) ? 'the host\'s install failed' : `heartbeat-mcpl's ${rel(heartbeatEntry)} is missing (its build failed)`;
     for (const n of [1, 2]) skip(`${HOST} ${tree} boot #${n}`, why, { ...meta, id: `${meta.idPrefix}:boot-${n}`, stage: `boot-${n}` });
+    skipStores(why);
     flush();
     return;
   }
-  await bootTwice({ step, skip, hostDir: hostPkg.dir, heartbeatEntry, work: LOGS, dataDir: join(WORK, `data-${tree}`), label, meta });
+  const booted = await bootTwice({ step, skip, hostDir: hostPkg.dir, heartbeatEntry, work: LOGS, dataDir: join(WORK, `data-${tree}`), label, meta });
+  flush();
+  if (!fixtures.length) return;
+  if (!booted) skipStores(`the host's ${tree} boots failed`);
+  else await checkStores({ step, hostDir: hostPkg.dir, heartbeatEntry, work: join(LOGS, 'stores'), fixturesDir: STORE_FIXTURES, meta });
   flush();
 }
 
