@@ -10,7 +10,9 @@
     "smoke:latest": "node lanes/published.mjs --lane latest",
     "smoke:source": "node lanes/source.mjs",
     "manifest": "node scripts/manifest.mjs",
-    "test": "node --test test/*.test.mjs"
+    "test": "node --test test/*.test.mjs",
+    "smoke:stores": "node lanes/stores.mjs",
+    "capture:stores": "node scripts/capture-store.mjs --missing"
   },
   "engines": { "node": ">=20" }
 }

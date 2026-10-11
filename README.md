@@ -17,6 +17,7 @@ Results go to `#connectome-ops` (Discord webhook) and the run's job summary.
 | `published` | `npm install @animalabs/connectome-host` (+ heartbeat-mcpl, discord-mcpl) into an empty dir resolves, postinstall builds the web UI, chronicle's native binding loads, the host's TS source typechecks against the published deps' `.d.ts`, the host boots headless on the mock provider with a real MCPL server, takes a turn, serves `/healthz` (auth enforced), writes a provider receipt, offers the MCPL tools to the model, shuts down clean — then boots **again** on the same store and takes a second turn. Reports each package's resolved version vs. its `latest` tag (caret on 0.x is minor-locked, so a consumer can legitimately be behind — the report shows it) and nested duplicate copies of core packages (fails on core). |
 | `latest` | same, with every `@animalabs/*` forced to its `latest` dist-tag via npm overrides — "is newest-of-everything coherent?" |
 | `source` | clone `main` of voice-kit, mcpl-core-ts, membrane, context-manager, agent-framework, connectome-host, mcpl-harness, heartbeat-mcpl, discord-mcpl, portal (protocol/client/mcpl/relay); per package, in its own install: strict `npm ci` → build → typecheck → test, in `file:`-link order (voice-kit before discord-mcpl and portal-relay), and the host booted twice. Then compose every stack package into one tree (a single `@animalabs` symlink root, nested copies removed; chronicle from npm — Rust), prove under node and bun that every package resolves its stack dependencies to the checkouts, and build, typecheck and test every package with a stack dependency there; typecheck, test and boot the host there. With `--change`, one repository is at its change merged onto `main` (see below). |
+| `stores` | the host — a published release, or one already built with `--host-dir` — boots on a **copy of each store an earlier host release wrote** (`fixtures/stores/<version>/`) and takes a turn. The anthropic provider runs against a local stand-in that records each request, and a fixture passes only if the request carries both of the fixture's stored turns and the heartbeat tools: proof the old history was read, not just opened. |
 
 Every lane leaves `report.json`, `summary.md`, the host's output and the full
 IPC event stream as artifacts.
@@ -30,6 +31,9 @@ node lanes/published.mjs                       # consumer view
 node lanes/published.mjs --lane latest         # newest-of-everything
 node lanes/source.mjs                          # mains, ~10 min
 node lanes/source.mjs --change connectome-host=pull/231 --out out/   # one PR merged onto main
+node lanes/stores.mjs                          # latest host on every stored fixture
+node lanes/stores.mjs --host-dir <host checkout> --heartbeat <heartbeat-mcpl entry>
+node scripts/capture-store.mjs --version 0.9.0 # add one release's fixture
 ```
 
 Options: `--workdir DIR` (default: a temp dir, deleted on pass unless
@@ -56,6 +60,20 @@ What a change run checks:
 | 1 | `break` | a step failed: tests, a typecheck, a build, a boot, a step's own timeout, or an install the commit breaks (a lockfile that doesn't match `package.json`) |
 | 2 | `error` | the check couldn't run: a clone or fetch failed, a pinned head moved or a pinned main was unreachable, the registry or network failed, the disk filled, a tool was missing, or the arguments were refused |
 | 3 | `conflict` | a change doesn't merge cleanly; `conflict` names the change, what it was merged onto, and the files |
+
+## Stored fixtures (`fixtures/stores/`)
+
+Each `fixtures/stores/<host version>/` holds the data directory that host release left after two turns with the heartbeat server (`data/`), and `fixture.json`, its provenance:
+- the dependencies as a consumer had them while that release was `latest` (npm's `before` set to one second before the next release was published), with every resolved `@animalabs` version;
+- the toolchain and platform it was written on, smoke's commit, and each capture step;
+- the two turns' texts, which the check looks for in the new turn's request;
+- any absolute paths of the capture's work directory found in the store, which a copied store carries but a resident's never moves away from.
+
+`node scripts/capture-store.mjs --version <v>` makes one, and `--missing` captures every published release that has none, so a new host release gets its fixture the same way. Hosts before 0.8.0 have no `mock` provider, so capture and check both use the anthropic provider against `lib/fake-anthropic.mjs`, a local stand-in reached through `ANTHROPIC_BASE_URL` that records every request.
+
+The `stores` lane runs the check on a published host or one given with `--host-dir`: one step per fixture, `stores:<version>`. A fixture passes only if its turn completes and the request carries both stored turns and the heartbeat tools. A fixture without readable provenance or data can't be checked, which is the check failing to run (`infra`, exit 2), not a break.
+
+**What this can't see:** a mock session holds only the shapes ordinary turns write, not what a resident's long history holds (summaries, compression state, images, tool results at scale). Each release is resolved at one point of its range. The fixtures are written by today's node and bun. And releases stand in for residents who run `main`.
 
 ## Triggering
 
