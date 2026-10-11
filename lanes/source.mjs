@@ -46,7 +46,7 @@ import { tmpdir, release, cpus } from 'node:os';
 import { join, resolve, sep } from 'node:path';
 import { createHash } from 'node:crypto';
 import { makeReport, bootTwice, parseArgs } from '../lib/common.mjs';
-import { parseChange, satisfies, buildGraph, dependentsOf, topoOrder, classifyInstallFailure } from '../lib/stack.mjs';
+import { parseChange, satisfies, buildGraph, dependentsOf, topoOrder, classifyInstallFailure, parseTestFailures } from '../lib/stack.mjs';
 
 const { opt, opts } = parseArgs(process.argv.slice(2));
 // The real path, so paths read back through realpath (links, resolutions) compare with it.
@@ -105,10 +105,12 @@ const flush = () => { try { writeFileSync(REPORT, JSON.stringify(report, null, 2
 const logFile = (id) => join(LOGS, `${id.replace(/[^A-Za-z0-9._-]+/g, '_')}.log`);
 const rel = (p) => p.replace(WORK + sep, '');
 
-function smokeError(message, { cause, infra } = {}) {
+/** An error a step records: `cause` and `infra` classify it, `fields` land on the step's record. */
+function smokeError(message, { cause, infra, fields } = {}) {
   const e = new Error(message);
   if (cause) e.smokeCause = cause;
   if (infra) e.smokeInfra = true;
+  if (fields) e.smokeFields = fields;
   return e;
 }
 
@@ -139,7 +141,16 @@ function checked(id, cwd, argv, o) {
 
 async function cmdStep(id, meta, cwd, argv, { timeout, summarize } = {}) {
   const ok = await step(`${id}: ${Array.isArray(argv) ? argv.join(' ') : argv}`, () => {
-    const r = checked(id, cwd, argv, { timeout });
+    const r = runCmd(id, cwd, argv, { timeout });
+    if (r.status !== 0 || r.error) {
+      // A test step names its failing tests, so a known failure on main can
+      // be told apart from a new one in the same step.
+      if (meta.stage === 'test') {
+        const failures = parseTestFailures(r.all);
+        fail(r, cwd, { fields: { failures, failuresParsed: failures.length > 0 } });
+      }
+      fail(r, cwd);
+    }
     return summarize ? summarize(r) : 'ok';
   }, { id, ...meta, log: logFile(id) });
   flush();

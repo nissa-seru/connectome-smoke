@@ -1,6 +1,31 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseChange, satisfies, buildGraph, dependentsOf, topoOrder, classifyInstallFailure } from '../lib/stack.mjs';
+import { parseChange, satisfies, buildGraph, dependentsOf, topoOrder, classifyInstallFailure, parseTestFailures } from '../lib/stack.mjs';
+
+test('parseTestFailures names failing tests as bun, node, TAP and vitest print them', () => {
+  const bun = [
+    '(pass) resolveAgentName > explicit wins [0.14ms]',
+    '(fail) buildCountTokensPayload > prefixes every text block of a named user message in place — no standalone name block [0.22ms]',
+    ' 1210 pass',
+    '(fail) buildCountTokensPayload > prefixes every text block of a named user message in place — no standalone name block [0.22ms]',
+  ].join('\n');
+  assert.deepEqual(parseTestFailures(bun), ['buildCountTokensPayload > prefixes every text block of a named user message in place — no standalone name block']);
+  const nodeSpec = [
+    '▶ AutobiographicalStrategy',
+    '  ✔ fork inherits resolutions (239.44ms)',
+    '  ✖ locks on fork do not affect parent (134.98ms)',
+    '✖ AutobiographicalStrategy (601.26ms)',
+    '✖ failing tests:',
+    'test at dist/test/a.test.js:12:3',
+    '✖ locks on fork do not affect parent (134.98ms)',
+  ].join('\n');
+  // the suite node closes with ✖ is left out: it was opened with ▶
+  assert.deepEqual(parseTestFailures(nodeSpec), ['locks on fork do not affect parent']);
+  assert.deepEqual(parseTestFailures('ok 1 - a\nnot ok 2 - b fails # time=3ms\n    not ok 1 - nested'), ['b fails', 'nested']);
+  assert.deepEqual(parseTestFailures(' ✓ test/a.test.ts > ok 3ms\n × test/b.test.ts > suite > breaks 12ms\n FAIL  test/b.test.ts > suite > breaks'), ['test/b.test.ts > suite > breaks']);
+  assert.deepEqual(parseTestFailures('\x1b[31m(fail)\x1b[0m colored > name [1.00ms]'), ['colored > name']);
+  assert.deepEqual(parseTestFailures('Error: something else entirely'), []);
+});
 
 test('parseChange reads pull and branch specs, with and without a pin', () => {
   assert.deepEqual(parseChange('connectome-host=pull/231'), { repo: 'connectome-host', spec: 'pull/231', kind: 'pull', pr: 231, pin: null });
