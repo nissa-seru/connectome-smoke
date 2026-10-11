@@ -16,7 +16,7 @@ Results go to `#connectome-ops` (Discord webhook) and the run's job summary.
 |---|---|
 | `published` | `npm install @animalabs/connectome-host` (+ heartbeat-mcpl, discord-mcpl) into an empty dir resolves, postinstall builds the web UI, chronicle's native binding loads, the host's TS source typechecks against the published deps' `.d.ts`, the host boots headless on the mock provider with a real MCPL server, takes a turn, serves `/healthz` (auth enforced), writes a provider receipt, offers the MCPL tools to the model, shuts down clean — then boots **again** on the same store and takes a second turn. Reports each package's resolved version vs. its `latest` tag (caret on 0.x is minor-locked, so a consumer can legitimately be behind — the report shows it) and nested duplicate copies of core packages (fails on core). |
 | `latest` | same, with every `@animalabs/*` forced to its `latest` dist-tag via npm overrides — "is newest-of-everything coherent?" |
-| `source` | clone `main` of voice-kit, mcpl-core-ts, membrane, context-manager, agent-framework, connectome-host, heartbeat-mcpl, discord-mcpl, portal (protocol/client/mcpl/relay); per repo: strict `npm ci` → build → typecheck → test, in `file:`-link order (voice-kit before discord-mcpl and portal-relay). Then compose host@main + membrane/cm/af@main into one tree (nested copies removed, single symlink root; chronicle from npm — Rust) — typecheck the host against the sibling mains and boot it twice. |
+| `source` | clone `main` of voice-kit, mcpl-core-ts, membrane, context-manager, agent-framework, connectome-host, mcpl-harness, heartbeat-mcpl, discord-mcpl, portal (protocol/client/mcpl/relay); per package, in its own install: strict `npm ci` → build → typecheck → test, in `file:`-link order (voice-kit before discord-mcpl and portal-relay), and the host booted twice. Then compose every stack package into one tree (a single `@animalabs` symlink root, nested copies removed; chronicle from npm — Rust), prove under node and bun that every package resolves its stack dependencies to the checkouts, and build, typecheck and test every package with a stack dependency there; typecheck, test and boot the host there. With `--change`, one repository is at its change merged onto `main` (see below). |
 
 Every lane leaves `report.json`, `summary.md`, the host's output and the full
 IPC event stream as artifacts.
@@ -29,12 +29,33 @@ Needs node ≥ 20, npm, bun (the host runs under bun), git.
 node lanes/published.mjs                       # consumer view
 node lanes/published.mjs --lane latest         # newest-of-everything
 node lanes/source.mjs                          # mains, ~10 min
-node lanes/source.mjs --only voice-kit,discord-mcpl   # subset, no compose
+node lanes/source.mjs --change connectome-host=pull/231 --out out/   # one PR merged onto main
 ```
 
 Options: `--workdir DIR` (default: a temp dir, deleted on pass unless
-`--keep`), `--report FILE`, `--summary FILE`, `--host @animalabs/connectome-host@<spec>`.
-Exit 0 = pass.
+`--keep`; the source lane never deletes it), `--report FILE`, `--summary FILE`, `--host @animalabs/connectome-host@<spec>`.
+Exit 0 = pass. The source lane's own options and exit codes are below.
+
+## Checking a change before it merges (source lane)
+
+`--change <repo>=pull/<n>` or `--change <repo>=<owner>:<branch>`, either optionally ending `@<commit>` to pin the head you saw. It's repeatable: changes in different repositories are checked together, and several in one repository are merged in the order given. A pull request's head is fetched from the base repository's `refs/pull/<n>/head`, so a fork's PR needs nothing more; a branch is fetched from `<owner>`'s fork of the repository. Each change is merged onto `main` with `--no-ff`, in a clone with its whole history, so the result is exactly what merging now would leave on `main`.
+
+`--main <repo>=<commit>` pins a repository's `main` to that full 40-character commit, in either mode. A change then merges onto that commit. Passing every repository's `main` from an earlier change run's `report.json` (`repos.<repo>.main`) gives a main-mode baseline at exactly the mains that run used.
+
+`--out DIR` (default: the workdir) receives `report.json`, `summary.md` and `logs/`, one log per step, with the host's output and IPC events. `report.json` is rewritten after every step, so a run killed from outside leaves a partial report with no `outcome`.
+
+What a change run checks:
+- **The changed repository in its own install,** as a fleet box runs it after the merge: its lockfile's dependencies from npm, only `file:` siblings linked. Install, build, typecheck, tests, and for the host both boots.
+- **The combined tree,** for the changed packages and every package that depends on them, directly or not, read from each checkout's `package.json`: build, typecheck and tests against the other repositories' `main`. The host is always checked there: typecheck, tests, both boots.
+
+`report.json` holds `outcome`, `change` (each change's base, head, merge base and merge commits), `repos` (each repository's commit, its `main`, and the tracked files an install changed), `packages` (lockfile, its hash, the install command, and what npm resolved where no lockfile is committed), `toolchain`, `dependents` (with the declared dependency that put each there), `links` (each link the combined tree made, the range the dependent declares and whether it admits the linked version), `resolution` (the proof, per package, dependency and runtime) and `steps`. Each step has a stable `id`, `<package>:<tree>:<stage>` such as `agent-framework:combined:test`, or `<package>:install`, `<repo>:clone`, `compose:link`, `compose:resolution`; the ids are the same in main mode, which checks every package in its own install and every package with a stack dependency in the combined tree, so a change run's failure can be compared with a main run's. (A package with no stack dependency has no combined steps: its combined tree would be its own.)
+
+| exit | `outcome` | meaning |
+|---|---|---|
+| 0 | `pass` | every step passed |
+| 1 | `break` | a step failed: tests, a typecheck, a build, a boot, a step's own timeout, or an install the commit breaks (a lockfile that doesn't match `package.json`) |
+| 2 | `error` | the check couldn't run: a clone or fetch failed, a pinned head moved or a pinned main was unreachable, the registry or network failed, the disk filled, a tool was missing, or the arguments were refused |
+| 3 | `conflict` | a change doesn't merge cleanly; `conflict` names the change, what it was merged onto, and the files |
 
 ## Triggering
 
@@ -59,6 +80,9 @@ Exit 0 = pass.
 - `boot #2` fails → the store written by boot #1 does not reload.
 - `source` per-repo failures name the repo and stage; `install` failures on
   discord-mcpl / portal-relay are usually the `file:` sibling not building.
+- `<pkg>:own:*` fails → the package breaks in its own install, as a fleet box would run it.
+- `<pkg>:combined:*` fails, `own` passes → the package breaks against another repository's `main`. Check `links` first: a link the declared range doesn't admit means the failure may come from an unreleased version, not from the change.
+- `compose:resolution` fails → some package loaded a stack dependency from somewhere other than its checkout, so nothing after it would have tested the checkouts; the step names each one.
 
 ## Secrets
 
