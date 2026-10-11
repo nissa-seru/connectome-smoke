@@ -4,3 +4,7 @@ run*/
 report*.json
 summary*.md
 evidence/
+
+# Stored fixtures keep every file a host release wrote, logs included: a Chronicle
+# store is records.log, and the stores lane reads the store whole.
+!fixtures/stores/**

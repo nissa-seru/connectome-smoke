@@ -1,0 +1,42 @@
+{
+  "name": "Connectome Smoke (stores)",
+  "description": "stored-store check: anthropic provider against a local stand-in, headless, heartbeat MCPL",
+  "agent": {
+    "name": "smoke",
+    "provider": "anthropic",
+    "model": "claude-sonnet-4-5",
+    "systemPrompt": "You are the connectome smoke agent.",
+    "cacheTtl": "1h"
+  },
+  "mcpServers": {
+    "heartbeat": {
+      "command": "node",
+      "args": [
+        "/home/work/t/0036b2006676/cw-0.7.3/0.7.3/install/node_modules/@animalabs/heartbeat-mcpl/dist/src/index.js",
+        "--stdio"
+      ],
+      "env": {
+        "HEARTBEAT_CONFIG_FILE": "/home/work/t/0036b2006676/cw-0.7.3/0.7.3/data/heartbeat-config.json",
+        "HEARTBEAT_REMINDERS_FILE": "/home/work/t/0036b2006676/cw-0.7.3/0.7.3/data/heartbeat-reminders.json"
+      },
+      "enabledFeatureSets": [
+        "heartbeat"
+      ]
+    }
+  },
+  "modules": {
+    "subagents": false,
+    "lessons": false,
+    "retrieval": false,
+    "wake": false,
+    "workspace": false,
+    "webui": {
+      "host": "127.0.0.1",
+      "port": 35999,
+      "basicAuth": {
+        "username": "smoke",
+        "password": "pw-1uhfp8j5xap"
+      }
+    }
+  }
+}

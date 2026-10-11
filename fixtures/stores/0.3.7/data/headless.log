@@ -1,0 +1,10 @@
+[2026-10-11T13:03:31.427Z] headless start pid=4136609 dataDir=/home/work/t/0036b2006676/cw-0.3.7/0.3.7/data socket=/home/work/t/0036b2006676/cs-st-4136475-capture1.sock
+[2026-10-11T13:03:31.428Z] socket listening at /home/work/t/0036b2006676/cs-st-4136475-capture1.sock
+[2026-10-11T13:03:31.454Z] client connected
+[2026-10-11T13:03:32.129Z] quiescent — emitting lifecycle:idle
+[2026-10-11T13:03:32.158Z] shutdown: shutdown:graceful
+[2026-10-11T13:03:32.590Z] headless start pid=4136654 dataDir=/home/work/t/0036b2006676/cw-0.3.7/0.3.7/data socket=/home/work/t/0036b2006676/cs-st-4136475-capture2.sock
+[2026-10-11T13:03:32.591Z] socket listening at /home/work/t/0036b2006676/cs-st-4136475-capture2.sock
+[2026-10-11T13:03:32.640Z] client connected
+[2026-10-11T13:03:33.292Z] quiescent — emitting lifecycle:idle
+[2026-10-11T13:03:33.342Z] shutdown: shutdown:graceful
