@@ -96,7 +96,7 @@ mkdirSync(SRC, { recursive: true });
 
 const { report, step, skip, log, t0 } = makeReport('source', {
   mode: null, workdir: WORK, out: OUT, toolchain: toolchain(), change: [], repos: {}, packages: {},
-  dependents: [], links: [], resolution: [], compose: null, limits: LIMITS, outcome: null, exitCode: null,
+  dependents: null, links: [], resolution: [], compose: null, limits: LIMITS, outcome: null, exitCode: null,
 });
 const flush = () => { try { writeFileSync(REPORT, JSON.stringify(report, null, 2)); } catch { /* best effort */ } };
 
@@ -527,7 +527,7 @@ function done() {
     report.mode === null ? 'the arguments were refused'
     : report.mode === 'change'
       ? `change: ${report.change.map((c) => `${c.repo} ${c.spec} ${c.headSha?.slice(0, 7) ?? '?'} onto ${c.baseSha?.slice(0, 7) ?? '?'}${c.mergeSha ? ` → ${c.mergeSha.slice(0, 7)}` : ''}`).join(' · ')}`
-        + ` · dependents: ${report.dependents.map((d) => d.pkg).join(', ') || 'none'}`
+        + (report.dependents ? ` · dependents: ${report.dependents.map((d) => d.pkg).join(', ') || 'none'}` : '')
       : `main: host ${short(HOST)} · af ${short('agent-framework')} · cm ${short('context-manager')} · membrane ${short('membrane')} · mcpl-core ${short('mcpl-core-ts')} · heartbeat ${short('heartbeat-mcpl')} · discord-mcpl ${short('discord-mcpl')} · portal ${short('portal')} · voice-kit ${short('voice-kit')}`,
   ];
   if (report.fatal) lines.push(`fatal: ${report.fatal.split('\n')[0]}`);
