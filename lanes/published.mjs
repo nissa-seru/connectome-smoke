@@ -22,7 +22,8 @@
  *         --lane latest      every @animalabs/* pinned to its `latest` tag via
  *                            npm overrides — "is newest-of-everything coherent?"
  *
- * Zero dependencies. Needs node >= 20, bun (the host runs under bun), npm.
+ * Zero dependencies. Needs node >= 22.12, bun >= 1.4.3 (the host runs under
+ * bun), npm.
  * Exit 0 pass / 1 fail. Writes --report (JSON) and --summary (markdown).
  */
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, rmSync, readdirSync } from 'node:fs';

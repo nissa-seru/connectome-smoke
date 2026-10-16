@@ -9,6 +9,9 @@ Runs on GitHub Actions: every 30 minutes it polls the registry and runs
 when the set of published versions changed (debounced, so a cascading
 release membrane → cm → af → host is tested once, settled), or on demand.
 Results go to `#connectome-ops` (Discord webhook) and the run's job summary.
+Each lane runs on three runtimes: Node 22.12.0 with Bun 1.4.3, the floors the
+stack's packages are moving to; the newest Node 24 with the newest Bun; and
+the newest Node with the newest Bun.
 
 ## Lanes
 
@@ -23,7 +26,7 @@ IPC event stream as artifacts.
 
 ## Run locally
 
-Needs node ≥ 20, npm, bun (the host runs under bun), git.
+Needs Node 22.12 or later, npm, Bun 1.4.3 or later (the host runs under Bun), and git.
 
 ```sh
 node lanes/published.mjs                       # consumer view
@@ -36,15 +39,29 @@ Options: `--workdir DIR` (default: a temp dir, deleted on pass unless
 `--keep`), `--report FILE`, `--summary FILE`, `--host @animalabs/connectome-host@<spec>`.
 Exit 0 = pass.
 
+`npm test` runs the tests of the notifier and the registry manifest, as the
+*unit tests* workflow does on every push to `main` and every pull request.
+
 ## Triggering
 
 - **Manual:** Actions → *connectome smoke* → *Run workflow* (choose lanes;
-  `force` runs even if the published set is unchanged) — or
+  `force`, the default, runs even when the set was tested or is settling) — or
   `gh workflow run smoke.yml -R anima-research/connectome-smoke`.
 - **Automatic:** the 30-min poll. `scripts/manifest.mjs` hashes the set of
-  `latest` versions; a run is skipped when that hash was already tested (an
-  Actions cache entry `tested-<hash>`, saved only after the lanes completed)
-  or when the newest publish is younger than `DEBOUNCE_MINUTES` (20).
+  `latest` versions and `scripts/source-heads.mjs` the source mains' heads;
+  a run is skipped when both were already tested by the workflow's current
+  commit (an Actions cache entry `tested-<set hash>-<heads hash>-<commit>`,
+  so any commit, a docs-only one included, makes the set untested once) or
+  when the newest publish is younger than `DEBOUNCE_MINUTES` (20). A set is
+  remembered once a run of every lane had every lane's summary on every
+  runtime reach the report, whether they pass or not, and its post went
+  out, or can't until someone acts (no webhook, or a refusal the next poll
+  would meet too). A run whose summary never arrived, or a post that
+  didn't go out for a passing reason (no answer, a rate limit, a server
+  error), leaves the set to the next poll. A registry lookup that fails
+  stops the poll, or the manual run, before anything runs, and the next
+  poll asks again; a stopped poll posts nothing to Discord and shows only
+  as a failed run, with the reason in its log.
 - **From a publish workflow** (optional): `repository_dispatch` with
   `event_type: npm-publish` — treated as a poll tick, still debounced.
 
@@ -63,4 +80,5 @@ Exit 0 = pass.
 ## Secrets
 
 `DISCORD_WEBHOOK` — the `#connectome-ops` webhook (same one fleet-watch
-uses). Absent, the notifier prints instead of posting.
+uses). Absent, the notifier prints what it would have posted, and in
+Actions it then fails the report job, since nobody was told.
