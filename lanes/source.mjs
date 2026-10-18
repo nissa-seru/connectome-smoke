@@ -48,7 +48,7 @@ import { createHash } from 'node:crypto';
 import { makeReport, bootTwice, parseArgs } from '../lib/common.mjs';
 import { checkStores, listFixtures } from '../lib/stores.mjs';
 import { fileURLToPath as pathOfUrl } from 'node:url';
-import { parseChange, satisfies, buildGraph, dependentsOf, topoOrder, classifyInstallFailure, parseTestFailures } from '../lib/stack.mjs';
+import { parseChange, satisfies, buildGraph, dependentsOf, topoOrder, classifyInstallFailure, testFailureFields } from '../lib/stack.mjs';
 
 const { opt, opts } = parseArgs(process.argv.slice(2));
 // The real path, so paths read back through realpath (links, resolutions) compare with it.
@@ -154,10 +154,7 @@ async function cmdStep(id, meta, cwd, argv, { timeout, summarize } = {}) {
     if (r.status !== 0 || r.error) {
       // A test step names its failing tests, so a known failure on main can
       // be told apart from a new one in the same step.
-      if (meta.stage === 'test') {
-        const failures = parseTestFailures(r.all);
-        fail(r, cwd, { fields: { failures, failuresParsed: failures.length > 0 } });
-      }
+      if (meta.stage === 'test') fail(r, cwd, { fields: testFailureFields(r.all, { timedOut: r.timedOut }) });
       fail(r, cwd);
     }
     return summarize ? summarize(r) : 'ok';

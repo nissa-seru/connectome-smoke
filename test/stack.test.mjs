@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseChange, satisfies, buildGraph, dependentsOf, topoOrder, classifyInstallFailure, parseTestFailures } from '../lib/stack.mjs';
+import { parseChange, satisfies, buildGraph, dependentsOf, topoOrder, classifyInstallFailure, parseTestFailures, runnerSummary, nodeFailingTests, testFailureFields } from '../lib/stack.mjs';
 
 test('parseTestFailures names failing tests as bun, node, TAP and vitest print them', () => {
   const bun = [
@@ -25,6 +25,117 @@ test('parseTestFailures names failing tests as bun, node, TAP and vitest print t
   assert.deepEqual(parseTestFailures(' ✓ test/a.test.ts > ok 3ms\n × test/b.test.ts > suite > breaks 12ms\n FAIL  test/b.test.ts > suite > breaks'), ['test/b.test.ts > suite > breaks']);
   assert.deepEqual(parseTestFailures('\x1b[31m(fail)\x1b[0m colored > name [1.00ms]'), ['colored > name']);
   assert.deepEqual(parseTestFailures('Error: something else entirely'), []);
+});
+
+// Vitest 4's default reporter, as it printed one failure in a run of membrane's tests.
+const vitestOne = [
+  '\x1b[31m     \x1b[31m×\x1b[31m XML prefill: opt-in image shedding makes the round unknown\x1b[39m\x1b[33m 6341\x1b[2mms\x1b[22m\x1b[39m',
+  '\x1b[2m Test Files \x1b[22m \x1b[1m\x1b[31m1 failed\x1b[39m\x1b[22m\x1b[2m | \x1b[22m\x1b[1m\x1b[32m128 passed\x1b[39m\x1b[22m\x1b[90m (129)\x1b[39m',
+  '\x1b[2m      Tests \x1b[22m \x1b[1m\x1b[31m1 failed\x1b[39m\x1b[22m\x1b[2m | \x1b[22m\x1b[1m\x1b[32m2376 passed\x1b[39m\x1b[22m\x1b[90m (2377)\x1b[39m',
+  '\x1b[31m⎯⎯⎯⎯⎯⎯⎯\x1b[39m\x1b[1m\x1b[41m Failed Tests 1 \x1b[49m\x1b[22m\x1b[31m⎯⎯⎯⎯⎯⎯⎯\x1b[39m',
+  '\x1b[41m\x1b[1m FAIL \x1b[22m\x1b[49m tests/unit/round-report.test.ts\x1b[2m > \x1b[22mreview\x1b[2m > \x1b[22mXML prefill: opt-in image shedding makes the round unknown',
+].join('\n');
+
+// Node 24's spec reporter, as it prints a describe() whose before() hook fails and a test whose subtest fails.
+const nodeHook = [
+  '▶ s', '  ✖ t1', '  ✖ t2', '✖ s (0.52ms)', '▶ u', '  ✖ t3 (0.21ms)', '✖ u (0.38ms)',
+  'ℹ tests 3', 'ℹ suites 2', 'ℹ pass 0', 'ℹ fail 1', 'ℹ cancelled 2',
+  '✖ failing tests:', '', 'test at d.test.mjs:4:3', '✖ t1', "  'test did not finish before its parent and was cancelled'", '',
+  'test at d.test.mjs:5:3', '✖ t2', "  'test did not finish before its parent and was cancelled'", '',
+  'test at d.test.mjs:2:1', '✖ s (0.52ms)', '  Error: before failed', '',
+  'test at d.test.mjs:9:3', '✖ t3 (0.21ms)', '  Error: afterEach failed', '      at TestContext.<anonymous> (file:///d.test.mjs:8:27)',
+].join('\n');
+const nodeSubtest = [
+  '▶ parent', '  ✔ child ok (0.1ms)', '  ✖ child fails (0.19ms)', '✖ parent (4.28ms)',
+  'ℹ tests 3', 'ℹ suites 0', 'ℹ pass 1', 'ℹ fail 2',
+  '✖ failing tests:', '', 'test at a.test.mjs:9:11', '✖ child fails (0.19ms)',
+  '  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:', '  ✖ a line of a failure\'s own output', '  1 !== 2',
+].join('\n');
+
+const nodeParentFails = [
+  '▶ parent fails itself too', '  ✖ child fails (1.11ms)', '✖ parent fails itself too (1.84ms)',
+  'ℹ tests 2', 'ℹ suites 0', 'ℹ pass 0', 'ℹ fail 2',
+  '✖ failing tests:', '', 'test at k.test.mjs:4:11', '✖ child fails (1.11ms)', '  AssertionError [ERR_ASSERTION]: 1 !== 2', '',
+  'test at k.test.mjs:3:1', '✖ parent fails itself too (1.84ms)', '  AssertionError [ERR_ASSERTION]: 3 !== 4',
+].join('\n');
+
+test("nodeFailingTests reads node's own list of failures at the end of its report", () => {
+  assert.deepEqual(nodeFailingTests(nodeHook), ['t1', 't2', 's', 't3']);
+  assert.deepEqual(nodeFailingTests(nodeSubtest), ['child fails']);
+  assert.equal(nodeFailingTests('✔ a (1ms)\n✖ b (2ms)\nℹ fail 1'), null);
+});
+
+test("parseTestFailures takes vitest's list of failed tests over its tree, where the list is there", () => {
+  assert.deepEqual(parseTestFailures(vitestOne), ['tests/unit/round-report.test.ts > review > XML prefill: opt-in image shedding makes the round unknown']);
+  assert.deepEqual(parseTestFailures(' ✓ test/a.test.ts > ok 3ms\n × suite > breaks 12ms'), ['suite > breaks']);
+});
+
+test('runnerSummary reads what each runner says in its summary, the last count printed and the errors line after it', () => {
+  assert.deepEqual(runnerSummary('▶ s\n  ✖ a (1ms)\n✖ s (2ms)\nℹ tests 7\nℹ suites 1\nℹ pass 2\nℹ fail 4\nℹ cancelled 0'), { failed: 4, errors: null, form: 'node' });
+  assert.deepEqual(runnerSummary('not ok 1 - a\n# tests 3\n# pass 1\n# fail 2'), { failed: 2, errors: null, form: 'tap' });
+  assert.deepEqual(runnerSummary(' 718 pass\n 75 fail\n 64 errors\n 5402 expect() calls\nRan 793 tests across 130 files. [53.49s]'), { failed: 75, errors: 64, form: 'bun' });
+  assert.deepEqual(runnerSummary(' 0 pass\n 1 fail\n 1 error\nRan 1 test across 2 files. [8.00ms]'), { failed: 1, errors: 1, form: 'bun' });
+  assert.deepEqual(runnerSummary(vitestOne), { failed: 1, errors: null, form: 'vitest' });
+  assert.deepEqual(runnerSummary(`${vitestOne}\n\x1b[2m     Errors \x1b[22m \x1b[1m\x1b[31m1 error\x1b[39m\x1b[22m`), { failed: 1, errors: 1, form: 'vitest' });
+  assert.deepEqual(runnerSummary(' Test Files  1 failed | 128 passed (129)\n      Tests  2376 passed (2376)'), { failed: null, errors: null, form: null });
+  assert.deepEqual(runnerSummary('✔ a (1ms)\n✖ b (2ms)\n[puppet] assistant: odd--cyclic → ERROR in 1ms'), { failed: null, errors: null, form: null });
+  assert.deepEqual(runnerSummary('a nested run printed:\n 3 fail\n...\nℹ tests 9\nℹ fail 1'), { failed: 1, errors: null, form: 'node' });
+  // an errors line counts only after the last count of failed tests
+  assert.deepEqual(runnerSummary('a test printed:\n 1 error\n 10 pass\n 1 fail\nRan 11 tests across 2 files.'), { failed: 1, errors: null, form: 'bun' });
+  assert.deepEqual(runnerSummary(' 2 fail\n 1 error\n...\n 10 pass\n 1 fail\nRan 11 tests across 2 files.'), { failed: 1, errors: null, form: 'bun' });
+});
+
+test("testFailureFields reads a step's failures only when they're every failure its runner reports", () => {
+  const bun = (names, fail, errors = 0) => [...names.map((n) => `(fail) ${n} [1.00ms]`), ` 10 pass`, ` ${fail} fail`, ...(errors ? [` ${errors} error${errors === 1 ? '' : 's'}`] : []), 'Ran 20 tests across 3 files. [1.00s]'].join('\n');
+  assert.deepEqual(testFailureFields(bun(['s > a', 's > b'], 2)), { failures: ['s > a', 's > b'], failureCount: 2, failuresParsed: true });
+  // bun counts a test file that failed to load as a failure and an error, and it has no name
+  assert.deepEqual(testFailureFields(bun(['s > a'], 2, 1)), { failures: ['s > a'], failureCount: 2, failuresParsed: false });
+  // an error bun reports outside any test, such as a rejection while a file loads, is in no count of failed tests
+  assert.deepEqual(testFailureFields(bun(['s > a'], 1, 1)), { failures: ['s > a'], failureCount: 1, failuresParsed: false });
+  // two failures that share a name can't be told apart by it
+  assert.equal(testFailureFields(bun(['s > a', 's > a'], 2)).failuresParsed, false);
+  // a node report cut before its summary: what it named isn't all there was
+  assert.deepEqual(testFailureFields('✔ a (1ms)\n✖ b (2ms)\n# exit 1'), { failures: ['b'], failureCount: null, failuresParsed: false });
+  // a node report cut after its summary and before its list: node's names are checked against its list alone
+  assert.deepEqual(testFailureFields('✖ b (2ms)\nℹ tests 1\nℹ pass 0\nℹ fail 1'), { failures: ['b'], failureCount: 1, failuresParsed: false });
+  // node's list is the names: a suite whose before() hook failed is among them, which no known test can stand for
+  assert.deepEqual(testFailureFields(nodeHook), { failures: ['t1', 't2', 's', 't3'], failureCount: 1, failuresParsed: true });
+  // a test that failed itself besides its subtest is in node's list, though it opened a group
+  assert.deepEqual(testFailureFields(nodeParentFails), { failures: ['child fails', 'parent fails itself too'], failureCount: 2, failuresParsed: true });
+  // a list cut short: a failure the report printed before it isn't in it
+  assert.deepEqual(testFailureFields(nodeHook.slice(0, nodeHook.indexOf('test at d.test.mjs:9:3'))), { failures: ['t1', 't2', 's'], failureCount: 1, failuresParsed: false });
+  // a name node lists twice is two failures one name can't tell apart
+  assert.equal(testFailureFields('✖ a (1ms)\n✖ a (2ms)\nℹ tests 2\nℹ fail 2\n✖ failing tests:\n\n✖ a (1ms)\n\n✖ a (2ms)').failuresParsed, false);
+  // node counts a test that failed through its subtests, and lists only the subtest: the list is what's compared
+  assert.deepEqual(testFailureFields(nodeSubtest), { failures: ['child fails'], failureCount: 2, failuresParsed: true });
+  // a ✖ line a test printed, which node doesn't list as a failure, keeps the names from being read
+  assert.deepEqual(testFailureFields(nodeSubtest.replace('▶ parent', '✖ a line a test printed\n▶ parent')), { failures: ['child fails'], failureCount: 2, failuresParsed: false });
+  // the same report cut short before its summary
+  assert.deepEqual(testFailureFields(nodeSubtest.slice(0, nodeSubtest.indexOf('ℹ tests'))), { failures: ['child fails'], failureCount: null, failuresParsed: false });
+  // a vitest file that wouldn't load is listed with FAIL, and isn't a failed test
+  assert.equal(testFailureFields(`${vitestOne}\n FAIL  tests/unit/broken.test.ts [ tests/unit/broken.test.ts ]`).failuresParsed, false);
+  assert.equal(testFailureFields(vitestOne).failuresParsed, true);
+  // an unhandled error vitest reports fails no test
+  assert.equal(testFailureFields(`${vitestOne}\n     Errors  1 error`).failuresParsed, false);
+  // a step stopped at its time limit before its summary: what it named before the limit is read as it stands
+  assert.deepEqual(testFailureFields('(fail) s > a [1.00ms]', { timedOut: true }), { failures: ['s > a'], failureCount: null, failuresParsed: true });
+  assert.equal(testFailureFields('(pass) s > a [1.00ms]', { timedOut: true }).failuresParsed, false);
+  // a step stopped at its time limit after its summary printed is checked like any other
+  assert.equal(testFailureFields(bun(['s > a'], 2), { timedOut: true }).failuresParsed, false);
+  assert.equal(testFailureFields(bun(['s > a'], 1), { timedOut: true }).failuresParsed, true);
+  // a node step stopped after its summary and before its list
+  assert.equal(testFailureFields('✖ b (2ms)\nℹ tests 1\nℹ pass 0\nℹ fail 1', { timedOut: true }).failuresParsed, false);
+  // a bun run that counted a failure and named none
+  assert.equal(testFailureFields(bun([], 1)).failuresParsed, false);
+  // a bun run whose test printed a node report: bun's own count is compared, and node's list isn't its names
+  const nestedNode = (name) => `✖ ${name} (1ms)\nℹ tests 1\nℹ fail 1\n✖ failing tests:\n\n✖ ${name} (1ms)`;
+  assert.deepEqual(testFailureFields(`${nestedNode('s > a')}\n${bun(['s > a'], 2)}`), { failures: ['s > a'], failureCount: 2, failuresParsed: false });
+  assert.deepEqual(testFailureFields(`${nestedNode('x')}\n${bun(['s > a'], 1)}`), { failures: ['x', 's > a'], failureCount: 1, failuresParsed: false });
+  // node prints no errors line, so node's check reads none: details that read like bun's or vitest's don't count
+  const strayErrors = nodeParentFails.replace('  AssertionError [ERR_ASSERTION]: 3 !== 4', '  AssertionError [ERR_ASSERTION]: 3 !== 4\n  2 errors\n     Errors  1 error');
+  assert.deepEqual(testFailureFields(strayErrors), { failures: ['child fails', 'parent fails itself too'], failureCount: 2, failuresParsed: true });
+  // a run that failed with no failing test named reads as unread, whatever count it gives
+  assert.equal(testFailureFields('ℹ tests 3\nℹ fail 0\nError: something else entirely').failuresParsed, false);
 });
 
 test('parseChange reads pull and branch specs, with and without a pin', () => {
