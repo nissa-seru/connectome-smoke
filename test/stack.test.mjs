@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseChange, satisfies, buildGraph, dependentsOf, topoOrder, classifyInstallFailure, parseTestFailures, runnerSummary, nodeFailingTests, testFailureFields } from '../lib/stack.mjs';
+import { parseChange, satisfies, buildGraph, dependentsOf, topoOrder, classifyInstallFailure, parseTestFailures, runnerSummary, nodeFailingTests, testFailureFields, filesystemFull, diskFull } from '../lib/stack.mjs';
 
 test('parseTestFailures names failing tests as bun, node, TAP and vitest print them', () => {
   const bun = [
@@ -199,8 +199,64 @@ test('install failures are classified from npm error lines', () => {
   assert.deepEqual(classifyInstallFailure('npm error Missing: zod@4.1.0 from lock file'), { cause: 'lockfile', infra: false });
   assert.deepEqual(classifyInstallFailure('npm error code ECONNRESET\nnpm error network aborted'), { cause: 'network', infra: true });
   assert.deepEqual(classifyInstallFailure('npm error code E503'), { cause: 'network', infra: true });
-  assert.deepEqual(classifyInstallFailure('npm error ENOSPC: no space left on device'), { cause: 'disk', infra: true });
+  // A full disk is read from the disk itself, before this (diskFull).
+  assert.deepEqual(classifyInstallFailure('npm error ENOSPC: no space left on device'), { cause: 'other', infra: false });
   assert.deepEqual(classifyInstallFailure('npm error code 1\nnpm error command failed\nnpm error command sh -c node postinstall.js'), { cause: 'other', infra: false });
   // a network word outside npm's own error lines doesn't count
   assert.deepEqual(classifyInstallFailure('test: network request mocked\nnpm error code 1'), { cause: 'other', infra: false });
+});
+
+test('filesystemFull reads a filesystem as full the way ENOSPC means it: near nothing left, at any size', () => {
+  const GiB = 2 ** 30;
+  const MiB = 2 ** 20;
+  // A filesystem of `size` bytes in 4 KiB blocks, with `avail` bytes left to an unprivileged process.
+  const fs = (size, avail, o = {}) => ({ frsize: 4096, bsize: 4096, blocks: size / 4096, bfree: avail / 4096 + 1000, bavail: avail / 4096, files: 1e6, ffree: 5e5, ...o });
+  // A 503 GiB disk, as the runner's is: 9 GiB left isn't full, and under 1 GiB is.
+  assert.equal(filesystemFull(fs(503 * GiB, 9 * GiB)), false);
+  assert.equal(filesystemFull(fs(503 * GiB, 1 * GiB)), false);
+  assert.equal(filesystemFull(fs(503 * GiB, 1023 * MiB)), true);
+  // A 512 MiB filesystem: its margin is 1%, about 5 MiB.
+  assert.equal(filesystemFull(fs(512 * MiB, 6 * MiB)), false);
+  assert.equal(filesystemFull(fs(512 * MiB, 5 * MiB)), true);
+  // Blocks only root may use, which an unprivileged process can't, don't count as room.
+  assert.equal(filesystemFull(fs(503 * GiB, 0, { bfree: (25 * GiB) / 4096 })), true);
+  // Free inodes under 1,024, or under 1% of a filesystem with fewer than 102,400.
+  assert.equal(filesystemFull(fs(503 * GiB, 9 * GiB, { files: 3e7, ffree: 1023 })), true);
+  assert.equal(filesystemFull(fs(503 * GiB, 9 * GiB, { files: 3e7, ffree: 1024 })), false);
+  assert.equal(filesystemFull(fs(503 * GiB, 9 * GiB, { files: 50000, ffree: 499 })), true);
+  assert.equal(filesystemFull(fs(503 * GiB, 9 * GiB, { files: 50000, ffree: 600 })), false);
+  // A filesystem that counts no inodes, as btrfs doesn't, reads by its blocks alone.
+  assert.equal(filesystemFull(fs(503 * GiB, 9 * GiB, { files: 0, ffree: 0 })), false);
+  assert.equal(filesystemFull(fs(503 * GiB, 0, { files: 0, ffree: 0 })), true);
+  // Blocks count in frsize: with a 16 times larger bsize, 512 MiB left is still under 1 GiB.
+  assert.equal(filesystemFull(fs(503 * GiB, 512 * MiB, { bsize: 65536 })), true);
+  // Without frsize, bsize is the block's size.
+  assert.equal(filesystemFull(fs(503 * GiB, 63 * MiB, { frsize: undefined })), true);
+});
+
+test("diskFull takes ENOSPC in a step's output as a full disk only when a filesystem it reads is nearly full", () => {
+  const GiB = 2 ** 30;
+  const roomy = { frsize: 4096, bsize: 4096, blocks: (503 * GiB) / 4096, bfree: (12 * GiB) / 4096, bavail: (9 * GiB) / 4096, files: 3e7, ffree: 2e7 };
+  const full = { ...roomy, bfree: 1000, bavail: 0 };
+  const noFreeInodes = { ...roomy, ffree: 0 };
+  const statfs = (stats) => (p) => {
+    if (!(p in stats)) throw Object.assign(new Error(`ENOENT: no such file or directory, statfs '${p}'`), { code: 'ENOENT' });
+    return stats[p];
+  };
+  // The line agent-framework's tests log on purpose.
+  const printed = 'Error in event loop: Error: ENOSPC: no space left on device';
+  assert.equal(diskFull(printed, ['/w', '/t', '/h'], statfs({ '/w': roomy, '/t': roomy, '/h': roomy })), false);
+  // Any one of them full is a full disk, by its blocks or its inodes.
+  assert.equal(diskFull(printed, ['/w', '/t', '/h'], statfs({ '/w': roomy, '/t': full, '/h': roomy })), true);
+  assert.equal(diskFull(printed, ['/w', '/t', '/h'], statfs({ '/w': roomy, '/t': roomy, '/h': full })), true);
+  assert.equal(diskFull(printed, ['/w', '/t'], statfs({ '/w': noFreeInodes, '/t': roomy })), true);
+  // Either wording, in any case.
+  assert.equal(diskFull('Error: ENOSPC, write', ['/w'], statfs({ '/w': full })), true);
+  assert.equal(diskFull('OSError: [Errno 28] No space left on device', ['/w'], statfs({ '/w': full })), true);
+  // Without the text, a full filesystem isn't this step's reason.
+  assert.equal(diskFull('ℹ fail 1', ['/w'], statfs({ '/w': full })), false);
+  // A filesystem that can't be read counts as one with room, and the next is still read.
+  assert.equal(diskFull(printed, ['/w', '/t'], statfs({})), false);
+  assert.equal(diskFull(printed, ['/w', '/t'], statfs({ '/t': roomy })), false);
+  assert.equal(diskFull(printed, ['/w', '/t'], statfs({ '/t': full })), true);
 });

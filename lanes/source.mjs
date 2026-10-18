@@ -41,14 +41,14 @@
  *       cleanly onto main).
  */
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, existsSync, rmSync, symlinkSync, readdirSync, readFileSync, writeFileSync, appendFileSync, realpathSync } from 'node:fs';
-import { tmpdir, release, cpus } from 'node:os';
+import { mkdtempSync, mkdirSync, existsSync, rmSync, symlinkSync, readdirSync, readFileSync, writeFileSync, appendFileSync, realpathSync, statfsSync } from 'node:fs';
+import { tmpdir, homedir, release, cpus } from 'node:os';
 import { join, resolve, sep } from 'node:path';
 import { createHash } from 'node:crypto';
 import { makeReport, bootTwice, parseArgs } from '../lib/common.mjs';
 import { checkStores, listFixtures } from '../lib/stores.mjs';
 import { fileURLToPath as pathOfUrl } from 'node:url';
-import { parseChange, satisfies, buildGraph, dependentsOf, topoOrder, classifyInstallFailure, testFailureFields } from '../lib/stack.mjs';
+import { parseChange, satisfies, buildGraph, dependentsOf, topoOrder, classifyInstallFailure, testFailureFields, diskFull } from '../lib/stack.mjs';
 
 const { opt, opts } = parseArgs(process.argv.slice(2));
 // The real path, so paths read back through realpath (links, resolutions) compare with it.
@@ -129,12 +129,15 @@ function runCmd(id, cwd, argv, { timeout = 900_000, env = {} } = {}) {
 /**
  * Throw the step's failure, classified. A missing tool, a full disk, or a
  * SIGKILL it didn't time out on (the OOM killer, or someone outside) means
- * the check couldn't run. Any other signal, such as a crash, stays a break:
- * the code under test can cause it.
+ * the check couldn't run. A full disk is read from the disk itself, the step's
+ * directory's, the temp directory's and the home directory's, which holds
+ * npm's and bun's caches, since a test can print ENOSPC on purpose
+ * (diskFull). Any other signal, such as a crash, stays a break: the code
+ * under test can cause it.
  */
 function fail(r, cwd, extra = {}) {
   if (r.error?.code === 'ENOENT') throw smokeError(`\`${r.cmdline}\`: command not found`, { cause: 'toolchain', infra: true });
-  if (/ENOSPC|no space left on device/i.test(r.all)) throw smokeError(`\`${r.cmdline}\`: the disk is full`, { cause: 'disk', infra: true });
+  if (diskFull(r.all, [cwd, tmpdir(), homedir()], statfsSync)) throw smokeError(`\`${r.cmdline}\`: the disk is full`, { cause: 'disk', infra: true });
   if (r.timedOut) throw smokeError(`\`${r.cmdline}\` in ${rel(cwd)} timed out`, { cause: 'timeout', ...extra });
   if (r.signal === 'SIGKILL') throw smokeError(`\`${r.cmdline}\` in ${rel(cwd)} was killed (SIGKILL) from outside`, { cause: 'killed', infra: true });
   const lines = r.all.trim().split('\n');

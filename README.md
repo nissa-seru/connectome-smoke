@@ -58,7 +58,7 @@ What a change run checks:
 |---|---|---|
 | 0 | `pass` | every step passed |
 | 1 | `break` | a step failed: tests, a typecheck, a build, a boot, a step's own timeout, or an install the commit breaks (a lockfile that doesn't match `package.json`) |
-| 2 | `error` | the check couldn't run: a clone or fetch failed, a pinned head moved or a pinned main was unreachable, the registry or network failed, the disk filled, a tool was missing, or the arguments were refused |
+| 2 | `error` | the check couldn't run: a clone or fetch failed, a pinned head moved or a pinned main was unreachable, the registry or network failed, a step failed saying ENOSPC while the filesystem of its directory, the temp directory or the home directory was nearly full (`diskFull` in `lib/stack.mjs`), a tool was missing, or the arguments were refused |
 | 3 | `conflict` | a change doesn't merge cleanly; `conflict` names the change, what it was merged onto, and the files |
 
 ## Stored fixtures (`fixtures/stores/`)
