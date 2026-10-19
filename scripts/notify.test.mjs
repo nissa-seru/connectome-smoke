@@ -32,6 +32,26 @@ function summary(lane, verdict, { fails = 1, detail = 'boot failed', extra = [] 
     extra.map((l) => `${l}\n`).join('');
 }
 
+/** A lane's summary with the lines a real run posts, as main's run
+ *  39193842112 wrote them on Oct 19: the versions, lag, mains and failing
+ *  lines, at their real lengths, here on `node` and Bun 1.4.3. Its passing
+ *  steps but one are left out, since the post never shows them. */
+function realSummary(lane, node, fail = false) {
+  const lines = {
+    published: [
+      'host 0.10.2 · af 0.22.3 · cm 0.14.1 · membrane 0.5.87 · chronicle 0.4.0 · mcpl-core 0.2.2',
+      'lag vs latest: membrane 0.5.87→0.6.0, context-manager 0.14.1→0.15.0, mcpl-core 0.2.2→0.3.0',
+    ],
+    latest: ['host 0.10.2 · af 0.22.3 · cm 0.15.0 · membrane 0.6.0 · chronicle 0.4.0 · mcpl-core 0.3.0'],
+    source: [
+      'mains: host d4c0b67 · af 67aabff · cm e6b12e5 · membrane 1c33026 · mcpl-core e17f773 · discord-mcpl 424b7ec · portal 393e101 · voice-kit 2f20400 · chronicle@0.4.0 (npm)',
+      fail ? '✗ connectome-host: test — Error: `npm test` in ./src/connectome-host exited 1' : '✓ connectome-host: test',
+    ],
+  }[lane];
+  return `**connectome-smoke · ${lane}** — ${fail ? '❌ FAIL' : '✅ PASS'} (${lane === 'source' ? 724 : 24}s, linux-x64, node ${node}, bun 1.4.3)\n` +
+    `${lines.join('\n')}\n✓ boot #2: reload store → second turn → shutdown\n`;
+}
+
 /** Run notify.mjs on evidence as the workflow downloads it: one artifact
  *  directory per run, holding summary-<lane>-<runtime>.md. `runs` maps each
  *  run to its summary; a run left out wrote nothing. `env` overrides what
@@ -101,7 +121,7 @@ async function runAsync(runs, env = {}, opts = {}) {
  *  body }. With `answers` null, the webhook is a port nothing listens on.
  *  Returns runAsync()'s result, and the posts the webhook got, each with
  *  when it came. */
-async function deliver(answers, env = {}, runs = every()) {
+async function deliver(answers, env = {}, runs = every(), opts = {}) {
   const posts = [];
   const server = createServer((req, res) => {
     let body = '';
@@ -120,7 +140,7 @@ async function deliver(answers, env = {}, runs = every()) {
     await once(server, 'close');
   }
   try {
-    return { ...(await runAsync(runs, { DISCORD_WEBHOOK: `http://127.0.0.1:${port}/`, ...env })), posts };
+    return { ...(await runAsync(runs, { DISCORD_WEBHOOK: `http://127.0.0.1:${port}/`, ...env }, opts)), posts };
   } finally {
     if (answers !== null) server.close();
   }
@@ -136,14 +156,40 @@ function post(runs, env = {}, opts = {}) {
 /** Every run of `lanes` on every runtime, passing. */
 const every = (lanes = ALL) => Object.fromEntries(lanes.flatMap((l) => LEGS.map((r) => [`${l}-${r}`, summary(l, 'pass')])));
 
-test('every requested run passing posts "all lanes pass", whole', () => {
+test('every requested run passing posts "all lanes pass", whole, one block per lane', () => {
   const out = post(every());
   assert.match(out, /^🟢 \*\*connectome-smoke\*\* — all lanes pass/);
   assert.doesNotMatch(out, /✗/);
   const lines = out.split('\n');
-  assert.equal(lines.length, 1 + 9 * 2, 'the head, then every summary\'s two lines');
-  assert.match(lines.at(-1), /^host 0\.10\.2 · .* mcpl-core 0\.2\.2$/, 'the last summary\'s versions line is kept');
+  assert.equal(lines.length, 1 + 3 * (1 + 3 + 1), 'the head, then each lane\'s name, a line per runtime, and the versions line its runs share');
+  assert.deepEqual(lines.filter((l) => /^\*\*\w+\*\*$/.test(l)), ['**latest**', '**published**', '**source**']);
+  assert.equal(lines.filter((l) => /^(floor|middle|newest): ✅ PASS \(30s, linux-x64, node v22\.12\.0, bun 1\.4\.3\)$/.test(l)).length, 9, 'every run\'s verdict');
+  assert.match(lines.at(-1), /^host 0\.10\.2 · .* mcpl-core 0\.2\.2$/, 'the last lane\'s versions line is kept');
   assert.ok(!out.includes(CUT), 'a post under the limit has no cut line');
+});
+
+test('nine runs with summaries the size real runs write fit in one post, passing or with a failing lane', () => {
+  const node = { floor: 'v22.12.0', middle: 'v24.11.1', newest: 'v25.1.0' };
+  const runs = (failSource) => Object.fromEntries(ALL.flatMap((l) => LEGS.map((r) => [`${l}-${r}`, realSummary(l, node[r], failSource && l === 'source')])));
+  const green = post(runs(false));
+  assert.ok(!green.includes(CUT), `the passing post is whole, at ${green.length} characters`);
+  assert.equal(green.split('\n').filter((l) => /^(floor|middle|newest): ✅ PASS \(\d+s, linux-x64, node v2\d\.\d+\.\d+, bun 1\.4\.3\)$/.test(l)).length, 9, 'with every run\'s verdict');
+  const red = post(runs(true));
+  const lines = red.split('\n');
+  assert.ok(!red.includes(CUT), `the failing post is whole, at ${red.length} characters`);
+  assert.equal(lines[1], '**source**', 'the failing lane comes first');
+  assert.equal(lines.filter((l) => /^✗ connectome-host: test — Error: `npm test` in \.\/src\/connectome-host exited 1$/.test(l)).length, 1, 'the failing line all three source runs share is posted once');
+  assert.equal(lines.filter((l) => /^(floor|middle|newest): ❌ FAIL \(724s/.test(l)).length, 3, 'beside each source run\'s verdict');
+});
+
+test('a line only some of a lane\'s runs have is marked with their runtimes, and one all of them have isn\'t', () => {
+  const runs = every();
+  runs['published-floor'] = summary('published', 'fail');
+  runs['published-newest'] = summary('published', 'fail', { extra: ['fatal: newest only'] });
+  const lines = post(runs).split('\n');
+  assert.ok(lines.includes('floor, newest: ✗ step 1 — boot failed'), 'two of three runs have it');
+  assert.ok(lines.includes('newest: fatal: newest only'), 'one run has it');
+  assert.equal(lines.filter((l) => /^host 0\.10\.2 · /.test(l)).length, 3, 'each lane\'s shared versions line comes once, unmarked');
 });
 
 test('a run that wrote no summary is named, though its lane\'s other runs passed', () => {
@@ -173,55 +219,53 @@ test('lanes written with spaces are the same lanes', () => {
   assert.match(out, /^🟢 \*\*connectome-smoke\*\* — all lanes pass/);
 });
 
-test('a cut drops passing summaries before the missing run and the failure, at a line boundary, and says so', () => {
-  // Seven passing summaries, one failing with two long failure lines, and a
-  // run that wrote nothing: about 2,300 characters before the cut.
+test('a cut drops passing lanes before the missing run and the failing lane, at a line boundary, and says so', () => {
+  // A run with five long failure lines its lane's other runs don't have,
+  // and a run that wrote nothing: about 2,300 characters before the cut.
   const runs = every();
-  runs['source-newest'] = summary('source', 'fail', { fails: 2, detail: 'x'.repeat(250) });
+  runs['source-newest'] = summary('source', 'fail', { fails: 5, detail: 'x'.repeat(250) });
   delete runs['latest-floor'];
   const out = post(runs);
   const lines = out.split('\n');
   assert.ok(out.length <= 2000, `the post is ${out.length} characters`);
   assert.equal(lines.at(-1), CUT);
-  const missing = lines.findIndex((l) => /^✗ latest on floor .*no summary reached the report/.test(l));
-  const failure = lines.findIndex((l) => l.includes('❌ FAIL'));
-  const kept = lines.filter((l) => l.includes('✅ PASS')).length;
-  assert.ok(missing === 1, 'the missing run comes first');
-  assert.ok(failure > missing && lines.slice(failure).filter((l) => /^✗ step \d — x+$/.test(l)).length === 2, 'the failure follows with both its lines');
-  assert.ok(lines.findIndex((l) => l.includes('✅ PASS')) > failure, 'passing summaries come last');
-  assert.ok(kept > 0 && kept < 7, `${kept} of 7 passing summaries were kept`);
-  assert.match(lines.at(-2), /(✅ PASS \(30s, linux-x64, node v22\.12\.0, bun 1\.4\.3\)|^host 0\.10\.2 · .* mcpl-core 0\.2\.2)$/, 'the cut falls between whole lines');
+  assert.match(lines[1], /^✗ latest on floor .*no summary reached the report/, 'the missing run comes first');
+  assert.equal(lines[2], '**source**', 'then the failing lane');
+  assert.equal(lines.filter((l) => /^newest: ✗ step \d — x+$/.test(l)).length, 5, 'with all five of its failure lines, each marked as the newest run\'s');
+  const lastFailure = lines.findLastIndex((l) => /^newest: ✗ step/.test(l));
+  const passingLanes = lines.flatMap((l, i) => (l === '**latest**' || l === '**published**' ? [i] : []));
+  assert.ok(passingLanes.length > 0 && passingLanes.every((i) => i > lastFailure), 'passing lanes come after it');
+  assert.ok(lines.filter((l) => /^(floor|middle|newest): ✅ PASS/.test(l)).length < 5, 'and are what\'s cut');
+  assert.match(lines.at(-2), /^(\*\*(latest|published)\*\*|(floor|middle|newest): ✅ PASS \(30s, linux-x64, node v22\.12\.0, bun 1\.4\.3\)|host 0\.10\.2 · .* mcpl-core 0\.2\.2)$/, 'the cut falls between whole lines');
 });
 
-test('when failures fill most of the post, every failure is kept and passing summaries are what\'s cut', () => {
-  // Three failing summaries of about 550 characters each and six passing
-  // ones: the failures fit, and the passing summaries are what's cut.
+test('when failing lanes fill most of the post, every failure is kept and the passing lane is what\'s cut', () => {
+  // Every run of two lanes fails with a long line of its own: those lanes
+  // fit, and the passing lane after them is what's cut.
   const runs = every();
-  for (const r of ['latest-middle', 'published-floor', 'source-newest']) runs[r] = summary(r.split('-')[0], 'fail', { fails: 2, detail: 'z'.repeat(180) });
+  for (const l of ['latest', 'published']) for (const r of LEGS) runs[`${l}-${r}`] = summary(l, 'fail', { detail: `${r} ${'z'.repeat(180)}` });
   const out = post(runs);
   const lines = out.split('\n');
   assert.ok(out.length <= 2000, `the post is ${out.length} characters`);
   assert.equal(lines.at(-1), CUT);
-  const heads = lines.flatMap((l, i) => (l.includes('❌ FAIL') ? [i] : []));
-  assert.equal(heads.length, 3, 'all three failures are kept');
-  assert.equal(lines.filter((l) => /^✗ step \d — z+$/.test(l)).length, 6, 'with both lines each');
-  const firstPass = lines.findIndex((l) => l.includes('✅ PASS'));
-  assert.ok(firstPass === -1 || firstPass > heads.at(-1), 'no passing summary comes before a failure');
-  assert.ok(lines.filter((l) => l.includes('✅ PASS')).length < 6, 'passing summaries were cut');
+  assert.equal(lines.filter((l) => /^(floor|middle|newest): ✗ step 1 — (floor|middle|newest) z+$/.test(l)).length, 6, 'all six failures are kept');
+  assert.ok(lines.filter((l) => /^(floor|middle|newest): ✅ PASS/.test(l)).length < 3, 'the passing lane was cut');
 });
 
-test('failures past the limit are cut only after every passing summary', () => {
-  // Six failing summaries, far past the limit together, and three passing.
+test('failing lanes past the limit are cut only after every passing lane', () => {
+  // Every run of two lanes fails with three long lines of its own, far past
+  // the limit together, and the third lane passes.
   const runs = every();
-  for (const l of ['published', 'latest']) for (const r of LEGS) runs[`${l}-${r}`] = summary(l, 'fail', { fails: 3, detail: 'y'.repeat(250) });
+  for (const l of ['published', 'latest']) for (const r of LEGS) runs[`${l}-${r}`] = summary(l, 'fail', { fails: 3, detail: `${r} ${'y'.repeat(250)}` });
   const out = post(runs);
   const lines = out.split('\n');
   assert.ok(out.length <= 2000, `the post is ${out.length} characters`);
   assert.equal(lines.at(-1), CUT);
-  assert.doesNotMatch(out, /✅ PASS/, 'every passing summary is cut');
-  assert.ok(lines.filter((l) => l.includes('❌ FAIL')).length < 6, 'failures are cut too');
-  // The evidence sorts by run, so latest-floor comes first.
-  assert.match(lines[1], /^\*\*connectome-smoke · latest\*\* — ❌ FAIL/);
+  assert.ok(!lines.includes('**source**'), 'the passing lane is cut');
+  assert.doesNotMatch(out, /✅ PASS/, 'and no passing run is left');
+  assert.ok(lines.filter((l) => /^(floor|middle|newest): ✗ step/.test(l)).length < 18, 'failures are cut too');
+  // The evidence sorts by run, so latest comes first.
+  assert.equal(lines[1], '**latest**');
 });
 
 test('a problem line past 300 characters is cut to 300 too', () => {
@@ -237,10 +281,10 @@ test('a line past 300 characters is cut to 300, so the failures after it still f
   runs['latest-floor'] = summary('latest', 'fail', { extra: [`fatal: ${'q'.repeat(2500)}`] });
   runs['source-newest'] = summary('source', 'fail');
   const lines = post(runs).split('\n');
-  const fatal = lines.find((l) => l.startsWith('fatal: '));
-  assert.equal(fatal.length, 300);
+  const fatal = lines.find((l) => l.startsWith('floor: fatal: '));
+  assert.equal(fatal.length, 'floor: '.length + 300, 'the summary\'s line is cut to 300, and its runtime marks it outside the cap');
   assert.ok(fatal.endsWith('…'), 'the cut line ends in an ellipsis');
-  assert.ok(lines.some((l) => /^\*\*connectome-smoke · source\*\* — ❌ FAIL/.test(l)), 'the failure after the long line is in the post');
+  assert.ok(lines.includes('**source**') && lines.some((l) => /^newest: ❌ FAIL/.test(l)), 'the failing lane after the long line is in the post');
 });
 
 test('the head carries the run\'s reason and a link to the run\'s page', () => {
@@ -249,14 +293,19 @@ test('the head carries the run\'s reason and a link to the run\'s page', () => {
 });
 
 test('a post of exactly 2,000 characters is whole, and one more is cut', () => {
-  // One failing summary whose lag lines set the post's length, each under
-  // the 300-character line cap. A lag line of m w's adds m + 5 characters:
-  // its newline, "lag " and the w's.
-  const runsWith = (ms) => ({ ...every(), 'source-floor': summary('source', 'fail', { extra: ms.map((m) => `lag ${'w'.repeat(m)}`) }) });
+  // One failing run, beside two passing ones, whose lane's lag lines set
+  // the post's length, each under the 300-character line cap. All three
+  // runs have them, so each is posted once, unmarked, and each has a letter
+  // of its own, since a lane posts a line once. A lag line of m letters
+  // adds m + 5 characters: its newline, "lag " and the letters.
+  const runsWith = (ms) => {
+    const extra = ms.map((m, i) => `lag ${String.fromCharCode(97 + i).repeat(m)}`);
+    return { ...every(), 'source-floor': summary('source', 'fail', { extra }), 'source-middle': summary('source', 'pass', { extra }), 'source-newest': summary('source', 'pass', { extra }) };
+  };
   const toAdd = 2000 - post(runsWith([])).length;
   const k = Math.ceil(toAdd / 250);
   const ms = Array.from({ length: k }, (_, i) => Math.floor(toAdd / k) + (i < toAdd % k ? 1 : 0) - 5);
-  assert.ok(toAdd > 0 && ms.every((m) => m > 0 && m + 4 < 300), `lag lines of ${ms} w's`);
+  assert.ok(toAdd > 0 && k <= 26 && ms.every((m) => m > 0 && m + 4 < 300), `lag lines of ${ms} letters`);
   const exact = post(runsWith(ms));
   assert.equal(exact.length, 2000);
   assert.ok(!exact.includes(CUT), 'exactly at the limit, nothing is cut');
@@ -270,7 +319,7 @@ test('a summary\'s lag, nested and fatal lines are kept, and its passing steps a
   runs['latest-newest'] = summary('latest', 'fail', { extra: ['lag af 0.22.1 < 0.23.0', 'nested membrane 0.5.86 under af', 'fatal: chronicle binding missing', 'a line of host output'] });
   const out = post(runs);
   for (const l of ['lag af 0.22.1 < 0.23.0', 'nested membrane 0.5.86 under af', 'fatal: chronicle binding missing']) {
-    assert.ok(out.split('\n').includes(l), `"${l}" is in the post`);
+    assert.ok(out.split('\n').includes(`newest: ${l}`), `"${l}" is in the post, marked as the newest run's`);
   }
   assert.doesNotMatch(out, /✓ npm install|a line of host output/);
 });
@@ -316,12 +365,27 @@ test('a summary that can\'t be read is named, and its run counts as missing', { 
   assert.match(out, /✗ source on floor .*no summary reached the report/);
 });
 
-test('an empty summary is named by its run', () => {
+test('an empty summary is named in its lane by its runtime, and its lane\'s lines are marked with the runs that have them', () => {
+  // source sorts last, so coming first is the empty run's doing.
   const runs = every();
-  runs['latest-middle'] = '';
+  runs['source-middle'] = '';
   const out = post(runs);
   assert.match(out, /^🔴 .* FAILURES/);
-  assert.match(out, /^✗ latest-middle: its summary is empty$/m);
+  const lines = out.split('\n');
+  assert.equal(lines[1], '**source**', 'its lane comes first');
+  assert.equal(lines[3], 'middle: ✗ its summary is empty');
+  assert.match(lines[5], /^floor, newest: host 0\.10\.2 · /, 'the versions line the other two runs share is marked as theirs');
+});
+
+test('a run\'s lane runs to the first hyphen in its name, so a runtime\'s name can hold one', () => {
+  const RT = JSON.stringify([{ name: 'node-22', node: '22.12.0', bun: '1.4.3' }, { name: 'node-24', node: '24', bun: 'latest' }]);
+  const runs = { 'source-node-22': summary('source', 'pass'), 'source-node-24': summary('source', 'fail') };
+  const lines = post(runs, { LANES: 'source', FULL: 'false', RUNTIMES: RT }).split('\n');
+  assert.equal(lines[1], '**source**');
+  assert.match(lines[2], /^node-22: ✅ PASS/);
+  assert.match(lines[3], /^node-24: ❌ FAIL/);
+  assert.ok(lines.includes('node-24: ✗ step 1 — boot failed'));
+  assert.doesNotMatch(lines.join('\n'), /no summary reached the report/, 'both requested runs are found');
 });
 
 test('a lane job that didn\'t end in success while every summary passed turns the post red', () => {
@@ -360,36 +424,36 @@ test('the verdict is read from the summary\'s first line', () => {
   assert.match(post(runs), /^🔴 .* FAILURES/);
 });
 
-test('a run of every lane with every requested run\'s summary, passing or failing, is remembered once the post settles', () => {
-  assert.equal(run(every()).output, 'remember=true\n');
+test('a run of every lane with every requested run\'s summary, passing or failing, is remembered once its post goes out', async () => {
+  assert.equal((await deliver([204])).output, 'remember=true\n');
   const failing = every();
   failing['published-floor'] = summary('published', 'fail');
-  assert.equal(run(failing).output, 'remember=true\n');
+  assert.equal((await deliver([204], {}, failing)).output, 'remember=true\n');
 });
 
-test('nothing is remembered for a run of some lanes, a summary missing or empty, or nothing to check against', () => {
-  // Each run gets as far as printing what it would post, which comes after
-  // the memory is decided, so nothing remembered is a decision, not a stop.
+test('nothing is remembered for a run of some lanes, a summary missing or empty, or nothing to check against, though its post went out', async () => {
+  // A post that went out remembers whatever it reports, so only what was
+  // run and what arrived decide here.
   const notRemembered = (r, what) => {
     assert.equal(r.status, 0, `${what}: ${r.stderr}`);
-    assert.match(r.out, /^(🟢|🔴) \*\*connectome-smoke\*\*/, `${what}: it printed what it would post`);
+    assert.equal(r.posts.length, 1, `${what}: the post went out`);
     assert.equal(r.output, '', what);
   };
-  notRemembered(run(every(['source']), { LANES: 'source', FULL: 'false' }), 'a run of some lanes');
-  notRemembered(run(every(), { FULL: undefined }), 'FULL not given');
+  notRemembered(await deliver([204], { LANES: 'source', FULL: 'false' }, every(['source'])), 'a run of some lanes');
+  notRemembered(await deliver([204], { FULL: undefined }), 'FULL not given');
   const missing = every();
   delete missing['source-middle'];
-  notRemembered(run(missing), 'a summary missing');
+  notRemembered(await deliver([204], {}, missing), 'a summary missing');
   const empty = every();
   empty['source-middle'] = '';
-  notRemembered(run(empty), 'a summary empty');
-  notRemembered(run(every(), { LANES: '' }), 'LANES empty');
-  notRemembered(run(every(), { RUNTIMES: '[]' }), 'RUNTIMES empty');
-  notRemembered(run({}, {}, { noEvidence: true }), 'no evidence folder');
+  notRemembered(await deliver([204], {}, empty), 'a summary empty');
+  notRemembered(await deliver([204], { LANES: '' }), 'LANES empty');
+  notRemembered(await deliver([204], { RUNTIMES: '[]' }), 'RUNTIMES empty');
+  notRemembered(await deliver([204], {}, {}, { noEvidence: true }), 'no evidence folder');
 });
 
-test('a lane job that ends cancelled after every summary arrived turns the post red, and the set is still remembered', () => {
-  const r = run(every(), { RESULT_PUBLISHED: 'cancelled' });
+test('a lane job that ends cancelled after every summary arrived turns the post red, and the set is still remembered once the post goes out', async () => {
+  const r = await deliver([204], { RESULT_PUBLISHED: 'cancelled' });
   assert.equal(r.status, 0, r.stderr);
   assert.match(r.out, /^🔴 \*\*connectome-smoke\*\* — FAILURES/);
   assert.match(r.out, /^✗ the Published lane job ended 'cancelled', though every summary it wrote passes$/m);
@@ -402,16 +466,30 @@ test('a local run, with no $GITHUB_OUTPUT, prints what it would post and exits 0
   assert.match(r.out, /^🟢 \*\*connectome-smoke\*\* — all lanes pass/);
 });
 
-test('in Actions an empty webhook fails the step, naming the secret, and the set is remembered', () => {
+test('in Actions an empty webhook fails the step, naming the secret, and a set whose post would only say all is well is remembered', () => {
   const r = run(every(), { GITHUB_ACTIONS: 'true', DISCORD_WEBHOOK: '' });
   assert.equal(r.status, 1);
-  assert.match(r.stderr, /^DISCORD_WEBHOOK is empty here: the repository secret is missing, so nothing was posted\. The set is remembered, so once the secret is set, a manual run posts the current set\.$/m);
+  assert.match(r.stderr, /^DISCORD_WEBHOOK is empty here: the repository secret is missing, so nothing was posted\. The post says only that all is well, so the set is remembered; once the secret is set, a forced manual run \(force is the default\) posts the current set\.$/m);
   assert.match(r.out, /^🟢 \*\*connectome-smoke\*\* — all lanes pass/, 'it prints what it would have posted');
-  assert.equal(r.output, 'remember=true\n', 'the next poll would find no webhook either');
+  assert.equal(r.output, 'remember=true\n', 'the next poll would find no webhook either, and its post would only say all is well');
   const some = run(every(['source']), { GITHUB_ACTIONS: 'true', DISCORD_WEBHOOK: '', LANES: 'source', FULL: 'false' });
   assert.equal(some.status, 1);
   assert.match(some.stderr, /^DISCORD_WEBHOOK is empty here: the repository secret is missing, so nothing was posted\.$/m, 'a run of some lanes remembers nothing, and says nothing of it');
   assert.equal(some.output, '');
+});
+
+test('in Actions an empty webhook leaves a set whose post reports a failure to a later poll, so it posts once the secret is set', () => {
+  const failing = every();
+  failing['source-floor'] = summary('source', 'fail');
+  // A lane job that didn't end in success, while every summary passed,
+  // makes a post that reports a failure too.
+  for (const [what, runs, env] of [['a failing run', failing, {}], ['a cancelled lane job', every(), { RESULT_SOURCE: 'cancelled' }]]) {
+    const r = run(runs, { GITHUB_ACTIONS: 'true', DISCORD_WEBHOOK: '', ...env });
+    assert.equal(r.status, 1, what);
+    assert.match(r.out, /^🔴 \*\*connectome-smoke\*\* — FAILURES/, what);
+    assert.match(r.stderr, /^DISCORD_WEBHOOK is empty here: the repository secret is missing, so nothing was posted\. The post reports a failure, so this run didn't remember the set: unless an earlier run did, a later poll runs it again and posts it once the secret is set\.$/m, what);
+    assert.equal(r.output, '', what);
+  }
 });
 
 test('a post the webhook takes is sent once, as the content it prints, and the set is remembered', async () => {
@@ -424,17 +502,41 @@ test('a post the webhook takes is sent once, as the content it prints, and the s
   assert.equal(r.output, 'remember=true\n');
 });
 
-test('a post the webhook refuses fails the step at once, naming the answer, and the set is remembered', async () => {
+test('a post the webhook refuses fails the step at once, naming the answer, and a set whose post would only say all is well is remembered', async () => {
   const refused = { status: 404, body: '{"message": "Unknown Webhook", "code": 10015}' };
   const r = await deliver([refused, 204]);
   assert.equal(r.status, 1);
   assert.equal(r.posts.length, 1, 'a refusal isn\'t tried again');
-  assert.match(r.stderr, /^discord webhook: refused: 404 \{"message": "Unknown Webhook", "code": 10015\}\. Trying again would be refused the same way, so the set is remembered; once that is fixed, a manual run posts the current set\.$/m);
-  assert.equal(r.output, 'remember=true\n', 'the next poll would be refused too');
+  assert.match(r.stderr, /^discord webhook: refused: 404 \{"message": "Unknown Webhook", "code": 10015\}\. Trying again would be refused the same way\. The post says only that all is well, so the set is remembered; once that is fixed, a forced manual run \(force is the default\) posts the current set\.$/m);
+  assert.equal(r.output, 'remember=true\n', 'the next poll would be refused too, and its post would only say all is well');
   const some = await deliver([refused], { LANES: 'source', FULL: 'false' }, every(['source']));
   assert.equal(some.status, 1);
   assert.match(some.stderr, /^discord webhook: refused: 404 .*\. Trying again would be refused the same way\.$/m, 'a run of some lanes remembers nothing, and says nothing of it');
   assert.equal(some.output, '');
+});
+
+test('a refused post that reports a failure leaves its set to a later poll, so it posts once the webhook works', async () => {
+  const runs = every();
+  runs['source-floor'] = summary('source', 'fail');
+  const r = await deliver([{ status: 404, body: '{"message": "Unknown Webhook", "code": 10015}' }], {}, runs);
+  assert.equal(r.status, 1);
+  assert.equal(r.posts.length, 1, 'a refusal isn\'t tried again');
+  assert.match(r.stderr, /^discord webhook: refused: 404 .*\. Trying again would be refused the same way\. The post reports a failure, so this run didn't remember the set: unless an earlier run did, a later poll runs it again and posts it once that is fixed\.$/m);
+  assert.equal(r.output, '');
+});
+
+test('400, 401, 403, 404 and 413 aren\'t tried again, and any other refusal is', async () => {
+  for (const status of [400, 401, 403, 404, 413]) {
+    const r = await deliver([status, 204]);
+    assert.equal(r.status, 1, `${status}`);
+    assert.equal(r.posts.length, 1, `${status} isn't tried again`);
+  }
+  for (const status of [408, 409, 422, 425]) {
+    const r = await deliver([status, 204]);
+    assert.equal(r.status, 0, `${status}: ${r.stderr}`);
+    assert.equal(r.posts.length, 2, `${status} is tried again`);
+    assert.equal(r.output, 'remember=true\n', `${status}: the post went out`);
+  }
 });
 
 test('a server error is tried again, and the post is delivered', async () => {
@@ -449,8 +551,10 @@ test('a rate limit is waited out as long as Discord says, then the post is deliv
   const r = await deliver([{ status: 429, body: '{"message": "You are being rate limited.", "retry_after": 1.5, "global": false}' }, 204]);
   assert.equal(r.status, 0, r.stderr);
   assert.equal(r.posts.length, 2);
+  // The upper bound catches a wait read in the wrong unit or ignored, with
+  // room for a loaded runner; the lower bound is the wait itself.
   const gap = r.posts[1].at - r.posts[0].at;
-  assert.ok(gap >= 1400 && gap < 2500, `the second try came ${gap} ms after the first`);
+  assert.ok(gap >= 1400 && gap < 10_000, `the second try came ${gap} ms after the first`);
   assert.equal(r.output, 'remember=true\n');
 });
 
@@ -462,9 +566,11 @@ test('a rate limit with no usable retry_after is waited a second, then two', asy
   assert.equal(r.status, 1);
   assert.equal(r.posts.length, 3);
   const [first, second] = [r.posts[1].at - r.posts[0].at, r.posts[2].at - r.posts[1].at];
-  assert.ok(first >= 900 && first < 1900, `the second try came ${first} ms after the first`);
-  assert.ok(second >= 1900, `the third try came ${second} ms after the second`);
-  assert.match(r.stderr, /^discord webhook: not delivered: 429 <html>Too Many Requests<\/html>; 429 \{"retry_after": -1\}; 429 <html>Too Many Requests<\/html>\. Nothing was remembered/m);
+  // Lower bounds are the waits; the upper bound leaves room for a loaded
+  // runner and still catches a wait read in the wrong unit.
+  assert.ok(first >= 900 && first < 10_000, `the second try came ${first} ms after the first`);
+  assert.ok(second >= 1900 && second < 10_000, `the third try came ${second} ms after the second`);
+  assert.match(r.stderr, /^discord webhook: not delivered: 429 <html>Too Many Requests<\/html>; 429 \{"retry_after": -1\}; 429 <html>Too Many Requests<\/html>\. This run remembered nothing/m);
   assert.equal(r.output, '');
 });
 
@@ -472,7 +578,7 @@ test('a rate limit longer than five minutes fails the step without waiting it ou
   const r = await deliver([{ status: 429, body: '{"retry_after": 3600}' }, 204]);
   assert.equal(r.status, 1);
   assert.equal(r.posts.length, 1);
-  assert.match(r.stderr, /not delivered: 429 \{"retry_after": 3600\}; Discord asked for a wait of 3600s, longer than 300s\. Nothing was remembered, so a later poll runs the set again and tries the post again\.$/m);
+  assert.match(r.stderr, /not delivered: 429 \{"retry_after": 3600\}; Discord asked for a wait of 3600s, longer than 300s\. This run remembered nothing, so unless an earlier run remembered the set, a later poll runs it again and tries the post again\.$/m);
   assert.equal(r.output, '');
 });
 
@@ -481,26 +587,37 @@ test('three passing refusals fail the step, naming each, and leave the set to a 
   const r = await deliver([limited, limited, limited, 204]);
   assert.equal(r.status, 1);
   assert.equal(r.posts.length, 3, 'three tries in all');
-  assert.match(r.stderr, /not delivered: 429 \{"retry_after": 0\.01\}; 429 \{"retry_after": 0\.01\}; 429 \{"retry_after": 0\.01\}\. Nothing was remembered/m);
+  assert.match(r.stderr, /not delivered: 429 \{"retry_after": 0\.01\}; 429 \{"retry_after": 0\.01\}; 429 \{"retry_after": 0\.01\}\. This run remembered nothing/m);
   assert.equal(r.output, '');
 });
 
 test('a post that gets no answer is tried three times, fails the step, and leaves the set to a later poll', async () => {
   const r = await deliver(null);
   assert.equal(r.status, 1);
-  assert.match(r.stderr, /not delivered: no answer \(ECONNREFUSED\); no answer \(ECONNREFUSED\); no answer \(ECONNREFUSED\)\. Nothing was remembered/m);
+  assert.match(r.stderr, /not delivered: no answer \(ECONNREFUSED\); no answer \(ECONNREFUSED\); no answer \(ECONNREFUSED\)\. This run remembered nothing/m);
   assert.equal(r.output, '');
+});
+
+test('a delivered post is sent once, even when what follows it fails', async () => {
+  // $GITHUB_OUTPUT in a folder that isn't there: writing the memory throws
+  // after the webhook took the post.
+  const r = await deliver([204, 204, 204], { GITHUB_OUTPUT: join(tmpdir(), 'notify-test-no-such-folder', 'github-output') });
+  assert.equal(r.posts.length, 1, 'the post isn\'t sent again');
+  assert.notEqual(r.status, 0, 'the step fails');
+  assert.match(r.stderr, /ENOENT/, 'naming the write that failed');
+  assert.doesNotMatch(r.stderr, /not delivered/);
 });
 
 test('a cut that splits an emoji in two leaves the post well-formed', async () => {
   // A failure line whose 299th character is the first half of an emoji, so
-  // the 300-character cap keeps that half alone.
+  // the 300-character cap keeps that half alone. Its run's runtime marks it
+  // outside the cap.
   const detail = `${'e'.repeat(298 - '✗ step 1 — '.length)}🟢 and more`;
   const r = await deliver([204], {}, { ...every(), 'source-floor': summary('source', 'fail', { detail }) });
   assert.equal(r.status, 0, r.stderr);
   const { content } = JSON.parse(r.posts[0].body);
-  const line = content.split('\n').find((l) => l.startsWith('✗ step 1 — e'));
-  assert.equal(line.length, 300);
+  const line = content.split('\n').find((l) => l.startsWith('floor: ✗ step 1 — e'));
+  assert.equal(line.length, 'floor: '.length + 300);
   assert.equal(line.at(-2), '\uFFFD', 'the half is replaced');
   assert.ok(content.isWellFormed(), 'what the webhook got is well-formed');
 });

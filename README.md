@@ -5,10 +5,12 @@ npm installs from nothing, builds, boots, and takes a turn — plus a
 separate lane for the repos' `main` branches laid out the way fleet boxes
 deploy them.
 
-Runs on GitHub Actions: every 30 minutes it polls the registry and runs
-when the set of published versions changed (debounced, so a cascading
-release membrane → cm → af → host is tested once, settled), or on demand.
-Results go to `#connectome-ops` (Discord webhook) and the run's job summary.
+Runs on GitHub Actions: every 30 minutes it polls the registry and the
+source mains, and runs when the set it would test changed (the published
+versions, the mains' heads, or this workflow's commit; debounced, so a
+cascading release membrane → cm → af → host is tested once, settled), or
+on demand. Results go to `#connectome-ops` (Discord webhook) and the run's
+job summary.
 Each lane runs on three runtimes: Node 22.12.0 with Bun 1.4.3, the floors the
 stack's packages are moving to; the newest Node 24 with the newest Bun; and
 the newest Node with the newest Bun.
@@ -21,8 +23,9 @@ the newest Node with the newest Bun.
 | `latest` | same, with every `@animalabs/*` forced to its `latest` dist-tag via npm overrides — "is newest-of-everything coherent?" |
 | `source` | clone `main` of voice-kit, mcpl-core-ts, membrane, context-manager, agent-framework, connectome-host, heartbeat-mcpl, discord-mcpl, portal (protocol/client/mcpl/relay); per repo: strict `npm ci` → build → typecheck → test, in `file:`-link order (voice-kit before discord-mcpl and portal-relay). Then compose host@main + membrane/cm/af@main into one tree (nested copies removed, single symlink root; chronicle from npm — Rust) — typecheck the host against the sibling mains and boot it twice. |
 
-Every lane leaves `report.json`, `summary.md`, the host's output and the full
-IPC event stream as artifacts.
+Every run, a lane on one runtime, leaves `report-<lane>-<runtime>.json`,
+`summary-<lane>-<runtime>.md`, the host's output and the full IPC event
+stream as artifacts.
 
 ## Run locally
 
@@ -55,10 +58,17 @@ Exit 0 = pass.
   when the newest publish is younger than `DEBOUNCE_MINUTES` (20). A set is
   remembered once a run of every lane had every lane's summary on every
   runtime reach the report, whether they pass or not, and its post went
-  out, or can't until someone acts (no webhook, or a refusal the next poll
-  would meet too). A run whose summary never arrived, or a post that
+  out. A set whose post would only say all is well (every run passed, and
+  nothing else went wrong) is also remembered when its post can't go out
+  until someone acts (no webhook, or a refusal the next poll would meet
+  too); one whose post reports a failure, a lane job that didn't end in
+  success included, isn't, so a later poll runs it again and posts it once
+  the webhook works. A run whose summary never arrived, or a post that
   didn't go out for a passing reason (no answer, a rate limit, a server
-  error), leaves the set to the next poll. A registry lookup that fails
+  error), leaves the set to the next poll too. A later poll runs a set only
+  if no earlier run remembered it: the workflow can't replace or delete a
+  cache entry, so a forced manual run of a set already remembered leaves
+  it remembered, whatever that run finds. A registry lookup that fails
   stops the poll, or the manual run, before anything runs, and the next
   poll asks again; a stopped poll posts nothing to Discord and shows only
   as a failed run, with the reason in its log.

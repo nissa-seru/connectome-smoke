@@ -272,17 +272,21 @@ jobs:
         run: node scripts/notify.mjs evidence
       # Remember this set as tested when notify.mjs says so, in its remember
       # output: a run of every lane had a result from every requested run, a
-      # summary passing or failing, and the post went out or can't until
-      # someone acts (no webhook, or a refusal the next poll would meet too).
-      # A post that didn't go out for a passing reason, a run whose summary
-      # never reached the report (cut off or cancelled before it wrote one, a
-      # setup step that failed, or its evidence not uploaded or downloaded),
-      # a run of some lanes, and a report that stopped before the post
-      # settled all leave the set to the next poll, which can do better. A
+      # summary passing or failing, and the post went out; or the post would
+      # only say all is well and can't go out until someone acts (no
+      # webhook, or a refusal the next poll would meet too). A post that
+      # reports a failure and didn't go out, a post that didn't go out for a
+      # passing reason, a run whose summary never reached the report (cut
+      # off or cancelled before it wrote one, a setup step that failed, or
+      # its evidence not uploaded or downloaded), a run of some lanes, and a
+      # report that stopped before the post settled all leave the set to the
+      # next poll, which can do better, unless an earlier run remembered it:
+      # a cache entry can't be replaced, and this workflow can't delete one,
+      # so a forced manual run of a remembered set leaves it remembered. A
       # lane job that ends other than in success after its runs' summaries
       # arrived turns the post red, but leaves no run without a result. So a
-      # fault that stops a run every time reruns every lane and posts at each
-      # poll, naming that run, until it's fixed.
+      # fault that stops a run every time reruns every lane and posts at
+      # each poll, naming that run, until it's fixed.
       - name: Mark set as tested
         id: mark
         if: always() && steps.post.outputs.remember == 'true'

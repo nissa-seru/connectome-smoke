@@ -85,7 +85,7 @@ test('a failed lookup fails, naming the package with npm\'s reason, and gives no
   assert.equal(r.stdout, '');
   assert.match(r.stderr, /^manifest: the registry lookup failed for @animalabs\/membrane \(E404: Not Found - GET https:\/\/registry\.npmjs\.org\/@animalabs%2fmembrane - Not found\)\. /);
   assert.match(r.stderr, /this run stops here, and the next poll asks again/);
-  assert.match(r.stderr, /A package that answers E404 at every poll can't be had under that name from this registry \(unpublished, renamed or private\): correct it, or take it out, in scripts\/manifest\.mjs's PACKAGES and in lanes\/published\.mjs's STACK if it's there too\.$/m);
+  assert.match(r.stderr, /A package that answers E404 at every poll can't be had under that name from this registry \(unpublished, renamed or private\): correct it, or take it out, in scripts\/manifest\.mjs's PACKAGES and wherever lanes\/published\.mjs names it\.$/m);
   assert.doesNotMatch(r.stderr, /^npm error/m, 'npm\'s own lines are taken into the reason, not printed beside it');
 });
 

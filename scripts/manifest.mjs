@@ -62,7 +62,7 @@ for (const p of PACKAGES) {
 }
 if (failed.length) {
   const notServed = failed.some(([, why]) => why.startsWith('E404'))
-    ? " A package that answers E404 at every poll can't be had under that name from this registry (unpublished, renamed or private): correct it, or take it out, in scripts/manifest.mjs's PACKAGES and in lanes/published.mjs's STACK if it's there too."
+    ? " A package that answers E404 at every poll can't be had under that name from this registry (unpublished, renamed or private): correct it, or take it out, in scripts/manifest.mjs's PACKAGES and wherever lanes/published.mjs names it."
     : '';
   console.error(`manifest: the registry lookup failed for ${failed.map(([p, why]) => `${p} (${why})`).join('; ')}. No set was hashed, so this run stops here, and the next poll asks again.${notServed}`);
   process.exit(1);
