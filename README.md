@@ -23,7 +23,7 @@ IPC event stream as artifacts.
 
 ## Run locally
 
-Needs node ≥ 20, npm, bun (the host runs under bun), git.
+Needs node ≥ 20, npm, bun ≥ 1.4.3 (the host runs under bun, and its `main` declares 1.4.3 as the floor), git.
 
 ```sh
 node lanes/published.mjs                       # consumer view
