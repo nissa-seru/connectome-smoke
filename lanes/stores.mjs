@@ -13,8 +13,9 @@
  *   options: --fixtures <dir> (default fixtures/stores), --only <v1,v2>, --workdir <dir>, --keep,
  *            --report <file>, --summary <file>
  *
- * Exit 0 pass / 1 a fixture's boot failed / 2 couldn't run (a fixture unreadable, or no
- * fixtures, or the host couldn't be installed).
+ * Exit 0 pass / 1 a fixture's boot failed / 2 couldn't run (a fixture unreadable, no
+ * fixtures, an --only that names none or a name with none, or the host couldn't be
+ * installed).
  */
 import { mkdtempSync, writeFileSync, rmSync, mkdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -24,10 +25,12 @@ import { makeReport, sh, finish, parseArgs } from '../lib/common.mjs';
 import { checkStores, listFixtures, resolvedVersions } from '../lib/stores.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const { opt, flag } = parseArgs(process.argv.slice(2));
+const ARGS = process.argv.slice(2);
+const { opt, flag } = parseArgs(ARGS);
 const WORK = opt('workdir') ? resolve(opt('workdir')) : mkdtempSync(join(tmpdir(), 'connectome-smoke-stores-'));
 const FIXTURES = resolve(opt('fixtures', join(ROOT, 'fixtures', 'stores')));
-const ONLY = opt('only') ? opt('only').split(',').map((s) => s.trim()).filter(Boolean) : null;
+// Given at all, --only must name fixtures: with no value, or only separators, it names none.
+const ONLY = ARGS.includes('--only') ? String(opt('only') ?? '').split(',').map((s) => s.trim()).filter(Boolean) : null;
 const KEEP = flag('keep');
 
 const { report, step, log, t0 } = makeReport('stores', { workdir: WORK, fixtures: FIXTURES, resolved: {}, stores: [] });
@@ -35,6 +38,14 @@ const { report, step, log, t0 } = makeReport('stores', { workdir: WORK, fixtures
 (async () => {
   mkdirSync(WORK, { recursive: true });
   log(`workdir ${WORK}`);
+  // Before any install: no fixtures, or an --only that names none or a name with none, can't run.
+  const fixtures = listFixtures(FIXTURES).map((f) => f.version);
+  const unknown = (ONLY ?? []).filter((v) => !fixtures.includes(v));
+  if (!fixtures.length || unknown.length || ONLY?.length === 0) {
+    report.fatal = !fixtures.length ? 'no fixtures'
+      : `--only names ${unknown.length ? `${unknown.join(', ')}, which has no fixture` : 'no fixture'} under ${FIXTURES} (it has ${fixtures.join(', ')})`;
+    log(`FATAL: ${report.fatal}${fixtures.length ? '' : ` under ${FIXTURES}`}`); report.exitCode = 2; return done();
+  }
   let hostDir = opt('host-dir') ? resolve(opt('host-dir')) : null;
   let heartbeatEntry = opt('heartbeat') ? resolve(opt('heartbeat')) : null;
   if (!hostDir) {
@@ -53,8 +64,9 @@ const { report, step, log, t0 } = makeReport('stores', { workdir: WORK, fixtures
   } else if (!heartbeatEntry) {
     log('FATAL: --host-dir needs --heartbeat <heartbeat-mcpl entry>'); report.exitCode = 2; return done();
   }
-  if (!listFixtures(FIXTURES).length) { log(`FATAL: no fixtures under ${FIXTURES}`); report.fatal = 'no fixtures'; report.exitCode = 2; return done(); }
-  report.stores = await checkStores({ step, hostDir, heartbeatEntry, work: WORK, fixturesDir: FIXTURES, only: ONLY });
+  // Each result without the request it recorded, which only the cache-write lane reads.
+  report.stores = (await checkStores({ step, hostDir, heartbeatEntry, work: WORK, fixturesDir: FIXTURES, only: ONLY }))
+    .map(({ sent, ...result }) => result);
   const broke = report.stores.filter((s) => !s.ok && !s.couldNotRun);
   const couldNot = report.stores.filter((s) => s.couldNotRun);
   if (!broke.length && couldNot.length) report.exitCode = 2;

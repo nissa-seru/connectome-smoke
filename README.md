@@ -18,6 +18,7 @@ Results go to `#connectome-ops` (Discord webhook) and the run's job summary.
 | `latest` | same, with every `@animalabs/*` forced to its `latest` dist-tag via npm overrides — "is newest-of-everything coherent?" |
 | `source` | clone `main` of voice-kit, mcpl-core-ts, membrane, context-manager, agent-framework, connectome-host, mcpl-harness, heartbeat-mcpl, discord-mcpl, portal (protocol/client/mcpl/relay); per package, in its own install: strict `npm ci` → build → typecheck → test, in `file:`-link order (voice-kit before discord-mcpl and portal-relay), and the host booted twice. Then compose every stack package into one tree (a single `@animalabs` symlink root, nested copies removed; chronicle from npm — Rust), prove under node and bun that every package resolves its stack dependencies to the checkouts, and build, typecheck and test every package with a stack dependency there; typecheck, test and boot the host there, then boot it on each stored fixture (below). With `--change`, one repository is at its change merged onto `main` (see below). |
 | `stores` | the host — a published release, or one already built with `--host-dir` — boots on a **copy of each store an earlier host release wrote** (`fixtures/stores/<version>/`) and takes a turn. The anthropic provider runs against a local stand-in that records each request, and a fixture passes only if the request carries both of the fixture's stored turns and the heartbeat tools: proof the old history was read, not just opened. |
+| `cache-write` | whether a resident stepping from one host release to another would have its **prompt cache written again**. It installs the base (`--base`, default `latest`) and the candidate (`--candidate`, a spec or a packed release) as a consumer would, each as npm's `before` filter takes the lane's start, or the base as it takes `--base-before`. It runs the `stores` check on every fixture under the base twice and the candidate once, with the base's heartbeat-mcpl for both, and compares what each request carries before the turn's first message: the model, the tools, the system prompt, the request's settings (such as `tool_choice`, `thinking`, `output_config` and `speed`, and any the API adds, with their keys sorted; not `max_tokens`, `stream`, `metadata` or sampling, which shape only the answer), the earlier messages, key order included, whether its messages hold an image or anything with citations on, the cache markers, apart from the rest, and its API version and betas. Its cache line names each reach the differences have, by the API's caching guide (a change of model reaches the whole cache by the check's own rule, since a cache is kept per model), in the request's order, with up to two of the places that have it and how many more; each fixture's step names every place, each changed tool among them. A fixture that differs only where the guide doesn't place is one it can't tell for. It prints the line before its report path and result lines, and the summary carries it after its headline. The base's second run is a control: where it differs from the first anywhere, that fixture's verdict is `noise`, and the lane can't tell. Noise means something in the request changes between two runs of the same release, so find what before running again. |
 
 Every lane leaves `report.json`, `summary.md`, the host's output and the full
 IPC event stream as artifacts.
@@ -33,12 +34,42 @@ node lanes/source.mjs                          # mains, ~10 min
 node lanes/source.mjs --change connectome-host=pull/231 --out out/   # one PR merged onto main
 node lanes/stores.mjs                          # latest host on every stored fixture
 node lanes/stores.mjs --host-dir <host checkout> --heartbeat <heartbeat-mcpl entry>
+node lanes/cache-write.mjs --candidate <packed release .tgz>   # against latest; --base, --base-before
 node scripts/capture-store.mjs --version 0.9.0 # add one release's fixture
 ```
 
 Options: `--workdir DIR` (default: a temp dir, deleted on pass unless
-`--keep`; the source lane never deletes it), `--report FILE`, `--summary FILE`, `--host @animalabs/connectome-host@<spec>`.
-Exit 0 = pass. The source lane's own options and exit codes are below.
+`--keep`; the source lane never deletes it, and `cache-write` keeps the default
+one's report and summary on a pass and all of it otherwise, as evidence for its
+failing steps: remove it when you're done; given a directory, `cache-write` makes
+its own inside it and deletes nothing there), `--report FILE`, `--summary FILE`, and for the `stores` and `published`
+lanes `--host @animalabs/connectome-host@<spec>`.
+Exit 0 = pass. The source lane's own options and exit codes are below. The
+`cache-write` lane exits 1 when any fixture shows a write, whatever the others
+show; else 0 when every fixture's requests are the same; else 2, when it can't
+tell.
+
+**What the cache check can't see:** it covers one recipe: claude-sonnet-4-5 on
+the anthropic provider with its default formatter, heartbeat-mcpl as the only
+MCPL server, and subagents, lessons, retrieval, wake and workspace off. A
+resident on another model or formatter, with other servers or with those
+modules on, is covered only if a fixture runs its recipe. Both releases run
+with the base's heartbeat-mcpl, so what a heartbeat-mcpl release of its own
+changes isn't measured. So its line reads "none found in the fixtures'
+requests", not "no resident's cache is rewritten". Both releases are
+installed as of the lane's start, by npm's `before` filter, which takes only
+versions published by then and reads dist-tags as they stand now. So it measures
+what the host release changes, not what a resident's older dependencies would;
+`--base-before` installs the base as that filter takes an earlier time. The
+caching guide doesn't place the request's API version or betas, or a setting it
+doesn't name, and the line says so for a difference there. A web search toggle
+shows as a tools change, which the line gives the whole cache, wider than the
+guide's system prompt and messages. A cache marker that moves, appears, goes or
+changes its TTL, and an effort given on one side only, are differences it can't
+tell for: the marker that ended an entry isn't in that entry's hash, as the
+guide's lookback example shows, and what moving any marker costs depends on where
+earlier requests wrote; and an effort set to the model's default writes nothing,
+by the guide, a default the check doesn't know.
 
 ## Checking a change before it merges (source lane)
 
