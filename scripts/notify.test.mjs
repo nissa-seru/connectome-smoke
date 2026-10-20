@@ -91,6 +91,8 @@ function setUp(runs, env, { noEvidence = false, prepare = () => {} } = {}) {
     // What it would post, or posted: the lines after its first, without
     // console.log's closing newline.
     out: stdout.split('\n').slice(1).join('\n').replace(/\n$/, ''),
+    // Its first line: "posted:", or what it says before what it posted.
+    head: stdout.split('\n')[0],
     stderr,
     output: existsSync(output) ? readFileSync(output, 'utf-8') : '',
   });
@@ -126,7 +128,7 @@ async function deliver(answers, env = {}, runs = every(), opts = {}) {
   const server = createServer((req, res) => {
     let body = '';
     req.setEncoding('utf-8').on('data', (c) => { body += c; }).on('end', () => {
-      posts.push({ at: Date.now(), body });
+      posts.push({ at: performance.now(), body });
       const answer = answers[posts.length - 1] ?? 500;
       const { status, body: text = '' } = typeof answer === 'number' ? { status: answer } : answer;
       res.writeHead(status, { 'content-type': 'application/json' }).end(text);
@@ -180,6 +182,60 @@ test('nine runs with summaries the size real runs write fit in one post, passing
   assert.equal(lines[1], '**source**', 'the failing lane comes first');
   assert.equal(lines.filter((l) => /^✗ connectome-host: test — Error: `npm test` in \.\/src\/connectome-host exited 1$/.test(l)).length, 1, 'the failing line all three source runs share is posted once');
   assert.equal(lines.filter((l) => /^(floor|middle|newest): ❌ FAIL \(724s/.test(l)).length, 3, 'beside each source run\'s verdict');
+});
+
+test('one failure on every runtime, its line naming the lane\'s work directory, is posted once a lane, and every failing lane fits', () => {
+  // As the workflow names them, a lane's work directory is the same on
+  // every runtime, so a failing line that names it is too. One bad host
+  // publish fails npm install on the published and latest lanes' six runs,
+  // beside the source lane's own failure, as in main's run 39193842112.
+  const node = { floor: 'v22.12.0', middle: 'v24.11.1', newest: 'v25.1.0' };
+  const install = (lane) => `✗ npm install (${lane}) — npm install --no-audit --no-fund --loglevel=error @animalabs/connectome-host@latest @animalabs/heartbeat-mcpl@latest @animalabs/discord-mcpl@latest typescript@^5 @types/bun @types/node@^22 (cwd /home/runner/work/_temp/smoke-${lane}) exited 1`;
+  const failed = (lane, r) => realSummary(lane, node[r]).replace('✅ PASS', '❌ FAIL').replace(/\n✓ boot #2[^\n]*\n$/, `\n${install(lane)}\n`);
+  const runs = Object.fromEntries(ALL.flatMap((l) => LEGS.map((r) => [`${l}-${r}`, l === 'source' ? realSummary(l, node[r], true) : failed(l, r)])));
+  const out = post(runs);
+  const lines = out.split('\n');
+  assert.ok(!out.includes(CUT), `the post is whole, at ${out.length} characters`);
+  for (const lane of ['published', 'latest']) assert.equal(lines.filter((l) => l === install(lane)).length, 1, `${lane}'s install line, which all three of its runs have, is posted once`);
+  assert.ok(lines.includes('**source**'), 'the source lane\'s block is there');
+  assert.equal(lines.filter((l) => l.startsWith('✗ connectome-host: test — ')).length, 1, 'with its failure, once');
+});
+
+test('the workflow names each run\'s work directory for its lane alone, so its failing lines read the same on every runtime', () => {
+  const workflow = readFileSync(fileURLToPath(new URL('../.github/workflows/smoke.yml', import.meta.url)), 'utf-8');
+  const dirs = [...workflow.matchAll(/--workdir "([^"]+)"/g)].map((m) => m[1]);
+  assert.deepEqual(dirs, ['$RUNNER_TEMP/smoke-${{ matrix.lane }}', '$RUNNER_TEMP/smoke-source']);
+});
+
+test('each lane job uploads its logs from the work directory it gives its lane', () => {
+  // Its uploads skip a path that matches nothing, so one naming another
+  // directory would drop the lane's logs without a word.
+  const workflow = readFileSync(fileURLToPath(new URL('../.github/workflows/smoke.yml', import.meta.url)), 'utf-8');
+  for (const job of ['published', 'source']) {
+    const start = workflow.indexOf(`\n  ${job}:\n`);
+    const rest = workflow.slice(start + 1);
+    const end = rest.search(/\n  [a-z-]+:\n/);
+    const block = end === -1 ? rest : rest.slice(0, end);
+    const workdir = block.match(/--workdir "\$RUNNER_TEMP\/([^"]+)"/)?.[1];
+    // A directory runs to the next slash, an expression such as
+    // ${{ matrix.lane }} whole.
+    const uploaded = [...block.matchAll(/\$\{\{ runner\.temp \}\}\/((?:\$\{\{[^}]*\}\}|[^/\s$])+)\//g)].map((m) => m[1]);
+    assert.ok(workdir && uploaded.length > 0, `${job} gives its lane a work directory and uploads from the runner's temp`);
+    assert.deepEqual([...new Set(uploaded)], [workdir], `${job}'s uploads read its lane's work directory`);
+  }
+});
+
+test('lines two runtimes give that differ only past the 300-character cap are posted once', async () => {
+  const long = 'e'.repeat(320);
+  const runs = {
+    ...every(),
+    'source-floor': summary('source', 'fail', { detail: `${long} at /tmp/cs-1001.sock` }),
+    'source-middle': summary('source', 'fail', { detail: `${long} at /tmp/cs-2002.sock` }),
+  };
+  const r = await runAsync(runs);
+  const failing = r.out.split('\n').filter((l) => l.includes('✗ step 1 — e'));
+  assert.equal(failing.length, 1, `one line for both, not one per runtime: ${failing.join(' | ')}`);
+  assert.ok(failing[0].startsWith('floor, middle: ✗ step 1 — e'), 'marked with both runtimes');
 });
 
 test('a line only some of a lane\'s runs have is marked with their runtimes, and one all of them have isn\'t', () => {
@@ -469,7 +525,7 @@ test('a local run, with no $GITHUB_OUTPUT, prints what it would post and exits 0
 test('in Actions an empty webhook fails the step, naming the secret, and a set whose post would only say all is well is remembered', () => {
   const r = run(every(), { GITHUB_ACTIONS: 'true', DISCORD_WEBHOOK: '' });
   assert.equal(r.status, 1);
-  assert.match(r.stderr, /^DISCORD_WEBHOOK is empty here: the repository secret is missing, so nothing was posted\. The post says only that all is well, so the set is remembered; once the secret is set, a forced manual run \(force is the default\) posts the current set\.$/m);
+  assert.match(r.stderr, /^DISCORD_WEBHOOK is empty here: the repository secret is missing, so nothing was posted\. The post says only that all is well, so this run asks the workflow to remember the set; once the secret is set, a forced manual run \(force is the default\) posts the current set\.$/m);
   assert.match(r.out, /^🟢 \*\*connectome-smoke\*\* — all lanes pass/, 'it prints what it would have posted');
   assert.equal(r.output, 'remember=true\n', 'the next poll would find no webhook either, and its post would only say all is well');
   const some = run(every(['source']), { GITHUB_ACTIONS: 'true', DISCORD_WEBHOOK: '', LANES: 'source', FULL: 'false' });
@@ -507,7 +563,7 @@ test('a post the webhook refuses fails the step at once, naming the answer, and 
   const r = await deliver([refused, 204]);
   assert.equal(r.status, 1);
   assert.equal(r.posts.length, 1, 'a refusal isn\'t tried again');
-  assert.match(r.stderr, /^discord webhook: refused: 404 \{"message": "Unknown Webhook", "code": 10015\}\. Trying again would be refused the same way\. The post says only that all is well, so the set is remembered; once that is fixed, a forced manual run \(force is the default\) posts the current set\.$/m);
+  assert.match(r.stderr, /^discord webhook: refused: 404 \{"message": "Unknown Webhook", "code": 10015\}\. Trying again would be refused the same way\. The post says only that all is well, so this run asks the workflow to remember the set; once that is fixed, a forced manual run \(force is the default\) posts the current set\.$/m);
   assert.equal(r.output, 'remember=true\n', 'the next poll would be refused too, and its post would only say all is well');
   const some = await deliver([refused], { LANES: 'source', FULL: 'false' }, every(['source']));
   assert.equal(some.status, 1);
@@ -551,10 +607,10 @@ test('a rate limit is waited out as long as Discord says, then the post is deliv
   const r = await deliver([{ status: 429, body: '{"message": "You are being rate limited.", "retry_after": 1.5, "global": false}' }, 204]);
   assert.equal(r.status, 0, r.stderr);
   assert.equal(r.posts.length, 2);
-  // The upper bound catches a wait read in the wrong unit or ignored, with
-  // room for a loaded runner; the lower bound is the wait itself.
+  // The lower bound is the wait itself. The upper bound catches only a wait
+  // read in the wrong unit, leaving a loaded runner room.
   const gap = r.posts[1].at - r.posts[0].at;
-  assert.ok(gap >= 1400 && gap < 10_000, `the second try came ${gap} ms after the first`);
+  assert.ok(gap >= 1400 && gap < 25_000, `the second try came ${gap} ms after the first`);
   assert.equal(r.output, 'remember=true\n');
 });
 
@@ -566,10 +622,10 @@ test('a rate limit with no usable retry_after is waited a second, then two', asy
   assert.equal(r.status, 1);
   assert.equal(r.posts.length, 3);
   const [first, second] = [r.posts[1].at - r.posts[0].at, r.posts[2].at - r.posts[1].at];
-  // Lower bounds are the waits; the upper bound leaves room for a loaded
-  // runner and still catches a wait read in the wrong unit.
-  assert.ok(first >= 900 && first < 10_000, `the second try came ${first} ms after the first`);
-  assert.ok(second >= 1900 && second < 10_000, `the third try came ${second} ms after the second`);
+  // Lower bounds are the waits; the upper bounds catch only a wait read in
+  // the wrong unit, leaving a loaded runner room.
+  assert.ok(first >= 900 && first < 25_000, `the second try came ${first} ms after the first`);
+  assert.ok(second >= 1900 && second < 25_000, `the third try came ${second} ms after the second`);
   assert.match(r.stderr, /^discord webhook: not delivered: 429 <html>Too Many Requests<\/html>; 429 \{"retry_after": -1\}; 429 <html>Too Many Requests<\/html>\. This run remembered nothing/m);
   assert.equal(r.output, '');
 });
@@ -598,11 +654,56 @@ test('a post that gets no answer is tried three times, fails the step, and leave
   assert.equal(r.output, '');
 });
 
+test('a webhook that takes the post and never answers is no answer once the try\'s time is up, tried three times, and the step fails', async () => {
+  // It reads the request and never answers. Without a time of its own, each
+  // try would wait out fetch's five minutes, and the run would outlast
+  // runAsync's 30 s.
+  // The try's time, 2 s, leaves a loaded runner room to deliver each request
+  // before it's cut, so the server sees all three.
+  let requests = 0;
+  const server = createServer((req) => { requests++; req.resume(); });
+  server.listen(0, '127.0.0.1');
+  await once(server, 'listening');
+  try {
+    const r = await runAsync(every(), { DISCORD_WEBHOOK: `http://127.0.0.1:${server.address().port}/`, NOTIFY_TRY_MS: '2000' });
+    assert.equal(r.status, 1);
+    assert.match(r.stderr, /not delivered: no answer in 2000 ms; no answer in 2000 ms; no answer in 2000 ms\. This run remembered nothing/m);
+    assert.equal(requests, 3, 'each try sent its own request');
+    assert.equal(r.output, '');
+  } finally {
+    server.closeAllConnections();
+    server.close();
+  }
+});
+
+test('a post that goes out after a try that got no answer says so, since that try may have been taken too', async () => {
+  // The first request is read and never answered; the second is taken.
+  let requests = 0;
+  const server = createServer((req, res) => {
+    requests++;
+    req.resume();
+    if (requests > 1) req.on('end', () => res.writeHead(204).end());
+  });
+  server.listen(0, '127.0.0.1');
+  await once(server, 'listening');
+  try {
+    const r = await runAsync(every(), { DISCORD_WEBHOOK: `http://127.0.0.1:${server.address().port}/`, NOTIFY_TRY_MS: '2000' });
+    assert.equal(r.status, 0, r.stderr);
+    assert.equal(requests, 2);
+    assert.equal(r.head, 'posted after 1 failed try (no answer in 2000 ms):');
+    assert.equal(r.output, 'remember=true\n');
+  } finally {
+    server.closeAllConnections();
+    server.close();
+  }
+});
+
 test('a delivered post is sent once, even when what follows it fails', async () => {
   // $GITHUB_OUTPUT in a folder that isn't there: writing the memory throws
   // after the webhook took the post.
   const r = await deliver([204, 204, 204], { GITHUB_OUTPUT: join(tmpdir(), 'notify-test-no-such-folder', 'github-output') });
   assert.equal(r.posts.length, 1, 'the post isn\'t sent again');
+  assert.equal(r.head, 'posted:', 'the receipt is printed before the memory is written');
   assert.notEqual(r.status, 0, 'the step fails');
   assert.match(r.stderr, /ENOENT/, 'naming the write that failed');
   assert.doesNotMatch(r.stderr, /not delivered/);

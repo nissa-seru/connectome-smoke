@@ -42,8 +42,9 @@ Options: `--workdir DIR` (default: a temp dir, deleted on pass unless
 `--keep`), `--report FILE`, `--summary FILE`, `--host @animalabs/connectome-host@<spec>`.
 Exit 0 = pass.
 
-`npm test` runs the tests of the notifier and the registry manifest, as the
-*unit tests* workflow does on every push to `main` and every pull request.
+`npm test` runs the tests of the notifier, the registry manifest and the
+lanes' shared helpers, as the *unit tests* workflow does on every push to
+`main` and every pull request.
 
 ## Triggering
 
@@ -62,13 +63,17 @@ Exit 0 = pass.
   nothing else went wrong) is also remembered when its post can't go out
   until someone acts (no webhook, or a refusal the next poll would meet
   too); one whose post reports a failure, a lane job that didn't end in
-  success included, isn't, so a later poll runs it again and posts it once
-  the webhook works. A run whose summary never arrived, or a post that
-  didn't go out for a passing reason (no answer, a rate limit, a server
-  error), leaves the set to the next poll too. A later poll runs a set only
-  if no earlier run remembered it: the workflow can't replace or delete a
-  cache entry, so a forced manual run of a set already remembered leaves
-  it remembered, whatever that run finds. A registry lookup that fails
+  success included, is remembered only once that post goes out, so until
+  then a later poll runs it again and posts it once the webhook works. A
+  run whose summary never arrived, or a post that didn't go out for a
+  passing reason (no answer, a rate limit, a server error), leaves the set
+  to the next poll too. A later poll skips a set only while the cache
+  holds a marker it can read, one a run on the default branch saved and
+  not yet evicted. The workflow can't replace or delete a cache entry, so
+  a forced manual run of a set already remembered leaves it remembered,
+  whatever that run finds. Remembering is best-effort: a cache save that
+  fails doesn't fail the run, so a set whose post went out can run and
+  post again at the next poll. A registry lookup that fails
   stops the poll, or the manual run, before anything runs, and the next
   poll asks again; a stopped poll posts nothing to Discord and shows only
   as a failed run, with the reason in its log.

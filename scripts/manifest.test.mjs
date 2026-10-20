@@ -85,7 +85,7 @@ test('a failed lookup fails, naming the package with npm\'s reason, and gives no
   assert.equal(r.stdout, '');
   assert.match(r.stderr, /^manifest: the registry lookup failed for @animalabs\/membrane \(E404: Not Found - GET https:\/\/registry\.npmjs\.org\/@animalabs%2fmembrane - Not found\)\. /);
   assert.match(r.stderr, /this run stops here, and the next poll asks again/);
-  assert.match(r.stderr, /A package that answers E404 at every poll can't be had under that name from this registry \(unpublished, renamed or private\): correct it, or take it out, in scripts\/manifest\.mjs's PACKAGES and wherever lanes\/published\.mjs names it\.$/m);
+  assert.match(r.stderr, /A package that answers E404 at every poll can't be had under that name from this registry \(unpublished, renamed or private\): correct it, or take it out of scripts\/manifest\.mjs's PACKAGES and wherever the lanes and lib\/common\.mjs's boot exercise use it\.$/m);
   assert.doesNotMatch(r.stderr, /^npm error/m, 'npm\'s own lines are taken into the reason, not printed beside it');
 });
 
@@ -116,6 +116,11 @@ test('a lookup that didn\'t exit by itself is named by what stopped it, before a
   assert.equal(missing.status, 1);
   assert.equal(missing.stdout, '');
   assert.match(missing.stderr, /failed for @animalabs\/chronicle \(spawnSync npm ENOENT\); /);
+  // Every package is named, each with that reason: the ones a run with npm
+  // asks about.
+  const every = manifest().asked;
+  assert.ok(every.length > 1);
+  for (const pkg of every) assert.ok(missing.stderr.includes(`${pkg} (spawnSync npm ENOENT)`), pkg);
 });
 
 test('every failed lookup is named in the one line, each with its reason', () => {

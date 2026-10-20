@@ -11,26 +11,31 @@
  * that ran a requested lane and didn't end in success turns the post red.
  *
  * It also decides whether the workflow remembers the set as tested, and
- * writes remember=true to $GITHUB_OUTPUT when it does: once a run of every
- * lane had a result from every requested run, a summary passing or
- * failing, and the post went out. A set whose post would only say all is
- * well (every run passed, and nothing else went wrong) is also remembered
- * when its post can't go out until someone acts (there's no webhook, or
- * Discord refused it for a reason the next poll would meet too). A set
- * whose post reports a failure isn't, so a later poll runs it again and
- * posts it once the webhook works. A post that didn't go out for a passing
- * reason, or a step stopped before the post settled, writes nothing, so a
- * later poll runs the set again and posts. Either way, a later poll runs
- * the set only if no earlier run remembered it: a forced manual run of a
- * remembered set can't take that back.
+ * writes remember=true to $GITHUB_OUTPUT when it does, which asks the
+ * workflow to save the set's marker: once a run of every lane had a result
+ * from every requested run, a summary passing or failing, and the post
+ * went out. A set whose post would only say all is well (every run passed,
+ * and nothing else went wrong) is also remembered when its post can't go
+ * out until someone acts (there's no webhook, or Discord refused it for a
+ * reason the next poll would meet too). A set whose post reports a failure
+ * is remembered only once that post goes out, so until then a later poll
+ * runs it again and posts it once the webhook works. A post that didn't go
+ * out for a passing reason, or a step stopped before the post settled,
+ * writes nothing, so a later poll runs the set again and posts. A later
+ * poll skips the set only while the cache holds a marker it can read: one
+ * a run on the default branch saved, not yet evicted. A forced manual run
+ * of a remembered set can't take the marker back.
  *
  * So that a passing failure doesn't cost a rerun of every lane, the post
  * is tried again within the step, three tries in all: after a rate limit,
  * once the wait Discord's answer gives is over (up to five minutes); after
  * a server error, a refusal other than 400, 401, 403, 404 or 413, a
  * request that got no answer, or a rate limit whose answer gives no wait,
- * after a second, then two. A request that got no answer may have been
- * taken, so a later try, or a later poll's post, can be a second copy.
+ * after a second, then two. Each try waits up to 15 s for an answer
+ * ($NOTIFY_TRY_MS sets it), rather than fetch's own five minutes, so a
+ * webhook that takes the request and never answers can't hold the step.
+ * A request that got no answer may have been taken, so a later try, or a
+ * later poll's post, can be a second copy.
  *
  * Without a webhook it prints what it would post. It then exits 0, or 1
  * under GitHub Actions, where an empty webhook means the secret is missing
@@ -151,7 +156,8 @@ const block = (lane, runs) => {
   const said = runs.filter(({ s }) => s);
   const has = new Map();
   for (const { runtime, s } of said) {
-    for (const l of worthPosting(s)) {
+    // Cut before comparing, so lines that differ only past the cut are one.
+    for (const l of worthPosting(s).map(cap)) {
       if (!has.has(l)) has.set(l, []);
       if (!has.get(l).includes(runtime)) has.get(l).push(runtime);
     }
@@ -159,7 +165,7 @@ const block = (lane, runs) => {
   return [
     `**${lane}**`,
     ...runs.map(({ runtime, s }) => `${runtime}: ${s ? cap(verdictOf(s)) : '✗ its summary is empty'}`),
-    ...[...has].map(([l, runtimes]) => (runtimes.length === runs.length ? cap(l) : `${runtimes.join(', ')}: ${cap(l)}`)),
+    ...[...has].map(([l, runtimes]) => (runtimes.length === runs.length ? l : `${runtimes.join(', ')}: ${l}`)),
   ];
 };
 const failed = (runs) => runs.some(({ s }) => !passed(s));
@@ -187,11 +193,11 @@ const remember = (delivered) => {
   if (rememberable && (delivered || allPass) && process.env.GITHUB_OUTPUT) appendFileSync(process.env.GITHUB_OUTPUT, 'remember=true\n');
 };
 // What an undelivered post's message says of the memory, once its cause is
-// fixed ("once the secret is set", "once that is fixed"). A later poll runs
-// a set only if no earlier run remembered it, and a manual run runs it
-// whatever the memory says only with force, the default.
+// fixed ("once the secret is set", "once that is fixed"). A later poll
+// skips a set only while the cache holds its marker, and a manual run runs
+// it whatever the memory says only with force, the default.
 const undelivered = (once) => (!rememberable ? ''
-  : allPass ? `. The post says only that all is well, so the set is remembered; ${once}, a forced manual run (force is the default) posts the current set`
+  : allPass ? `. The post says only that all is well, so this run asks the workflow to remember the set; ${once}, a forced manual run (force is the default) posts the current set`
   : `. The post reports a failure, so this run didn't remember the set: unless an earlier run did, a later poll runs it again and posts it ${once}`);
 
 if (!webhook) {
@@ -209,6 +215,7 @@ if (!webhook) {
 const PERMANENT = new Set([400, 401, 403, 404, 413]);
 const TRIES = 3;
 const MAX_WAIT_S = 300;
+const TRY_MS = Number(process.env.NOTIFY_TRY_MS) || 15_000;
 const tries = [];
 for (let n = 1; ; n++) {
   let waitMs = n * 1000;
@@ -217,12 +224,15 @@ for (let n = 1; ; n++) {
   // again.
   let res;
   try {
-    res = await fetch(webhook, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ content }) });
+    // The signal also bounds reading the answer, below.
+    res = await fetch(webhook, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ content }), signal: AbortSignal.timeout(TRY_MS) });
   } catch (e) {
-    tries.push(`no answer (${e.cause?.code ?? e.message})`);
+    tries.push(e?.name === 'TimeoutError' ? `no answer in ${TRY_MS} ms` : `no answer (${e.cause?.code ?? e.message})`);
   }
   if (res?.ok) {
-    console.log('posted:\n' + content);
+    // Earlier tries that went unanswered may have been taken too (above), so
+    // the receipt names them.
+    console.log(`posted${tries.length ? ` after ${tries.length} failed ${tries.length === 1 ? 'try' : 'tries'} (${tries.join('; ')})` : ''}:\n${content}`);
     remember(true);
     process.exit(0);
   }

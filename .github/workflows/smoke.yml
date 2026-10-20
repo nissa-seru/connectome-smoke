@@ -186,9 +186,13 @@ jobs:
         if: contains(needs.gate.outputs.lanes, matrix.lane)
         with:
           bun-version: ${{ matrix.runtime.bun }}
+      # The work directory is named for the lane alone. A failing line can
+      # carry it, and the post shares a line every runtime's run has, so a
+      # name with the runtime would turn one failure into three lines. Each
+      # leg has a runner of its own, so the name needn't tell them apart.
       - name: Run lane
         if: contains(needs.gate.outputs.lanes, matrix.lane)
-        run: node lanes/published.mjs --lane ${{ matrix.lane }} --workdir "$RUNNER_TEMP/smoke-$LEG" --report "$PWD/report-$LEG.json" --summary "$PWD/summary-$LEG.md" --keep
+        run: node lanes/published.mjs --lane ${{ matrix.lane }} --workdir "$RUNNER_TEMP/smoke-${{ matrix.lane }}" --report "$PWD/report-$LEG.json" --summary "$PWD/summary-$LEG.md" --keep
       - name: Job summary
         if: always() && contains(needs.gate.outputs.lanes, matrix.lane)
         run: cat "summary-$LEG.md" >> "$GITHUB_STEP_SUMMARY" || true
@@ -201,9 +205,9 @@ jobs:
           path: |
             report-${{ env.LEG }}.json
             summary-${{ env.LEG }}.md
-            ${{ runner.temp }}/smoke-${{ env.LEG }}/*.log
-            ${{ runner.temp }}/smoke-${{ env.LEG }}/*.events.jsonl
-            ${{ runner.temp }}/smoke-${{ env.LEG }}/data/**/*.log
+            ${{ runner.temp }}/smoke-${{ matrix.lane }}/*.log
+            ${{ runner.temp }}/smoke-${{ matrix.lane }}/*.events.jsonl
+            ${{ runner.temp }}/smoke-${{ matrix.lane }}/data/**/*.log
 
   source:
     name: Source-main lane (Node ${{ matrix.runtime.node }}, Bun ${{ matrix.runtime.bun }})
@@ -225,8 +229,9 @@ jobs:
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: ${{ matrix.runtime.bun }}
+      # Named for the lane alone, as in the published job.
       - name: Run lane
-        run: node lanes/source.mjs --workdir "$RUNNER_TEMP/smoke-$LEG" --report "$PWD/report-$LEG.json" --summary "$PWD/summary-$LEG.md" --keep
+        run: node lanes/source.mjs --workdir "$RUNNER_TEMP/smoke-source" --report "$PWD/report-$LEG.json" --summary "$PWD/summary-$LEG.md" --keep
       - name: Job summary
         if: always()
         run: cat "summary-$LEG.md" >> "$GITHUB_STEP_SUMMARY" || true
@@ -239,8 +244,8 @@ jobs:
           path: |
             report-${{ env.LEG }}.json
             summary-${{ env.LEG }}.md
-            ${{ runner.temp }}/smoke-${{ env.LEG }}/*.log
-            ${{ runner.temp }}/smoke-${{ env.LEG }}/*.events.jsonl
+            ${{ runner.temp }}/smoke-source/*.log
+            ${{ runner.temp }}/smoke-source/*.events.jsonl
 
   report:
     name: Notify + remember
@@ -293,6 +298,9 @@ jobs:
         env:
           MANIFEST: ${{ needs.gate.outputs.manifest }}
         run: printf '%s\n' "$MANIFEST" > tested.marker
+      # Best-effort: a save that fails doesn't fail the run, so the set runs
+      # and posts again at the next poll. Saving a key that's already there
+      # only warns, which a forced run of a remembered set relies on.
       - uses: actions/cache/save@v4
         if: always() && steps.mark.outcome == 'success'
         with:

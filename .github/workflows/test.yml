@@ -1,7 +1,8 @@
 name: unit tests
 
-# The notifier's and the registry manifest's tests (npm test), on every push
-# to main and every pull request, on the Node floor and the newest Node.
+# The notifier's, the registry manifest's and the lanes' shared helpers'
+# tests (npm test), on every push to main and every pull request, on the
+# Node floor and the newest Node.
 
 on:
   push:
