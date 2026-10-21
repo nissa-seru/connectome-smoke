@@ -558,6 +558,14 @@ test('a post the webhook takes is sent once, as the content it prints, and the s
   assert.equal(r.output, 'remember=true\n');
 });
 
+test('a $NOTIFY_TRY_MS that isn\'t a positive whole number a timer can hold gives each try 15 s, and the post goes out', async () => {
+  for (const value of ['-5', '1.5', String(2 ** 32)]) {
+    const r = await deliver([204], { NOTIFY_TRY_MS: value });
+    assert.equal(r.status, 0, `${value}: ${r.stderr}`);
+    assert.equal(r.posts.length, 1, value);
+  }
+});
+
 test('a post the webhook refuses fails the step at once, naming the answer, and a set whose post would only say all is well is remembered', async () => {
   const refused = { status: 404, body: '{"message": "Unknown Webhook", "code": 10015}' };
   const r = await deliver([refused, 204]);

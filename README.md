@@ -23,9 +23,9 @@ the newest Node with the newest Bun.
 | `latest` | same, with every `@animalabs/*` forced to its `latest` dist-tag via npm overrides — "is newest-of-everything coherent?" |
 | `source` | clone `main` of voice-kit, mcpl-core-ts, membrane, context-manager, agent-framework, connectome-host, heartbeat-mcpl, discord-mcpl, portal (protocol/client/mcpl/relay); per repo: strict `npm ci` → build → typecheck → test, in `file:`-link order (voice-kit before discord-mcpl and portal-relay). Then compose host@main + membrane/cm/af@main into one tree (nested copies removed, single symlink root; chronicle from npm — Rust) — typecheck the host against the sibling mains and boot it twice. |
 
-Every run, a lane on one runtime, leaves `report-<lane>-<runtime>.json`,
-`summary-<lane>-<runtime>.md`, the host's output and the full IPC event
-stream as artifacts.
+Every run, a lane on one runtime, leaves `report-<lane>-<runtime>.json` and
+`summary-<lane>-<runtime>.md` as artifacts, and, when the run reached the
+boot, the host's output and the full IPC event stream.
 
 ## Run locally
 

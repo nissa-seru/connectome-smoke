@@ -32,8 +32,9 @@
  * a server error, a refusal other than 400, 401, 403, 404 or 413, a
  * request that got no answer, or a rate limit whose answer gives no wait,
  * after a second, then two. Each try waits up to 15 s for an answer
- * ($NOTIFY_TRY_MS sets it), rather than fetch's own five minutes, so a
- * webhook that takes the request and never answers can't hold the step.
+ * ($NOTIFY_TRY_MS, a positive whole number of milliseconds, sets it),
+ * rather than fetch's own five minutes, so a webhook that takes the
+ * request and never answers can't hold the step.
  * A request that got no answer may have been taken, so a later try, or a
  * later poll's post, can be a second copy.
  *
@@ -215,7 +216,11 @@ if (!webhook) {
 const PERMANENT = new Set([400, 401, 403, 404, 413]);
 const TRIES = 3;
 const MAX_WAIT_S = 300;
-const TRY_MS = Number(process.env.NOTIFY_TRY_MS) || 15_000;
+// A positive whole number of milliseconds a timer can hold, else 15 s: a
+// timer past 2**31 - 1 ms fires at once, and AbortSignal.timeout refuses a
+// negative or fractional one.
+const tryMs = Number(process.env.NOTIFY_TRY_MS);
+const TRY_MS = Number.isSafeInteger(tryMs) && tryMs > 0 && tryMs <= 2 ** 31 - 1 ? tryMs : 15_000;
 const tries = [];
 for (let n = 1; ; n++) {
   let waitMs = n * 1000;
