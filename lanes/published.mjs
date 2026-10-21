@@ -23,7 +23,8 @@
  *                            npm overrides — "is newest-of-everything coherent?"
  *
  * Zero dependencies. Needs node >= 22.12, bun >= 1.4.3 (the floors connectome-host
- * declares in `engines`; the host runs under bun), npm.
+ * declares in `engines`; the host runs under bun), npm. Checks its Bun against
+ * the floor the host it installs declares, and fails, naming both, below it.
  * Exit 0 pass / 1 fail. Writes --report (JSON) and --summary (markdown).
  */
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, rmSync, readdirSync } from 'node:fs';
