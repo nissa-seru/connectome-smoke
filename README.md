@@ -23,7 +23,7 @@ IPC event stream as artifacts.
 
 ## Run locally
 
-Needs node ≥ 20, npm, bun (the host runs under bun; the source lane needs ≥ 1.4.3, the floor the host's `main` declares), git.
+Needs node ≥ 22.12, npm, bun ≥ 1.4.3 (the floors connectome-host declares in `engines`; the host runs under bun), git. Each lane checks its Bun against the floor the host it tests declares, and fails, naming both, when it's below.
 
 ```sh
 node lanes/published.mjs                       # consumer view
