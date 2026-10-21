@@ -44,10 +44,11 @@ test('spawnToFiles gives stdout and stderr apart, with the status, signal and er
 
 test('spawnToFiles kills and names what the command left running, and nothing else', async () => {
   // Agnes-1009's case: the command starts a grandchild that keeps writing to the command's stdout, then exits at once.
+  // The grandchild ends itself after 20 s, so a spawnToFiles that fails to stop it leaves nothing running for long.
   const other = spawn('sleep', ['30'], { stdio: 'ignore' });
   try {
     const t0 = Date.now();
-    const r = node("require('child_process').spawn(process.execPath, ['-e', \"let n = 0; setInterval(() => process.stdout.write('tick ' + n++ + '\\\\n'), 100)\"], { stdio: ['ignore', 'inherit', 'inherit'] }); console.log('child exits'); process.exit(0)");
+    const r = node("require('child_process').spawn(process.execPath, ['-e', \"let n = 0; setInterval(() => process.stdout.write('tick ' + n++ + '\\\\n'), 100); setTimeout(() => process.exit(0), 20_000)\"], { stdio: ['ignore', 'inherit', 'inherit'] }); console.log('child exits'); process.exit(0)");
     assert.ok(Date.now() - t0 < 5_000, 'returns when the command exits');
     assert.equal(r.status, 0);
     assert.ok(r.stdout.startsWith('child exits\n'));
