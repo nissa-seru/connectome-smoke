@@ -94,8 +94,14 @@ function testSummary(r) {
   });
   if (!cloneOk) return done();
 
-  if (existsSync(join(SRC, 'connectome-host', 'package.json'))) {
-    await step("bun meets the host's floor", () => bunMeetsHostFloor(join(SRC, 'connectome-host', 'package.json'), report.bun));
+  // Whenever this run tests the host: a host it cloned without a package.json
+  // fails the step, as the published lane's does.
+  if (!ONLY || ONLY.includes('connectome-host')) {
+    await step("bun meets the host's floor", () => {
+      const said = bunMeetsHostFloor(join(SRC, 'connectome-host', 'package.json'), report.bun);
+      log(said);
+      return said;
+    });
   }
 
   // -- 2. per-repo, as its own CI would --

@@ -74,8 +74,11 @@ const S = (p) => p.replace('@animalabs/', '');
   });
   if (!installOk) return done();
 
-  await step("bun meets the host's floor", () =>
-    bunMeetsHostFloor(join(WORK, 'node_modules', '@animalabs', 'connectome-host', 'package.json'), report.bun));
+  await step("bun meets the host's floor", () => {
+    const said = bunMeetsHostFloor(join(WORK, 'node_modules', '@animalabs', 'connectome-host', 'package.json'), report.bun);
+    log(said);
+    return said;
+  });
 
   await step('resolved versions + lag vs latest + nested copies', () => {
     for (const p of STACK) {
