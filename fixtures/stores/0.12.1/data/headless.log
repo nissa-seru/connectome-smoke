@@ -1,0 +1,14 @@
+
+--- session 2026-10-22T13:40:56.704Z ---
+[2026-10-22T13:40:56.704Z] headless start pid=199365 dataDir=/home/work/t/3eeed9345d2e/connectome-smoke-capture-yDNuaX/0.12.1/data socket=/home/work/t/3eeed9345d2e/cs-st-195738-capture1.sock
+[2026-10-22T13:40:56.705Z] socket listening at /home/work/t/3eeed9345d2e/cs-st-195738-capture1.sock
+[2026-10-22T13:40:56.711Z] client connected
+[2026-10-22T13:40:57.429Z] quiescent — emitting lifecycle:idle
+[2026-10-22T13:40:57.467Z] shutdown: shutdown:graceful
+
+--- session 2026-10-22T13:40:58.303Z ---
+[2026-10-22T13:40:58.303Z] headless start pid=199734 dataDir=/home/work/t/3eeed9345d2e/connectome-smoke-capture-yDNuaX/0.12.1/data socket=/home/work/t/3eeed9345d2e/cs-st-195738-capture2.sock
+[2026-10-22T13:40:58.307Z] socket listening at /home/work/t/3eeed9345d2e/cs-st-195738-capture2.sock
+[2026-10-22T13:40:58.325Z] client connected
+[2026-10-22T13:40:59.051Z] quiescent — emitting lifecycle:idle
+[2026-10-22T13:40:59.081Z] shutdown: shutdown:graceful
