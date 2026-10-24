@@ -54,7 +54,7 @@ env:
   # The runtimes every lane runs on, listed once here: the gate passes them
   # to both lane jobs' matrices and to notify.mjs, which names any requested
   # run whose summary never arrives. They are Node 22.12.0 and Bun 1.4.3,
-  # the floors the stack's packages are moving to, both pinned exactly;
+  # the highest floors the stack's packages declare, both pinned exactly;
   # Node 24, the long-term-support line between the floor's major and the
   # newest's, at its newest release when the run starts (check-latest); and
   # the newest of each.

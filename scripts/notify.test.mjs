@@ -559,7 +559,9 @@ test('a post the webhook takes is sent once, as the content it prints, and the s
 });
 
 test('a $NOTIFY_TRY_MS that isn\'t a positive whole number a timer can hold gives each try 15 s, and the post goes out', async () => {
-  for (const value of ['-5', '1.5', String(2 ** 32)]) {
+  // 2**31 is the first value the bound refuses that a timer would take, and
+  // fire at once.
+  for (const value of ['-5', '1.5', String(2 ** 31), String(2 ** 32)]) {
     const r = await deliver([204], { NOTIFY_TRY_MS: value });
     assert.equal(r.status, 0, `${value}: ${r.stderr}`);
     assert.equal(r.posts.length, 1, value);

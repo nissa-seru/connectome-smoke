@@ -11,9 +11,9 @@ versions, the mains' heads, or this workflow's commit; debounced, so a
 cascading release membrane → cm → af → host is tested once, settled), or
 on demand. Results go to `#connectome-ops` (Discord webhook) and the run's
 job summary.
-Each lane runs on three runtimes: Node 22.12.0 with Bun 1.4.3, the floors the
-stack's packages are moving to; the newest Node 24 with the newest Bun; and
-the newest Node with the newest Bun.
+Each lane runs on three runtimes: Node 22.12.0 with Bun 1.4.3, the highest
+floors the stack's packages declare; the newest Node 24 with the newest Bun;
+and the newest Node with the newest Bun.
 
 ## Lanes
 
