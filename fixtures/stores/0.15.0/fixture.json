@@ -1,0 +1,85 @@
+{
+  "host": "0.15.0",
+  "before": "2026-10-27T19:31:38.986Z",
+  "capturedAt": "2026-10-27T19:31:38.986Z",
+  "source": "run",
+  "smokeCommit": "b8280bbd1816e9cdfae64eebb79ab963d999d4c4",
+  "toolchain": {
+    "node": "v24.22.1",
+    "bun": "1.4.4",
+    "npm": "11.19.1",
+    "platform": "linux-x64"
+  },
+  "resolved": {
+    "@animalabs/chronicle": "0.4.0",
+    "@animalabs/membrane": "0.8.0",
+    "@animalabs/context-manager": "0.23.1",
+    "@animalabs/agent-framework": "0.28.0",
+    "@animalabs/connectome-host": "0.15.0",
+    "@animalabs/mcpl-core": "0.2.2",
+    "@animalabs/heartbeat-mcpl": "0.4.0"
+  },
+  "turns": [
+    {
+      "n": 1,
+      "text": "smoke capture 0.15.0 turn 1 2vogghr7",
+      "reply": "SMOKE-REPLY 2vogghr7",
+      "ok": true
+    },
+    {
+      "n": 2,
+      "text": "smoke capture 0.15.0 turn 2 2vogghr7",
+      "reply": "SMOKE-REPLY 2vogghr7",
+      "ok": true
+    }
+  ],
+  "steps": [
+    {
+      "name": "capture 0.15.0: npm install as of 2026-10-27T19:31:38.986Z",
+      "ok": true
+    },
+    {
+      "name": "capture 0.15.0: boot 1, one turn",
+      "ok": true
+    },
+    {
+      "name": "capture 0.15.0: boot 2, one turn",
+      "ok": true
+    }
+  ],
+  "absolutePaths": [
+    {
+      "file": ".recipe.json",
+      "count": 3
+    },
+    {
+      "file": "headless.log",
+      "count": 2
+    }
+  ],
+  "requests": 2,
+  "tools": [
+    "time--now",
+    "observers--get",
+    "observers--grant",
+    "observers--revoke",
+    "mcpl--heartbeat--heartbeat_status",
+    "mcpl--heartbeat--heartbeat_configure",
+    "mcpl--heartbeat--heartbeat_trigger",
+    "mcpl--heartbeat--reminder_add",
+    "mcpl--heartbeat--reminder_list",
+    "mcpl--heartbeat--reminder_cancel",
+    "channel_list",
+    "channel_open",
+    "channel_decline",
+    "channel_close",
+    "channel_publish",
+    "think",
+    "journal",
+    "skip_reply",
+    "drafts",
+    "agent_settings"
+  ],
+  "nonce": "2vogghr7",
+  "pass": true
+}
