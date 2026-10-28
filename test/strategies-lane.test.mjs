@@ -8,8 +8,9 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { cacheRoot, check, failureNames, laneVersion, pruneCache, stackVersions } from '../lib/strategies/lane.mjs';
-import { configurations } from '../lib/strategies/script.mjs';
+import { cacheRoot, check, excusing, failureNames, laneVersion, notExercised, pruneCache, stackVersions } from '../lib/strategies/lane.mjs';
+import { configurations, L3_PRODUCT } from '../lib/strategies/script.mjs';
+import { perCheckReport } from '../lib/strategies/report.mjs';
 
 const LANE = fileURLToPath(new URL('../lib/strategies/lane.mjs', import.meta.url));
 
@@ -171,4 +172,41 @@ test('N8: a throw on the candidate\'s side resolves the check as couldn\'t-run, 
     assert.equal(judged, 0, 'nothing was judged');
     assert.equal(JSON.parse(readFileSync(join(dir, 'evidence', 'result.json'), 'utf-8')).outcome, 'couldnt-run', 'the evidence says so too');
   } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+test('N11: where the trial lacked only the L3 product, neither side counts it, and the report says L3 wasn\'t exercised at this cut', () => {
+  const configuration = configurations().default;
+  const l3 = { segment: 'close-merge', missing: [L3_PRODUCT] };
+  const entryLacking = (missing) => ({ trial: { lengths: [{ turns: 13, missing: [{ segment: 'close-merge', missing: ['a merge request', L3_PRODUCT] }] }, { turns: 14, missing }, { turns: 15, missing }], missing } });
+  const verdictOf = (entry, candidate, base = null) => {
+    const cut = notExercised(entry);
+    const report = perCheckReport({ configuration, candidate: excusing(candidate, cut.products), base: base && excusing(base, cut.products) });
+    return { cut, report, names: report.verdict === 'pass' ? [] : failureNames(report) };
+  };
+
+  // Only L3 lacking at the bound: it counts against neither side.
+  const only = entryLacking([l3]);
+  const alone = verdictOf(only, { flags: [], missing: [l3] });
+  assert.equal(alone.report.verdict, 'pass', 'the candidate lacking only L3 passes');
+  assert.deepEqual(alone.names, []);
+  assert.match(alone.cut.line, /L3 wasn't exercised at this cut/);
+  assert.match(alone.cut.line, /13 to 15 turns/, 'the line names the trial\'s lengths');
+  const withOther = verdictOf(only, { flags: [], missing: [l3, { segment: 'tool-round', missing: ['x'] }] }, { flags: [], missing: [l3] });
+  assert.equal(withOther.report.verdict, 'flags');
+  assert.deepEqual(withOther.names, ['check 2 at tool-round: x'], 'another missing product still counts, and L3 isn\'t named');
+  assert.equal(withOther.report.didntRun.length, 0, 'L3 isn\'t reported as a segment that didn\'t run either');
+  const sameSegment = verdictOf(only, { flags: [], missing: [{ segment: 'close-merge', missing: ['a merge request', L3_PRODUCT] }] });
+  assert.deepEqual(sameSegment.names, ['check 2 at close-merge: a merge request'], 'close-merge\'s other products still count');
+
+  // The trial lacked nothing: L3 counts as any product does.
+  const full = verdictOf({ trial: { lengths: [{ turns: 13, missing: [] }], missing: [] } }, { flags: [], missing: [l3] });
+  assert.equal(full.cut.line, null);
+  assert.deepEqual(full.names, [`check 2 at close-merge: ${L3_PRODUCT}`]);
+
+  // The trial lacked L3 and something else: nothing is excused.
+  for (const missing of [[{ segment: 'close-merge', missing: ['a merge request', L3_PRODUCT] }], [l3, { segment: 'tool-round', missing: ['x'] }]]) {
+    const more = verdictOf(entryLacking(missing), { flags: [], missing: [l3] });
+    assert.equal(more.cut.line, null);
+    assert.deepEqual(more.names, [`check 2 at close-merge: ${L3_PRODUCT}`], JSON.stringify(missing));
+  }
 });
