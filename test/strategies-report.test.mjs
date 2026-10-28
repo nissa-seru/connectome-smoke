@@ -42,6 +42,18 @@ test('K1b: an operator alert is matched on the base by its kind, and the report 
   assert.ok(r.lines.some((l) => /no deferred-write count at c\.debt/.test(l)));
 });
 
+test('K2d: the checks carry check 3\'s note that the host reported its window governs the agent\'s stream', () => {
+  const usage = { input_tokens: 100, cache_read_input_tokens: 900, cache_creation_input_tokens: 0 };
+  const r1 = { id: 'r1', step: 'a', kind: 'agent', messageTokens: 900, maxTokens: 2_048, usage, messages: [{ role: 'user', digest: 'd1', blocks: [] }], answer: { shape: 'reply', toolUseIds: ['t1'] } };
+  const r2 = { ...r1, id: 'r2', messages: [...r1.messages, { role: 'assistant', digest: 'd2', blocks: [{ type: 'tool_use', toolUseId: 't1' }] }, { role: 'user', digest: 'd3', blocks: [] }], answer: { shape: 'reply', toolUseIds: [] } };
+  const report = { kind: 'budget-report', boot: 1, lines: ['--- Stream Token Budgets ---', '  fixture: 150.0k (last: 0, 0%); its stream doesn\'t break at this budget mid-turn: for its size, only before a request its 1.0M window can\'t hold'] };
+  const checkpoint = { kind: 'checkpoint', name: 's', step: 's.cp', health: { data: { contextComposition: { fixture: { planVsActual: { budgetMet: true } } }, runtimeSettings: { fixture: { effectiveContextBudgetTokens: 20_000 } } } } };
+  const log = [report, { kind: 'request', request: { id: 'r1', kind: 'agent' } }, { kind: 'request', request: { id: 'r2', kind: 'agent' } }, checkpoint];
+  const { notes } = runChecks({ records: [r1, r2], log, script: [{ id: 'a', segment: 's' }], products: [], store: null });
+  assert.equal(notes.length, 1);
+  assert.match(notes[0], /window/);
+});
+
 test('R7b: the checks note each settle at which the host reported no deferred-write count, and only those', () => {
   const settle = (step, deferredWritesReported) => ({ kind: 'settle', phase: 'end', step, settled: true, deferredWritesReported });
   const { notes } = runChecks({ records: [], log: [settle('a', true), settle('b', false)], script: [], products: [], store: null });

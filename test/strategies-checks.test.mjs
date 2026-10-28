@@ -187,6 +187,16 @@ const continued = (before, id, messageTokens, input = messageTokens + 8_000, cal
 const started = { kind: 'ipc', event: { type: 'inference:started', agentName: 'fixture' } };
 const resumed = { kind: 'ipc', event: { type: 'inference:stream_resumed', agentName: 'fixture' } };
 const sent = (id) => ({ kind: 'request', request: { id, kind: 'agent' } });
+// The driver's log of connectome-host's `/budget` after a boot (D12): its header, then the agent's line.
+const budgetReport = (...lines) => ({ kind: 'budget-report', boot: 1, lines: ['--- Stream Token Budgets ---', ...lines], ms: 5 });
+const WINDOW_CLAUSE = '; its stream doesn\'t break at this budget mid-turn: for its size, only before a request its 1.0M window can\'t hold';
+// A turn of three rounds under a stream bound of 30,000: r2's input passes it, so r3 follows a round over it.
+const crossing = () => {
+  const r1 = opened('r1', 'a', 15_000, 29_000, ['t1']);
+  const r2 = continued(r1, 'r2', 16_000, 31_000, ['t2']);
+  return [r1, r2, continued(r2, 'r3', 17_000, 32_000)];
+};
+const under = (report) => [...(report ? [report] : []), sent('r1'), sent('r2'), sent('r3'), panel('s')];
 
 test('K2c: a step\'s first request is compiled, and a later one is a continuation only when it carries the request before it whole, then that request\'s own tool round', () => {
   const a1 = opened('a1', 'a', 1_000, undefined, ['t1']);
@@ -243,6 +253,43 @@ test('K2c: the same records give the same kinds and verdicts whether each stream
   assert.deepEqual(a.headroom.map((h) => [h.kind, h.request]), [['compiled', 'r1'], ['continuation', 'r3']]);
 });
 
+test('K2d: a continuation under a report that the window governs the agent\'s stream isn\'t held to the stream bound, and a note says so', () => {
+  const { flags, headroom, notes } = budgets(crossing(), [turnStep('a')], under(budgetReport(`  fixture: 30.0k (last: 0, 0%)${WINDOW_CLAUSE}`)), { streamBound: 30_000 });
+  assert.deepEqual(flags, []);
+  assert.deepEqual(headroom.map((h) => h.kind), ['compiled'], 'no continuation headroom against a bound that doesn\'t govern it');
+  assert.equal(notes.length, 1);
+  assert.match(notes[0], /window/);
+});
+
+test('K2d: a continuation under a report without that clause is held to the stream bound', () => {
+  const { flags, notes } = budgets(crossing(), [turnStep('a')], under(budgetReport('  fixture: 30.0k (last: 0, 0%)')), { streamBound: 30_000 });
+  assert.deepEqual(flags.map((f) => f.request), ['r3']);
+  assert.match(flags[0].message, /31000.*30000/);
+  assert.deepEqual(notes, []);
+});
+
+test('K2d: with no report for the agent, only a continuation after a round over the stream bound is couldn\'t-judge', () => {
+  // None at all, the header alone, and a line for another agent only.
+  for (const log of [under(null), under(budgetReport()), under(budgetReport('  other: 30.0k (last: 0, 0%)'))]) {
+    const { flags } = budgets(crossing(), [turnStep('a')], log, { streamBound: 30_000 });
+    assert.deepEqual(flags.map((f) => f.request), ['r3'], JSON.stringify(log.map((e) => e.kind)));
+    assert.match(flags[0].message, /couldn't judge/);
+  }
+  // A report logged after the request doesn't govern it.
+  const late = budgets(crossing(), [turnStep('a')], [sent('r1'), sent('r2'), sent('r3'), budgetReport(`  fixture: 30.0k (last: 0, 0%)${WINDOW_CLAUSE}`), panel('s')], { streamBound: 30_000 }).flags;
+  assert.deepEqual(late.map((f) => f.request), ['r3']);
+  assert.match(late[0].message, /couldn't judge/);
+});
+
+test('K2d: a report whose figure isn\'t the stream bound as the host formats it makes every continuation under it couldn\'t-judge', () => {
+  const { flags, headroom } = budgets(crossing(), [turnStep('a')], under(budgetReport('  fixture: 150.0k (last: 0, 0%)')), { streamBound: 30_000 });
+  assert.deepEqual(flags.map((f) => f.request), ['r2', 'r3'], 'r2 follows a round under the bound and is still couldn\'t-judge');
+  for (const f of flags) assert.match(f.message, /couldn't judge.*150\.0k.*30000.*30\.0k/);
+  assert.deepEqual(headroom.map((h) => h.kind), ['compiled']);
+  assert.deepEqual(budgets(crossing(), [turnStep('a')], under(budgetReport('  fixture: 1.0M (last: 0, 0%)')), { streamBound: 1_000_000 }).flags, [], 'a million, as the host writes it');
+  assert.deepEqual(budgets(crossing(), [turnStep('a')], under(budgetReport('  fixture: 150.0k (last: 0, 0%)'))).flags, [], 'the default bound, as the host writes it');
+});
+
 test('K2b: a compiled request is held to the budget less its own max tokens, every one of them, and context-manager\'s verdict flags the segment\'s last compile', () => {
   const script = [turnStep('a'), { ...turnStep('b'), segment: 't' }];
   // 20,000 less 2,048 is 17,952: r1 fits, r2 (a restart's compile) is under the setting but over
@@ -262,13 +309,13 @@ test('K2b: a continuation round is held to the stream bound, flagged only when t
   const r1 = opened('r1', 'a', 15_000, 29_000, ['t1']);
   const r2 = continued(r1, 'r2', 22_000, 31_000, ['t2']);
   const records = [r1, r2, continued(r2, 'r3', 23_000, 32_000)];
-  const log = [panel('s')];
+  const log = [budgetReport('  fixture: 30.0k (last: 0, 0%)'), sent('r1'), sent('r2'), sent('r3'), panel('s')];
   const { flags, headroom } = budgets(records, script, log, { streamBound: 30_000 });
   assert.deepEqual(flags.map((f) => f.request), ['r3'], 'r2 may cross the bound, since r1 was under it; r3 follows a round over it');
   assert.match(flags[0].message, /31000.*30000/);
   assert.deepEqual(headroom.filter((h) => h.kind === 'continuation').map((h) => [h.request, h.tokens, h.bound]), [['r3', 32_000, 30_000]]);
-  assert.equal(budgets(records, script, log).flags.length, 0, 'under agent-framework 0.28.0\'s default bound, 150,000, none is over');
-  const verdict = budgets(records, script, [...log.slice(0, -1), panel('s', { budgetMet: false })]).flags;
+  assert.equal(budgets(records, script, [panel('s')]).flags.length, 0, 'under agent-framework 0.28.0\'s default bound, 150,000, none is over');
+  const verdict = budgets(records, script, [panel('s', { budgetMet: false })]).flags;
   assert.deepEqual(verdict.map((f) => f.request), ['r1'], 'context-manager\'s verdict is on the compile, not the turn\'s last round');
 });
 

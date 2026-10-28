@@ -3,7 +3,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { fileURLToPath } from 'node:url';
-import { readSettle, recipeHash, recipeIdentity } from '../lib/strategies/driver.mjs';
+import { budgetReportDone, readSettle, recipeHash, recipeIdentity } from '../lib/strategies/driver.mjs';
 import { configurations } from '../lib/strategies/script.mjs';
 
 const facts = { takesMaintenanceInterval: false, kvUnified: { policy: { cacheScale: 100_000 }, tokenBucketSize: 50_000 } };
@@ -59,6 +59,18 @@ test('R7: a pass moved the work on when its progress or its deferred writes diff
   const deferred = readSettle(answer({ deferredWrites: 2 }), null).progress;
   assert.equal(readSettle(answer({ deferredWrites: 1 }), deferred).moved, true, 'a deferred write landed');
   assert.equal(readSettle(answer({ deferredWrites: 2 }), deferred).moved, false, 'none landed');
+});
+
+test('D12: `/budget`\'s output is whole once it holds the agent\'s own line, or a line that is no part of the report, and not before', () => {
+  const header = '--- Stream Token Budgets ---';
+  assert.equal(budgetReportDone([], 'fixture'), false);
+  assert.equal(budgetReportDone([header], 'fixture'), false);
+  assert.equal(budgetReportDone([header, '  other: 150.0k (last: 0, 0%)'], 'fixture'), false, 'another agent\'s line: ours is still to come');
+  assert.equal(budgetReportDone([header, '  fixture: 150.0k (last: 0, 0%)'], 'fixture'), true);
+  assert.equal(budgetReportDone([header, '  fixture: 150.0k (last: 0, 0%); its stream doesn\'t break at this budget mid-turn: for its size, only before a request its 1.0M window can\'t hold'], 'fixture'), true);
+  assert.equal(budgetReportDone([header, '  fixturette: 1.0k (last: 0, 0%)'], 'fixture'), false, 'another agent whose name starts with ours');
+  assert.equal(budgetReportDone(['No agents.'], 'fixture'), true);
+  assert.equal(budgetReportDone(['Unknown command: /budget'], 'fixture'), true, 'a host without the report doesn\'t hold the run');
 });
 
 test('R7b: an answer with no deferred-write count doesn\'t hold the settle, and the reading says the count wasn\'t reported', () => {
