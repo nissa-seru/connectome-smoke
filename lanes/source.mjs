@@ -30,6 +30,11 @@
  *      checkouts. The host is always checked: typecheck, `bun test` (its
  *      `npm test`) and the two starts. The dependents come from each
  *      checkout's package.json, not a fixed table.
+ *   5. Where the host is a change or one of its dependents, and always in
+ *      main mode: the strategy fixture on the combined tree's host
+ *      (lib/strategies/lane.mjs), which continues a cached deep store and
+ *      judges the run. In change mode, when it fails something, the same run
+ *      under each changed repository's `main` says whether `main` fails it too.
  *
  * Output, in --out (default: the workdir): report.json, summary.md, and
  * logs/<step id>.log for every step. report.json is rewritten after every
@@ -41,14 +46,16 @@
  *       cleanly onto main).
  */
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, existsSync, rmSync, symlinkSync, readdirSync, readFileSync, writeFileSync, appendFileSync, realpathSync, statfsSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, existsSync, rmSync, symlinkSync, readdirSync, readFileSync, writeFileSync, appendFileSync, realpathSync, renameSync, statfsSync } from 'node:fs';
 import { tmpdir, homedir, release, cpus } from 'node:os';
-import { join, resolve, sep } from 'node:path';
+import { join, relative, resolve, sep } from 'node:path';
 import { createHash } from 'node:crypto';
 import { makeReport, bootTwice, parseArgs, spawnToFiles } from '../lib/common.mjs';
 import { checkStores, listFixtures } from '../lib/stores.mjs';
 import { fileURLToPath as pathOfUrl } from 'node:url';
 import { parseChange, satisfies, buildGraph, dependentsOf, topoOrder, classifyInstallFailure, testFailureFields, diskFull } from '../lib/stack.mjs';
+import { check as strategiesCheck, cacheRoot as strategiesCacheRoot } from '../lib/strategies/lane.mjs';
+import { configurations as strategyConfigurations } from '../lib/strategies/script.mjs';
 
 const { opt, opts } = parseArgs(process.argv.slice(2));
 // The real path, so paths read back through realpath (links, resolutions) compare with it.
@@ -261,6 +268,7 @@ const MAINS = new Map();   // --main <repo>=<commit>: a repository's main pinned
   report.dependents = deps;
   const ownSet = new Set(report.mode === 'main' ? PKGS.map((p) => p.key) : changedKeys);
   const combinedSet = new Set(report.mode === 'main' ? PKGS.map((p) => p.key) : [...changedKeys, ...deps.map((d) => d.pkg), HOST]);
+  const reachesHost = report.mode === 'main' || changedKeys.includes(HOST) || deps.some((d) => d.pkg === HOST);
   // `changed`: whether the package's repository is a change. In change mode
   // an unchanged package's own install and build take nothing from the
   // change, so their failure is main's or the machine's, not the change's.
@@ -341,7 +349,7 @@ const MAINS = new Map();   // --main <repo>=<commit>: a repository's main pinned
       await cmdStep(id, pkgMeta(p, 'combined', stage), p.dir, cmd, { timeout, summarize: stage === 'test' ? testSummary : undefined });
     }
   }
-  await boots(hostPkg, 'combined', installed, heartbeatEntry);
+  await boots(hostPkg, 'combined', installed, heartbeatEntry, reachesHost);
   done();
 })().catch((e) => { log(`FATAL ${e?.stack || e}`); report.fatal = String(e?.stack || e); done(); });
 
@@ -525,26 +533,138 @@ function resolutionProof() {
 // Stores that earlier host releases wrote: checked on the combined tree's host, the tree every change is in.
 const STORE_FIXTURES = pathOfUrl(new URL('../fixtures/stores', import.meta.url));
 
-async function boots(hostPkg, tree, installed, heartbeatEntry) {
+async function boots(hostPkg, tree, installed, heartbeatEntry, strategies = false) {
   const meta = { idPrefix: `${HOST}:${tree}`, repo: HOST, pkg: HOST, tree };
   const label = `${HOST}-${tree}-boot-`;
   const fixtures = tree === 'combined' ? listFixtures(STORE_FIXTURES) : [];
   const skipStores = (why) => {
     for (const f of fixtures) skip(`stores:${f.version}`, why, { ...meta, id: `${meta.idPrefix}:stores:${f.version}`, stage: `stores:${f.version}` });
   };
+  const strategiesMeta = { repo: HOST, pkg: HOST, tree, id: `${meta.idPrefix}:strategies:${STRATEGIES}`, stage: `strategies:${STRATEGIES}` };
+  const skipStrategies = (why) => { if (strategies) skip(`${HOST} ${tree} strategy fixture`, why, strategiesMeta); };
   if (!hostPkg || !installed.has(HOST) || !existsSync(heartbeatEntry)) {
     const why = !hostPkg ? 'no host checkout' : !installed.has(HOST) ? 'the host\'s install failed' : `heartbeat-mcpl's ${rel(heartbeatEntry)} is missing (its build failed)`;
     for (const n of [1, 2]) skip(`${HOST} ${tree} boot #${n}`, why, { ...meta, id: `${meta.idPrefix}:boot-${n}`, stage: `boot-${n}` });
     skipStores(why);
+    skipStrategies(why);
     flush();
     return;
   }
   const booted = await bootTwice({ step, skip, hostDir: hostPkg.dir, heartbeatEntry, work: LOGS, dataDir: join(WORK, `data-${tree}`), label, meta });
   flush();
-  if (!fixtures.length) return;
-  if (!booted) skipStores(`the host's ${tree} boots failed`);
-  else await checkStores({ step, hostDir: hostPkg.dir, heartbeatEntry, work: join(LOGS, 'stores'), fixturesDir: STORE_FIXTURES, meta });
+  if (fixtures.length) {
+    if (!booted) skipStores(`the host's ${tree} boots failed`);
+    else await checkStores({ step, hostDir: hostPkg.dir, heartbeatEntry, work: join(LOGS, 'stores'), fixturesDir: STORE_FIXTURES, meta });
+    flush();
+  }
+  if (!strategies) return;
+  if (!booted) { skipStrategies(`the host's ${tree} boots failed`); flush(); return; }
+  await strategiesStep(hostPkg, strategiesMeta);
   flush();
+}
+
+// ------------------------------------------------------------------ the strategy fixture
+
+/** The configuration a check runs; full runs, with the others, are lanes/strategies.mjs's. */
+const STRATEGIES = 'default';
+
+/**
+ * The strategy fixture on the combined tree's host. A flag, or a product the base produced
+ * and the candidate didn't, fails the step, with each named in `failures` the same way
+ * from run to run, for the known red list. A fixture that couldn't run fails it as a check
+ * that couldn't run. Its runs' logs, stand-in records and report go to logs/strategies/.
+ */
+async function strategiesStep(hostPkg, meta) {
+  const id = meta.id;
+  await step(`${id}: the strategy fixture continues its cached deep store`, async () => {
+    const res = await strategiesCheck({
+      cacheRoot: strategiesCacheRoot(opt('strategies-cache')),
+      configuration: strategyConfigurations()[STRATEGIES],
+      hostDir: hostPkg.dir,
+      installDir: SRC,
+      work: join(WORK, 'strategies'),
+      evidence: join(LOGS, 'strategies'),
+      base: report.mode === 'change' ? (runBase) => strategiesBase(id, hostPkg, runBase) : null,
+    });
+    appendFileSync(logFile(id), `${(res.report?.lines ?? [res.reason]).join('\n')}\n`);
+    if (res.outcome === 'couldnt-run') throw smokeError(`the strategy fixture couldn't run: ${res.reason}`, { cause: 'strategies', infra: true });
+    if (res.outcome !== 'pass') {
+      throw smokeError(res.report.lines.join('\n'), { fields: { failures: res.failures, failureCount: res.failures.length, failuresParsed: true } });
+    }
+    return res.report.lines.join(' ');
+  }, { ...meta, log: logFile(id) });
+}
+
+/**
+ * The fixture's base, for a change: each changed repository at its `main`, in a worktree
+ * beside its checkout, installed with its own install's command and with compose's rule for
+ * nested copies, and built in dependency order as its own tree builds (the host runs from
+ * its source, so it isn't built). The composed root's links point at it for the base run
+ * only, and back however that ends. Before the run, the base's host must resolve each
+ * package swapped in to its worktree, under bun, as the resolution proof checks.
+ */
+async function strategiesBase(id, hostPkg, runBase) {
+  const t0 = Date.now();
+  const root = join(SRC, 'node_modules');
+  const provided = new Map(Object.entries(report.compose.provided).map(([n, t]) => [n, join(WORK, t)]));
+  const based = new Map(provided);
+  const built = [];
+  for (const repo of new Set(report.change.map((c) => c.repo))) {
+    const R = REPOS.find((r) => r.repo === repo);
+    const checkout = join(SRC, R.dir);
+    const worktree = join(SRC, `${R.dir}.base`);
+    checked(id, checkout, ['git', 'worktree', 'add', '--detach', worktree, report.repos[repo].main], { timeout: 300_000 });
+    for (const p of PKGS.filter((x) => x.repo === repo)) {
+      const dir = join(worktree, relative(checkout, p.dir));
+      checked(id, dir, existsSync(join(dir, 'package-lock.json')) ? 'npm ci --no-audit --no-fund' : 'npm install --no-audit --no-fund');
+      if (p.name?.startsWith('@animalabs/')) based.set(p.name, dir);
+      built.push({ p, dir });
+    }
+  }
+  const baseHost = built.find(({ p }) => p.key === HOST)?.dir ?? hostPkg.dir;
+  if (!PKGS.some((p) => p.name === '@animalabs/chronicle') && baseHost !== hostPkg.dir) {
+    based.set('@animalabs/chronicle', realpathSync(join(baseHost, 'node_modules', '@animalabs', 'chronicle')));
+  }
+  const keep = new Set([...based.values()].map(realpathOr));
+  for (const { dir } of built) {
+    const nm = join(dir, 'node_modules', '@animalabs');
+    if (!existsSync(nm)) continue;
+    for (const d of readdirSync(nm)) {
+      const full = join(nm, d);
+      if (based.has(`@animalabs/${d}`) && !keep.has(realpathOr(full))) rmSync(full, { recursive: true, force: true });
+    }
+  }
+  const swapped = [...based].filter(([name, dir]) => provided.get(name) !== dir);
+  const point = (name, target) => {
+    const link = join(root, name);
+    rmSync(`${link}.swap`, { force: true });
+    symlinkSync(target, `${link}.swap`);
+    renameSync(`${link}.swap`, link);
+  };
+  try {
+    for (const [name, dir] of swapped) point(name, dir);
+    const order = topoOrder(PKGS.map((p) => p.key), EDGES);
+    for (const { p, dir } of [...built].sort((a, b) => order.indexOf(a.p.key) - order.indexOf(b.p.key))) {
+      if (p.key === HOST) continue;
+      const cmd = p.R.build ?? (p.pj.scripts?.build ? 'npm run build' : null);
+      if (cmd) checked(id, dir, cmd, { timeout: 900_000 });
+    }
+    const want = swapped.map(([name]) => name);
+    const probe = join(baseHost, '.smoke-resolve.mjs');
+    writeFileSync(probe, PROBE);
+    let res = {};
+    try {
+      const r = runCmd(id, baseHost, ['bun', '.smoke-resolve.mjs', JSON.stringify(want)], { timeout: 60_000 });
+      try { res = JSON.parse(r.stdout.trim().split('\n').pop()); } catch { /* each name is then unresolved */ }
+    } finally { rmSync(probe, { force: true }); }
+    const wrong = want.filter((name) => { const got = res[name]?.path; const dir = realpathSync(based.get(name)); return !got || !(got === dir || got.startsWith(dir + sep)); });
+    if (wrong.length) throw new Error(`the base's host doesn't resolve ${wrong.map((n) => `${n} (to ${res[n]?.path ? rel(res[n].path) : 'nothing'})`).join(', ')} to the base`);
+    const prepMs = Date.now() - t0;
+    const side = await runBase({ hostDir: baseHost, installDir: SRC });
+    return side.couldnt ? side : { ...side, prepMs, swapped: want };
+  } finally {
+    for (const [name] of swapped) point(name, provided.get(name));
+  }
 }
 
 // ------------------------------------------------------------------ verdict
