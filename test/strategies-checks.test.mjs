@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { declaredProducts, everyTurnAnswers, wellFormed, windowsRaw, calibrationEdge, coverage, bookkeeping } from '../lib/strategies/checks.mjs';
+import { budgets, declaredProducts, everyTurnAnswers, wellFormed, windowsRaw, calibrationEdge, coverage, bookkeeping } from '../lib/strategies/checks.mjs';
 import { continuation, products, configurations, prefix, extend, L3_PRODUCT } from '../lib/strategies/script.mjs';
 
 const msg = (role, ...blocks) => ({ role, blocks });
@@ -17,7 +17,7 @@ test('check 2 names each segment whose product no record in it shows, and only t
     { id: 'r3', step: 'c.par', kind: 'agent', messages: [msg('assistant', call('a'), call('b'), call('c')), msg('user', result('a'), result('b'), result('c'))] },
   ];
   const missing = declaredProducts(records, script, wanted);
-  assert.deepEqual(missing.map((m) => m.segment), ['close-merge', 'thinking-call', 'debt']);
+  assert.deepEqual(missing.map((m) => m.segment), ['close-merge', 'parallel', 'thinking-call', 'debt']);
   assert.deepEqual(missing[0].missing, ['a merge request', 'an L3 merge request']);
 });
 
@@ -64,7 +64,7 @@ test('check 6 flags a request that loses a raw message of the head the host repo
   const script = [turnStep('a'), turnStep('b', 2), turnStep('c'), turnStep('d')];
   const stored = (...canaries) => ({ canaries });
   const store = { messages: [stored(), stored('[[c:p.1.in]]'), stored('[[c:p.1.r1]]'), stored('[[c:p.2.in]]'), stored('[[c:p.2.r1]]'), ...['a.in', 'a.r1', 'b.in', 'b.r1', 'b.r2', 'c.in', 'c.r1', 'd.in'].map((c) => stored(`[[c:${c}]]`))], summaries: [] };
-  const log = [{ kind: 'checkpoint', name: 's', health: { data: { contextComposition: { fixture: { head: { messages: 3, tokens: 50 } } } } } }];
+  const log = [{ kind: 'checkpoint', name: 's', health: { data: { contextComposition: { fixture: { head: { messages: 3, tokens: 50 }, tail: { messages: 0, tokens: 0 } } } } } }];
   const head = msg('user', carrying('[[c:p.1.in]]', '[[c:p.1.r1]]'));
   const full = { id: 'ok', step: 'd', kind: 'agent', messages: [head, msg('assistant', summaryBlock('[[s:P1]]')), msg('user', carrying('[[c:b.in]]', '[[c:b.r1]]', '[[c:b.r2]]', '[[c:c.in]]', '[[c:c.r1]]', '[[c:d.in]]'))] };
   const noHead = { ...full, id: 'nohead', messages: [msg('user', carrying('[[c:p.1.in]]')), ...full.messages.slice(1)] };
@@ -80,7 +80,7 @@ test('check 6 asks a request for a head message only once it was stored, through
   const script = [turnStep('p.1', 2), turnStep('p.2')];
   const stored = (...canaries) => ({ canaries });
   const store = { messages: ['p.1.in', 'p.1.r1', 'p.1.r2', 'p.2.in', 'p.2.r1'].map((c) => stored(`[[c:${c}]]`)), summaries: [] };
-  const log = [{ kind: 'checkpoint', name: 's', health: { data: { contextComposition: { fixture: { head: { messages: 5, tokens: 50 } } } } } }];
+  const log = [{ kind: 'checkpoint', name: 's', health: { data: { contextComposition: { fixture: { head: { messages: 5, tokens: 50 }, tail: { messages: 0, tokens: 0 } } } } } }];
   const first = { id: 'first', step: 'p.1', kind: 'agent', messages: [msg('user', carrying('[[c:p.1.in]]'))] };
   const second = { id: 'second', step: 'p.1', kind: 'agent', messages: [msg('user', carrying('[[c:p.1.in]]')), msg('assistant', carrying('[[c:p.1.r1]]'))] };
   const secondLost = { id: 'second-lost', step: 'p.1', kind: 'agent', messages: [msg('user', carrying('[[c:p.1.in]]'))] };
@@ -147,4 +147,86 @@ test('extending a prefix of one length to another gives the longer prefix\'s tur
   assert.deepEqual([whole[0], ...extend(0, 25), ...extend(25, 40), whole.at(-1)], whole);
   assert.deepEqual(extend(25, 40), extend(25, 40));
   assert.ok(!extend(25, 40).some((s) => s.id === 'p.name' || s.id === 'p.end'), 'no naming or end checkpoint');
+});
+
+test('K1: check 1 flags every operator alert the host raises, naming its kind and message', () => {
+  const alert = (step, kind, message) => ({ kind: 'ipc', step, event: { type: 'ops:alert', kind, agentName: 'fixture', message } });
+  const flags = everyTurnAnswers([], [
+    alert('c.debt', 'compression-quarantine', '1 span(s) in compression quarantine'),
+    alert('c.cm.2', 'context-maintenance-failed', 'the tick threw'),
+    alert('c.par', 'mcpl-down', 'MCPL server unreachable'),
+    { kind: 'ipc', step: 'c.par', event: { type: 'inference:speech' } },
+  ]);
+  assert.deepEqual(flags.map((f) => [f.check, f.step]), [[1, 'c.debt'], [1, 'c.cm.2'], [1, 'c.par']]);
+  assert.match(flags[0].message, /compression-quarantine.*1 span\(s\) in compression quarantine/);
+  assert.match(flags[1].message, /context-maintenance-failed.*the tick threw/);
+});
+
+// A checkpoint's health panel as connectome-host 0.15.0 reports the last live compile.
+const panel = (name, { budget = 20_000, budgetMet = true, exhausted = false, head, tail } = {}) => ({
+  kind: 'checkpoint', name, step: `${name}.cp`,
+  health: { data: {
+    contextComposition: { fixture: { planVsActual: { planned: 15_000, actual: 15_000, budgetMet, exhausted }, ...(head !== undefined ? { head: { messages: head } } : {}), ...(tail !== undefined ? { tail: { messages: tail } } : {}) } },
+    runtimeSettings: { fixture: budget === null ? {} : { contextBudgetTokens: budget, effectiveContextBudgetTokens: budget } },
+  } },
+});
+
+test('K2: check 3 flags a segment\'s last request over the budget its compile was given, or whose plan context-manager says failed, and reports each headroom', () => {
+  const script = [turnStep('a'), { ...turnStep('b'), segment: 't' }, { ...turnStep('c'), segment: 'u' }, { ...turnStep('d'), segment: 'v' }];
+  const agent = (id, step, messageTokens) => ({ id, step, kind: 'agent', messageTokens, messages: [] });
+  const records = [agent('r1', 'a', 25_000), agent('r2', 'a', 18_000), agent('r3', 'b', 21_000), agent('r4', 'c', 19_000), agent('r5', 'd', 10_000)];
+  const { flags, headroom } = budgets(records, script, [panel('s'), panel('t'), panel('u', { budgetMet: false }), panel('v', { exhausted: true })]);
+  assert.deepEqual(flags.map((f) => [f.check, f.step, f.request]), [[3, 'b', 'r3'], [3, 'c', 'r4'], [3, 'd', 'r5']], 'r1 is over but its compile isn\'t the one the panel describes');
+  assert.match(flags[0].message, /21000.*20000/);
+  assert.deepEqual(headroom.map((h) => [h.segment, h.request, h.messageTokens, h.budget]), [['s', 'r2', 18_000, 20_000], ['t', 'r3', 21_000, 20_000], ['u', 'r4', 19_000, 20_000], ['v', 'r5', 10_000, 20_000]]);
+  const unknown = budgets([agent('r1', 'a', 1_000)], [turnStep('a')], [panel('s', { budget: null })]).flags;
+  assert.equal(unknown.length, 1, 'a panel that names no budget is a flag, never a pass');
+  const none = budgets([], [turnStep('a')], [panel('s')]).flags;
+  assert.equal(none.length, 1, 'a checkpoint whose segment made no agent request is a flag');
+});
+
+test('K3: check 4 flags a request whose raw messages and summaries don\'t run in store order', () => {
+  const inOrder = { id: 'in-order', step: 'c', kind: 'agent', messages: [msg('user', summaryBlock('[[s:C1]]')), msg('assistant', carrying('[[c:b.in]]', '[[c:b.r1]]')), msg('user', carrying('[[c:c.in]]'))] };
+  const merge = { id: 'merge', step: 'c', kind: 'agent', messages: [msg('user', summaryBlock('[[s:C3]]')), msg('user', carrying('[[c:c.in]]'))] };
+  const swapped = { id: 'swapped', step: 'c', kind: 'agent', messages: [msg('user', summaryBlock('[[s:C2]]', '[[s:C1]]')), msg('user', carrying('[[c:c.in]]'))] };
+  const rawFirst = { id: 'raw-first', step: 'c', kind: 'agent', messages: [msg('user', carrying('[[c:c.in]]')), msg('user', summaryBlock('[[s:C3]]'))] };
+  // A raw message inside a summary's span is there twice, which check 4 names as that, not as out of order.
+  const twice = { id: 'twice', step: 'c', kind: 'agent', messages: [msg('user', summaryBlock('[[s:C3]]')), msg('user', carrying('[[c:b.in]]', '[[c:c.in]]'))] };
+  const flags = [inOrder, merge, swapped, rawFirst, twice].flatMap((r) => coverage([r], store)).filter((f) => /store order/.test(f.message));
+  assert.deepEqual(flags.map((f) => f.request), ['swapped', 'raw-first']);
+});
+
+test('K4: check 6 holds a segment\'s last request to the raw tail the host reported, past the two turns before it, among what was stored before it', () => {
+  const script = [turnStep('q'), turnStep('p'), turnStep('a'), turnStep('b'), turnStep('c')];
+  const stored = (...canaries) => ({ canaries });
+  const store = { messages: [...['q.in', 'q.r1', 'p.in', 'p.r1', 'a.in', 'a.r1', 'b.in', 'b.r1'].map((c) => stored(`[[c:${c}]]`)), stored(), stored('[[c:c.in]]'), stored('[[c:c.r1]]')], summaries: [] };
+  const all = ['q.in', 'q.r1', 'p.in', 'p.r1', 'a.in', 'a.r1', 'b.in', 'b.r1', 'c.in'].map((c) => `[[c:${c}]]`);
+  const without = (c) => all.filter((x) => x !== c);
+  const req = (id, step, canaries) => ({ id, step, kind: 'agent', messages: [msg('user', carrying(...canaries))] });
+  const log = [panel('s', { head: 1, tail: 7 })];
+  // The tail's 7 newest before c's request: p.r1 .. b.r1, the clock row, c.in. c.r1 came after it.
+  // Held to that tail, b's request would need q.r1; it isn't the request the panel describes.
+  assert.deepEqual(windowsRaw([req('b-early', 'b', without('[[c:q.r1]]')), req('ok', 'c', all)], script, log, store), []);
+  const folded = windowsRaw([req('folded', 'c', without('[[c:p.r1]]'))], script, log, store);
+  assert.deepEqual(folded.map((f) => [f.check, f.request]), [[6, 'folded']], 'p.r1 is past the two turns before c, inside the reported tail');
+  assert.match(folded[0].message, /tail.*p\.r1/);
+  const noTail = windowsRaw([req('ok', 'c', all)], script, [panel('s', { head: 1 })], store);
+  assert.deepEqual(noTail.map((f) => f.message), ["no tail size was reported at segment s's checkpoint"]);
+});
+
+test('K5: close-merge declares its long message stored in parts, from the store, and parallel the tool round\'s image reaching it as its placeholder', () => {
+  const script = continuation();
+  const wanted = products(configurations().default);
+  const segment = (missing, name) => missing.find((m) => m.segment === name)?.missing ?? [];
+  const parts = { messages: [{ id: 'm1', canaries: ['[[c:c.cm.2.in]]'], bodyGroupId: 'g', shardIndex: 0 }, { id: 'm2', canaries: [], bodyGroupId: 'g', shardIndex: 1 }], summaries: [] };
+  const whole = { messages: [{ id: 'm1', canaries: ['[[c:c.cm.2.in]]'] }], summaries: [] };
+  const LONG = 'the long message stored in parts';
+  assert.ok(!segment(declaredProducts([], script, wanted, parts), 'close-merge').includes(LONG));
+  assert.ok(segment(declaredProducts([], script, wanted, whole), 'close-merge').includes(LONG));
+  assert.ok(!segment(declaredProducts([], script, wanted, null), 'close-merge').includes(LONG), 'with no store read, the store\'s product waits on none');
+  const PLACEHOLDER = 'the tool round\'s image as its placeholder';
+  const imageCall = script.find((s) => s.id === 'c.tool').replies[0].calls.find((c) => c.input.kind === 'image').input.canary;
+  const carryingResult = (images) => ({ id: 'r', step: 'c.par', kind: 'agent', messages: [msg('user', { type: 'tool_result', chars: 61, toolUseId: 't', canaries: [imageCall], ...(images ? { images } : {}) })] });
+  assert.ok(!segment(declaredProducts([carryingResult(0)], script, wanted, null), 'parallel').includes(PLACEHOLDER));
+  assert.ok(segment(declaredProducts([carryingResult(1)], script, wanted, null), 'parallel').includes(PLACEHOLDER), 'an image still in it isn\'t its placeholder');
 });

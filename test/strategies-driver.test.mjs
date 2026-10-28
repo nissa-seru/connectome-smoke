@@ -3,7 +3,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { fileURLToPath } from 'node:url';
-import { recipeHash, recipeIdentity } from '../lib/strategies/driver.mjs';
+import { readSettle, recipeHash, recipeIdentity } from '../lib/strategies/driver.mjs';
 import { configurations } from '../lib/strategies/script.mjs';
 
 const facts = { takesMaintenanceInterval: false, kvUnified: { policy: { cacheScale: 100_000 }, tokenBucketSize: 50_000 } };
@@ -23,4 +23,41 @@ test('the recipe the writer keys on leaves out where the lane runs from and what
     ['the host taking maintenanceIntervalMs', recipeHash({ configuration, facts: { ...facts, takesMaintenanceInterval: true }, channels: ['chat'] })],
     ['another kv-unified block', recipeHash({ configuration, facts: { ...facts, kvUnified: { ...facts.kvUnified, tokenBucketSize: 40_000 } }, channels: ['chat'] })],
   ]) assert.notEqual(other, h, what);
+});
+
+// R7: how a settle reads one `maintain` answer (agent-framework 0.28.0's host-command reply).
+const answer = ({ ready = true, pending = false, queue = 0, compressed = 30, drained = true, deferredWrites = 0, activeTurnAgents = [], parkedAdmissions = 0, ok = true } = {}) => ({
+  ok,
+  maintenance: { ran: true, agents: [{ agentName: 'fixture', ready, ...(ready ? {} : { pending: pending ? 'Compressing chunk 31' : `${queue} chunks pending` }), progress: { totalChunks: 32, chunksCompressed: compressed, l1QueueLength: queue, mergeQueueLength: 0, summaryCounts: { l1: compressed, l2: 1, l3: 0 }, pending } }] },
+  hostMode: { drained, deferredWrites, activeTurnAgents, parkedAdmissions },
+});
+
+test('R7: a settle is settled only when every agent is ready, the host is drained and nothing it deferred is still to land', () => {
+  assert.equal(readSettle(answer(), null).settled, true);
+  for (const [what, a] of [
+    ['a deferred write', answer({ deferredWrites: 1 })],
+    ['a host not drained', answer({ drained: false, activeTurnAgents: ['fixture'] })],
+    ['an agent not ready', answer({ ready: false, pending: true })],
+    ['no deferred-write count in the answer', (() => { const x = answer(); delete x.hostMode.deferredWrites; return x; })()],
+    ['an answer that isn\'t ok', answer({ ok: false })],
+  ]) assert.equal(readSettle(a, null).settled, false, what);
+});
+
+test('R7: work is in flight while a compression runs, a turn is alive or a wake is parked, and otherwise isn\'t', () => {
+  assert.equal(readSettle(answer({ ready: false, pending: true }), null).inFlight, true);
+  assert.equal(readSettle(answer({ drained: false, activeTurnAgents: ['fixture'] }), null).inFlight, true);
+  assert.equal(readSettle(answer({ drained: false, parkedAdmissions: 1 }), null).inFlight, true);
+  assert.equal(readSettle(answer({ ready: false, queue: 2 }), null).inFlight, false);
+  assert.equal(readSettle(answer({ deferredWrites: 1 }), null).inFlight, false);
+});
+
+test('R7: a pass moved the work on when its progress or its deferred writes differ from the pass before, and the first pass always has', () => {
+  const before = answer({ ready: false, queue: 2, compressed: 29 });
+  assert.equal(readSettle(before, null).moved, true);
+  const seen = readSettle(before, null).progress;
+  assert.equal(readSettle(answer({ ready: false, queue: 1, compressed: 30 }), seen).moved, true, 'a chunk compressed');
+  assert.equal(readSettle(answer({ ready: false, queue: 2, compressed: 29 }), seen).moved, false, 'nothing changed');
+  const deferred = readSettle(answer({ deferredWrites: 2 }), null).progress;
+  assert.equal(readSettle(answer({ deferredWrites: 1 }), deferred).moved, true, 'a deferred write landed');
+  assert.equal(readSettle(answer({ deferredWrites: 2 }), deferred).moved, false, 'none landed');
 });
