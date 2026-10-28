@@ -8,7 +8,7 @@ import { hostname, tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { entryKey, findEntry, writeEntry } from '../lib/strategies/writer.mjs';
 
-const parts = { lane: 'abc123', configurationName: 'default', recipeHash: 'r1', versions: { '@animalabs/connectome-host': '0.15.0', '@animalabs/agent-framework': '0.28.0' } };
+const parts = { lane: 'abc123', configurationName: 'default', recipeHash: 'r1', versions: { '@animalabs/connectome-host': '0.15.0', '@animalabs/agent-framework': '0.28.0' }, trialTurns: { min: 20, step: 5, bound: 40 } };
 
 // A stand-in for the lane's runs: a "run" appends its steps' ids to the store's
 // file, and moves the clock a minute a step. Like a real run, it waits on I/O,
@@ -55,10 +55,11 @@ test('W1: the same inputs give the same key, in any order of versions; each part
     { lane: 'abc124' }, { configurationName: 'passthrough' }, { recipeHash: 'r2' },
     { versions: { ...parts.versions, '@animalabs/agent-framework': '0.28.1' } },
     { versions: { ...parts.versions, '@animalabs/membrane': '0.8.0' } },
+    { trialTurns: { min: 1, step: 5, bound: 40 } }, { trialTurns: { min: 20, step: 1, bound: 40 } }, { trialTurns: { min: 20, step: 5, bound: 80 } },
   ]) assert.notEqual(entryKey({ ...parts, ...changed }), k, JSON.stringify(changed));
 });
 
-test('W2, W4: an entry is found only once complete, with its key parts, clock and length; lookup takes the newest for the lane version and configuration', { timeout: 30_000 }, async () => {
+test('W2, W4: an entry is found only once complete, with its key parts, clock and length; lookup takes the newest for the lane version, configuration and trial numbers', { timeout: 30_000 }, async () => {
   const s = setup();
   let open;
   const gate = new Promise((r) => { open = r; });
@@ -86,6 +87,10 @@ test('W2, W4: an entry is found only once complete, with its key parts, clock an
     await writeEntry({ cacheRoot: s.cacheRoot, key: entryKey(other), keyParts: other, script: lane.script, runSteps: lane.runSteps, trial: lane.trial, hardChecks: lane.hardChecks, epoch: 1_000_000, work: s.work });
     assert.deepEqual(findEntry({ cacheRoot: s.cacheRoot, lane: 'abc123', configurationName: 'default' }).entry.versions, newer.versions, 'the newest for the lane version, whichever release wrote it');
     assert.equal(findEntry({ cacheRoot: s.cacheRoot, lane: 'abc123', configurationName: 'passthrough' }), null);
+    assert.ok(findEntry({ cacheRoot: s.cacheRoot, lane: 'abc123', configurationName: 'default', trialTurns: { min: 20, step: 5, bound: 40 } }), 'found under its own trial numbers');
+    for (const turns of [{ min: 1, step: 5, bound: 40 }, { min: 20, step: 1, bound: 40 }, { min: 20, step: 5, bound: 80 }]) {
+      assert.equal(findEntry({ cacheRoot: s.cacheRoot, lane: 'abc123', configurationName: 'default', trialTurns: turns }), null, `not under another trial's numbers: ${JSON.stringify(turns)}`);
+    }
   } finally { s.done(); }
 });
 

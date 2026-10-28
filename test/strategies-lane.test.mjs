@@ -160,7 +160,7 @@ test('N8: a throw on the candidate\'s side resolves the check as couldn\'t-run, 
     const root = join(dir, 'cache');
     mkdirSync(join(root, 'k1', 'store'), { recursive: true });
     writeFileSync(join(root, 'k1', 'entry.json'), JSON.stringify({
-      complete: true, lane: 'L', configurationName: 'default', key: 'k1', versions: {}, prefixTurns: 40, clockEnd: 1, writtenAt: new Date().toISOString(),
+      complete: true, lane: 'L', configurationName: 'default', key: 'k1', versions: {}, trialTurns: { min: 1, step: 1, bound: 1 }, prefixTurns: 40, clockEnd: 1, writtenAt: new Date().toISOString(),
     }));
     let judged = 0;
     const res = await check({
