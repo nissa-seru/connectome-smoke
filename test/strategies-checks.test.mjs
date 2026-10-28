@@ -69,12 +69,25 @@ test('check 6 flags a request that loses a raw message of the head the host repo
   const full = { id: 'ok', step: 'd', kind: 'agent', messages: [head, msg('assistant', summaryBlock('[[s:P1]]')), msg('user', carrying('[[c:b.in]]', '[[c:b.r1]]', '[[c:b.r2]]', '[[c:c.in]]', '[[c:c.r1]]', '[[c:d.in]]'))] };
   const noHead = { ...full, id: 'nohead', messages: [msg('user', carrying('[[c:p.1.in]]')), ...full.messages.slice(1)] };
   const noRecent = { ...full, id: 'norecent', messages: [head, msg('user', carrying('[[c:b.in]]', '[[c:b.r1]]', '[[c:c.in]]', '[[c:c.r1]]'))] };
-  const flags = windowsRaw([full, noHead, noRecent], script, log, store);
+  const flags = [full, noHead, noRecent].flatMap((r) => windowsRaw([r], script, log, store));
   assert.deepEqual(flags.map((f) => f.request), ['nohead', 'norecent'], 'p.2, past the reported head, may fold');
   assert.match(flags[0].message, /p\.1\.r1/);
   assert.match(flags[1].message, /b\.r2/);
   assert.deepEqual(windowsRaw([full], script, [], store).map((f) => f.message), ["no head size was reported at segment s's checkpoint"]);
+  assert.deepEqual(windowsRaw([noHead, full], script, [], store).map((f) => [f.request, f.message]), [['ok', "no head size was reported at segment s's checkpoint"]], 'once a segment, on its last request');
   assert.deepEqual(windowsRaw([noHead], script, log, null), [], 'with no store read, only the recent window is checked');
+});
+test('check 6 holds only a segment\'s last request to the head its checkpoint reported, since the panel describes that compile alone', () => {
+  const script = [turnStep('a'), turnStep('b', 2), turnStep('c'), turnStep('d')];
+  const stored = (...canaries) => ({ canaries });
+  const store = { messages: [stored(), stored('[[c:p.1.in]]'), stored('[[c:p.1.r1]]'), stored('[[c:p.2.in]]'), stored('[[c:p.2.r1]]'), ...['a.in', 'a.r1', 'b.in', 'b.r1', 'b.r2', 'c.in', 'c.r1', 'd.in'].map((c) => stored(`[[c:${c}]]`))], summaries: [] };
+  const log = [{ kind: 'checkpoint', name: 's', health: { data: { contextComposition: { fixture: { head: { messages: 3, tokens: 50 }, tail: { messages: 0, tokens: 0 } } } } } }];
+  // c's compile had a head of two messages, so p.1.r1 reached it inside P1; by the checkpoint the head had grown to three.
+  const early = { id: 'early', step: 'c', kind: 'agent', messages: [msg('user', carrying('[[c:p.1.in]]')), msg('assistant', summaryBlock('[[s:P1]]')), msg('user', carrying('[[c:a.in]]', '[[c:a.r1]]', '[[c:b.in]]', '[[c:b.r1]]', '[[c:b.r2]]', '[[c:c.in]]'))] };
+  const last = { id: 'last', step: 'd', kind: 'agent', messages: [msg('user', carrying('[[c:p.1.in]]', '[[c:p.1.r1]]')), msg('assistant', summaryBlock('[[s:P2]]')), msg('user', carrying('[[c:b.in]]', '[[c:b.r1]]', '[[c:b.r2]]', '[[c:c.in]]', '[[c:c.r1]]', '[[c:d.in]]'))] };
+  const lastLost = { ...last, id: 'last-lost', messages: [msg('user', carrying('[[c:p.1.in]]')), ...last.messages.slice(1)] };
+  assert.deepEqual(windowsRaw([early, last], script, log, store), []);
+  assert.deepEqual(windowsRaw([early, lastLost], script, log, store).map((f) => [f.request, f.message]), [['last-lost', "the head window's [[c:p.1.r1]] isn't raw"]]);
 });
 test('check 6 asks a request for a head message only once it was stored, through the turn\'s own earlier replies', () => {
   const script = [turnStep('p.1', 2), turnStep('p.2')];
@@ -84,7 +97,8 @@ test('check 6 asks a request for a head message only once it was stored, through
   const first = { id: 'first', step: 'p.1', kind: 'agent', messages: [msg('user', carrying('[[c:p.1.in]]'))] };
   const second = { id: 'second', step: 'p.1', kind: 'agent', messages: [msg('user', carrying('[[c:p.1.in]]')), msg('assistant', carrying('[[c:p.1.r1]]'))] };
   const secondLost = { id: 'second-lost', step: 'p.1', kind: 'agent', messages: [msg('user', carrying('[[c:p.1.in]]'))] };
-  assert.deepEqual(windowsRaw([first, second], script, log, store), [], 'neither asks for a reply that came after it');
+  assert.deepEqual(windowsRaw([first], script, log, store), [], 'the first request isn\'t asked for its own reply');
+  assert.deepEqual(windowsRaw([first, second], script, log, store), []);
   const flags = windowsRaw([first, secondLost], script, log, store);
   assert.deepEqual(flags.map((f) => [f.request, f.message]), [['second-lost', "the head window's [[c:p.1.r1]] isn't raw"]]);
 });
@@ -367,8 +381,27 @@ test('K3b: after a head-window reset, store order holds within the head window a
   const swappedRest = { id: 'swapped-rest', step: 'c', kind: 'agent', messages: [msg('user', carrying('[[c:b.in]]')), msg('assistant', carrying('[[c:b.r1]]')), msg('user', carrying('[[c:c.in]]'), summaryBlock('[[s:C1]]'))] };
   const order = (r) => coverage([r], resetStore, resetScript, headOf3).filter((f) => /store order/.test(f.message)).map((f) => f.request);
   assert.deepEqual([correct, swappedHead, swappedRest].flatMap(order), ['swapped-head', 'swapped-rest']);
-  // With no head size reported, the request is held to one order, as before.
-  assert.deepEqual(coverage([correct], resetStore).filter((f) => /store order/.test(f.message)).map((f) => f.request), ['correct']);
+  // With no head size reported, the request splits at its head's start alone: what was stored from there on, and what was stored before.
+  const unsized = (r) => coverage([r], resetStore).filter((f) => /store order/.test(f.message)).map((f) => f.request);
+  assert.deepEqual([correct, swappedHead, swappedRest].flatMap(unsized), ['swapped-head']);
+});
+
+test('check 4 holds only a segment\'s last request to the head its checkpoint reported; an earlier one splits at the head\'s start alone', () => {
+  const store = {
+    messages: [...resetStore.messages, { id: 'm7', canaries: ['[[c:c.r1]]'] }, { id: 'm8', canaries: ['[[c:d.in]]'] }],
+    summaries: resetStore.summaries,
+  };
+  const script = [...resetScript, turnStep('d')];
+  const headOf2 = [panel('s', { head: 2, tail: 0 })];
+  // c's compile had a head of three messages (m3, b.in, b.r1); by the checkpoint it had shrunk to two.
+  const early = { id: 'early', step: 'c', kind: 'agent', messages: [msg('user', carrying('[[c:b.in]]')), msg('assistant', carrying('[[c:b.r1]]')), msg('user', summaryBlock('[[s:C1]]'), carrying('[[c:c.in]]'))] };
+  const last = { id: 'last', step: 'd', kind: 'agent', messages: [msg('user', carrying('[[c:b.in]]')), msg('user', summaryBlock('[[s:C1]]')), msg('assistant', carrying('[[c:b.r1]]')), msg('user', carrying('[[c:c.in]]')), msg('assistant', carrying('[[c:c.r1]]')), msg('user', carrying('[[c:d.in]]'))] };
+  const lastSwapped = { ...last, id: 'last-swapped', messages: [msg('user', carrying('[[c:b.in]]')), msg('assistant', carrying('[[c:b.r1]]')), msg('user', summaryBlock('[[s:C1]]')), ...last.messages.slice(3)] };
+  const earlySwapped = { ...early, id: 'early-swapped', messages: [msg('user', carrying('[[c:b.r1]]')), msg('assistant', carrying('[[c:b.in]]')), early.messages[2]] };
+  const order = (rs) => coverage(rs, store, script, headOf2).filter((f) => /store order/.test(f.message)).map((f) => f.request);
+  assert.deepEqual(order([early, last]), []);
+  assert.deepEqual(order([early, lastSwapped]), ['last-swapped'], 'b.r1 is past the reported head, so it comes after the history before the head');
+  assert.deepEqual(order([earlySwapped, last]), ['early-swapped'], 'from the head\'s start on, an earlier request still runs in store order');
 });
 
 test('K6b: check 6\'s head window starts at the last topic transition stored before the request', () => {
