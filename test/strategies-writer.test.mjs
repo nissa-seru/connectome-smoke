@@ -8,7 +8,7 @@ import { hostname, tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { entryKey, findEntry, writeEntry } from '../lib/strategies/writer.mjs';
 
-const parts = { laneCommit: 'abc123', configurationName: 'default', recipeHash: 'r1', versions: { '@animalabs/connectome-host': '0.15.0', '@animalabs/agent-framework': '0.28.0' } };
+const parts = { lane: 'abc123', configurationName: 'default', recipeHash: 'r1', versions: { '@animalabs/connectome-host': '0.15.0', '@animalabs/agent-framework': '0.28.0' } };
 
 // A stand-in for the lane's runs: a "run" appends its steps' ids to the store's
 // file, and moves the clock a minute a step. Like a real run, it waits on I/O,
@@ -52,13 +52,13 @@ test('W1: the same inputs give the same key, in any order of versions; each part
   assert.equal(entryKey({ ...parts, versions: Object.fromEntries(Object.entries(parts.versions).reverse()) }), k);
   assert.match(k, /^[0-9a-f]{64}$/);
   for (const changed of [
-    { laneCommit: 'abc124' }, { configurationName: 'passthrough' }, { recipeHash: 'r2' },
+    { lane: 'abc124' }, { configurationName: 'passthrough' }, { recipeHash: 'r2' },
     { versions: { ...parts.versions, '@animalabs/agent-framework': '0.28.1' } },
     { versions: { ...parts.versions, '@animalabs/membrane': '0.8.0' } },
   ]) assert.notEqual(entryKey({ ...parts, ...changed }), k, JSON.stringify(changed));
 });
 
-test('W2, W4: an entry is found only once complete, with its key parts, clock and length; lookup takes the newest for the lane commit and configuration', { timeout: 30_000 }, async () => {
+test('W2, W4: an entry is found only once complete, with its key parts, clock and length; lookup takes the newest for the lane version and configuration', { timeout: 30_000 }, async () => {
   const s = setup();
   let open;
   const gate = new Promise((r) => { open = r; });
@@ -66,11 +66,11 @@ test('W2, W4: an entry is found only once complete, with its key parts, clock an
   try {
     const writing = write(s, lane);
     while (lane.calls.trials.length === 0) await new Promise((r) => setTimeout(r, 5));
-    assert.equal(findEntry({ cacheRoot: s.cacheRoot, laneCommit: 'abc123', configurationName: 'default' }), null, 'not found while it is being written');
+    assert.equal(findEntry({ cacheRoot: s.cacheRoot, lane: 'abc123', configurationName: 'default' }), null, 'not found while it is being written');
     open();
     const { entry, written } = await writing;
     assert.equal(written, true);
-    const found = findEntry({ cacheRoot: s.cacheRoot, laneCommit: 'abc123', configurationName: 'default' });
+    const found = findEntry({ cacheRoot: s.cacheRoot, lane: 'abc123', configurationName: 'default' });
     assert.equal(found.entry.key, entryKey(parts));
     for (const [k, v] of Object.entries(parts)) assert.deepEqual(found.entry[k], v, k);
     assert.equal(found.entry.prefixTurns, 20);
@@ -81,11 +81,11 @@ test('W2, W4: an entry is found only once complete, with its key parts, clock an
     const newer = { ...parts, versions: { ...parts.versions, '@animalabs/agent-framework': '0.29.0' } };
     await new Promise((r) => setTimeout(r, 5));
     await writeEntry({ cacheRoot: s.cacheRoot, key: entryKey(newer), keyParts: newer, script: lane.script, runSteps: lane.runSteps, trial: lane.trial, hardChecks: lane.hardChecks, epoch: 1_000_000, work: s.work });
-    const other = { ...parts, laneCommit: 'zzz' };
+    const other = { ...parts, lane: 'zzz' };
     await new Promise((r) => setTimeout(r, 5));
     await writeEntry({ cacheRoot: s.cacheRoot, key: entryKey(other), keyParts: other, script: lane.script, runSteps: lane.runSteps, trial: lane.trial, hardChecks: lane.hardChecks, epoch: 1_000_000, work: s.work });
-    assert.deepEqual(findEntry({ cacheRoot: s.cacheRoot, laneCommit: 'abc123', configurationName: 'default' }).entry.versions, newer.versions, 'the newest for the lane commit, whichever release wrote it');
-    assert.equal(findEntry({ cacheRoot: s.cacheRoot, laneCommit: 'abc123', configurationName: 'passthrough' }), null);
+    assert.deepEqual(findEntry({ cacheRoot: s.cacheRoot, lane: 'abc123', configurationName: 'default' }).entry.versions, newer.versions, 'the newest for the lane version, whichever release wrote it');
+    assert.equal(findEntry({ cacheRoot: s.cacheRoot, lane: 'abc123', configurationName: 'passthrough' }), null);
   } finally { s.done(); }
 });
 
@@ -161,7 +161,7 @@ test('W7: the hard checks\' outcome is in the entry, and a failing one still wri
   try {
     const { entry } = await write(s, lane);
     assert.deepEqual(entry.hardChecks, { ok: false, flags: ['audit-topology: 2 orphans'] });
-    assert.ok(findEntry({ cacheRoot: s.cacheRoot, laneCommit: 'abc123', configurationName: 'default' }));
+    assert.ok(findEntry({ cacheRoot: s.cacheRoot, lane: 'abc123', configurationName: 'default' }));
   } finally { s.done(); }
 });
 
@@ -169,11 +169,11 @@ test('W8: a write that fails leaves no entry, says why, and frees the lock for t
   const s = setup();
   try {
     await assert.rejects(write(s, fakeLane({ passesAt: 30, failOn: 'p.23' })), /p\.23 failed/);
-    assert.equal(findEntry({ cacheRoot: s.cacheRoot, laneCommit: 'abc123', configurationName: 'default' }), null);
+    assert.equal(findEntry({ cacheRoot: s.cacheRoot, lane: 'abc123', configurationName: 'default' }), null);
     const failingTrial = fakeLane({ passesAt: 20 });
     failingTrial.trial = async () => { throw new Error('the continuation could not run'); };
     await assert.rejects(write(s, failingTrial, { lockWaitMs: 200 }), /could not run/);
-    assert.equal(findEntry({ cacheRoot: s.cacheRoot, laneCommit: 'abc123', configurationName: 'default' }), null);
+    assert.equal(findEntry({ cacheRoot: s.cacheRoot, lane: 'abc123', configurationName: 'default' }), null);
     assert.equal((await write(s, fakeLane({ passesAt: 20 }), { lockWaitMs: 200 })).written, true, 'the lock is free again');
   } finally { s.done(); }
 });
