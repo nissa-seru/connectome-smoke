@@ -598,8 +598,8 @@ async function strategiesStep(hostPkg, meta) {
 /**
  * The fixture's base, for a change: each changed repository at its `main`, in a worktree
  * beside its checkout, installed with its own install's command and with compose's rule for
- * nested copies, and built in dependency order as its own tree builds (the host runs from
- * its source, so it isn't built). The composed root's links point at it for the base run
+ * nested copies, and built in dependency order as its own tree builds, by the worktree's own
+ * package.json (the host runs from its source, so it isn't built). The composed root's links point at it for the base run
  * only, and back however that ends. Before the run, the base's host must resolve each
  * package swapped in to its worktree, under bun, as the resolution proof checks.
  */
@@ -646,7 +646,7 @@ async function strategiesBase(id, hostPkg, runBase) {
     const order = topoOrder(PKGS.map((p) => p.key), EDGES);
     for (const { p, dir } of [...built].sort((a, b) => order.indexOf(a.p.key) - order.indexOf(b.p.key))) {
       if (p.key === HOST) continue;
-      const cmd = p.R.build ?? (p.pj.scripts?.build ? 'npm run build' : null);
+      const cmd = p.R.build ?? (readJson(join(dir, 'package.json')).scripts?.build ? 'npm run build' : null);
       if (cmd) checked(id, dir, cmd, { timeout: 900_000 });
     }
     const want = swapped.map(([name]) => name);

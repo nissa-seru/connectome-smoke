@@ -4,11 +4,12 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync, unlinkSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync, unlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { cacheRoot, failureNames, laneVersion, pruneCache, stackVersions } from '../lib/strategies/lane.mjs';
+import { cacheRoot, check, failureNames, laneVersion, pruneCache, stackVersions } from '../lib/strategies/lane.mjs';
+import { configurations } from '../lib/strategies/script.mjs';
 
 const LANE = fileURLToPath(new URL('../lib/strategies/lane.mjs', import.meta.url));
 
@@ -150,4 +151,24 @@ test('N10: failures are named by check and step, or check 2 and segment and prod
   ]);
   assert.deepEqual(failureNames(counted(9123)), names, 'the same failures in another run go by the same names');
   assert.deepEqual(failureNames({ invalid: [], flags: [], missing: [], didntRun: [] }), []);
+});
+
+test('N8: a throw on the candidate\'s side resolves the check as couldn\'t-run, naming what threw', { timeout: 60_000 }, async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'fxn8-'));
+  try {
+    const root = join(dir, 'cache');
+    mkdirSync(join(root, 'k1', 'store'), { recursive: true });
+    writeFileSync(join(root, 'k1', 'entry.json'), JSON.stringify({
+      complete: true, lane: 'L', configurationName: 'default', key: 'k1', versions: {}, prefixTurns: 40, clockEnd: 1, writtenAt: new Date().toISOString(),
+    }));
+    let judged = 0;
+    const res = await check({
+      cacheRoot: root, configuration: configurations().default, hostDir: join(dir, 'no-host'), installDir: join(dir, 'no-host'),
+      work: join(dir, 'work'), evidence: join(dir, 'evidence'), judge: async () => { judged++; return { flags: [], missing: [] }; }, trial: { min: 1, step: 1, bound: 1 }, lane: 'L',
+    });
+    assert.equal(res.outcome, 'couldnt-run');
+    assert.match(res.reason, /^the candidate's side couldn't run: .*recipe facts/s);
+    assert.equal(judged, 0, 'nothing was judged');
+    assert.equal(JSON.parse(readFileSync(join(dir, 'evidence', 'result.json'), 'utf-8')).outcome, 'couldnt-run', 'the evidence says so too');
+  } finally { rmSync(dir, { recursive: true, force: true }); }
 });

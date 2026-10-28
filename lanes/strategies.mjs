@@ -68,7 +68,12 @@ if (command === 'write') {
   const name = opt('configuration', 'default');
   if (!all[name]) fail(`no configuration ${name}; there are ${Object.keys(all).join(', ')}`);
   if (!opt('host-dir') || !opt('install-dir')) fail('check needs --host-dir and --install-dir');
-  const r = await check({ cacheRoot: root, configuration: all[name], hostDir: resolve(opt('host-dir')), installDir: resolve(opt('install-dir')), work: join(work, 'check'), evidence: join(out, 'check') });
+  let r;
+  try {
+    r = await check({ cacheRoot: root, configuration: all[name], hostDir: resolve(opt('host-dir')), installDir: resolve(opt('install-dir')), work: join(work, 'check'), evidence: join(out, 'check') });
+  } catch (e) {
+    fail(`the check couldn't run: ${e?.stack || e}`);
+  }
   console.log((r.report?.lines ?? [`couldn't run: ${r.reason}`]).join('\n'));
   process.exit(r.outcome === 'pass' ? 0 : r.outcome === 'couldnt-run' ? 2 : 1);
 }
