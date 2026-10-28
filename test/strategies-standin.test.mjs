@@ -341,6 +341,32 @@ test('T7/T14/T15: summariser requests are answered at once, every arrival is rep
   assert.equal(summ.answer.shape, 'summary');
 });
 
+test('T18: each message in a record has a digest, the same wherever it is carried unchanged, whatever its cache marker or a tool image ref\'s nonce, and an answer records the tool_use ids it minted', async () => {
+  const standin = await startStandin({ configuration: { windowTokens: 50_000 } });
+  let records = null;
+  try {
+    standin.setStep({ ...step('d', [{ text: '[[c:d.r1]] calling', calls: [{ name: 'fixture--result', input: { size: 300, kind: 'prose', canary: '[[c:d.call1]]' } }, { name: 'fixture--result', input: { size: 300, kind: 'prose', canary: '[[c:d.call2]]' } }] }, { text: '[[c:d.r2]] done' }, { text: '[[c:d.r3]] again' }]), canaries: ['[[c:d.in]]', '[[c:d.call1]]'] });
+    const head = { model: 'claude-sonnet-4-5', max_tokens: 2048, stream: true, system: 'You are the fixture agent.', tools: TOOLS };
+    const opening = (ref, marked) => ({ role: 'user', content: [{ type: 'text', text: `user: [[c:d.in]] look at ${ref}`, ...(marked ? { cache_control: { type: 'ephemeral' } } : {}) }] });
+    const first = await post(standin.url, { ...head, messages: [opening('img_abc123_4', false)] });
+    const ids = first.json.content.filter((b) => b.type === 'tool_use').map((b) => b.id);
+    const round = [{ role: 'assistant', content: first.json.content }, { role: 'user', content: ids.map((id) => ({ type: 'tool_result', tool_use_id: id, content: [{ type: 'text', text: '[[c:d.call1]] ok' }] })) }];
+    await post(standin.url, { ...head, messages: [opening('img_def456_4', true), ...round] });
+    await post(standin.url, { ...head, messages: [opening('img_abc123_5', false), ...round] });
+    records = await standin.close();
+    const [one, two, three] = records;
+    assert.ok(records.every((r) => r.kind === 'agent'), 'all three are the step\'s');
+    assert.match(one.messages[0].digest, /^[0-9a-f]{16}$/);
+    assert.equal(two.messages[0].digest, one.messages[0].digest, 'a cache marker and a ref\'s nonce leave it as it was');
+    assert.notEqual(three.messages[0].digest, one.messages[0].digest, 'a change elsewhere in it, the ref\'s number here, changes it');
+    assert.deepEqual(three.messages.slice(1).map((m) => m.digest), two.messages.slice(1).map((m) => m.digest), 'the round carried unchanged keeps its digests');
+    assert.notEqual(two.messages[1].digest, two.messages[2].digest);
+    assert.equal(ids.length, 2);
+    assert.deepEqual(one.answer.toolUseIds, ids, 'the ids it minted, in order');
+    assert.deepEqual(two.answer.toolUseIds, [], 'an answer that calls no tool mints none');
+  } finally { if (!records) await standin.close(); }
+});
+
 test('T16: each request\'s record counts its messages\' tokens apart from its system prompt and tools, the same every time for the same messages', async () => {
   const standin = await startStandin({ configuration: { windowTokens: 50_000 } });
   let records = null;

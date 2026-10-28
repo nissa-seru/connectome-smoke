@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { budgets, declaredProducts, everyTurnAnswers, wellFormed, windowsRaw, calibrationEdge, coverage, bookkeeping } from '../lib/strategies/checks.mjs';
+import { budgets, requestKinds, declaredProducts, everyTurnAnswers, wellFormed, windowsRaw, calibrationEdge, coverage, bookkeeping } from '../lib/strategies/checks.mjs';
 import { continuation, products, configurations, prefix, extend, L3_PRODUCT } from '../lib/strategies/script.mjs';
 
 const msg = (role, ...blocks) => ({ role, blocks });
@@ -172,20 +172,83 @@ const panel = (name, { budget = 20_000, budgetMet = true, exhausted = false, hea
   } },
 });
 
-// K2b: a run's log as the driver writes it, for the agent's requests: each stream event, then the
-// request it led to.
+// An agent request as the stand-in records it (T16, T18): its messages, each with its digest, their
+// tokens, its max tokens, the usage it answered with, and the tool_use ids its answer minted.
+// `opened` opens a turn, or restarts one with messages context-manager rendered afresh;
+// `continued` carries the request before it whole, then the round that request's answer opened.
+const asked = (id, step, messageTokens, input, messages, toolUseIds) => ({ id, step, kind: 'agent', messageTokens, maxTokens: 2_048, usage: { input_tokens: 100, cache_read_input_tokens: input - 100, cache_creation_input_tokens: 0 }, messages, answer: { shape: 'reply', stop: toolUseIds.length ? 'tool_use' : 'end_turn', toolUseIds } });
+const opened = (id, step, messageTokens, input = messageTokens + 8_000, calls = []) => asked(id, step, messageTokens, input, [{ role: 'user', digest: `in.${id}`, blocks: [text()] }], calls);
+const continued = (before, id, messageTokens, input = messageTokens + 8_000, calls = []) => asked(id, before.step, messageTokens, input, [
+  ...before.messages,
+  { role: 'assistant', digest: `reply.${before.id}`, blocks: [text(), ...before.answer.toolUseIds.map(call)] },
+  { role: 'user', digest: `results.${before.id}`, blocks: before.answer.toolUseIds.map((id) => result(id)) },
+], calls);
+// A run's log as the driver writes it: the host's stream events and the stand-in's arrivals.
 const started = { kind: 'ipc', event: { type: 'inference:started', agentName: 'fixture' } };
 const resumed = { kind: 'ipc', event: { type: 'inference:stream_resumed', agentName: 'fixture' } };
-const restarted = { kind: 'ipc', event: { type: 'inference:stream_restarted', agentName: 'fixture' } };
 const sent = (id) => ({ kind: 'request', request: { id, kind: 'agent' } });
-// An agent request as the stand-in records it: its messages' tokens, its max tokens, and the usage it answered with.
-const agentReq = (id, step, messageTokens, input = messageTokens + 8_000) => ({ id, step, kind: 'agent', messageTokens, maxTokens: 2_048, usage: { input_tokens: 100, cache_read_input_tokens: input - 100, cache_creation_input_tokens: 0 }, messages: [] });
+
+test('K2c: a step\'s first request is compiled, and a later one is a continuation only when it carries the request before it whole, then that request\'s own tool round', () => {
+  const a1 = opened('a1', 'a', 1_000, undefined, ['t1']);
+  const a2 = continued(a1, 'a2', 1_100, undefined, ['t2', 't3']);
+  const a3 = continued(a2, 'a3', 1_200);
+  // A restart: context-manager renders afresh, so the messages before the round differ.
+  const b1 = opened('b1', 'b', 1_000, undefined, ['u1']);
+  const b2 = continued(b1, 'b2', 1_100);
+  b2.messages[0] = { ...b2.messages[0], digest: 'rendered afresh' };
+  // The assistant's message carries ids the stand-in didn't answer the request before with.
+  const c1 = opened('c1', 'c', 1_000, undefined, ['v1']);
+  const c2 = continued(c1, 'c2', 1_100);
+  c2.messages[1] = { ...c2.messages[1], blocks: [text(), call('v9')] };
+  // Something other than the user's follows the round.
+  const d1 = opened('d1', 'd', 1_000, undefined, ['w1']);
+  const d2 = continued(d1, 'd2', 1_100);
+  d2.messages.push({ role: 'assistant', digest: 'more', blocks: [text()] }, { role: 'user', digest: 'again', blocks: [text()] });
+  // An answer with no tool call, and a refusal, open no round to continue.
+  const e1 = opened('e1', 'e', 1_000);
+  const e2 = continued(e1, 'e2', 1_100);
+  const f1 = { ...opened('f1', 'f', 1_000), answer: { shape: 'refused' } };
+  const f2 = continued({ ...f1, answer: { toolUseIds: ['z1'] } }, 'f2', 1_100);
+  // A step's first request, though it arrives just after step a's a2 and carries a2 and its round.
+  const g1 = { ...continued(a2, 'g1', 1_300), step: 'g' };
+  const kinds = requestKinds([a1, a2, g1, a3, b1, b2, c1, c2, d1, d2, e1, e2, f1, f2]);
+  assert.deepEqual(Object.fromEntries(kinds), {
+    a1: 'compiled', a2: 'continuation', a3: 'continuation',
+    b1: 'compiled', b2: 'compiled', c1: 'compiled', c2: 'compiled', d1: 'compiled', d2: 'compiled',
+    e1: 'compiled', e2: 'compiled', f1: 'compiled', f2: 'compiled', g1: 'compiled',
+  });
+  // A record without digests, its own or the request before it's, can't be classified.
+  const bare = (r) => ({ ...r, messages: r.messages.map(({ digest, ...m }) => m) });
+  const h1 = opened('h1', 'h', 1_000, undefined, ['x1']);
+  const h2 = continued(h1, 'h2', 1_100);
+  assert.deepEqual(Object.fromEntries(requestKinds([bare(h1), h2])), { h1: null, h2: null });
+  assert.deepEqual(Object.fromEntries(requestKinds([h1, bare(h2)])), { h1: 'compiled', h2: null });
+});
+
+test('K2c: the same records give the same kinds and verdicts whether each stream event is logged before its request, after it, or not at all', () => {
+  const script = [turnStep('a')];
+  // r2 and r3 are over what a compile could plan to (17,952) and under the stream bound: only as
+  // continuations do they pass.
+  const r1 = opened('r1', 'a', 15_000, 23_000, ['t1']);
+  const r2 = continued(r1, 'r2', 19_000, 25_000, ['t2']);
+  const r3 = continued(r2, 'r3', 20_000, 26_000);
+  const records = [r1, r2, r3];
+  const first = [started, sent('r1'), resumed, sent('r2'), resumed, sent('r3'), panel('s')];
+  const late = [sent('r1'), started, sent('r2'), resumed, sent('r3'), resumed, panel('s')];
+  const none = [sent('r1'), sent('r2'), sent('r3'), panel('s')];
+  const [a, b, c] = [first, late, none].map((log) => budgets(records, script, log));
+  assert.deepEqual(a.flags, []);
+  assert.deepEqual(b, a, 'each event after its request');
+  assert.deepEqual(c, a, 'no stream event at all');
+  assert.deepEqual(a.headroom.map((h) => [h.kind, h.request]), [['compiled', 'r1'], ['continuation', 'r3']]);
+});
 
 test('K2b: a compiled request is held to the budget less its own max tokens, every one of them, and context-manager\'s verdict flags the segment\'s last compile', () => {
   const script = [turnStep('a'), { ...turnStep('b'), segment: 't' }];
-  // 20,000 less 2,048 is 17,952: r1 fits, r2 is under the setting but over what its compile could plan to.
-  const records = [agentReq('r1', 'a', 17_952), agentReq('r2', 'a', 18_000), agentReq('r3', 'b', 10_000)];
-  const log = [started, sent('r1'), started, sent('r2'), panel('s'), restarted, sent('r3'), panel('t', { budgetMet: false })];
+  // 20,000 less 2,048 is 17,952: r1 fits, r2 (a restart's compile) is under the setting but over
+  // what its compile could plan to.
+  const records = [opened('r1', 'a', 17_952), opened('r2', 'a', 18_000), opened('r3', 'b', 10_000)];
+  const log = [panel('s'), panel('t', { budgetMet: false })];
   const { flags, headroom } = budgets(records, script, log);
   assert.deepEqual(flags.map((f) => [f.check, f.step, f.request]), [[3, 'a', 'r2'], [3, 'b', 'r3']]);
   assert.match(flags[0].message, /18000.*17952/);
@@ -196,8 +259,10 @@ test('K2b: a compiled request is held to the budget less its own max tokens, eve
 test('K2b: a continuation round is held to the stream bound, flagged only when the round before it was already over it', () => {
   const script = [turnStep('a')];
   // The stream bound 30,000 for the test; agent-framework restarts once a round's input passes it.
-  const records = [agentReq('r1', 'a', 15_000, 29_000), agentReq('r2', 'a', 22_000, 31_000), agentReq('r3', 'a', 23_000, 32_000)];
-  const log = [started, sent('r1'), resumed, sent('r2'), resumed, sent('r3'), panel('s')];
+  const r1 = opened('r1', 'a', 15_000, 29_000, ['t1']);
+  const r2 = continued(r1, 'r2', 22_000, 31_000, ['t2']);
+  const records = [r1, r2, continued(r2, 'r3', 23_000, 32_000)];
+  const log = [panel('s')];
   const { flags, headroom } = budgets(records, script, log, { streamBound: 30_000 });
   assert.deepEqual(flags.map((f) => f.request), ['r3'], 'r2 may cross the bound, since r1 was under it; r3 follows a round over it');
   assert.match(flags[0].message, /31000.*30000/);
@@ -207,18 +272,19 @@ test('K2b: a continuation round is held to the stream bound, flagged only when t
   assert.deepEqual(verdict.map((f) => f.request), ['r1'], 'context-manager\'s verdict is on the compile, not the turn\'s last round');
 });
 
-test('K2b: a request the run\'s events don\'t classify, a budget that changed since the last checkpoint, and a panel without the agent each say the check couldn\'t judge', () => {
+test('K2b: a request its records don\'t classify, a budget that changed since the last checkpoint, and a panel without the agent each say the check couldn\'t judge', () => {
   const script = [turnStep('a'), { ...turnStep('b'), segment: 't' }];
-  const unclassified = budgets([agentReq('r1', 'a', 1_000)], [turnStep('a')], [sent('r1'), panel('s')]).flags;
+  const undigested = { ...opened('r1', 'a', 1_000), messages: [{ role: 'user', blocks: [text()] }] };
+  const unclassified = budgets([undigested], [turnStep('a')], [panel('s')]).flags;
   assert.deepEqual(unclassified.map((f) => f.request), ['r1']);
   assert.match(unclassified[0].message, /couldn't judge/);
-  const moved = budgets([agentReq('r1', 'a', 1_000), agentReq('r2', 'b', 1_000)], script, [started, sent('r1'), panel('s'), started, sent('r2'), panel('t', { budget: 30_000 })]).flags;
+  const moved = budgets([opened('r1', 'a', 1_000), opened('r2', 'b', 1_000)], script, [panel('s'), panel('t', { budget: 30_000 })]).flags;
   assert.deepEqual(moved.map((f) => f.step), ['b']);
   assert.match(moved[0].message, /couldn't judge.*20000.*30000/);
   const other = { ...panel('s'), health: { data: { contextComposition: { other: {}, fixture: panel('s').health.data.contextComposition.fixture }, runtimeSettings: { other: { effectiveContextBudgetTokens: 1_000 }, fixture: { effectiveContextBudgetTokens: 20_000 } } } } };
-  assert.deepEqual(budgets([agentReq('r1', 'a', 5_000)], [turnStep('a')], [started, sent('r1'), other]).flags, [], 'the panel is read for the run\'s agent, not its first entry');
-  assert.ok(budgets([agentReq('r1', 'a', 5_000)], [turnStep('a')], [started, sent('r1'), other], { agent: 'nobody' }).flags.some((f) => /no entry for nobody/.test(f.message)), 'a panel without the agent is a flag');
-  assert.equal(budgets([agentReq('r1', 'a', 1_000)], [turnStep('a')], [started, sent('r1'), panel('s', { budget: null })]).flags.length, 1, 'a panel that names no budget is a flag, never a pass');
+  assert.deepEqual(budgets([opened('r1', 'a', 5_000)], [turnStep('a')], [other]).flags, [], 'the panel is read for the run\'s agent, not its first entry');
+  assert.ok(budgets([opened('r1', 'a', 5_000)], [turnStep('a')], [other], { agent: 'nobody' }).flags.some((f) => /no entry for nobody/.test(f.message)), 'a panel without the agent is a flag');
+  assert.equal(budgets([opened('r1', 'a', 1_000)], [turnStep('a')], [panel('s', { budget: null })]).flags.length, 1, 'a panel that names no budget is a flag, never a pass');
   assert.equal(budgets([], [turnStep('a')], [panel('s')]).flags.length, 1, 'a checkpoint whose segment made no agent request is a flag');
 });
 
