@@ -160,6 +160,7 @@ test('K1: check 1 flags every operator alert the host raises, naming its kind an
   assert.deepEqual(flags.map((f) => [f.check, f.step]), [[1, 'c.debt'], [1, 'c.cm.2'], [1, 'c.par']]);
   assert.match(flags[0].message, /compression-quarantine.*1 span\(s\) in compression quarantine/);
   assert.match(flags[1].message, /context-maintenance-failed.*the tick threw/);
+  assert.deepEqual(flags.map((f) => f.what), ['compression-quarantine', 'context-maintenance-failed', 'mcpl-down'], 'K1b: each carries its kind');
 });
 
 // A checkpoint's health panel as connectome-host 0.15.0 reports the last live compile.
@@ -171,18 +172,85 @@ const panel = (name, { budget = 20_000, budgetMet = true, exhausted = false, hea
   } },
 });
 
-test('K2: check 3 flags a segment\'s last request over the budget its compile was given, or whose plan context-manager says failed, and reports each headroom', () => {
-  const script = [turnStep('a'), { ...turnStep('b'), segment: 't' }, { ...turnStep('c'), segment: 'u' }, { ...turnStep('d'), segment: 'v' }];
-  const agent = (id, step, messageTokens) => ({ id, step, kind: 'agent', messageTokens, messages: [] });
-  const records = [agent('r1', 'a', 25_000), agent('r2', 'a', 18_000), agent('r3', 'b', 21_000), agent('r4', 'c', 19_000), agent('r5', 'd', 10_000)];
-  const { flags, headroom } = budgets(records, script, [panel('s'), panel('t'), panel('u', { budgetMet: false }), panel('v', { exhausted: true })]);
-  assert.deepEqual(flags.map((f) => [f.check, f.step, f.request]), [[3, 'b', 'r3'], [3, 'c', 'r4'], [3, 'd', 'r5']], 'r1 is over but its compile isn\'t the one the panel describes');
-  assert.match(flags[0].message, /21000.*20000/);
-  assert.deepEqual(headroom.map((h) => [h.segment, h.request, h.messageTokens, h.budget]), [['s', 'r2', 18_000, 20_000], ['t', 'r3', 21_000, 20_000], ['u', 'r4', 19_000, 20_000], ['v', 'r5', 10_000, 20_000]]);
-  const unknown = budgets([agent('r1', 'a', 1_000)], [turnStep('a')], [panel('s', { budget: null })]).flags;
-  assert.equal(unknown.length, 1, 'a panel that names no budget is a flag, never a pass');
-  const none = budgets([], [turnStep('a')], [panel('s')]).flags;
-  assert.equal(none.length, 1, 'a checkpoint whose segment made no agent request is a flag');
+// K2b: a run's log as the driver writes it, for the agent's requests: each stream event, then the
+// request it led to.
+const started = { kind: 'ipc', event: { type: 'inference:started', agentName: 'fixture' } };
+const resumed = { kind: 'ipc', event: { type: 'inference:stream_resumed', agentName: 'fixture' } };
+const restarted = { kind: 'ipc', event: { type: 'inference:stream_restarted', agentName: 'fixture' } };
+const sent = (id) => ({ kind: 'request', request: { id, kind: 'agent' } });
+// An agent request as the stand-in records it: its messages' tokens, its max tokens, and the usage it answered with.
+const agentReq = (id, step, messageTokens, input = messageTokens + 8_000) => ({ id, step, kind: 'agent', messageTokens, maxTokens: 2_048, usage: { input_tokens: 100, cache_read_input_tokens: input - 100, cache_creation_input_tokens: 0 }, messages: [] });
+
+test('K2b: a compiled request is held to the budget less its own max tokens, every one of them, and context-manager\'s verdict flags the segment\'s last compile', () => {
+  const script = [turnStep('a'), { ...turnStep('b'), segment: 't' }];
+  // 20,000 less 2,048 is 17,952: r1 fits, r2 is under the setting but over what its compile could plan to.
+  const records = [agentReq('r1', 'a', 17_952), agentReq('r2', 'a', 18_000), agentReq('r3', 'b', 10_000)];
+  const log = [started, sent('r1'), started, sent('r2'), panel('s'), restarted, sent('r3'), panel('t', { budgetMet: false })];
+  const { flags, headroom } = budgets(records, script, log);
+  assert.deepEqual(flags.map((f) => [f.check, f.step, f.request]), [[3, 'a', 'r2'], [3, 'b', 'r3']]);
+  assert.match(flags[0].message, /18000.*17952/);
+  assert.match(flags[1].message, /didn't meet the budget/);
+  assert.deepEqual(headroom.map((h) => [h.segment, h.kind, h.request, h.tokens, h.bound]), [['s', 'compiled', 'r2', 18_000, 17_952], ['t', 'compiled', 'r3', 10_000, 17_952]], 'the least headroom of each segment');
+});
+
+test('K2b: a continuation round is held to the stream bound, flagged only when the round before it was already over it', () => {
+  const script = [turnStep('a')];
+  // The stream bound 30,000 for the test; agent-framework restarts once a round's input passes it.
+  const records = [agentReq('r1', 'a', 15_000, 29_000), agentReq('r2', 'a', 22_000, 31_000), agentReq('r3', 'a', 23_000, 32_000)];
+  const log = [started, sent('r1'), resumed, sent('r2'), resumed, sent('r3'), panel('s')];
+  const { flags, headroom } = budgets(records, script, log, { streamBound: 30_000 });
+  assert.deepEqual(flags.map((f) => f.request), ['r3'], 'r2 may cross the bound, since r1 was under it; r3 follows a round over it');
+  assert.match(flags[0].message, /31000.*30000/);
+  assert.deepEqual(headroom.filter((h) => h.kind === 'continuation').map((h) => [h.request, h.tokens, h.bound]), [['r3', 32_000, 30_000]]);
+  assert.equal(budgets(records, script, log).flags.length, 0, 'under agent-framework 0.28.0\'s default bound, 150,000, none is over');
+  const verdict = budgets(records, script, [...log.slice(0, -1), panel('s', { budgetMet: false })]).flags;
+  assert.deepEqual(verdict.map((f) => f.request), ['r1'], 'context-manager\'s verdict is on the compile, not the turn\'s last round');
+});
+
+test('K2b: a request the run\'s events don\'t classify, a budget that changed since the last checkpoint, and a panel without the agent each say the check couldn\'t judge', () => {
+  const script = [turnStep('a'), { ...turnStep('b'), segment: 't' }];
+  const unclassified = budgets([agentReq('r1', 'a', 1_000)], [turnStep('a')], [sent('r1'), panel('s')]).flags;
+  assert.deepEqual(unclassified.map((f) => f.request), ['r1']);
+  assert.match(unclassified[0].message, /couldn't judge/);
+  const moved = budgets([agentReq('r1', 'a', 1_000), agentReq('r2', 'b', 1_000)], script, [started, sent('r1'), panel('s'), started, sent('r2'), panel('t', { budget: 30_000 })]).flags;
+  assert.deepEqual(moved.map((f) => f.step), ['b']);
+  assert.match(moved[0].message, /couldn't judge.*20000.*30000/);
+  const other = { ...panel('s'), health: { data: { contextComposition: { other: {}, fixture: panel('s').health.data.contextComposition.fixture }, runtimeSettings: { other: { effectiveContextBudgetTokens: 1_000 }, fixture: { effectiveContextBudgetTokens: 20_000 } } } } };
+  assert.deepEqual(budgets([agentReq('r1', 'a', 5_000)], [turnStep('a')], [started, sent('r1'), other]).flags, [], 'the panel is read for the run\'s agent, not its first entry');
+  assert.ok(budgets([agentReq('r1', 'a', 5_000)], [turnStep('a')], [started, sent('r1'), other], { agent: 'nobody' }).flags.some((f) => /no entry for nobody/.test(f.message)), 'a panel without the agent is a flag');
+  assert.equal(budgets([agentReq('r1', 'a', 1_000)], [turnStep('a')], [started, sent('r1'), panel('s', { budget: null })]).flags.length, 1, 'a panel that names no budget is a flag, never a pass');
+  assert.equal(budgets([], [turnStep('a')], [panel('s')]).flags.length, 1, 'a checkpoint whose segment made no agent request is a flag');
+});
+
+// K3b and K6b: a store whose head window was reset at a topic transition (context-manager's marker).
+const resetStore = {
+  messages: [
+    { id: 'm1', canaries: ['[[c:a.in]]'] }, { id: 'm2', canaries: ['[[c:a.r1]]'] },
+    { id: 'm3', canaries: [], topicTransition: true },
+    { id: 'm4', canaries: ['[[c:b.in]]'] }, { id: 'm5', canaries: ['[[c:b.r1]]'] },
+    { id: 'm6', canaries: ['[[c:c.in]]'] },
+  ],
+  summaries: [{ id: 'L1-1', level: 1, sourceLevel: 0, sourceIds: ['m1', 'm2'], number: '[[s:C1]]', covers: ['[[c:a.in]]', '[[c:a.r1]]'] }],
+};
+const resetScript = [turnStep('a'), turnStep('b'), turnStep('c')];
+const headOf3 = [panel('s', { head: 3, tail: 0 })];
+
+test('K3b: after a head-window reset, store order holds within the head window and within what follows it, not across them', () => {
+  // context-manager renders the head (from the transition on) first, then the summary of what came before it.
+  const correct = { id: 'correct', step: 'c', kind: 'agent', messages: [msg('user', carrying('[[c:b.in]]')), msg('assistant', carrying('[[c:b.r1]]')), msg('user', summaryBlock('[[s:C1]]'), carrying('[[c:c.in]]'))] };
+  const swappedHead = { id: 'swapped-head', step: 'c', kind: 'agent', messages: [msg('user', carrying('[[c:b.r1]]')), msg('assistant', carrying('[[c:b.in]]')), msg('user', summaryBlock('[[s:C1]]'), carrying('[[c:c.in]]'))] };
+  const swappedRest = { id: 'swapped-rest', step: 'c', kind: 'agent', messages: [msg('user', carrying('[[c:b.in]]')), msg('assistant', carrying('[[c:b.r1]]')), msg('user', carrying('[[c:c.in]]'), summaryBlock('[[s:C1]]'))] };
+  const order = (r) => coverage([r], resetStore, resetScript, headOf3).filter((f) => /store order/.test(f.message)).map((f) => f.request);
+  assert.deepEqual([correct, swappedHead, swappedRest].flatMap(order), ['swapped-head', 'swapped-rest']);
+  // With no head size reported, the request is held to one order, as before.
+  assert.deepEqual(coverage([correct], resetStore).filter((f) => /store order/.test(f.message)).map((f) => f.request), ['correct']);
+});
+
+test('K6b: check 6\'s head window starts at the last topic transition stored before the request', () => {
+  const r = { id: 'after-reset', step: 'c', kind: 'agent', messages: [msg('user', carrying('[[c:b.in]]')), msg('assistant', carrying('[[c:b.r1]]')), msg('user', summaryBlock('[[s:C1]]'), carrying('[[c:c.in]]'))] };
+  assert.deepEqual(windowsRaw([r], resetScript, headOf3, resetStore).filter((f) => /head window/.test(f.message)), [], 'a.in and a.r1 are before the head now, and may fold');
+  const lost = { ...r, id: 'lost', messages: [msg('user', carrying('[[c:b.in]]')), msg('user', summaryBlock('[[s:C1]]'), carrying('[[c:c.in]]'))] };
+  assert.match(windowsRaw([lost], resetScript, headOf3, resetStore).find((f) => /head window/.test(f.message))?.message ?? '', /b\.r1/);
 });
 
 test('K3: check 4 flags a request whose raw messages and summaries don\'t run in store order', () => {

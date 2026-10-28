@@ -38,7 +38,6 @@ test('R7: a settle is settled only when every agent is ready, the host is draine
     ['a deferred write', answer({ deferredWrites: 1 })],
     ['a host not drained', answer({ drained: false, activeTurnAgents: ['fixture'] })],
     ['an agent not ready', answer({ ready: false, pending: true })],
-    ['no deferred-write count in the answer', (() => { const x = answer(); delete x.hostMode.deferredWrites; return x; })()],
     ['an answer that isn\'t ok', answer({ ok: false })],
   ]) assert.equal(readSettle(a, null).settled, false, what);
 });
@@ -60,4 +59,16 @@ test('R7: a pass moved the work on when its progress or its deferred writes diff
   const deferred = readSettle(answer({ deferredWrites: 2 }), null).progress;
   assert.equal(readSettle(answer({ deferredWrites: 1 }), deferred).moved, true, 'a deferred write landed');
   assert.equal(readSettle(answer({ deferredWrites: 2 }), deferred).moved, false, 'none landed');
+});
+
+test('R7b: an answer with no deferred-write count doesn\'t hold the settle, and the reading says the count wasn\'t reported', () => {
+  const unreported = answer();
+  delete unreported.hostMode.deferredWrites;
+  const read = readSettle(unreported, null);
+  assert.equal(read.settled, true);
+  assert.equal(read.deferredWritesReported, false);
+  assert.equal(readSettle(answer(), null).deferredWritesReported, true);
+  const notReady = answer({ ready: false, pending: true });
+  delete notReady.hostMode.deferredWrites;
+  assert.equal(readSettle(notReady, null).settled, false, 'the rest of the answer still decides');
 });

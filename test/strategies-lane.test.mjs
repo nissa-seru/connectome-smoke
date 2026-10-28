@@ -258,6 +258,15 @@ test('N10: failures are named by check and step, or check 2 and segment and prod
   assert.deepEqual(failureNames({ invalid: [], flags: [], missing: [], didntRun: [] }), []);
 });
 
+test('K1b: an operator alert\'s failure name carries its kind, so a known-red entry for one kind doesn\'t cover another', () => {
+  const alert = (what) => ({ check: 1, step: 'c.debt', what, message: 'm' });
+  assert.deepEqual(failureNames({ invalid: [], flags: [alert('compression-quarantine'), alert('mcpl-down'), { check: 1, step: 'c.debt', message: 'm' }], missing: [], didntRun: [] }), [
+    'check 1 at c.debt: compression-quarantine',
+    'check 1 at c.debt: mcpl-down',
+    'check 1 at c.debt',
+  ]);
+});
+
 test('N8: a throw on the candidate\'s side resolves the check as couldn\'t-run, naming what threw', { timeout: 60_000 }, async () => {
   const dir = mkdtempSync(join(tmpdir(), 'fxn8-'));
   try {
