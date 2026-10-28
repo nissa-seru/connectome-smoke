@@ -19,13 +19,14 @@
  * whose stack resolves from --install-dir, as a check does, with no base.
  *
  * Exit 0: written, or a check passed · 1: a check failed something, or a write's hard
- * checks flagged · 2: couldn't run.
+ * checks flagged or its trial reached the bound lacking a product besides L3 (lane.mjs,
+ * lacking) · 2: couldn't run.
  */
 import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { parseArgs } from '../lib/common.mjs';
-import { cacheRoot, check, installStack, laneVersion, writeStore } from '../lib/strategies/lane.mjs';
+import { cacheRoot, check, installStack, lacking, laneVersion, notExercised, writeStore } from '../lib/strategies/lane.mjs';
 import { configurations } from '../lib/strategies/script.mjs';
 
 const [command, ...rest] = process.argv.slice(2);
@@ -54,9 +55,13 @@ if (command === 'write') {
     try {
       const r = await writeStore({ cacheRoot: root, configuration: all[name], hostDir: stack.hostDir, installDir: stack.installDir, work: join(work, `write-${name}`) });
       const hard = r.entry.hardChecks;
-      if (hard?.flags?.length) flagged = true;
-      results.push({ configuration: name, key: r.entry.key, written: r.written, prefixTurns: r.entry.prefixTurns, trial: r.entry.trial, hardChecks: hard, pruned: r.pruned });
+      const lacks = lacking(r.entry);
+      if (hard?.flags?.length || lacks.length) flagged = true;
+      results.push({ configuration: name, key: r.entry.key, written: r.written, prefixTurns: r.entry.prefixTurns, trial: r.entry.trial, hardChecks: hard, lacking: lacks, pruned: r.pruned });
       console.log(`[smoke:strategies] ${name}: ${r.written ? 'written' : 'already there'}, ${r.entry.key.slice(0, 12)}, ${r.entry.prefixTurns} prefix turns, ${hard?.flags?.length ?? 0} hard-check flags`);
+      for (const p of lacks) console.log(`[smoke:strategies] ${name}: the trial reached its bound of ${r.entry.prefixTurns} turns lacking ${p.segment}'s ${p.name}, so no check on this cut exercises it`);
+      const cut = notExercised(r.entry);
+      if (cut.line) console.log(`[smoke:strategies] ${name}: ${cut.line.slice(2)}`);
     } catch (e) {
       writeFileSync(join(out, 'write.json'), JSON.stringify({ lane, versions: stack.versions, results, failed: { configuration: name, reason: e.message } }, null, 1));
       fail(`${name}: the write failed: ${e.message}`);

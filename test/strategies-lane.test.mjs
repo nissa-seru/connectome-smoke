@@ -8,7 +8,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { cacheRoot, check, excusing, failureNames, laneVersion, notExercised, pruneCache, stackVersions } from '../lib/strategies/lane.mjs';
+import { cacheRoot, check, excusing, failureNames, lacking, laneVersion, notExercised, pruneCache, stackVersions } from '../lib/strategies/lane.mjs';
 import { configurations, L3_PRODUCT } from '../lib/strategies/script.mjs';
 import { perCheckReport } from '../lib/strategies/report.mjs';
 
@@ -209,4 +209,17 @@ test('N11: where the trial lacked only the L3 product, neither side counts it, a
     assert.equal(more.cut.line, null);
     assert.deepEqual(more.names, [`check 2 at close-merge: ${L3_PRODUCT}`], JSON.stringify(missing));
   }
+});
+
+test('N9: a write\'s entry lacks, for its exit, each product its trial lacked at its bound besides the L3 that N11 excuses', () => {
+  const at = (missing) => ({ trial: { lengths: [{ turns: 13, missing }], missing } });
+  assert.deepEqual(lacking(at([])), [], 'a trial that found every product lacks nothing');
+  assert.deepEqual(lacking(at([{ segment: 'close-merge', missing: [L3_PRODUCT] }])), [], 'L3 alone is the fallback, not a lack');
+  assert.deepEqual(lacking(at([{ segment: 'tool-round', missing: ['x'] }])), [{ segment: 'tool-round', name: 'x' }]);
+  assert.deepEqual(
+    lacking(at([{ segment: 'close-merge', missing: ['a merge request', L3_PRODUCT] }, { segment: 'debt', missing: ['y'] }])),
+    [{ segment: 'close-merge', name: 'a merge request' }, { segment: 'close-merge', name: L3_PRODUCT }, { segment: 'debt', name: 'y' }],
+    'beside another lack, L3 is named too, since nothing is excused then',
+  );
+  assert.deepEqual(lacking({}), [], 'an entry with no trial recorded lacks nothing it can name');
 });
