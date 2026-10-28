@@ -1,5 +1,5 @@
 // The strategy fixture's MCPL server (lib/strategies/mcpl-server.mjs) and the
-// driver's half of its control socket. Each test names the requirement it pins.
+// driver's end of its control socket (lib/strategies/control.mjs). Each test names the requirement it pins.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
@@ -7,7 +7,7 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { listenForServer } from '../lib/strategies/mcpl-server.mjs';
+import { listenForPeers } from '../lib/strategies/control.mjs';
 
 const SERVER = fileURLToPath(new URL('../lib/strategies/mcpl-server.mjs', import.meta.url));
 
@@ -138,14 +138,14 @@ test('S3: arguments the server cannot honour get an error result naming what is 
 
 test('S4: a host command reaches the host with exactly its params, and the answer comes back whole; a host error comes back as a rejection', async () => {
   const sock = tempSocket();
-  const ctl = await listenForServer(sock.path);
+  const ctl = await listenForPeers(sock.path);
   const answer = { ok: true, maintenance: { intervalMs: 5000, agents: [{ agentName: 'smoke', ready: false, pending: { compressions: 2 } }] }, hostMode: { mode: 'running' } };
   const h = await startHost({
     control: sock.path,
     answer: (msg) => (msg.params.command === 'fail' ? { error: { code: -32002, message: 'host/command requires host-owned authority' } } : { result: answer }),
   });
   try {
-    await ctl.waitConnected({ since: 0, timeoutMs: 5000 });
+    await ctl.waitConnected('server', { since: 0, timeoutMs: 5000 });
     const params = { command: 'maintain', requesterName: 'fixture', nested: { a: [1, 2] } };
     const got = await ctl.hostCommand(params, { timeoutMs: 5000 });
     assert.deepEqual(got, answer);
@@ -158,7 +158,7 @@ test('S4: a host command reaches the host with exactly its params, and the answe
 
 test('S5: with no server connected, a host command rejects at once', { timeout: 5000 }, async () => {
   const sock = tempSocket();
-  const ctl = await listenForServer(sock.path);
+  const ctl = await listenForPeers(sock.path);
   try {
     await assert.rejects(ctl.hostCommand({ command: 'maintain' }, { timeoutMs: 600_000 }), /no server is connected/);
   } finally { await ctl.close(); sock.done(); }
@@ -166,10 +166,10 @@ test('S5: with no server connected, a host command rejects at once', { timeout: 
 
 test('S5: a command pending when the connection closes rejects at once', { timeout: 5000 }, async () => {
   const sock = tempSocket();
-  const ctl = await listenForServer(sock.path);
+  const ctl = await listenForPeers(sock.path);
   const h = await startHost({ control: sock.path, answer: () => null });
   try {
-    await ctl.waitConnected({ since: 0, timeoutMs: 5000 });
+    await ctl.waitConnected('server', { since: 0, timeoutMs: 5000 });
     const pending = ctl.hostCommand({ command: 'maintain' }, { timeoutMs: 600_000 });
     while (!h.fromServer.some((m) => m.method === 'host/command')) await new Promise((r) => setTimeout(r, 10));
     h.child.kill('SIGKILL');
@@ -179,10 +179,10 @@ test('S5: a command pending when the connection closes rejects at once', { timeo
 
 test('S5: a command the host never answers rejects at the caller\'s bound, naming the command', { timeout: 5000 }, async () => {
   const sock = tempSocket();
-  const ctl = await listenForServer(sock.path);
+  const ctl = await listenForPeers(sock.path);
   const h = await startHost({ control: sock.path, answer: () => null });
   try {
-    await ctl.waitConnected({ since: 0, timeoutMs: 5000 });
+    await ctl.waitConnected('server', { since: 0, timeoutMs: 5000 });
     const t0 = Date.now();
     await assert.rejects(ctl.hostCommand({ command: 'maintain' }, { timeoutMs: 300 }), /maintain/);
     assert.ok(Date.now() - t0 >= 300);
@@ -191,14 +191,14 @@ test('S5: a command the host never answers rejects at the caller\'s bound, namin
 
 test('S6: after a restart the new server takes the commands, and the old one closing later leaves it connected', async () => {
   const sock = tempSocket();
-  const ctl = await listenForServer(sock.path);
+  const ctl = await listenForPeers(sock.path);
   const old = await startHost({ control: sock.path, answer: () => ({ result: { from: 'old' } }) });
   let fresh;
   try {
-    await ctl.waitConnected({ since: 0, timeoutMs: 5000 });
-    const gen = ctl.generation;
+    await ctl.waitConnected('server', { since: 0, timeoutMs: 5000 });
+    const gen = ctl.generation('server');
     fresh = await startHost({ control: sock.path, answer: () => ({ result: { from: 'new' } }) });
-    await ctl.waitConnected({ since: gen, timeoutMs: 5000 });
+    await ctl.waitConnected('server', { since: gen, timeoutMs: 5000 });
     await old.stop();
     assert.deepEqual(await ctl.hostCommand({ command: 'maintain' }, { timeoutMs: 5000 }), { from: 'new' });
   } finally { await old.stop(); await fresh?.stop(); await ctl.close(); sock.done(); }
@@ -212,11 +212,11 @@ const channelHost = (accepted, reason) => (msg) => {
 
 test('S7: the server registers the channels it is given, and a delivery reaches the host on its channel with its author, topic and time', async () => {
   const sock = tempSocket();
-  const ctl = await listenForServer(sock.path);
+  const ctl = await listenForPeers(sock.path);
   const h = await startHost({ control: sock.path, channels: 'general, random', answer: channelHost(true) });
   const plain = await startHost();
   try {
-    await ctl.waitConnected({ since: 0, timeoutMs: 5000 });
+    await ctl.waitConnected('server', { since: 0, timeoutMs: 5000 });
     const message = { channelId: 'general', messageId: 'step-7', author: { id: 'u-alice', name: 'Alice' }, topic: 'garden', text: 'CANARY-CH-1 hello', at: Date.UTC(2026, 0, 2, 3, 4, 5) };
     assert.deepEqual(await ctl.deliver(message, { timeoutMs: 5000 }), { messageId: 'step-7', accepted: true });
     const methods = h.fromServer.map((m) => m.method);
@@ -233,10 +233,10 @@ test('S7: the server registers the channels it is given, and a delivery reaches 
 
 test('S7: a refused message rejects with the host\'s reason; a channel the server doesn\'t register, or a field it can\'t send, rejects without reaching the host', async () => {
   const sock = tempSocket();
-  const ctl = await listenForServer(sock.path);
+  const ctl = await listenForPeers(sock.path);
   const h = await startHost({ control: sock.path, channels: 'general', answer: channelHost(false, 'channel is tuned out') });
   try {
-    await ctl.waitConnected({ since: 0, timeoutMs: 5000 });
+    await ctl.waitConnected('server', { since: 0, timeoutMs: 5000 });
     const ok = { channelId: 'general', messageId: 'm1', author: { id: 'u', name: 'U' }, text: 'hi', at: 0 };
     await assert.rejects(ctl.deliver(ok, { timeoutMs: 5000 }), /tuned out/);
     await assert.rejects(ctl.deliver({ ...ok, messageId: 'm2', channelId: 'nowhere' }, { timeoutMs: 5000 }), /nowhere/);
