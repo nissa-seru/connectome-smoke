@@ -1,0 +1,14 @@
+
+--- session 2026-10-28T21:32:49.411Z ---
+[2026-10-28T21:32:49.411Z] headless start pid=2061755 dataDir=/home/work/t/bac31ec9edaf/connectome-smoke-capture-G2C8Uv/0.17.0/data socket=/home/work/t/bac31ec9edaf/cs-st-2060970-capture1.sock
+[2026-10-28T21:32:49.413Z] socket listening at /home/work/t/bac31ec9edaf/cs-st-2060970-capture1.sock
+[2026-10-28T21:32:49.457Z] client connected
+[2026-10-28T21:32:50.113Z] quiescent — emitting lifecycle:idle
+[2026-10-28T21:32:50.163Z] shutdown: shutdown:graceful
+
+--- session 2026-10-28T21:32:51.323Z ---
+[2026-10-28T21:32:51.323Z] headless start pid=2061848 dataDir=/home/work/t/bac31ec9edaf/connectome-smoke-capture-G2C8Uv/0.17.0/data socket=/home/work/t/bac31ec9edaf/cs-st-2060970-capture2.sock
+[2026-10-28T21:32:51.325Z] socket listening at /home/work/t/bac31ec9edaf/cs-st-2060970-capture2.sock
+[2026-10-28T21:32:51.333Z] client connected
+[2026-10-28T21:32:52.091Z] quiescent — emitting lifecycle:idle
+[2026-10-28T21:32:52.135Z] shutdown: shutdown:graceful
