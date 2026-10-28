@@ -571,22 +571,28 @@ const STRATEGIES = 'default';
 /**
  * The strategy fixture on the combined tree's host. A flag, or a product the base produced
  * and the candidate didn't, fails the step, with each named in `failures` the same way
- * from run to run, for the known red list. A fixture that couldn't run fails it as a check
- * that couldn't run. Its runs' logs, stand-in records and report go to logs/strategies/.
+ * from run to run, for the known red list. A fixture that couldn't run, or anything the
+ * fixture throws, fails it as a check that couldn't run. Its runs' logs, stand-in records
+ * and report go to logs/strategies/.
  */
 async function strategiesStep(hostPkg, meta) {
   const id = meta.id;
   await step(`${id}: the strategy fixture continues its cached deep store`, async () => {
-    const res = await strategiesCheck({
-      cacheRoot: strategiesCacheRoot(opt('strategies-cache')),
-      configuration: strategyConfigurations()[STRATEGIES],
-      hostDir: hostPkg.dir,
-      installDir: SRC,
-      work: join(WORK, 'strategies'),
-      evidence: join(LOGS, 'strategies'),
-      base: report.mode === 'change' ? (runBase) => strategiesBase(id, hostPkg, runBase) : null,
-    });
-    appendFileSync(logFile(id), `${(res.report?.lines ?? [res.reason]).join('\n')}\n`);
+    let res;
+    try {
+      res = await strategiesCheck({
+        cacheRoot: strategiesCacheRoot(opt('strategies-cache')),
+        configuration: strategyConfigurations()[STRATEGIES],
+        hostDir: hostPkg.dir,
+        installDir: SRC,
+        work: join(WORK, 'strategies'),
+        evidence: join(LOGS, 'strategies'),
+        base: report.mode === 'change' ? (runBase) => strategiesBase(id, hostPkg, runBase) : null,
+      });
+      appendFileSync(logFile(id), `${(res.report?.lines ?? [res.reason]).join('\n')}\n`);
+    } catch (e) {
+      throw smokeError(`the strategy fixture couldn't run: ${String(e?.stack || e).slice(0, 3000)}`, { cause: 'strategies', infra: true });
+    }
     if (res.outcome === 'couldnt-run') throw smokeError(`the strategy fixture couldn't run: ${res.reason}`, { cause: 'strategies', infra: true });
     if (res.outcome !== 'pass') {
       throw smokeError(res.report.lines.join('\n'), { fields: { failures: res.failures, failureCount: res.failures.length, failuresParsed: true } });
