@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
-import { readdirSync, existsSync, readFileSync, mkdtempSync } from 'node:fs';
+import { readdirSync, existsSync, readFileSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { setTimeout as sleep } from 'node:timers/promises';
@@ -42,14 +42,17 @@ test('spawnToFiles gives stdout and stderr apart, with the status, signal and er
   // What a command wrote before the timeout's kill is kept. That's judged only on a run in which it had written
   // before the kill, which it marks in a file after its writes, since a runtime can take longer than any one
   // timeout to start on a loaded host; a run that didn't get that far is run again with a longer timeout.
-  const marker = join(mkdtempSync(join(tmpdir(), 'smoke-wrote-')), 'wrote');
-  let slow;
-  for (const timeout of [500, 2_000, 8_000, 30_000]) {
-    slow = node(`process.stdout.write('started'); process.stderr.write('also'); require('node:fs').writeFileSync(${JSON.stringify(marker)}, ''); setTimeout(() => {}, 60_000)`, { timeout });
-    if (existsSync(marker)) break;
-  }
-  assert.ok(existsSync(marker), 'the command wrote before a 30 s timeout');
-  assert.deepEqual([slow.error?.code, slow.signal, slow.stdout, slow.stderr], ['ETIMEDOUT', 'SIGTERM', 'started', 'also']);
+  const dir = mkdtempSync(join(tmpdir(), 'smoke-wrote-'));
+  const marker = join(dir, 'wrote');
+  try {
+    let slow;
+    for (const timeout of [500, 2_000, 8_000, 30_000]) {
+      slow = node(`process.stdout.write('started'); process.stderr.write('also'); require('node:fs').writeFileSync(${JSON.stringify(marker)}, ''); setTimeout(() => {}, 60_000)`, { timeout });
+      if (existsSync(marker)) break;
+    }
+    assert.ok(existsSync(marker), 'the command wrote before a 30 s timeout');
+    assert.deepEqual([slow.error?.code, slow.signal, slow.stdout, slow.stderr], ['ETIMEDOUT', 'SIGTERM', 'started', 'also']);
+  } finally { rmSync(dir, { recursive: true, force: true }); }
 });
 
 test('spawnToFiles kills and names what the command left running, and nothing else', async () => {
@@ -60,7 +63,7 @@ test('spawnToFiles kills and names what the command left running, and nothing el
     const r = node("require('child_process').spawn(process.execPath, ['-e', \"let n = 0; setInterval(() => process.stdout.write('tick ' + n++ + '\\\\n'), 100); setTimeout(() => process.exit(0), 20_000)\"], { stdio: ['ignore', 'inherit', 'inherit'] }); console.log('child exits'); process.exit(0)");
     assert.equal(r.status, 0);
     assert.ok(r.stdout.startsWith('child exits\n'));
-    assert.equal(r.leftovers.length, 1, 'it returned when the command exited: had it waited for the grandchild, that would have ended');
+    assert.equal(r.leftovers.length, 1, 'it looked for leftovers while the grandchild still ran, so it didn\'t wait for it to end');
     assert.match(r.leftovers[0].command, /tick/);
     assert.equal(r.leftoversChecked, true);
     assert.equal(await runs(r.leftovers[0].pid, 30_000), false, 'the leftover is gone');
