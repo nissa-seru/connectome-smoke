@@ -53,25 +53,34 @@ if (command === 'write') {
   try { stack = installStack({ spec: opt('candidate', 'latest'), dir: join(work, 'stack') }); } catch (e) { fail(`the install failed: ${e.message}`); }
   console.log(`[smoke:strategies] installed ${Object.entries(stack.versions).map(([k, v]) => `${k.replace('@animalabs/', '')}@${v}`).join(' ')}`);
   const results = [];
+  const failWrite = (name, stage, e) => {
+    writeFileSync(join(out, 'write.json'), JSON.stringify({ lane, versions: stack.versions, results, failed: { configuration: name, stage, reason: e.message } }, null, 1));
+    fail(`${name}: ${stage === 'drift' ? 'the drift run couldn\'t run' : 'the write failed'}: ${e.message}`);
+  };
   for (const name of names) {
+    let result;
     try {
       const r = await writeStore({ cacheRoot: root, configuration: all[name], hostDir: stack.hostDir, installDir: stack.installDir, work: join(work, `write-${name}`) });
       const hard = r.entry.hardChecks;
       const lacks = lacking(r.entry);
-      const result = { configuration: name, key: r.entry.key, written: r.written, prefixTurns: r.entry.prefixTurns, trial: r.entry.trial, hardChecks: hard, lacking: lacks, pruned: r.pruned };
+      result = { configuration: name, key: r.entry.key, written: r.written, prefixTurns: r.entry.prefixTurns, trial: r.entry.trial, hardChecks: hard, lacking: lacks, pruned: r.pruned };
       results.push(result);
       console.log(`[smoke:strategies] ${name}: ${r.written ? 'written' : 'already there'}, ${r.entry.key.slice(0, 12)}, ${r.entry.prefixTurns} prefix turns, ${hard?.flags?.length ?? 0} hard-check flags`);
       for (const p of lacks) console.log(`[smoke:strategies] ${name}: the trial reached its bound of ${r.entry.prefixTurns} turns lacking ${p.segment}'s ${p.name}, so no check on this cut exercises it`);
       const cut = notExercised(r.entry);
       if (cut.line) console.log(`[smoke:strategies] ${name}: ${cut.line.slice(2)}`);
-      result.drift = await driftRun({ configuration: all[name], hostDir: stack.hostDir, installDir: stack.installDir, work: join(work, `drift-${name}`) });
-      const d = result.drift;
-      console.log(`[smoke:strategies] ${name}: drift run of ${d.turns} turns from empty${d.ok ? '' : `, which didn't complete (${d.failure?.reason ?? 'no reason given'})`}, ${d.flags.length} flag(s), ${(d.ms / 1000).toFixed(1)} s at load ${d.load[0]} to ${d.load[1]}`);
-      for (const f of d.flags) console.log(`[smoke:strategies] ${name}: drift run: check ${f.check} at ${f.step ?? 'the run'}: ${f.message}`);
     } catch (e) {
-      writeFileSync(join(out, 'write.json'), JSON.stringify({ lane, versions: stack.versions, results, failed: { configuration: name, reason: e.message } }, null, 1));
-      fail(`${name}: the write failed: ${e.message}`);
+      failWrite(name, 'write', e);
     }
+    try {
+      result.drift = await driftRun({ configuration: all[name], hostDir: stack.hostDir, installDir: stack.installDir, work: join(work, `drift-${name}`) });
+    } catch (e) {
+      result.drift = { couldntRun: e.message };
+      failWrite(name, 'drift', e);
+    }
+    const d = result.drift;
+    console.log(`[smoke:strategies] ${name}: drift run of ${d.turns} turns from empty${d.ok ? '' : `, which didn't complete (${d.failure?.reason ?? 'no reason given'})`}, ${d.flags.length} flag(s), ${(d.ms / 1000).toFixed(1)} s at load ${d.load[0]} to ${d.load[1]}`);
+    for (const f of d.flags) console.log(`[smoke:strategies] ${name}: drift run: check ${f.check} at ${f.step ?? 'the run'}: ${f.message}`);
   }
   writeFileSync(join(out, 'write.json'), JSON.stringify({ lane, versions: stack.versions, results }, null, 1));
   process.exit(writeFlagged(results) ? 1 : 0);

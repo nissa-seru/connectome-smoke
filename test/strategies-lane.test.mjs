@@ -8,7 +8,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { cacheRoot, check, DRIFT_TURNS, excusing, failureNames, lacking, laneVersion, notExercised, pruneCache, stackVersions, writeFlagged } from '../lib/strategies/lane.mjs';
+import { cacheRoot, check, driftRun, DRIFT_TURNS, excusing, failureNames, lacking, laneVersion, notExercised, pruneCache, stackVersions, writeFlagged } from '../lib/strategies/lane.mjs';
 import { configurations, L3_PRODUCT, prefix } from '../lib/strategies/script.mjs';
 import { perCheckReport } from '../lib/strategies/report.mjs';
 import { entryKey, findEntry, writeEntry } from '../lib/strategies/writer.mjs';
@@ -340,6 +340,18 @@ test('N9: a write\'s entry lacks, for its exit, each product its trial lacked at
 test('N13: a cut\'s drift run is the script\'s prefix of 300 turns', () => {
   assert.equal(DRIFT_TURNS, 300);
   assert.equal(prefix(DRIFT_TURNS).filter((s) => s.kind === 'channel').length, 300);
+});
+
+test('N14: a drift run that can\'t read its host rejects, naming why, rather than resolving a result', { timeout: 60_000 }, async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'fxn14-'));
+  try {
+    let judged = 0;
+    await assert.rejects(
+      driftRun({ configuration: configurations().default, hostDir: join(dir, 'no-host'), installDir: join(dir, 'no-host'), work: join(dir, 'drift'), judge: async () => { judged++; return { flags: [], missing: [] }; }, turns: 2 }),
+      /recipe facts/,
+    );
+    assert.equal(judged, 0, 'nothing was judged');
+  } finally { rmSync(dir, { recursive: true, force: true }); }
 });
 
 test('N14: a write is flagged by a drift run\'s flags as by its entry\'s hard checks and lacks, and its products don\'t count', () => {
