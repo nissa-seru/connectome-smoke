@@ -253,12 +253,24 @@ test('K2c: the same records give the same kinds and verdicts whether each stream
   assert.deepEqual(a.headroom.map((h) => [h.kind, h.request]), [['compiled', 'r1'], ['continuation', 'r3']]);
 });
 
-test('K2d: a continuation under a report that the window governs the agent\'s stream isn\'t held to the stream bound, and a note says so', () => {
-  const { flags, headroom, notes } = budgets(crossing(), [turnStep('a')], under(budgetReport(`  fixture: 30.0k (last: 0, 0%)${WINDOW_CLAUSE}`)), { streamBound: 30_000 });
+test('K2d: a continuation under a report that the window governs the agent\'s stream, at the stand-in\'s window, isn\'t held to the stream bound, and a note says so', () => {
+  const { flags, headroom, notes } = budgets(crossing(), [turnStep('a')], under(budgetReport(`  fixture: 30.0k (last: 0, 0%)${WINDOW_CLAUSE}`)), { streamBound: 30_000, windowTokens: 1_000_000 });
   assert.deepEqual(flags, []);
   assert.deepEqual(headroom.map((h) => h.kind), ['compiled'], 'no continuation headroom against a bound that doesn\'t govern it');
   assert.equal(notes.length, 1);
   assert.match(notes[0], /window/);
+});
+
+test('K2d: under a report that the window governs, a window other than the stand-in\'s makes every continuation couldn\'t-judge, smaller or larger', () => {
+  for (const [printed, standin] of [['500.0k', 1_000_000], ['2.0M', 1_000_000], ['1.0M', 200_000]]) {
+    const clause = WINDOW_CLAUSE.replace('1.0M', printed);
+    const { flags, notes } = budgets(crossing(), [turnStep('a')], under(budgetReport(`  fixture: 30.0k (last: 0, 0%)${clause}`)), { streamBound: 30_000, windowTokens: standin });
+    assert.deepEqual(flags.map((f) => f.request), ['r2', 'r3'], `${printed} against ${standin}`);
+    for (const f of flags) assert.match(f.message, new RegExp(`couldn't judge.*${printed.replace('.', '\\.')}.*${standin}`));
+    assert.deepEqual(notes, []);
+  }
+  const unnamed = budgets(crossing(), [turnStep('a')], under(budgetReport('  fixture: 30.0k (last: 0, 0%); its stream doesn\'t break at this budget mid-turn')), { streamBound: 30_000, windowTokens: 1_000_000 }).flags;
+  assert.deepEqual(unnamed.map((f) => f.request), ['r2', 'r3'], 'a clause that names no window');
 });
 
 test('K2d: a continuation under a report without that clause is held to the stream bound', () => {
