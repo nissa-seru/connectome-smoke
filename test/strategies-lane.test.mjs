@@ -129,10 +129,13 @@ test('N2: a package the install can\'t name by its content refuses, naming it an
   const host = 'node_modules/@animalabs/connectome-host';
   const linked = install(released({ [host]: { version: '0.15.0', locked: { resolved: '../checkout/connectome-host', link: true } } }));
   const unlisted = install(released({ 'node_modules/@animalabs/agent-framework': { version: '0.28.0', locked: null } }));
+  const unlocked = install(released());
+  unlinkSync(join(unlocked.installDir, 'package-lock.json'));
   try {
+    assert.throws(() => stackVersions(unlocked.hostDir, { installDir: unlocked.installDir, registry: REGISTRY }), (e) => /no lockfile at/.test(e.message));
     assert.throws(() => stackVersions(linked.hostDir, { installDir: linked.installDir, registry: REGISTRY }), (e) => /@animalabs\/connectome-host/.test(e.message) && /linked/.test(e.message) && /npm pack/.test(e.message));
     assert.throws(() => stackVersions(unlisted.hostDir, { installDir: unlisted.installDir, registry: REGISTRY }), (e) => /@animalabs\/agent-framework/.test(e.message) && /lockfile/.test(e.message));
-  } finally { for (const s of [linked, unlisted]) rmSync(s.root, { recursive: true, force: true }); }
+  } finally { for (const s of [linked, unlisted, unlocked]) rmSync(s.root, { recursive: true, force: true }); }
 });
 
 test('N2: a candidate at the release\'s version with a changed line writes its own entry, beside the release\'s', { timeout: 30_000 }, async () => {
