@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { declaredProducts, everyTurnAnswers, wellFormed, windowsRaw, calibrationEdge, coverage, bookkeeping } from '../lib/strategies/checks.mjs';
-import { continuation, products, configurations } from '../lib/strategies/script.mjs';
+import { continuation, products, configurations, prefix, extend } from '../lib/strategies/script.mjs';
 
 const msg = (role, ...blocks) => ({ role, blocks });
 const text = (canaries) => ({ type: 'text', chars: 10, ...(canaries ? { canaries } : {}) });
@@ -114,4 +114,11 @@ test('check 5: a summary declares only what its request showed, a child by its n
   const l3store = { ...store, summaries: [...store.summaries, { id: 'L3-1', level: 3, sourceLevel: 2, sourceIds: ['L2-1'], number: '[[s:C4]]', covers: ['[[c:a.in]]', '[[c:a.r1]]', '[[c:b.in]]', '[[c:b.r1]]'] }] };
   assert.deepEqual(bookkeeping([shown('[[s:C4]]', [], ['[[s:C1]]', '[[s:C2]]'])], l3store), []);
   assert.equal(bookkeeping([shown('[[s:C4]]', [], ['[[s:C1]]'])], l3store).length, 1);
+});
+
+test('extending a prefix of one length to another gives the longer prefix\'s turns, the same in every call', () => {
+  const whole = prefix(40);
+  assert.deepEqual([whole[0], ...extend(0, 25), ...extend(25, 40), whole.at(-1)], whole);
+  assert.deepEqual(extend(25, 40), extend(25, 40));
+  assert.ok(!extend(25, 40).some((s) => s.id === 'p.name' || s.id === 'p.end'), 'no naming or end checkpoint');
 });
