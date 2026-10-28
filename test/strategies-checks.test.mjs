@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { declaredProducts, everyTurnAnswers, wellFormed } from '../lib/strategies/checks.mjs';
+import { declaredProducts, everyTurnAnswers, wellFormed, windowsRaw, calibrationEdge, coverage, bookkeeping } from '../lib/strategies/checks.mjs';
 import { continuation, products, configurations } from '../lib/strategies/script.mjs';
 
 const msg = (role, ...blocks) => ({ role, blocks });
@@ -44,4 +44,68 @@ test('check 3 flags roles out of turn and calls parted from their results, eithe
   const lastCall = { id: 'last', step: 's', kind: 'agent', messages: [msg('user', text()), msg('assistant', call('a'))] };
   const flags = wellFormed([ok, twice, orphan, unanswered, lastCall]);
   assert.deepEqual(flags.map((f) => f.request), ['twice', 'orphan', 'unanswered']);
+});
+
+const carrying = (...canaries) => ({ type: 'text', chars: 10, canaries });
+const summaryBlock = (...summaries) => ({ type: 'text', chars: 10, summaries });
+const turnStep = (id, replies = 1) => ({ id, segment: 's', kind: 'channel', canaries: [`[[c:${id}.in]]`], replies: Array.from({ length: replies }, () => ({ text: 'x' })) });
+
+test('check 6 flags a request without the head\'s first message or the two turns before it raw', () => {
+  const script = [turnStep('a'), turnStep('b', 2), turnStep('c'), turnStep('d')];
+  const full = { id: 'ok', step: 'd', kind: 'agent', messages: [msg('user', carrying('[[c:p.1.in]]', '[[c:b.in]]', '[[c:b.r1]]', '[[c:b.r2]]', '[[c:c.in]]', '[[c:c.r1]]', '[[c:d.in]]'))] };
+  const noHead = { ...full, id: 'nohead', messages: [msg('user', carrying('[[c:b.in]]', '[[c:b.r1]]', '[[c:b.r2]]', '[[c:c.in]]', '[[c:c.r1]]'))] };
+  const noRecent = { ...full, id: 'norecent', messages: [msg('user', carrying('[[c:p.1.in]]', '[[c:b.in]]', '[[c:b.r1]]', '[[c:c.in]]', '[[c:c.r1]]'))] };
+  const flags = windowsRaw([full, noHead, noRecent], script);
+  assert.deepEqual(flags.map((f) => f.request), ['nohead', 'norecent']);
+  assert.match(flags[1].message, /b\.r2/);
+});
+
+test('check 10 flags a multiplier at either clamp edge, wherever the health panel puts it, and nothing inside them', () => {
+  const at = (m) => ({ kind: 'checkpoint', step: 's', name: 'n', health: { contextComposition: { fixture: { calibration: { multiplier: m } } } } });
+  const flags = calibrationEdge([at(1.3), at(0.6), at(1.8), at(1.79), { kind: 'settle' }]);
+  assert.deepEqual(flags.map((f) => f.message.match(/\(([\d.]+)\)/)[1]), ['0.6', '1.8']);
+});
+
+const store = {
+  messages: [
+    { id: 'm1', canaries: ['[[c:a.in]]'] }, { id: 'm2', canaries: ['[[c:a.r1]]'] },
+    { id: 'm3', canaries: ['[[c:b.in]]'] }, { id: 'm4', canaries: ['[[c:b.r1]]'] },
+    { id: 'm5', canaries: ['[[c:c.in]]'] }, { id: 'm6', canaries: [] },
+  ],
+  summaries: [
+    { id: 'L1-1', level: 1, sourceLevel: 0, sourceIds: ['m1', 'm2'], number: '[[s:C1]]', covers: ['[[c:a.in]]', '[[c:a.r1]]'] },
+    { id: 'L1-2', level: 1, sourceLevel: 0, sourceIds: ['m3', 'm4', 'm6'], number: '[[s:C2]]', covers: ['[[c:b.in]]', '[[c:b.r1]]'] },
+    { id: 'L2-1', level: 2, sourceLevel: 1, sourceIds: ['L1-1', 'L1-2'], number: '[[s:C3]]', covers: ['[[c:a.in]]', '[[c:a.r1]]', '[[c:b.in]]', '[[c:b.r1]]'] },
+  ],
+};
+
+test('check 4: each message stored before a request reaches it raw or in a summary, once, and an unmapped summary is flagged', () => {
+  const ok = { id: 'ok', step: 'c', kind: 'agent', messages: [msg('user', summaryBlock('[[s:C1]]')), msg('assistant', carrying('[[c:b.in]]', '[[c:b.r1]]')), msg('user', carrying('[[c:c.in]]'))] };
+  const merged = { id: 'merged', step: 'c', kind: 'agent', messages: [msg('user', summaryBlock('[[s:C3]]')), msg('assistant', carrying('[[c:c.in]]'))] };
+  const lost = { id: 'lost', step: 'c', kind: 'agent', messages: [msg('user', summaryBlock('[[s:C1]]')), msg('assistant', carrying('[[c:c.in]]'))] };
+  const twice = { id: 'twice', step: 'c', kind: 'agent', messages: [msg('user', summaryBlock('[[s:C3]]')), msg('assistant', carrying('[[c:b.in]]', '[[c:c.in]]'))] };
+  const unmapped = { id: 'unmapped', step: 'c', kind: 'agent', messages: [msg('user', summaryBlock('[[s:C3]]', '[[s:P9]]')), msg('assistant', carrying('[[c:c.in]]'))] };
+  const flags = [ok, merged, lost, twice, unmapped].flatMap((r) => coverage([r], store));
+  assert.deepEqual(flags.map((f) => f.request), ['lost', 'twice', 'unmapped']);
+  assert.match(flags[0].message, /b\.in.*b\.r1/);
+});
+
+test('check 4: a step\'s later request also needs that step\'s earlier replies', () => {
+  const first = { id: 'one', step: 'c', kind: 'agent', messages: [msg('user', summaryBlock('[[s:C3]]')), msg('assistant', carrying('[[c:c.in]]'))] };
+  const second = { id: 'two', step: 'c', kind: 'agent', messages: [msg('user', summaryBlock('[[s:C3]]')), msg('assistant', carrying('[[c:c.in]]'))] };
+  const flags = coverage([first, second], store);
+  assert.deepEqual(flags.map((f) => f.request), ['two']);
+  assert.match(flags[0].message, /c\.r1/);
+});
+
+test('check 5: a summary declares only what its request showed, a child by its number or by all it covers', () => {
+  const shown = (number, canaries, summaries = []) => ({ id: number, step: 's', kind: 'summariser', answer: { summary: number }, sent: { canaries, summaries } });
+  const flags = bookkeeping([
+    shown('[[s:C1]]', ['[[c:a.in]]', '[[c:a.r1]]']),
+    shown('[[s:C2]]', ['[[c:b.in]]']),
+    shown('[[s:C3]]', ['[[c:a.in]]', '[[c:a.r1]]'], ['[[s:C2]]']),
+  ], store);
+  assert.deepEqual(flags.map((f) => f.request), ['[[s:C2]]']);
+  const childUnseen = bookkeeping([shown('[[s:C3]]', ['[[c:a.in]]', '[[c:b.in]]', '[[c:b.r1]]'])], store);
+  assert.match(childUnseen[0].message, /L1-1/);
 });
