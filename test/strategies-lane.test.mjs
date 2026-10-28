@@ -8,8 +8,8 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { cacheRoot, check, excusing, failureNames, lacking, laneVersion, notExercised, pruneCache, stackVersions } from '../lib/strategies/lane.mjs';
-import { configurations, L3_PRODUCT } from '../lib/strategies/script.mjs';
+import { cacheRoot, check, DRIFT_TURNS, excusing, failureNames, lacking, laneVersion, notExercised, pruneCache, stackVersions, writeFlagged } from '../lib/strategies/lane.mjs';
+import { configurations, L3_PRODUCT, prefix } from '../lib/strategies/script.mjs';
 import { perCheckReport } from '../lib/strategies/report.mjs';
 import { entryKey, findEntry, writeEntry } from '../lib/strategies/writer.mjs';
 
@@ -335,4 +335,18 @@ test('N9: a write\'s entry lacks, for its exit, each product its trial lacked at
     'beside another lack, L3 is named too, since nothing is excused then',
   );
   assert.deepEqual(lacking({}), [], 'an entry with no trial recorded lacks nothing it can name');
+});
+
+test('N13: a cut\'s drift run is the script\'s prefix of 300 turns', () => {
+  assert.equal(DRIFT_TURNS, 300);
+  assert.equal(prefix(DRIFT_TURNS).filter((s) => s.kind === 'channel').length, 300);
+});
+
+test('N14: a write is flagged by a drift run\'s flags as by its entry\'s hard checks and lacks, and its products don\'t count', () => {
+  const clean = { hardChecks: { flags: [] }, lacking: [], drift: { flags: [], missing: [{ segment: 'close-merge', missing: [L3_PRODUCT] }] } };
+  assert.equal(writeFlagged([clean]), false, 'a drift run that lacks a product but flags nothing flags nothing');
+  assert.equal(writeFlagged([{ ...clean, drift: { flags: [{ check: 3, step: 'p.250', message: 'over budget' }] } }]), true);
+  assert.equal(writeFlagged([{ ...clean, hardChecks: { flags: [{ check: 1, step: 'p.3', message: 'x' }] } }]), true);
+  assert.equal(writeFlagged([{ ...clean, lacking: [{ segment: 'debt', name: 'y' }] }]), true);
+  assert.equal(writeFlagged([clean, { ...clean, drift: { flags: [{ check: 1, step: 'p.9', message: 'x' }] } }]), true, 'any configuration\'s flags flag the write');
 });
