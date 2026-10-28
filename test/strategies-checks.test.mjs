@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { declaredProducts, everyTurnAnswers, wellFormed, windowsRaw, calibrationEdge, coverage, bookkeeping } from '../lib/strategies/checks.mjs';
-import { continuation, products, configurations, prefix, extend } from '../lib/strategies/script.mjs';
+import { continuation, products, configurations, prefix, extend, L3_PRODUCT } from '../lib/strategies/script.mjs';
 
 const msg = (role, ...blocks) => ({ role, blocks });
 const text = (canaries) => ({ type: 'text', chars: 10, ...(canaries ? { canaries } : {}) });
@@ -18,7 +18,17 @@ test('check 2 names each segment whose product no record in it shows, and only t
   ];
   const missing = declaredProducts(records, script, wanted);
   assert.deepEqual(missing.map((m) => m.segment), ['close-merge', 'thinking-call', 'debt']);
-  assert.deepEqual(missing[0].missing, ['a merge request']);
+  assert.deepEqual(missing[0].missing, ['a merge request', 'an L3 merge request']);
+});
+
+test('check 2: close-merge declares an L3 merge, which a merge at L3 meets with the merge product', () => {
+  const script = continuation();
+  const wanted = products(configurations().default);
+  const l1 = { id: 'r1', step: 'c.cm.1', kind: 'summariser', level: 1, answer: { shape: 'summary' } };
+  const atLevel = (level) => ({ id: `m${level}`, step: 'c.cm.2', kind: 'summariser', level, answer: { shape: 'summary' } });
+  const closeMerge = (records) => declaredProducts(records, script, wanted).find((m) => m.segment === 'close-merge')?.missing ?? [];
+  assert.deepEqual(closeMerge([l1, atLevel(2)]), [L3_PRODUCT]);
+  assert.deepEqual(closeMerge([l1, atLevel(3)]), []);
 });
 
 test('check 2: a configuration that doesn\'t summarise declares no summariser products', () => {
