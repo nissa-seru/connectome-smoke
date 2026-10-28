@@ -12,7 +12,8 @@ const CHAT = 'Write the memory of events since the most recent memory system not
 const MERGE = 'You have just reviewed the slices of recent experience above (raw conversation), in chronological order. They cover the stretch of experience you are about to consolidate into a single L2 memory. Write a memory that preserves the through-line. Target ~200 tokens. Output only the memory body — no preamble, no meta-commentary about summarizing.';
 const WITNESSED = 'Write the memory of this slice of the log. This part of the record predates your own first turn. Target ~200 tokens.';
 const READING = 'You have just been reading a substantial body of text — approximately 4000 tokens total in this piece, of which what you just read is a portion. Target ~200 tokens.';
-const READING_MERGE = 'You have just re-experienced the portions of text you read above (raw passages from a larger piece), in chronological order. Target ~200 tokens.';
+const READING_MERGE = 'You have just re-experienced the portions of text you read above (raw passages from a larger piece), in chronological order. They cover a contiguous stretch of a substantial body of text you have been reading — approximately 9000 tokens in total across all of it. The portions above cover the stretch you are now consolidating at L2.\n\nReflect across the stretch. Target ~200 tokens.';
+const FRONTDESK = 'Starting from my last message, please describe everything that has happened. Aim for about 200 tokens. Describe it as you would to yourself, as if you are remembering what has happened.';
 const KNOWLEDGE = 'Summarize the research performed. What was searched for, what sources were consulted, and what was found? Aim for about 200 tokens.';
 
 const prose = (n, seed = 1) => {
@@ -159,7 +160,7 @@ test('T1: each compression instruction context-manager sends is a summariser req
   const { seen } = arrivals(s);
   s.setStep(step('k', []));
   const w = s.beginSettle();
-  for (const instruction of [CHAT, MERGE, WITNESSED, READING, READING_MERGE, KNOWLEDGE]) {
+  for (const instruction of [CHAT, MERGE, WITNESSED, READING, READING_MERGE, KNOWLEDGE, FRONTDESK]) {
     const r = await post(s.url, summariserBody({ canaries: ['[[c:k.in]]'], instruction }));
     assert.equal(r.status, 200, instruction.slice(0, 40));
     assert.equal(seen.at(-1).kind, 'summariser', instruction.slice(0, 40));
@@ -167,7 +168,12 @@ test('T1: each compression instruction context-manager sends is a summariser req
   // The retry lines context-manager appends keep the request a summariser's.
   await post(s.url, summariserBody({ instruction: `${CHAT}\n\nWrite the memory as plain text directly in your response — do not call any tools for this.` }));
   assert.equal(seen.at(-1).kind, 'summariser');
+  await post(s.url, summariserBody({ instruction: 'Please consolidate these 3 L1 summaries (2 synthesis, 1 research) into a single cohesive memory. Aim for about 200 tokens.' }));
   w.done();
+  // Each record says what level the request asks for, and whether it's a retry.
+  const records = await s.close();
+  assert.deepEqual(records.map((r) => r.level), [1, 2, 1, 1, 2, 1, 1, 1, 2]);
+  assert.deepEqual(records.map((r) => r.retry), [false, false, false, false, false, false, false, true, false]);
 }));
 
 test('T4/T5: summary answers carry a unique number first and untagged padding at a fixed fraction of what they were sent, and the record lists what each call was sent', () => withStandin({}, async (s) => {
