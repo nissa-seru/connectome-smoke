@@ -11,6 +11,7 @@ import { fileURLToPath } from 'node:url';
 import { cacheRoot, check, excusing, failureNames, lacking, laneVersion, notExercised, pruneCache, stackVersions } from '../lib/strategies/lane.mjs';
 import { configurations, L3_PRODUCT } from '../lib/strategies/script.mjs';
 import { perCheckReport } from '../lib/strategies/report.mjs';
+import { entryKey, findEntry, writeEntry } from '../lib/strategies/writer.mjs';
 
 const LANE = fileURLToPath(new URL('../lib/strategies/lane.mjs', import.meta.url));
 
@@ -59,18 +60,36 @@ test('N1: the lane version moves with every file under lib/strategies and lib/co
   } finally { rmSync(root, { recursive: true, force: true }); }
 });
 
-test('N2: the key names the stack as the host resolves it, upward from its directory, and bun', { timeout: 30_000 }, () => {
-  const pj = (version) => JSON.stringify({ name: 'x', version });
-  const root = tree({
-    'install/node_modules/@animalabs/connectome-host/package.json': pj('0.15.0'),
-    'install/node_modules/@animalabs/agent-framework/package.json': pj('0.28.0'),
-    'install/node_modules/@animalabs/connectome-host/node_modules/@animalabs/context-manager/package.json': pj('0.23.1'),
-    'install/node_modules/@animalabs/context-manager/package.json': pj('0.22.0'),
-    'node_modules/@animalabs/chronicle/package.json': pj('0.4.2'),
-  });
+// An install as npm leaves it: each package's package.json under `install/`, and the
+// install's lockfile entry for each (`locked`, by path from `install/`; null leaves it out).
+const REGISTRY = 'https://registry.example.test/';
+const fromRegistry = (name, version) => ({ version, resolved: `${REGISTRY}${name}/-/${name.split('/')[1]}-${version}.tgz`, integrity: `sha512-registry-${version}` });
+function install(packages) {
+  const files = {};
+  const lock = { name: 'strategies-stack', lockfileVersion: 3, packages: { '': { name: 'strategies-stack' } } };
+  for (const [path, { version, locked }] of Object.entries(packages)) {
+    files[`install/${path}/package.json`] = JSON.stringify({ name: 'x', version });
+    if (locked) lock.packages[path] = locked;
+  }
+  files['install/package-lock.json'] = JSON.stringify(lock);
+  const root = tree(files);
+  return { root, installDir: join(root, 'install'), hostDir: join(root, 'install/node_modules/@animalabs/connectome-host') };
+}
+const released = (overrides = {}) => ({
+  'node_modules/@animalabs/connectome-host': { version: '0.15.0', locked: fromRegistry('@animalabs/connectome-host', '0.15.0') },
+  'node_modules/@animalabs/agent-framework': { version: '0.28.0', locked: fromRegistry('@animalabs/agent-framework', '0.28.0') },
+  'node_modules/@animalabs/connectome-host/node_modules/@animalabs/context-manager': { version: '0.23.1', locked: fromRegistry('@animalabs/context-manager', '0.23.1') },
+  'node_modules/@animalabs/context-manager': { version: '0.22.0', locked: fromRegistry('@animalabs/context-manager', '0.22.0') },
+  'node_modules/@animalabs/chronicle': { version: '0.4.2', locked: fromRegistry('@animalabs/chronicle', '0.4.2') },
+  ...overrides,
+});
+const bunVersion = () => spawnSync('bun', ['--version'], { encoding: 'utf-8' }).stdout.trim();
+
+test('N2: the key names the stack as the host resolves it, upward from its directory, by version where npm installed it from the registry, and bun', { timeout: 30_000 }, () => {
+  const s = install(released());
   try {
-    const v = stackVersions(join(root, 'install/node_modules/@animalabs/connectome-host'));
-    const bun = spawnSync('bun', ['--version'], { encoding: 'utf-8' }).stdout.trim();
+    const v = stackVersions(s.hostDir, { installDir: s.installDir, registry: REGISTRY });
+    const bun = bunVersion();
     assert.ok(bun, 'bun answers --version here');
     assert.deepEqual(v, {
       '@animalabs/connectome-host': '0.15.0',
@@ -80,7 +99,60 @@ test('N2: the key names the stack as the host resolves it, upward from its direc
       '@animalabs/chronicle': '0.4.2',
       bun,
     });
-  } finally { rmSync(root, { recursive: true, force: true }); }
+  } finally { rmSync(s.root, { recursive: true, force: true }); }
+});
+
+test('N2: a package installed from a pack or a git spec is named by its version and its content, as the lockfile records it', { timeout: 30_000 }, () => {
+  const host = 'node_modules/@animalabs/connectome-host';
+  const pack = install(released({ [host]: { version: '0.15.0', locked: { version: '0.15.0', resolved: 'file:../connectome-host-0.15.0.tgz', integrity: 'sha512-one-changed-line' } } }));
+  const otherPack = install(released({ [host]: { version: '0.15.0', locked: { version: '0.15.0', resolved: 'file:../connectome-host-0.15.0.tgz', integrity: 'sha512-another-change' } } }));
+  const sha = 'a'.repeat(40);
+  const git = install(released({ [host]: { version: '0.15.0', locked: { version: '0.15.0', resolved: `git+ssh://git@github.com/x/connectome-host.git#${sha}` } } }));
+  const url = install(released({ [host]: { version: '0.15.0', locked: { version: '0.15.0', resolved: 'https://example.test/builds/connectome-host-0.15.0.tgz', integrity: 'sha512-from-a-url' } } }));
+  try {
+    const name = (s) => stackVersions(s.hostDir, { installDir: s.installDir, registry: REGISTRY })['@animalabs/connectome-host'];
+    const one = name(pack);
+    assert.notEqual(one, '0.15.0', 'a pack at the release\'s version is not named as the release');
+    assert.ok(one.startsWith('0.15.0') && one.includes('sha512-one-changed-line'), one);
+    assert.notEqual(name(otherPack), one, 'two packs with different content have different names');
+    assert.equal(name(pack), one, 'the same pack names the same way twice');
+    const g = name(git);
+    assert.ok(g.startsWith('0.15.0') && g.includes(sha), g);
+    const u = name(url);
+    assert.ok(u.startsWith('0.15.0') && u.includes('sha512-from-a-url'), `a tarball from a URL outside the registry is named by its integrity: ${u}`);
+    // The registry's other packages are still named by version alone.
+    assert.equal(stackVersions(pack.hostDir, { installDir: pack.installDir, registry: REGISTRY })['@animalabs/agent-framework'], '0.28.0');
+  } finally { for (const s of [pack, otherPack, git, url]) rmSync(s.root, { recursive: true, force: true }); }
+});
+
+test('N2: a package the install can\'t name by its content refuses, naming it and what to pass instead', { timeout: 30_000 }, () => {
+  const host = 'node_modules/@animalabs/connectome-host';
+  const linked = install(released({ [host]: { version: '0.15.0', locked: { resolved: '../checkout/connectome-host', link: true } } }));
+  const unlisted = install(released({ 'node_modules/@animalabs/agent-framework': { version: '0.28.0', locked: null } }));
+  try {
+    assert.throws(() => stackVersions(linked.hostDir, { installDir: linked.installDir, registry: REGISTRY }), (e) => /@animalabs\/connectome-host/.test(e.message) && /linked/.test(e.message) && /npm pack/.test(e.message));
+    assert.throws(() => stackVersions(unlisted.hostDir, { installDir: unlisted.installDir, registry: REGISTRY }), (e) => /@animalabs\/agent-framework/.test(e.message) && /lockfile/.test(e.message));
+  } finally { for (const s of [linked, unlisted]) rmSync(s.root, { recursive: true, force: true }); }
+});
+
+test('N2: a candidate at the release\'s version with a changed line writes its own entry, beside the release\'s', { timeout: 30_000 }, async () => {
+  const release = install(released());
+  const candidate = install(released({ 'node_modules/@animalabs/connectome-host': { version: '0.15.0', locked: { version: '0.15.0', resolved: 'file:../connectome-host-0.15.0.tgz', integrity: 'sha512-one-changed-line' } } }));
+  const tmp = mkdtempSync(join(tmpdir(), 'fxk-'));
+  const cache = join(tmp, 'cache');
+  let writes = 0;
+  const parts = (s) => ({ lane: 'L', configurationName: 'default', recipeHash: 'r', versions: stackVersions(s.hostDir, { installDir: s.installDir, registry: REGISTRY }), trialTurns: { min: 1, step: 1, bound: 1 } });
+  const script = { min: 1, step: 1, bound: 1, prefix: () => ['p.1'], extend: () => [] };
+  const runSteps = async ({ storeDir, epoch }) => { mkdirSync(storeDir, { recursive: true }); writeFileSync(join(storeDir, 'messages'), 'p.1\n'); return { ok: true, clockEnd: epoch + 60_000 }; };
+  const write = (p) => writeEntry({ cacheRoot: cache, key: entryKey(p), keyParts: p, script, runSteps, trial: async () => ({ missing: [] }), hardChecks: async () => ({ ok: true }), epoch: 0, work: join(tmp, `work-${++writes}`) });
+  try {
+    const first = await write(parts(release));
+    assert.equal(first.written, true);
+    const second = await write(parts(candidate));
+    assert.equal(second.written, true, 'the candidate wrote its own entry, not the release\'s returned as already there');
+    assert.notEqual(second.dir, first.dir);
+    assert.ok(existsSync(join(first.dir, 'entry.json')), 'the release\'s entry stays');
+  } finally { for (const s of [release, candidate]) rmSync(s.root, { recursive: true, force: true }); rmSync(tmp, { recursive: true, force: true }); }
 });
 
 test('N3: the cache root is the one given, or ~/.cache/connectome-smoke/strategies, made if missing', { timeout: 30_000 }, () => {
@@ -122,6 +194,35 @@ test('N4: a write leaves the newest two entries of its lane and configuration, o
     const removed = pruneCache({ cacheRoot: root, lane: 'L', configurationName: 'default', now });
     assert.deepEqual(removed.map((d) => d.slice(root.length + 1)).sort(), ['b-fourth', 'm-third', 'other-old']);
     for (const kept of ['a-newest', 'z-second', 'passthrough', 'other-young', 'incomplete', 'no-entry-json', '.k1.tmp', '.k1.lock']) {
+      assert.ok(existsSync(join(root, kept)), `${kept} stays`);
+    }
+    for (const gone of removed) assert.ok(!existsSync(gone), `${gone} is gone`);
+  } finally { rmSync(root, { recursive: true, force: true }); }
+});
+
+test('N4: pruning keeps each trial\'s newest two, so a write of another trial never removes the lane\'s own entry', { timeout: 30_000 }, () => {
+  const root = mkdtempSync(join(tmpdir(), 'fxc-'));
+  const now = Date.parse('2026-10-28T12:00:00Z');
+  const at = (hoursAgo) => new Date(now - hoursAgo * 3_600_000).toISOString();
+  const lanes = { min: 13, step: 1, bound: 80 };
+  const probes = { min: 1, step: 1, bound: 42 };
+  const entry = (name, trialTurns, hoursAgo) => {
+    mkdirSync(join(root, name, 'store'), { recursive: true });
+    writeFileSync(join(root, name, 'entry.json'), JSON.stringify({ complete: true, lane: 'L', configurationName: 'default', trialTurns, writtenAt: at(hoursAgo) }));
+  };
+  try {
+    // Greta-2425's P1 (room-203 #251172): the lane's own entry first, then two of another trial.
+    entry('lanes', lanes, 3);
+    entry('probe-1', probes, 2);
+    entry('probe-2', probes, 1);
+    const afterProbe = pruneCache({ cacheRoot: root, lane: 'L', configurationName: 'default', trialTurns: probes, now });
+    assert.deepEqual(afterProbe, []);
+    assert.equal(findEntry({ cacheRoot: root, lane: 'L', configurationName: 'default', trialTurns: lanes })?.dir, join(root, 'lanes'), 'a check still finds the lane\'s own entry');
+    // A third of the probe's trial prunes only the probe's oldest.
+    entry('probe-3', probes, 0.5);
+    const removed = pruneCache({ cacheRoot: root, lane: 'L', configurationName: 'default', trialTurns: probes, now });
+    assert.deepEqual(removed.map((d) => d.slice(root.length + 1)), ['probe-1']);
+    for (const kept of ['lanes', 'probe-2', 'probe-3']) {
       assert.ok(existsSync(join(root, kept)), `${kept} stays`);
     }
     for (const gone of removed) assert.ok(!existsSync(gone), `${gone} is gone`);
