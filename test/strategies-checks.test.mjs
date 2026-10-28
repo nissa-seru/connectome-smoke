@@ -53,7 +53,7 @@ const turnStep = (id, replies = 1) => ({ id, segment: 's', kind: 'channel', cana
 test('check 6 flags a request that loses a raw message of the head the host reported, or lacks the two turns before it raw', () => {
   const script = [turnStep('a'), turnStep('b', 2), turnStep('c'), turnStep('d')];
   const stored = (...canaries) => ({ canaries });
-  const store = { messages: [stored(), stored('[[c:p.1.in]]'), stored('[[c:p.1.r1]]'), stored('[[c:p.2.in]]'), stored('[[c:p.2.r1]]')], summaries: [] };
+  const store = { messages: [stored(), stored('[[c:p.1.in]]'), stored('[[c:p.1.r1]]'), stored('[[c:p.2.in]]'), stored('[[c:p.2.r1]]'), ...['a.in', 'a.r1', 'b.in', 'b.r1', 'b.r2', 'c.in', 'c.r1', 'd.in'].map((c) => stored(`[[c:${c}]]`))], summaries: [] };
   const log = [{ kind: 'checkpoint', name: 's', health: { data: { contextComposition: { fixture: { head: { messages: 3, tokens: 50 } } } } } }];
   const head = msg('user', carrying('[[c:p.1.in]]', '[[c:p.1.r1]]'));
   const full = { id: 'ok', step: 'd', kind: 'agent', messages: [head, msg('assistant', summaryBlock('[[s:P1]]')), msg('user', carrying('[[c:b.in]]', '[[c:b.r1]]', '[[c:b.r2]]', '[[c:c.in]]', '[[c:c.r1]]', '[[c:d.in]]'))] };
@@ -65,6 +65,18 @@ test('check 6 flags a request that loses a raw message of the head the host repo
   assert.match(flags[1].message, /b\.r2/);
   assert.deepEqual(windowsRaw([full], script, [], store).map((f) => f.message), ["no head size was reported at segment s's checkpoint"]);
   assert.deepEqual(windowsRaw([noHead], script, log, null), [], 'with no store read, only the recent window is checked');
+});
+test('check 6 asks a request for a head message only once it was stored, through the turn\'s own earlier replies', () => {
+  const script = [turnStep('p.1', 2), turnStep('p.2')];
+  const stored = (...canaries) => ({ canaries });
+  const store = { messages: ['p.1.in', 'p.1.r1', 'p.1.r2', 'p.2.in', 'p.2.r1'].map((c) => stored(`[[c:${c}]]`)), summaries: [] };
+  const log = [{ kind: 'checkpoint', name: 's', health: { data: { contextComposition: { fixture: { head: { messages: 5, tokens: 50 } } } } } }];
+  const first = { id: 'first', step: 'p.1', kind: 'agent', messages: [msg('user', carrying('[[c:p.1.in]]'))] };
+  const second = { id: 'second', step: 'p.1', kind: 'agent', messages: [msg('user', carrying('[[c:p.1.in]]')), msg('assistant', carrying('[[c:p.1.r1]]'))] };
+  const secondLost = { id: 'second-lost', step: 'p.1', kind: 'agent', messages: [msg('user', carrying('[[c:p.1.in]]'))] };
+  assert.deepEqual(windowsRaw([first, second], script, log, store), [], 'neither asks for a reply that came after it');
+  const flags = windowsRaw([first, secondLost], script, log, store);
+  assert.deepEqual(flags.map((f) => [f.request, f.message]), [['second-lost', "the head window's [[c:p.1.r1]] isn't raw"]]);
 });
 test('check 10 flags a multiplier at either clamp edge, wherever the health panel puts it, and nothing inside them', () => {
   const at = (m) => ({ kind: 'checkpoint', step: 's', name: 'n', health: { contextComposition: { fixture: { calibration: { multiplier: m } } } } });
