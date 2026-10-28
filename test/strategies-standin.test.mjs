@@ -78,14 +78,6 @@ function arrivals(standin) {
   return { seen, until: (n) => (seen.length >= n ? Promise.resolve() : new Promise((resolve) => waiters.push({ n, resolve }))) };
 }
 
-/** Whether `p` has settled by the time a later request to the stand-in has been answered. */
-async function settledBefore(p, url) {
-  let done = false;
-  p.then(() => { done = true; }, () => { done = true; });
-  await post(url, { model: 'm', messages: [] }, '/v1/messages/count_tokens');
-  return done;
-}
-
 const step = (id, replies = [{ text: `[[c:${id}.r1]] noted.` }], more = {}) => ({ id, segment: 'test', kind: 'text', canaries: [`[[c:${id}.in]]`], replies, ...more });
 
 async function withStandin(opts, fn) {
@@ -159,7 +151,6 @@ test('T1/T2: a request with no canary of the step, with max_tokens 0, or past th
 test('T1: each compression instruction context-manager sends is a summariser request, though its message carries the slice\'s canaries', () => withStandin({}, async (s) => {
   const { seen } = arrivals(s);
   s.setStep(step('k', []));
-  const w = s.beginSettle();
   for (const instruction of [CHAT, MERGE, WITNESSED, READING, READING_MERGE, KNOWLEDGE, FRONTDESK]) {
     const r = await post(s.url, summariserBody({ canaries: ['[[c:k.in]]'], instruction }));
     assert.equal(r.status, 200, instruction.slice(0, 40));
@@ -169,34 +160,38 @@ test('T1: each compression instruction context-manager sends is a summariser req
   await post(s.url, summariserBody({ instruction: `${CHAT}\n\nWrite the memory as plain text directly in your response — do not call any tools for this.` }));
   assert.equal(seen.at(-1).kind, 'summariser');
   await post(s.url, summariserBody({ instruction: 'Please consolidate these 3 L1 summaries (2 synthesis, 1 research) into a single cohesive memory. Aim for about 200 tokens.' }));
-  w.done();
   // Each record says what level the request asks for, and whether it's a retry.
   const records = await s.close();
   assert.deepEqual(records.map((r) => r.level), [1, 2, 1, 1, 2, 1, 1, 1, 2]);
   assert.deepEqual(records.map((r) => r.retry), [false, false, false, false, false, false, false, true, false]);
 }));
 
-test('T4/T5: summary answers carry a unique number first and untagged padding at a fixed fraction of what they were sent, and the record lists what each call was sent', () => withStandin({}, async (s) => {
+test('T4/T5: summary answers carry a unique number first and untagged padding to the target their instruction states, and the record lists what each call was sent', () => withStandin({}, async (s) => {
   s.setStep(step('p', []));
-  const w = s.beginSettle();
-  const small = await post(s.url, summariserBody({ canaries: ['[[c:p.1]]'], textChars: 400 }));
-  const big = await post(s.url, summariserBody({ canaries: ['[[c:p.2]]', '[[c:p.3]]'], summaries: ['[[s:C1]]'], textChars: 1600 }));
-  w.done();
+  const small = await post(s.url, summariserBody({ canaries: ['[[c:p.1]]'], textChars: 4000, instruction: CHAT.replace('~200', '~60') }));
+  const big = await post(s.url, summariserBody({ canaries: ['[[c:p.2]]', '[[c:p.3]]'], summaries: ['[[s:C1]]'], textChars: 400 }));
   const [a, b] = [textOf(small.json), textOf(big.json)];
   assert.match(a, /^\[\[s:C1\]\] /);
   assert.match(b, /^\[\[s:C2\]\] /);
   assert.equal(/<|>/.test(a + b), false);
-  assert.ok(b.length > a.length * 2, `${b.length} vs ${a.length}`);
+  // Each lands at its own target, whatever it was sent.
+  for (const [r, target] of [[small, 60], [big, 200]]) {
+    assert.ok(Math.abs(r.json.usage.output_tokens - target) <= target * 0.05, `${r.json.usage.output_tokens} for a target of ${target}`);
+  }
   const records = await s.close();
   assert.deepEqual(records[1].sent, { canaries: ['[[c:p.2]]', '[[c:p.3]]'], summaries: ['[[s:C1]]'] });
   assert.equal(records[1].answer.summary, '[[s:C2]]');
 }));
 
+test('T1/T4: a compression instruction that states no target is refused as unclassified', () => withStandin({}, async (s) => {
+  s.setStep(step('nt', []));
+  const r = await post(s.url, summariserBody({ instruction: CHAT.replace('Target ~200 tokens. ', '') }));
+  assert.equal(r.status, 400);
+  assert.match(r.json.error.message, /no target/);
+}));
 test('T4: a summary answer never runs past what max_tokens allows', () => withStandin({}, async (s) => {
   s.setStep(step('m', []));
-  const w = s.beginSettle();
   const r = await post(s.url, summariserBody({ canaries: ['[[c:m.1]]'], textChars: 40_000, max_tokens: 100 }));
-  w.done();
   assert.ok(r.json.usage.output_tokens <= 100, String(r.json.usage.output_tokens));
   assert.equal(r.json.stop_reason, 'end_turn');
 }));
@@ -205,83 +200,26 @@ test('T4: the writer\'s prefix numbers its summaries apart from a check\'s conti
   const s = await startStandin({ configuration: { windowTokens: 50_000 }, phase: 'P' });
   try {
     s.setStep(step('q', []));
-    const w = s.beginSettle();
     assert.match(textOf((await post(s.url, summariserBody({}))).json), /^\[\[s:P1\]\] /);
-    w.done();
   } finally { await s.close(); }
 });
 
-test('T6: a step\'s bad answers come one each, in order, then good answers resume', () => withStandin({}, async (s) => {
+test('T6: a step\'s bad answers go one each, in order, to the next first attempts, from that step on; a retry is answered well', () => withStandin({}, async (s) => {
   s.setStep(step('bad', [], { badAnswers: ['thinking-only', 'empty', 'max-tokens'] }));
-  const w = s.beginSettle();
+  const retry = (instruction) => summariserBody({ instruction: `${instruction}\n\nWrite the memory directly as plain prose — do not wrap it in <thinking> or any other tags; begin immediately with the memory text itself.` });
   const got = [];
-  for (let i = 0; i < 4; i++) got.push((await post(s.url, summariserBody({}))).json);
-  w.done();
+  got.push((await post(s.url, summariserBody({}))).json);
+  got.push((await post(s.url, retry(CHAT))).json);
+  // The step after it still serves the rest.
+  s.setStep(step('bad.cp', []));
+  for (let i = 0; i < 3; i++) got.push((await post(s.url, summariserBody({}))).json);
   assert.match(textOf(got[0]), /^<thinking>[\s\S]*<\/thinking>$/);
   assert.equal(got[0].stop_reason, 'end_turn');
-  assert.deepEqual(got[1].content, [{ type: 'text', text: '' }]);
-  assert.equal(got[2].stop_reason, 'max_tokens');
-  assert.match(textOf(got[3]), /^\[\[s:C\d+\]\] /);
+  assert.match(textOf(got[1]), /^\[\[s:C\d+\]\] /, 'the retry gets a good answer');
+  assert.deepEqual(got[2].content, [{ type: 'text', text: '' }]);
+  assert.equal(got[3].stop_reason, 'max_tokens');
+  assert.match(textOf(got[4]), /^\[\[s:C\d+\]\] /);
 }));
-
-test('T7: a summariser request waits for the step\'s last scripted agent request, and is answered then', () => withStandin({}, async (s) => {
-  const { until } = arrivals(s);
-  s.setStep(step('w', [{ text: '[[c:w.r1]] a' }, { text: '[[c:w.r2]] b' }]));
-  const summary = post(s.url, summariserBody({}));
-  await until(1);
-  assert.equal(await settledBefore(summary, s.url), false);
-  await post(s.url, agentBody({ canary: '[[c:w.in]]' }));
-  assert.equal(await settledBefore(summary, s.url), false);
-  await post(s.url, agentBody({ canary: '[[c:w.in]]' }));
-  assert.equal((await summary).status, 200);
-  // Once the step's last agent request has come, a later one is answered at once.
-  assert.equal((await post(s.url, summariserBody({}))).status, 200);
-}));
-
-test('T7/T9: in a step with no replies, summaries wait for a settle, which answers them; inside its window they\'re answered at once', () => withStandin({}, async (s) => {
-  const { until } = arrivals(s);
-  s.setStep({ id: 'cp', segment: 'test', kind: 'checkpoint', canaries: [], replies: [] });
-  const waiting = post(s.url, summariserBody({}));
-  await until(1);
-  assert.equal(await settledBefore(waiting, s.url), false);
-  const w = s.beginSettle();
-  assert.equal((await waiting).status, 200);
-  assert.equal((await post(s.url, summariserBody({}))).status, 200);
-  w.done();
-  const after = post(s.url, summariserBody({}));
-  await until(3);
-  assert.equal(await settledBefore(after, s.url), false);
-  const w2 = s.beginSettle();
-  await after;
-  w2.done();
-}));
-
-test('T8: a held answer stays held through later steps and settles until a releasing step, and nothing is newly held inside a settle', () => withStandin({}, async (s) => {
-  const { until } = arrivals(s);
-  s.setStep(step('h1', [{ text: '[[c:h1.r1]] ok' }], { summaries: 'hold' }));
-  const held = post(s.url, summariserBody({}));
-  await until(1);
-  await post(s.url, agentBody({ canary: '[[c:h1.in]]' }));
-  assert.equal(s.held(), 1);
-  const w = s.beginSettle();
-  assert.equal(await settledBefore(held, s.url), false);
-  w.done();
-  s.setStep(step('h2', [{ text: '[[c:h2.r1]] ok' }], { summaries: 'hold' }));
-  const w2 = s.beginSettle();
-  assert.equal((await post(s.url, summariserBody({}))).status, 200);
-  w2.done();
-  assert.equal(s.held(), 1);
-  await post(s.url, agentBody({ canary: '[[c:h2.in]]' }));
-  s.setStep(step('h3', [{ text: '[[c:h3.r1]] ok' }], { summaries: 'release' }));
-  assert.equal(await settledBefore(held, s.url), false);
-  await post(s.url, agentBody({ canary: '[[c:h3.in]]' }));
-  assert.equal((await held).status, 200);
-  assert.equal(s.held(), 0);
-  const records = await s.close();
-  assert.equal(records[0].heldFrom, 'h1');
-  assert.equal(records[0].releasedAt, 'h3');
-}));
-
 test('T10: the same request always counts the same, at about 1.3 times context-manager\'s own estimate of prose, and an image counts by its size', () => withStandin({}, async (s) => {
   s.setStep(step('n', [{ text: 'a' }, { text: 'b' }, { text: 'c' }]));
   const body = agentBody({ canary: '[[c:n.in]]' });
@@ -374,20 +312,21 @@ test('T13: when the model binds thinking, a block sent after anything before it 
   }
 });
 
-test('T14/T15: every arrival is reported, and close() ends what\'s held and returns each request\'s normalised record', async () => {
+test('T7/T14/T15: summariser requests are answered at once, every arrival is reported, and close() returns each request\'s normalised record', async () => {
   const s = await startStandin({ configuration: { windowTokens: 50_000 } });
   const { seen, until } = arrivals(s);
   s.setClock(123);
-  s.setStep(step('r', [{ text: '[[c:r.r1]] ok' }], { summaries: 'hold' }));
+  s.setStep(step('r', [{ text: '[[c:r.r1]] ok' }, { text: '[[c:r.r2]] ok' }]));
+  // Answered before the step's agent requests come, since agent-framework's provider gate can
+  // keep a turn's request waiting on a compression in flight.
+  assert.equal((await post(s.url, summariserBody({ canaries: ['[[c:r.in]]'] }))).status, 200);
   await post(s.url, agentBody({ canary: '[[c:r.in]]' }));
-  const held = post(s.url, summariserBody({ canaries: ['[[c:r.in]]'] })).catch((e) => e);
   await until(2);
   assert.deepEqual(Object.keys(seen[0]).sort(), ['at', 'clock', 'id', 'kind', 'seq', 'step']);
   assert.equal(seen[0].clock, 123);
   assert.equal(seen[0].step, 'r');
   const records = await s.close();
-  await held;
-  const [agent, summ] = records;
+  const [summ, agent] = records;
   assert.equal(agent.kind, 'agent');
   assert.equal(agent.model, 'claude-sonnet-4-5');
   assert.equal(agent.maxTokens, 2048);
@@ -399,6 +338,5 @@ test('T14/T15: every arrival is reported, and close() ends what\'s held and retu
   assert.deepEqual(agent.messages.at(-1).blocks[0].canaries, ['[[c:r.in]]']);
   assert.equal(typeof agent.usage.input_tokens, 'number');
   assert.equal(summ.kind, 'summariser');
-  assert.equal(summ.heldFrom, 'r');
-  assert.equal(summ.releasedAt, undefined);
+  assert.equal(summ.answer.shape, 'summary');
 });

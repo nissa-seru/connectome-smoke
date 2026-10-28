@@ -17,7 +17,7 @@ test('check 2 names each segment whose product no record in it shows, and only t
     { id: 'r3', step: 'c.par', kind: 'agent', messages: [msg('assistant', call('a'), call('b'), call('c')), msg('user', result('a'), result('b'), result('c'))] },
   ];
   const missing = declaredProducts(records, script, wanted);
-  assert.deepEqual(missing.map((m) => m.segment), ['close-merge', 'thinking-call', 'held']);
+  assert.deepEqual(missing.map((m) => m.segment), ['close-merge', 'thinking-call', 'debt']);
   assert.deepEqual(missing[0].missing, ['a merge request']);
 });
 
@@ -50,16 +50,18 @@ const carrying = (...canaries) => ({ type: 'text', chars: 10, canaries });
 const summaryBlock = (...summaries) => ({ type: 'text', chars: 10, summaries });
 const turnStep = (id, replies = 1) => ({ id, segment: 's', kind: 'channel', canaries: [`[[c:${id}.in]]`], replies: Array.from({ length: replies }, () => ({ text: 'x' })) });
 
-test('check 6 flags a request without the head\'s first message or the two turns before it raw', () => {
+test('check 6 flags a request that loses the head\'s raw messages, or lacks the two turns before it raw', () => {
   const script = [turnStep('a'), turnStep('b', 2), turnStep('c'), turnStep('d')];
-  const full = { id: 'ok', step: 'd', kind: 'agent', messages: [msg('user', carrying('[[c:p.1.in]]', '[[c:b.in]]', '[[c:b.r1]]', '[[c:b.r2]]', '[[c:c.in]]', '[[c:c.r1]]', '[[c:d.in]]'))] };
-  const noHead = { ...full, id: 'nohead', messages: [msg('user', carrying('[[c:b.in]]', '[[c:b.r1]]', '[[c:b.r2]]', '[[c:c.in]]', '[[c:c.r1]]'))] };
-  const noRecent = { ...full, id: 'norecent', messages: [msg('user', carrying('[[c:p.1.in]]', '[[c:b.in]]', '[[c:b.r1]]', '[[c:c.in]]', '[[c:c.r1]]'))] };
-  const flags = windowsRaw([full, noHead, noRecent], script);
+  const head = msg('user', carrying('[[c:p.1.in]]'));
+  const first = { id: 'first', step: 'c', kind: 'agent', messages: [head, msg('assistant', summaryBlock('[[s:P1]]')), msg('user', carrying('[[c:a.in]]', '[[c:a.r1]]', '[[c:b.in]]', '[[c:b.r1]]', '[[c:b.r2]]', '[[c:c.in]]'))] };
+  const full = { id: 'ok', step: 'd', kind: 'agent', messages: [head, msg('assistant', summaryBlock('[[s:P1]]')), msg('user', carrying('[[c:b.in]]', '[[c:b.r1]]', '[[c:b.r2]]', '[[c:c.in]]', '[[c:c.r1]]', '[[c:d.in]]'))] };
+  const noHead = { ...full, id: 'nohead', messages: full.messages.slice(1) };
+  const noRecent = { ...full, id: 'norecent', messages: [head, msg('user', carrying('[[c:b.in]]', '[[c:b.r1]]', '[[c:c.in]]', '[[c:c.r1]]'))] };
+  const flags = windowsRaw([first, full, noHead, noRecent], script);
   assert.deepEqual(flags.map((f) => f.request), ['nohead', 'norecent']);
+  assert.match(flags[0].message, /p\.1\.in/);
   assert.match(flags[1].message, /b\.r2/);
 });
-
 test('check 10 flags a multiplier at either clamp edge, wherever the health panel puts it, and nothing inside them', () => {
   const at = (m) => ({ kind: 'checkpoint', step: 's', name: 'n', health: { contextComposition: { fixture: { calibration: { multiplier: m } } } } });
   const flags = calibrationEdge([at(1.3), at(0.6), at(1.8), at(1.79), { kind: 'settle' }]);
@@ -108,4 +110,8 @@ test('check 5: a summary declares only what its request showed, a child by its n
   assert.deepEqual(flags.map((f) => f.request), ['[[s:C2]]']);
   const childUnseen = bookkeeping([shown('[[s:C3]]', ['[[c:a.in]]', '[[c:b.in]]', '[[c:b.r1]]'])], store);
   assert.match(childUnseen[0].message, /L1-1/);
+  // A level above shown its grandchildren's numbers, as an L3 merge is shown L1 memories.
+  const l3store = { ...store, summaries: [...store.summaries, { id: 'L3-1', level: 3, sourceLevel: 2, sourceIds: ['L2-1'], number: '[[s:C4]]', covers: ['[[c:a.in]]', '[[c:a.r1]]', '[[c:b.in]]', '[[c:b.r1]]'] }] };
+  assert.deepEqual(bookkeeping([shown('[[s:C4]]', [], ['[[s:C1]]', '[[s:C2]]'])], l3store), []);
+  assert.equal(bookkeeping([shown('[[s:C4]]', [], ['[[s:C1]]'])], l3store).length, 1);
 });
