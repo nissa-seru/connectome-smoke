@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "activeSessionId": "dca2fa89",
+  "sessions": {
+    "dca2fa89": {
+      "id": "dca2fa89",
+      "name": "Session 1",
+      "manuallyNamed": false,
+      "createdAt": "2026-10-29T00:32:43.300Z",
+      "lastAccessedAt": "2026-10-29T00:32:43.300Z"
+    }
+  }
+}
