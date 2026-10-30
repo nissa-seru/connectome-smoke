@@ -128,6 +128,36 @@ test("a call or result the store holds unpaired, sent as stored, breaks no shape
   assert.deepEqual(check(m, c, { compresses: false }), []);
 });
 
+// A store of eight messages: a call answered at once, and a call whose result the store holds two messages later.
+function pairsManager() {
+  const messages = [
+    { id: '1', sequence: 1, participant: 'User', content: [{ type: 'text', text: 'go' }] },
+    { id: '2', sequence: 2, participant: 'Junga', content: [{ type: 'tool_use', id: 't1', name: 'read_file', input: {} }] },
+    { id: '3', sequence: 3, participant: 'User', content: [{ type: 'tool_result', toolUseId: 't1', content: 'file' }] },
+    { id: '4', sequence: 4, participant: 'User', content: [{ type: 'text', text: 'meanwhile' }] },
+    { id: '5', sequence: 5, participant: 'Junga', content: [{ type: 'tool_use', id: 't2', name: 'read_file', input: {} }] },
+    { id: '6', sequence: 6, participant: 'User', content: [{ type: 'text', text: 'wait' }] },
+    { id: '7', sequence: 7, participant: 'User', content: [{ type: 'tool_result', toolUseId: 't2', content: 'late' }] },
+    { id: '8', sequence: 8, participant: 'Junga', content: [{ type: 'text', text: 'done' }] },
+  ];
+  return { ...manager(), getAllMessages: () => messages, getSummary: () => null, messages };
+}
+const request = (m, ids) => ({ messages: ids.map((n) => sent(m.messages[n - 1])), provenance: { messages: ids.map((n) => raw(n)) } });
+const shapes = (vs) => vs.filter((v) => v.invariant === 'shape').map((v) => v.detail);
+
+test('a passthrough request breaks shape where it opens with a result, and nowhere it sends the store as stored', () => {
+  const m = pairsManager();
+  assert.deepEqual(shapes(check(m, request(m, [3, 4, 5, 6, 7, 8]), { compresses: false })), ['message 0: result t1 answers no call in the message before it']);
+  assert.deepEqual(shapes(check(m, request(m, [6, 7, 8]), { compresses: false })), [], "a late result whose call lies before the request's start goes out as stored");
+  assert.deepEqual(shapes(check(m, request(m, [6, 7, 8]), { compresses: true })), ['message 1: result t2 answers no call in the message before it'], 'where the configuration compresses, it parts a pair the store holds');
+});
+
+test("a passthrough request that leaves out a message of a pair inside its own span breaks shape", () => {
+  const m = pairsManager();
+  assert.deepEqual(shapes(check(m, request(m, [1, 2, 4, 5, 6, 7, 8]), { compresses: false })), ['message 1: call t1 unanswered in the message after it']);
+  assert.deepEqual(shapes(check(m, request(m, [1, 3, 4, 5, 6, 7, 8]), { compresses: false })), ['message 1: result t1 answers no call in the message before it']);
+});
+
 test('a message carrying a body\'s thinking without that body\'s calls breaks thinking', () => {
   const m = manager();
   const parted = compiled([sent(m.messages[0]), raw(1)], [{ participant: 'Junga', content: [m.messages[1].content[0]] }, raw(2)], [sent(m.messages[2]), raw(3)], [sent(m.messages[3]), raw(4)]);
