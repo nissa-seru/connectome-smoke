@@ -2356,8 +2356,10 @@
       "C7",
       "H1"
     ],
-    "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); tried by --place on C7 and H1 opus at ef15b2e's workloads, where W11 under kv-unified refused every compile from step 5 (since released, 6f48e21): changes none of its 9 runs' records (J57892); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604)"
+    "flags": [
+      "C7/W11",
+      "H1.claude-opus-4-6/W11"
+    ]
   },
   {
     "id": "kvu-KU13b",
@@ -2373,8 +2375,10 @@
       "C7",
       "H1"
     ],
-    "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604)"
+    "flags": [
+      "C7/W11",
+      "H1.claude-opus-4-6/W11"
+    ]
   },
   {
     "id": "kvu-KU13c",
@@ -2390,8 +2394,10 @@
       "C7",
       "H1"
     ],
-    "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604)"
+    "flags": [
+      "C7/W11",
+      "H1.claude-opus-4-6/W11"
+    ]
   },
   {
     "id": "kvu-KU15a",
@@ -3699,7 +3705,7 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604)"
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604); at b59e5cf under C7 and H1 opus on W11 (both), W8 (both) and opus W1 it changes no record (J58092)"
   },
   {
     "id": "kvu-KX3b",
@@ -3716,7 +3722,7 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604)"
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604); at b59e5cf under C7 and H1 opus on W11 (both), W8 (both) and opus W1 it changes no record (J58092)"
   },
   {
     "id": "kvu-KX3g",
@@ -3733,7 +3739,7 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604)"
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604); at b59e5cf under C7 and H1 opus on W11 (both), W8 (both) and opus W1 it changes no record (J58092)"
   },
   {
     "id": "kvu-KX5a",
@@ -3750,7 +3756,7 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604)"
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604); at b59e5cf under C7 and H1 opus on W11 (both), W8 (both) and opus W1 it changes no record (J58092)"
   },
   {
     "id": "kvu-KR10l",
@@ -3807,7 +3813,7 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604)"
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604); at b59e5cf under C7 and H1 opus on W11 (both), W8 (both) and opus W1 it changes no record (J58092)"
   },
   {
     "id": "kvu-KR6g",
@@ -3823,8 +3829,9 @@
       "C7",
       "H1"
     ],
-    "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604)"
+    "flags": [
+      "H1.claude-opus-4-6/W11"
+    ]
   },
   {
     "id": "kvu-KR7b",
@@ -3840,8 +3847,9 @@
       "C7",
       "H1"
     ],
-    "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604)"
+    "flags": [
+      "H1.claude-opus-4-6/W11"
+    ]
   },
   {
     "id": "kvu-KA10a",
@@ -3975,7 +3983,7 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604)"
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604); at b59e5cf under C7 and H1 opus on W11 (both), W8 (both) and opus W1 it changes no record (J58092)"
   },
   {
     "id": "kvu-KA2d",
@@ -3992,7 +4000,7 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604)"
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604); at b59e5cf under C7 and H1 opus on W11 (both), W8 (both) and opus W1 it changes no record (J58092)"
   },
   {
     "id": "kvu-KA2e",
@@ -4009,7 +4017,7 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604)"
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604); at b59e5cf under C7 and H1 opus on W11 (both), W8 (both) and opus W1 it changes no record (J58092)"
   },
   {
     "id": "kvu-KA3a",
@@ -4025,8 +4033,9 @@
       "C7",
       "H1"
     ],
-    "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604)"
+    "flags": [
+      "H1.claude-opus-4-6/W8/enforced"
+    ]
   },
   {
     "id": "kvu-KA4a",
@@ -4121,8 +4130,9 @@
       "C7",
       "H1"
     ],
-    "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604)"
+    "flags": [
+      "H1.claude-opus-4-6/W11"
+    ]
   },
   {
     "id": "kvu-KA6d",
@@ -4139,7 +4149,7 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604)"
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604); at b59e5cf under C7 and H1 opus on W11 (both), W8 (both) and opus W1 it changes no record (J58092)"
   },
   {
     "id": "kvu-KA7a2",
@@ -4226,7 +4236,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "packed engine, never reached; even then: G5 holds only with a zero continuity or fidelity bucket (packed.ts:197-207), and the strategy refuses a bucket that isn't positive (strategies/kv-unified.ts:1032-1036) (Ambrose-2449's look, kvu-rules/step2-looks.md 562d747a; reach J58030, infection J58069; Oscar-1005 #304746)"
+    }
   },
   {
     "id": "kvu-e17b",
@@ -4243,7 +4256,7 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...)"
+    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...); infected at its site in the jobs Ambrose-2449's probe named (J58069), but at b59e5cf it changes no record of the 16 H1 and C7 jobs on W1, W2, W6, W8, W9, W10/uncapped and W11 (J58107)"
   },
   {
     "id": "kvu-o-e6",
@@ -4260,7 +4273,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "no configuration selects the object engine. Gap: no house configuration runs it (Ambrose-2449's look, kvu-rules/step2-looks.md 562d747a; reach J58030, infection J58069; Oscar-1005 #304746)"
+    }
   },
   {
     "id": "kvu-pk7",
@@ -4277,7 +4293,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "the packed fallback runs only past the subtree engine's label ceiling, which no house configuration nears: under the host's standard block the label peak stayed 43 against 100,000 at 2.0M raw tokens (#157046), the call made for KU10 (Ambrose-2449's look, kvu-rules/step2-looks.md 562d747a; reach J58030, infection J58069; Oscar-1005 #304746)"
+    }
   },
   {
     "id": "kvu-s-e6",
@@ -4294,7 +4313,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "its premise holds in no fixture job: the statement runs, and the original and the mutant compute the same there in every C7 and H1 job (Ambrose-2449's look, kvu-rules/step2-looks.md 562d747a; reach J58030, infection J58069; Oscar-1005 #304746)"
+    }
   },
   {
     "id": "kvu-pk11",
@@ -4311,7 +4333,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "packed engine, never reached; even then: onProgress, as kvu-s-g12 (Ambrose-2449's look, kvu-rules/step2-looks.md 562d747a; reach J58030, infection J58069; Oscar-1005 #304746)"
+    }
   },
   {
     "id": "kvu-s-g12",
@@ -4328,7 +4353,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "its mutant acts only when a solve has an onProgress observer, and nothing outside the engines passes one (grep of src) (Ambrose-2449's look, kvu-rules/step2-looks.md 562d747a; reach J58030, infection J58069; Oscar-1005 #304746)"
+    }
   },
   {
     "id": "kvu-s-g13",
@@ -4345,7 +4373,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "its premise holds in no fixture job: the statement runs, and the original and the mutant compute the same there in every C7 and H1 job (Ambrose-2449's look, kvu-rules/step2-looks.md 562d747a; reach J58030, infection J58069; Oscar-1005 #304746)"
+    }
   },
   {
     "id": "kvu-o-e12b",
@@ -4362,7 +4393,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "no configuration selects the object engine. Gap: no house configuration runs it (Ambrose-2449's look, kvu-rules/step2-looks.md 562d747a; reach J58030, infection J58069; Oscar-1005 #304746)"
+    }
   },
   {
     "id": "kvu-pk15b",
@@ -4379,7 +4413,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "the packed fallback runs only past the subtree engine's label ceiling, which no house configuration nears: under the host's standard block the label peak stayed 43 against 100,000 at 2.0M raw tokens (#157046), the call made for KU10 (Ambrose-2449's look, kvu-rules/step2-looks.md 562d747a; reach J58030, infection J58069; Oscar-1005 #304746)"
+    }
   },
   {
     "id": "kvu-s-e12a",
@@ -4395,8 +4432,9 @@
       "C7",
       "H1"
     ],
-    "flags": [],
-    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...)"
+    "flags": [
+      "H1.claude-opus-4-6/W9"
+    ]
   },
   {
     "id": "kvu-s-e12b",
@@ -4413,7 +4451,7 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...)"
+    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...); infected at its site in the jobs Ambrose-2449's probe named (J58069), but at b59e5cf it changes no record of the 16 H1 and C7 jobs on W1, W2, W6, W8, W9, W10/uncapped and W11 (J58107)"
   },
   {
     "id": "kvu-o-e13",
@@ -4430,7 +4468,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "no configuration selects the object engine. Gap: no house configuration runs it (Ambrose-2449's look, kvu-rules/step2-looks.md 562d747a; reach J58030, infection J58069; Oscar-1005 #304746)"
+    }
   },
   {
     "id": "kvu-pk16",
@@ -4447,7 +4488,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "the packed fallback runs only past the subtree engine's label ceiling, which no house configuration nears: under the host's standard block the label peak stayed 43 against 100,000 at 2.0M raw tokens (#157046), the call made for KU10 (Ambrose-2449's look, kvu-rules/step2-looks.md 562d747a; reach J58030, infection J58069; Oscar-1005 #304746)"
+    }
   },
   {
     "id": "kvu-o-e14",
@@ -4464,7 +4508,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...); tried by --place on C7 and H1 opus at ef15b2e's workloads, where W11 under kv-unified refused every compile from step 5 (since released, 6f48e21): changes none of its 9 runs' records (J57892)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "no configuration selects the object engine. Gap: no house configuration runs it (Ambrose-2449's look, kvu-rules/step2-looks.md 562d747a; reach J58030, infection J58069; Oscar-1005 #304746)"
+    }
   },
   {
     "id": "kvu-pk17",
@@ -4481,7 +4528,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "the packed fallback runs only past the subtree engine's label ceiling, which no house configuration nears: under the host's standard block the label peak stayed 43 against 100,000 at 2.0M raw tokens (#157046), the call made for KU10 (Ambrose-2449's look, kvu-rules/step2-looks.md 562d747a; reach J58030, infection J58069; Oscar-1005 #304746)"
+    }
   },
   {
     "id": "kvu-o-e15",
@@ -4498,7 +4548,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "no configuration selects the object engine. Gap: no house configuration runs it (Ambrose-2449's look, kvu-rules/step2-looks.md 562d747a; reach J58030, infection J58069; Oscar-1005 #304746)"
+    }
   },
   {
     "id": "kvu-pk18",
@@ -4515,7 +4568,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "the packed fallback runs only past the subtree engine's label ceiling, which no house configuration nears: under the host's standard block the label peak stayed 43 against 100,000 at 2.0M raw tokens (#157046), the call made for KU10 (Ambrose-2449's look, kvu-rules/step2-looks.md 562d747a; reach J58030, infection J58069; Oscar-1005 #304746)"
+    }
   },
   {
     "id": "kvu-o-g21",
@@ -4532,7 +4588,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "no configuration selects the object engine. Gap: no house configuration runs it (Ambrose-2449's look, kvu-rules/step2-looks.md 562d747a; reach J58030, infection J58069; Oscar-1005 #304746)"
+    }
   },
   {
     "id": "kvu-p-g21",
@@ -4549,7 +4608,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "the packed fallback runs only past the subtree engine's label ceiling, which no house configuration nears: under the host's standard block the label peak stayed 43 against 100,000 at 2.0M raw tokens (#157046), the call made for KU10 (Ambrose-2449's look, kvu-rules/step2-looks.md 562d747a; reach J58030, infection J58069; Oscar-1005 #304746)"
+    }
   },
   {
     "id": "kvu-s14",
@@ -4566,7 +4628,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "its premise holds in no fixture job: the statement runs, and the original and the mutant compute the same there in every C7 and H1 job (Ambrose-2449's look, kvu-rules/step2-looks.md 562d747a; reach J58030, infection J58069; Oscar-1005 #304746)"
+    }
   },
   {
     "id": "kvu-pk9",
@@ -4583,7 +4648,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...)"
+    "gap": {
+      "kind": "equivalent",
+      "why": "packed engine, never reached; even then: laziness, time only (Ambrose-2449's look, kvu-rules/step2-looks.md 562d747a; reach J58030, infection J58069; Oscar-1005 #304746)"
+    }
   },
   {
     "id": "kvu-s-e18",
@@ -4600,7 +4668,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...)"
+    "gap": {
+      "kind": "equivalent",
+      "why": "laziness: an eager candidate list changes time only (Ambrose-2449's look, kvu-rules/step2-looks.md 562d747a; reach J58030, infection J58069; Oscar-1005 #304746)"
+    }
   },
   {
     "id": "kvu-g27",
@@ -4617,7 +4688,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "the packed fallback runs only past the subtree engine's label ceiling, which no house configuration nears: under the host's standard block the label peak stayed 43 against 100,000 at 2.0M raw tokens (#157046), the call made for KU10 (Ambrose-2449's look, kvu-rules/step2-looks.md 562d747a; reach J58030, infection J58069; Oscar-1005 #304746)"
+    }
   },
   {
     "id": "kvu-g28",
@@ -4634,7 +4708,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "the packed fallback runs only past the subtree engine's label ceiling, which no house configuration nears: under the host's standard block the label peak stayed 43 against 100,000 at 2.0M raw tokens (#157046), the call made for KU10 (Ambrose-2449's look, kvu-rules/step2-looks.md 562d747a; reach J58030, infection J58069; Oscar-1005 #304746)"
+    }
   },
   {
     "id": "kvu-pl1",
@@ -4651,7 +4728,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "no configuration selects the leaf engine. Gap: no house configuration runs it (Ambrose-2449's look, kvu-rules/step2-looks.md 562d747a; reach J58030, infection J58069; Oscar-1005 #304746)"
+    }
   },
   {
     "id": "kvu-ps5",
@@ -4668,7 +4748,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...)"
+    "gap": {
+      "kind": "equivalent",
+      "why": "packed engine, never reached; even then: trace-node counters only (Ambrose-2449's look, kvu-rules/step2-looks.md 562d747a; reach J58030, infection J58069; Oscar-1005 #304746)"
+    }
   },
   {
     "id": "kvu-ps6",
@@ -4685,7 +4768,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...)"
+    "gap": {
+      "kind": "equivalent",
+      "why": "packed engine, never reached; even then: trace-node counters only (Ambrose-2449's look, kvu-rules/step2-looks.md 562d747a; reach J58030, infection J58069; Oscar-1005 #304746)"
+    }
   },
   {
     "id": "kvu-p10a",
@@ -4702,7 +4788,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "the packed fallback runs only past the subtree engine's label ceiling, which no house configuration nears: under the host's standard block the label peak stayed 43 against 100,000 at 2.0M raw tokens (#157046), the call made for KU10 (Ambrose-2449's look, kvu-rules/step2-looks.md 562d747a; reach J58030, infection J58069; Oscar-1005 #304746)"
+    }
   },
   {
     "id": "kvu-ps12",
@@ -4719,7 +4808,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "packed engine, never reached; even then: needs 2^32 prunes (Ambrose-2449's look, kvu-rules/step2-looks.md 562d747a; reach J58030, infection J58069; Oscar-1005 #304746)"
+    }
   },
   {
     "id": "kvu-s6b",
@@ -4736,7 +4828,7 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...)"
+    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...); infected at its site in the jobs Ambrose-2449's probe named (J58069), but at b59e5cf it changes no record of the 16 H1 and C7 jobs on W1, W2, W6, W8, W9, W10/uncapped and W11 (J58107)"
   },
   {
     "id": "kvu-s7b",
@@ -4753,7 +4845,7 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...)"
+    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...); infected at its site in the jobs Ambrose-2449's probe named (J58069), but at b59e5cf it changes no record of the 16 H1 and C7 jobs on W1, W2, W6, W8, W9, W10/uncapped and W11 (J58107)"
   },
   {
     "id": "kvu-s7c",
@@ -4770,7 +4862,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...); tried by --place on C7 and H1 opus at ef15b2e's workloads, where W11 under kv-unified refused every compile from step 5 (since released, 6f48e21): changes none of its 9 runs' records (J57892)"
+    "gap": {
+      "kind": "equivalent",
+      "why": "bucket sizes are fixed per configuration (the strategy requires them, strategies/kv-unified.ts:1032-1036), so no solve sharing a memo changes the grid; the probe saw no change in any job (Ambrose-2449's look, kvu-rules/step2-looks.md 562d747a; reach J58030, infection J58069; Oscar-1005 #304746)"
+    }
   },
   {
     "id": "kvu-s17",
@@ -4787,7 +4882,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...)"
+    "gap": {
+      "kind": "equivalent",
+      "why": "counters only: lastSubtreeStats is in no record the fixture writes (Ambrose-2449's look, kvu-rules/step2-looks.md 562d747a; reach J58030, infection J58069; Oscar-1005 #304746)"
+    }
   },
   {
     "id": "kvu-s10",
@@ -4804,7 +4902,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...)"
+    "gap": {
+      "kind": "equivalent",
+      "why": "disables the no-holder memo, which changes reuse only: the strategy always passes a holder, and results are the same either way (Ambrose-2449's look, kvu-rules/step2-looks.md 562d747a; reach J58030, infection J58069; Oscar-1005 #304746)"
+    }
   },
   {
     "id": "kvu-s15a",
@@ -4820,8 +4921,9 @@
       "C7",
       "H1"
     ],
-    "flags": [],
-    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...)"
+    "flags": [
+      "H1.claude-opus-4-6/W9"
+    ]
   },
   {
     "id": "kvu-s15b",
@@ -4838,7 +4940,7 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...)"
+    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...); infected at its site in the jobs Ambrose-2449's probe named (J58069), but at b59e5cf it changes no record of the 16 H1 and C7 jobs on W1, W2, W6, W8, W9, W10/uncapped and W11 (J58107)"
   },
   {
     "id": "kvu-s13",
@@ -4855,7 +4957,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...); tried by --place on C7 and H1 opus at ef15b2e's workloads, where W11 under kv-unified refused every compile from step 5 (since released, 6f48e21): changes none of its 9 runs' records (J57892)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "its premise holds in no fixture job: the statement runs, and the original and the mutant compute the same there in every C7 and H1 job (Ambrose-2449's look, kvu-rules/step2-looks.md 562d747a; reach J58030, infection J58069; Oscar-1005 #304746)"
+    }
   },
   {
     "id": "kvu-s15",
@@ -4872,7 +4977,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "acts only with KVU_SUBTREE_DIAG set, which no run sets; it guards diagnostics, not plans (Ambrose-2449's look, kvu-rules/step2-looks.md 562d747a; reach J58030, infection J58069; Oscar-1005 #304746)"
+    }
   },
   {
     "id": "kvu-c5b",
@@ -4889,7 +4997,7 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...)"
+    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...); infected at its site in the jobs Ambrose-2449's probe named (J58069), but at b59e5cf it changes no record of the 16 H1 and C7 jobs on W1, W2, W6, W8, W9, W10/uncapped and W11 (J58107)"
   },
   {
     "id": "kvu-c9a",
@@ -4906,7 +5014,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "its premise holds in no fixture job: the statement runs, and the original and the mutant compute the same there in every C7 and H1 job (Ambrose-2449's look, kvu-rules/step2-looks.md 562d747a; reach J58030, infection J58069; Oscar-1005 #304746)"
+    }
   },
   {
     "id": "kvu-c9b",
@@ -4923,7 +5034,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "its premise holds in no fixture job: the statement runs, and the original and the mutant compute the same there in every C7 and H1 job (Ambrose-2449's look, kvu-rules/step2-looks.md 562d747a; reach J58030, infection J58069; Oscar-1005 #304746)"
+    }
   },
   {
     "id": "kvu-c10",
@@ -4940,7 +5054,7 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...)"
+    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...); infected at its site in the jobs Ambrose-2449's probe named (J58069), but at b59e5cf it changes no record of the 16 H1 and C7 jobs on W1, W2, W6, W8, W9, W10/uncapped and W11 (J58107)"
   },
   {
     "id": "kvu-c12a",
@@ -4957,7 +5071,7 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...)"
+    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...); infected at its site in the jobs Ambrose-2449's probe named (J58069), but at b59e5cf it changes no record of the 16 H1 and C7 jobs on W1, W2, W6, W8, W9, W10/uncapped and W11 (J58107)"
   },
   {
     "id": "kvu-c12b",
@@ -4974,7 +5088,7 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...)"
+    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...); infected at its site in the jobs Ambrose-2449's probe named (J58069), but at b59e5cf it changes no record of the 16 H1 and C7 jobs on W1, W2, W6, W8, W9, W10/uncapped and W11 (J58107)"
   },
   {
     "id": "kvu-c13",
@@ -4991,7 +5105,7 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...)"
+    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...); infected at its site in the jobs Ambrose-2449's probe named (J58069), but at b59e5cf it changes no record of the 16 H1 and C7 jobs on W1, W2, W6, W8, W9, W10/uncapped and W11 (J58107)"
   },
   {
     "id": "kvu-t2",
@@ -5008,7 +5122,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "its premise holds in no fixture job: the statement runs, and the original and the mutant compute the same there in every C7 and H1 job (Ambrose-2449's look, kvu-rules/step2-looks.md 562d747a; reach J58030, infection J58069; Oscar-1005 #304746)"
+    }
   },
   {
     "id": "kvu-t3a",
@@ -5025,7 +5142,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...); tried by --place on C7 and H1 opus at ef15b2e's workloads, where W11 under kv-unified refused every compile from step 5 (since released, 6f48e21): changes none of its 9 runs' records (J57892)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "its premise holds in no fixture job: the statement runs, and the original and the mutant compute the same there in every C7 and H1 job (Ambrose-2449's look, kvu-rules/step2-looks.md 562d747a; reach J58030, infection J58069; Oscar-1005 #304746)"
+    }
   },
   {
     "id": "kvu-t4a",
@@ -5042,7 +5162,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "its premise holds in no fixture job: the statement runs, and the original and the mutant compute the same there in every C7 and H1 job (Ambrose-2449's look, kvu-rules/step2-looks.md 562d747a; reach J58030, infection J58069; Oscar-1005 #304746)"
+    }
   },
   {
     "id": "kvu-t8a",
@@ -5059,7 +5182,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "its premise holds in no fixture job: the statement runs, and the original and the mutant compute the same there in every C7 and H1 job (Ambrose-2449's look, kvu-rules/step2-looks.md 562d747a; reach J58030, infection J58069; Oscar-1005 #304746)"
+    }
   },
   {
     "id": "kvu-t8b",
@@ -5076,7 +5202,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...); tried by --place on C7 and H1 opus at ef15b2e's workloads, where W11 under kv-unified refused every compile from step 5 (since released, 6f48e21): changes none of its 9 runs' records (J57892)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "its premise holds in no fixture job: the statement runs, and the original and the mutant compute the same there in every C7 and H1 job (Ambrose-2449's look, kvu-rules/step2-looks.md 562d747a; reach J58030, infection J58069; Oscar-1005 #304746)"
+    }
   },
   {
     "id": "kvu-t12",
@@ -5093,7 +5222,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "nothing in the strategy serializes or spreads a scored candidate, so an enumerable levels getter shows nowhere (Ambrose-2449's look, kvu-rules/step2-looks.md 562d747a; reach J58030, infection J58069; Oscar-1005 #304746)"
+    }
   },
   {
     "id": "gm-g1-enforce",
@@ -5268,5 +5400,569 @@
     ],
     "flags": [],
     "note": "unplaced: from Daniel-2612's mapping of Oscar-1005's global and manager list (~/.local/state/daniel-2612/gm/fixture-mutants-gm.json, sha256 b19fec246cf71e16...)"
+  },
+  {
+    "id": "lifecycle-a3a",
+    "why": "A3: A chunk whose split-stitch rung waits for its call window stays queued, and the scan goes on to the work behind it. Mutant: a chunk waiting for its call window ends the scan. Compression-lifecycle rule list (cm-rules/compression-lifecycle-rules.md f960968f, Esther-2584); survived every test file reach.py names for its lines and the 11 that read src as text, at fb4cf1046 (J57342, batch AB). No run known to reach it yet.",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "        if (Date.now() < notBefore) continue;",
+        "replace": "        if (Date.now() < notBefore) return;"
+      }
+    ],
+    "flags": [],
+    "note": "unplaced: from Esther-2584's compression-lifecycle mapping (~/.local/state/esther-2584/cm-rules/map/gaps-fixture-mutants.json, sha256 d5dfde3c6eabe28f...)"
+  },
+  {
+    "id": "lifecycle-a5a",
+    "why": "A5: Without a membrane, `tick()` makes no call and logs a warning. Mutant: no warning without a membrane. Compression-lifecycle rule list (cm-rules/compression-lifecycle-rules.md f960968f, Esther-2584); survived every test file reach.py names for its lines and the 11 that read src as text, at fb4cf1046 (J57342, batch AB). No run known to reach it yet.",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "      this.diag.warn('AutobiographicalStrategy: No membrane instance for compression');\n",
+        "replace": ""
+      }
+    ],
+    "flags": [],
+    "note": "unplaced: from Esther-2584's compression-lifecycle mapping (~/.local/state/esther-2584/cm-rules/map/gaps-fixture-mutants.json, sha256 d5dfde3c6eabe28f...)"
+  },
+  {
+    "id": "lifecycle-a5b",
+    "why": "A5: Without a membrane, `tick()` makes no call and logs a warning. Mutant: without a membrane the tick goes on to the queue. Compression-lifecycle rule list (cm-rules/compression-lifecycle-rules.md f960968f, Esther-2584); survived every test file reach.py names for its lines and the 11 that read src as text, at fb4cf1046 (J57342, batch AB). No run known to reach it yet. Its build has five TS errors (the mutant removes a guard the types rely on); tsc emits anyway and the built file changes.",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "      this.diag.warn('AutobiographicalStrategy: No membrane instance for compression');\n      return;",
+        "replace": "      this.diag.warn('AutobiographicalStrategy: No membrane instance for compression');"
+      }
+    ],
+    "flags": [],
+    "note": "unplaced: from Esther-2584's compression-lifecycle mapping (~/.local/state/esther-2584/cm-rules/map/gaps-fixture-mutants.json, sha256 d5dfde3c6eabe28f...)"
+  },
+  {
+    "id": "lifecycle-a9",
+    "why": "A9: A queued chunk holding a held message ends the tick's scan; it waits, and the rebuild after release queues it again. Mutant: a held chunk is skipped and the scan goes on. Compression-lifecycle rule list (cm-rules/compression-lifecycle-rules.md f960968f, Esther-2584); survived every test file reach.py names for its lines and the 11 that read src as text, at fb4cf1046 (J57342, batch AB). No run known to reach it yet.",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "      if (this.chunkHasHeldMessage(chunk, this.holdBlockedIds(ctx.messageStore))) return;",
+        "replace": "      if (this.chunkHasHeldMessage(chunk, this.holdBlockedIds(ctx.messageStore))) continue;"
+      }
+    ],
+    "flags": [],
+    "note": "unplaced: from Esther-2584's compression-lifecycle mapping (~/.local/state/esther-2584/cm-rules/map/gaps-fixture-mutants.json, sha256 d5dfde3c6eabe28f...)"
+  },
+  {
+    "id": "lifecycle-b1c",
+    "why": "B1: With `autoTickOnNewMessage: true` (false), `onNewMessage()` starts `tick()` as a background promise, but only when no compression is in flight: a message that closes a chunk during a host's own `tick()` starts nothing. Mutant: a message during a compression in flight starts a drain. Compression-lifecycle rule list (cm-rules/compression-lifecycle-rules.md f960968f, Esther-2584); survived every test file reach.py names for its lines and the 11 that read src as text, at fb4cf1046 (J57342, batch AB). No run known to reach it yet.",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "    if (this.config.autoTickOnNewMessage && !this.pendingCompression) {\n      this.driveSpeculativeDrain(ctx);\n    }\n  }\n\n  /**\n   * Background-drain loop",
+        "replace": "    if (this.config.autoTickOnNewMessage) {\n      this.driveSpeculativeDrain(ctx);\n    }\n  }\n\n  /**\n   * Background-drain loop"
+      },
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "    this.requireLoadedBranch('driveSpeculativeDrain');\n    if (this.pendingCompression) return;",
+        "replace": "    this.requireLoadedBranch('driveSpeculativeDrain');"
+      }
+    ],
+    "flags": [],
+    "note": "unplaced: from Esther-2584's compression-lifecycle mapping (~/.local/state/esther-2584/cm-rules/map/gaps-fixture-mutants.json, sha256 d5dfde3c6eabe28f...)"
+  },
+  {
+    "id": "lifecycle-b3",
+    "why": "B3: The drain stops when a tick consumes no queue item. Mutant: the drain goes on for two ticks that consumed nothing. Compression-lifecycle rule list (cm-rules/compression-lifecycle-rules.md f960968f, Esther-2584); survived every test file reach.py names for its lines and the 11 that read src as text, at fb4cf1046 (J57342, batch AB). No run known to reach it yet.",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "        if (this._drainProgress === progressBefore) return;",
+        "replace": "        if (this._drainProgress === progressBefore && ((this as any).__b3 = ((this as any).__b3 ?? 0) + 1) > 2) return;"
+      }
+    ],
+    "flags": [],
+    "note": "unplaced: from Esther-2584's compression-lifecycle mapping (~/.local/state/esther-2584/cm-rules/map/gaps-fixture-mutants.json, sha256 d5dfde3c6eabe28f...)"
+  },
+  {
+    "id": "lifecycle-b4c",
+    "why": "B4: A drained tick that comes due on a closed store doesn't run; what a drained tick throws is logged, except a host's withdrawal or cancellation, which ends the drain quietly. Mutant: a drained tick's error isn't logged. Compression-lifecycle rule list (cm-rules/compression-lifecycle-rules.md f960968f, Esther-2584); survived every test file reach.py names for its lines and the 11 that read src as text, at fb4cf1046 (J57342, batch AB). No run known to reach it yet.",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "        if (compressionFailureKind(err) === 'abort') return;\n        this.diag.error(`AutobiographicalStrategy: speculative-drain error: ${describeCompressionFailure(err)}`);",
+        "replace": "        if (compressionFailureKind(err) === 'abort') return;"
+      }
+    ],
+    "flags": [],
+    "note": "unplaced: from Esther-2584's compression-lifecycle mapping (~/.local/state/esther-2584/cm-rules/map/gaps-fixture-mutants.json, sha256 d5dfde3c6eabe28f...)"
+  },
+  {
+    "id": "lifecycle-b5b",
+    "why": "B5: Releasing compression holds re-queues the chunks they deferred and, when auto-tick is on, resumes the drain. Mutant: release resumes no drain. Compression-lifecycle rule list (cm-rules/compression-lifecycle-rules.md f960968f, Esther-2584); survived every test file reach.py names for its lines and the 11 that read src as text, at fb4cf1046 (J57342, batch AB). No run known to reach it yet.",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "    this.requireLoadedBranch('onCompressionHoldsReleased');\n    this.rebuildChunks(ctx.messageStore);\n    if (this.config.autoTickOnNewMessage && !this.pendingCompression) {",
+        "replace": "    this.requireLoadedBranch('onCompressionHoldsReleased');\n    this.rebuildChunks(ctx.messageStore);\n    if (false && this.config.autoTickOnNewMessage && !this.pendingCompression) {"
+      }
+    ],
+    "flags": [],
+    "note": "unplaced: from Esther-2584's compression-lifecycle mapping (~/.local/state/esther-2584/cm-rules/map/gaps-fixture-mutants.json, sha256 d5dfde3c6eabe28f...)"
+  },
+  {
+    "id": "lifecycle-b10b",
+    "why": "B10: A pause shows in readiness's description only when it binds the configured compression model and hasn't ended. Mutant: an ended pause still shows in readiness. Compression-lifecycle rule list (cm-rules/compression-lifecycle-rules.md f960968f, Esther-2584); survived every test file reach.py names for its lines and the 11 that read src as text, at fb4cf1046 (J57342, batch AB). No run known to reach it yet.",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "        Date.now() < pauseUntil(this.compressionPause)\n        ? this.compressionPause",
+        "replace": "        true\n        ? this.compressionPause"
+      }
+    ],
+    "flags": [],
+    "note": "unplaced: from Esther-2584's compression-lifecycle mapping (~/.local/state/esther-2584/cm-rules/map/gaps-fixture-mutants.json, sha256 d5dfde3c6eabe28f...)"
+  },
+  {
+    "id": "lifecycle-b11",
+    "why": "B11: Queued work resumes on a new message (B1), a hold's release (B5) or the host's next `tick()` (A13); the strategy doesn't resume a drain a thrown tick ended (its `.catch`, ab:7539–7544), even once the pause has passed. Mutant: the strategy resumes a drain a thrown tick ended (up to 3 times). Compression-lifecycle rule list (cm-rules/compression-lifecycle-rules.md f960968f, Esther-2584); survived every test file reach.py names for its lines and the 11 that read src as text, at fb4cf1046 (J57342, batch AB). Its arm catch (47 failures in compression-transient-ladder, outside the mutant's reach) didn't hold with the file run alone (J57935), so it's a gap. No run known to reach it yet.",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "        if (compressionFailureKind(err) === 'abort') return;\n        this.diag.error(`AutobiographicalStrategy: speculative-drain error: ${describeCompressionFailure(err)}`);",
+        "replace": "        if (compressionFailureKind(err) === 'abort') return;\n        this.diag.error(`AutobiographicalStrategy: speculative-drain error: ${describeCompressionFailure(err)}`);\n        if (((this as any).__b11 = ((this as any).__b11 ?? 0) + 1) <= 3) setTimeout(() => { try { if (!this.store?.isClosed()) this.driveSpeculativeDrain(ctx); } catch {} }, 0);"
+      }
+    ],
+    "flags": [],
+    "note": "unplaced: from Esther-2584's compression-lifecycle mapping (~/.local/state/esther-2584/cm-rules/map/gaps-fixture-mutants.json, sha256 d5dfde3c6eabe28f...)"
+  },
+  {
+    "id": "lifecycle-b12a",
+    "why": "B12: The preflight hook (`shouldCompressPreflight`) gates production only: with a merge queued under `hierarchical`, the drain proceeds whatever it says, so the cap can't deadlock its own relief. Mutant: a false preflight stops the drain with a merge queued. Compression-lifecycle rule list (cm-rules/compression-lifecycle-rules.md f960968f, Esther-2584); survived every test file reach.py names for its lines and the 11 that read src as text, at fb4cf1046 (J57342, batch AB). No run known to reach it yet.",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "    if (!hasMerges && !this.shouldCompressPreflight()) return;",
+        "replace": "    if (!this.shouldCompressPreflight()) return;"
+      }
+    ],
+    "flags": [],
+    "note": "unplaced: from Esther-2584's compression-lifecycle mapping (~/.local/state/esther-2584/cm-rules/map/gaps-fixture-mutants.json, sha256 d5dfde3c6eabe28f...)"
+  },
+  {
+    "id": "lifecycle-c9a",
+    "why": "C9a: An agent permitted no tools, on a Fable- or Mythos-family compression model, still compresses: compression waits for tool definitions only while none have been set and some can come. Mutant: the rule as worded: wait only while no tool list has been set (an empty list compresses). Compression-lifecycle rule list (cm-rules/compression-lifecycle-rules.md f960968f, Esther-2584); survived every test file reach.py names for its lines and the 11 that read src as text, at fb4cf1046 (J57342, batch C). No run known to reach it yet.",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "    return !(tools !== undefined && tools.length > 0) && isToolsLessRefusingSummarizer(this.config.compressionModel ?? '');",
+        "replace": "    return tools === undefined && isToolsLessRefusingSummarizer(this.config.compressionModel ?? '');"
+      }
+    ],
+    "flags": [],
+    "note": "unplaced: from Esther-2584's compression-lifecycle mapping (~/.local/state/esther-2584/cm-rules/map/gaps-fixture-mutants.json, sha256 d5dfde3c6eabe28f...)"
+  },
+  {
+    "id": "lifecycle-c12b",
+    "why": "C12: With chunk persistence, when 3 or more chunk records exist and more than half resolve to no live message, the rebuild fails closed: it empties the queue, chunks nothing new, and logs one `FAIL-CLOSED` error. Mutant: the guard needs 4 records, not 3. Compression-lifecycle rule list (cm-rules/compression-lifecycle-rules.md f960968f, Esther-2584); survived every test file reach.py names for its lines and the 11 that read src as text, at fb4cf1046 (J57342, batch C). No run known to reach it yet.",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "    if (this.chunkPersistenceEnabled && this.chunkRecords.length >= 3 &&",
+        "replace": "    if (this.chunkPersistenceEnabled && this.chunkRecords.length >= 4 &&"
+      }
+    ],
+    "flags": [],
+    "note": "unplaced: from Esther-2584's compression-lifecycle mapping (~/.local/state/esther-2584/cm-rules/map/gaps-fixture-mutants.json, sha256 d5dfde3c6eabe28f...)"
+  },
+  {
+    "id": "lifecycle-c12c",
+    "why": "C12: With chunk persistence, when 3 or more chunk records exist and more than half resolve to no live message, the rebuild fails closed: it empties the queue, chunks nothing new, and logs one `FAIL-CLOSED` error. Mutant: the tripped guard leaves the record-backed queue as it was. Compression-lifecycle rule list (cm-rules/compression-lifecycle-rules.md f960968f, Esther-2584); survived every test file reach.py names for its lines and the 11 that read src as text, at fb4cf1046 (J57342, batch C). No run known to reach it yet.",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "      this.chunkRecordsOrphaned = true;\n      this.compressionQueue = [];",
+        "replace": "      this.chunkRecordsOrphaned = true;"
+      }
+    ],
+    "flags": [],
+    "note": "unplaced: from Esther-2584's compression-lifecycle mapping (~/.local/state/esther-2584/cm-rules/map/gaps-fixture-mutants.json, sha256 d5dfde3c6eabe28f...)"
+  },
+  {
+    "id": "lifecycle-c12d",
+    "why": "C12: With chunk persistence, when 3 or more chunk records exist and more than half resolve to no live message, the rebuild fails closed: it empties the queue, chunks nothing new, and logs one `FAIL-CLOSED` error. Mutant: the FAIL-CLOSED error logs at every rebuild, not once. Compression-lifecycle rule list (cm-rules/compression-lifecycle-rules.md f960968f, Esther-2584); survived every test file reach.py names for its lines and the 11 that read src as text, at fb4cf1046 (J57342, batch C). No run known to reach it yet.",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "      if (!this._orphanWarned) {\n        this._orphanWarned = true;",
+        "replace": "      if (true) {\n        this._orphanWarned = true;"
+      }
+    ],
+    "flags": [],
+    "note": "unplaced: from Esther-2584's compression-lifecycle mapping (~/.local/state/esther-2584/cm-rules/map/gaps-fixture-mutants.json, sha256 d5dfde3c6eabe28f...)"
+  },
+  {
+    "id": "lifecycle-d7",
+    "why": "D7: `releaseCompression` is idempotent and ignores unknown ids; releasing a sharded add's id releases every shard. Mutant: releasing a sharded add's id releases only that id. Compression-lifecycle rule list (cm-rules/compression-lifecycle-rules.md f960968f, Esther-2584); survived every test file reach.py names for its lines and the 11 that read src as text, at fb4cf1046 (J57342, batch D). No run known to reach it yet.",
+    "edits": [
+      {
+        "file": "context-manager.ts",
+        "find": "      const group = this.compressionHoldGroups.get(id);\n      if (group) {\n        for (const member of group) {",
+        "replace": "      const group = undefined as MessageId[] | undefined;\n      if (group) {\n        for (const member of group) {"
+      }
+    ],
+    "flags": [],
+    "note": "unplaced: from Esther-2584's compression-lifecycle mapping (~/.local/state/esther-2584/cm-rules/map/gaps-fixture-mutants.json, sha256 d5dfde3c6eabe28f...)"
+  },
+  {
+    "id": "lifecycle-e4a",
+    "why": "E4: `compressionMaxTokens` caps the compression request's `max_tokens`; unset, the request asks `max(16000, targetChunkTokens × 1.5)`. Mutant: the type doc's formula: max(16000, targetChunkTokens x 1.5), where the code multiplies summaryTargetTokens. Compression-lifecycle rule list (cm-rules/compression-lifecycle-rules.md f960968f, Esther-2584); survived every test file reach.py names for its lines and the 11 that read src as text, at fb4cf1046 (J57342, batch E). No run known to reach it yet.",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "    const outputReserveTokens = this.capCompressionTokens(Math.max(16000, Math.round(targetTokens * 1.5)));",
+        "replace": "    const outputReserveTokens = this.capCompressionTokens(Math.max(16000, Math.round(this.config.targetChunkTokens * 1.5)));"
+      }
+    ],
+    "flags": [],
+    "note": "unplaced: from Esther-2584's compression-lifecycle mapping (~/.local/state/esther-2584/cm-rules/map/gaps-fixture-mutants.json, sha256 d5dfde3c6eabe28f...)"
+  },
+  {
+    "id": "lifecycle-e4c",
+    "why": "E4: `compressionMaxTokens` caps the compression request's `max_tokens`; unset, the request asks `max(16000, targetChunkTokens × 1.5)`. Mutant: compressionMaxTokens caps nothing. Compression-lifecycle rule list (cm-rules/compression-lifecycle-rules.md f960968f, Esther-2584); survived every test file reach.py names for its lines and the 11 that read src as text, at fb4cf1046 (J57342, batch E). No run known to reach it yet.",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "    if (typeof cap === 'number' && cap > 0) return Math.min(requested, cap);",
+        "replace": "    if (typeof cap === 'number' && cap > 0) return requested;"
+      }
+    ],
+    "flags": [],
+    "note": "unplaced: from Esther-2584's compression-lifecycle mapping (~/.local/state/esther-2584/cm-rules/map/gaps-fixture-mutants.json, sha256 d5dfde3c6eabe28f...)"
+  },
+  {
+    "id": "lifecycle-e5a",
+    "why": "E5: `compressionRecallBudgetTokens` (100,000) caps the recall-pair content in each L1 and merge request; the cap walks newest-first and the kept set is re-sorted chronologically; each summary costs its content tokens + 50, plus its envelope … Mutant: the L1 recall budget's default is 50,000. Compression-lifecycle rule list (cm-rules/compression-lifecycle-rules.md f960968f, Esther-2584); survived every test file reach.py names for its lines and the 11 that read src as text, at fb4cf1046 (J57342, batch E). No run known to reach it yet.",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "    const recallBudget = sourceOnly ? 0 : (this.config.compressionRecallBudgetTokens ?? 100_000);",
+        "replace": "    const recallBudget = sourceOnly ? 0 : (this.config.compressionRecallBudgetTokens ?? 50_000);"
+      }
+    ],
+    "flags": [],
+    "note": "unplaced: from Esther-2584's compression-lifecycle mapping (~/.local/state/esther-2584/cm-rules/map/gaps-fixture-mutants.json, sha256 d5dfde3c6eabe28f...)"
+  },
+  {
+    "id": "lifecycle-e9b",
+    "why": "E9: `compressionSourceOnly`: an L1 request holds only the compression marker, the exact target chunk and the write-memory directive; tools are still declared; it affects L1s only, not merges or transition summaries. Mutant: compressionSourceOnly also strips recall from merges. Compression-lifecycle rule list (cm-rules/compression-lifecycle-rules.md f960968f, Esther-2584); survived every test file reach.py names for its lines and the 11 that read src as text, at fb4cf1046 (J57342, batch E). No run known to reach it yet.",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "    const configuredRecallBudget = mergeSourceOnly ? 0 : (this.config.compressionRecallBudgetTokens ?? 100_000);",
+        "replace": "    const configuredRecallBudget = (mergeSourceOnly || this.config.compressionSourceOnly === true) ? 0 : (this.config.compressionRecallBudgetTokens ?? 100_000);"
+      }
+    ],
+    "flags": [],
+    "note": "unplaced: from Esther-2584's compression-lifecycle mapping (~/.local/state/esther-2584/cm-rules/map/gaps-fixture-mutants.json, sha256 d5dfde3c6eabe28f...)"
+  },
+  {
+    "id": "lifecycle-e11a",
+    "why": "E11: `recoverLiteralThinkingWrappedCompression` (false): an answer of text blocks alone that is exactly one closed `<thinking>…</thinking>` or `<think>…</think>` wrapper, with no tag in its body, is stored as the prose inside; every other ans… Mutant: an answer with reasoning beside its text is recovered too. Compression-lifecycle rule list (cm-rules/compression-lifecycle-rules.md f960968f, Esther-2584); survived every test file reach.py names for its lines and the 11 that read src as text, at fb4cf1046 (J57342, batch E). No run known to reach it yet.",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "        const recoveryEnabled = this.config.recoverLiteralThinkingWrappedCompression === true;\n        return extractCompressionSummaryText(rawText, recoveryEnabled && onlyTextBlocks);",
+        "replace": "        const recoveryEnabled = this.config.recoverLiteralThinkingWrappedCompression === true;\n        return extractCompressionSummaryText(rawText, recoveryEnabled);"
+      }
+    ],
+    "flags": [],
+    "note": "unplaced: from Esther-2584's compression-lifecycle mapping (~/.local/state/esther-2584/cm-rules/map/gaps-fixture-mutants.json, sha256 d5dfde3c6eabe28f...)"
+  },
+  {
+    "id": "lifecycle-f2a",
+    "why": "F2: After an explicit refusal or an incomplete answer, up to `compressionRefusalCurveFallbacks` (3) recall-curve variants are tried, each expanding exactly one already-authored frontier summary into its persisted direct children; 0 disables … Mutant: the variants' default count is 2. Compression-lifecycle rule list (cm-rules/compression-lifecycle-rules.md f960968f, Esther-2584); survived every test file reach.py names for its lines and the 11 that read src as text, at fb4cf1046 (J57342, batch F). No run known to reach it yet.",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "    const configured = this.config.compressionRefusalCurveFallbacks ?? 3;",
+        "replace": "    const configured = this.config.compressionRefusalCurveFallbacks ?? 2;"
+      }
+    ],
+    "flags": [],
+    "note": "unplaced: from Esther-2584's compression-lifecycle mapping (~/.local/state/esther-2584/cm-rules/map/gaps-fixture-mutants.json, sha256 d5dfde3c6eabe28f...)"
+  },
+  {
+    "id": "lifecycle-f5",
+    "why": "F5: A request-attributable rejection (`context_length`, `invalid_request`, `safety`, `unsupported`) of the canonical stage tries no hoist, variant or split: source-only-final once where configured, else the family exhausts at once. Mutant: a request-attributable rejection of the canonical still tries the recall variants. Compression-lifecycle rule list (cm-rules/compression-lifecycle-rules.md f960968f, Esther-2584); survived every test file reach.py names for its lines and the 11 that read src as text, at fb4cf1046 (J57342, batch F). No run known to reach it yet.",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "        for (const planned of canonicalRejection ? [] : fallbackPlan) {",
+        "replace": "        for (const planned of fallbackPlan) {"
+      }
+    ],
+    "flags": [],
+    "note": "unplaced: from Esther-2584's compression-lifecycle mapping (~/.local/state/esther-2584/cm-rules/map/gaps-fixture-mutants.json, sha256 d5dfde3c6eabe28f...)"
+  },
+  {
+    "id": "lifecycle-f10a",
+    "why": "F10: Split-stitch makes at most `compressionSplitMaxCallsPerChunk` (40) calls per chunk and `compressionSplitMaxCallsPer10Min` (80) per strategy instance per 10-minute sliding window, in memory only. Mutant: the per-chunk split call cap's default is 20. Compression-lifecycle rule list (cm-rules/compression-lifecycle-rules.md f960968f, Esther-2584); survived every test file reach.py names for its lines and the 11 that read src as text, at fb4cf1046 (J57342, batch F). No run known to reach it yet.",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "          const MAX_SPLIT_CALLS = this.config.compressionSplitMaxCallsPerChunk ?? 40;",
+        "replace": "          const MAX_SPLIT_CALLS = this.config.compressionSplitMaxCallsPerChunk ?? 20;"
+      }
+    ],
+    "flags": [],
+    "note": "unplaced: from Esther-2584's compression-lifecycle mapping (~/.local/state/esther-2584/cm-rules/map/gaps-fixture-mutants.json, sha256 d5dfde3c6eabe28f...)"
+  },
+  {
+    "id": "lifecycle-f10b",
+    "why": "F10: Split-stitch makes at most `compressionSplitMaxCallsPerChunk` (40) calls per chunk and `compressionSplitMaxCallsPer10Min` (80) per strategy instance per 10-minute sliding window, in memory only. Mutant: the 10-minute split call cap's default is 160. Compression-lifecycle rule list (cm-rules/compression-lifecycle-rules.md f960968f, Esther-2584); survived every test file reach.py names for its lines and the 11 that read src as text, at fb4cf1046 (J57342, batch F). No run known to reach it yet.",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "          const MAX_WINDOW_CALLS = this.config.compressionSplitMaxCallsPer10Min ?? 80;",
+        "replace": "          const MAX_WINDOW_CALLS = this.config.compressionSplitMaxCallsPer10Min ?? 160;"
+      }
+    ],
+    "flags": [],
+    "note": "unplaced: from Esther-2584's compression-lifecycle mapping (~/.local/state/esther-2584/cm-rules/map/gaps-fixture-mutants.json, sha256 d5dfde3c6eabe28f...)"
+  },
+  {
+    "id": "lifecycle-f19a",
+    "why": "F19: Quarantine records whose debt is paid are swept: a matching persisted chunk record that's compressed is cleared, a raw one kept, and a record matching no chunk record is cleared as orphaned. Mutant: the sweep keeps a record whose chunk is compressed. Compression-lifecycle rule list (cm-rules/compression-lifecycle-rules.md f960968f, Esther-2584); survived every test file reach.py names for its lines and the 11 that read src as text, at fb4cf1046 (J57342, batch F). No run known to reach it yet. Its build has one TS error (TS2339 at autobiographical.ts:5633: the mutated guard narrows a type to never); tsc emits anyway and the built file changes.",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "        if (match && !match.compressed) continue; // live debt — keep, klaxon",
+        "replace": "        if (match) continue; // live debt — keep, klaxon"
+      }
+    ],
+    "flags": [],
+    "note": "unplaced: from Esther-2584's compression-lifecycle mapping (~/.local/state/esther-2584/cm-rules/map/gaps-fixture-mutants.json, sha256 d5dfde3c6eabe28f...)"
+  },
+  {
+    "id": "lifecycle-g10",
+    "why": "G10: A held L1 counts as unmerged toward `maxSpeculativeL1s`. Mutant: a held L1 doesn't count toward maxSpeculativeL1s. Compression-lifecycle rule list (cm-rules/compression-lifecycle-rules.md f960968f, Esther-2584); survived every test file reach.py names for its lines and the 11 that read src as text, at fb4cf1046 (J57342, batch G). No run known to reach it yet.",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "    const unmergedL1s = this.summaries.filter(s => s.level === 1 && !s.mergedInto).length;",
+        "replace": "    const unmergedL1s = this.summaries.filter(s => s.level === 1 && !s.mergedInto && !(this.config.mergeHoldSummaryIds ?? []).includes(s.id)).length;"
+      }
+    ],
+    "flags": [],
+    "note": "unplaced: from Esther-2584's compression-lifecycle mapping (~/.local/state/esther-2584/cm-rules/map/gaps-fixture-mutants.json, sha256 d5dfde3c6eabe28f...)"
+  },
+  {
+    "id": "lifecycle-g16c",
+    "why": "G16: `enqueueMerge` refuses a group holding a held source, and a group with a quarantine record of its own unless it's a valid merge of present, unparented sources; a topology refusal's record goes once its group queues as a valid merge, with… Mutant: a topology record cleared on re-queue logs nothing. Compression-lifecycle rule list (cm-rules/compression-lifecycle-rules.md f960968f, Esther-2584); survived every test file reach.py names for its lines and the 11 that read src as text, at fb4cf1046 (J57342, batch G). No run known to reach it yet.",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "      this.diag.warn(`[merge-quarantine] cleared topology record key=${key.slice(0, 12)}: its group is a valid merge again`);",
+        "replace": "      void key;"
+      }
+    ],
+    "flags": [],
+    "note": "unplaced: from Esther-2584's compression-lifecycle mapping (~/.local/state/esther-2584/cm-rules/map/gaps-fixture-mutants.json, sha256 d5dfde3c6eabe28f...)"
+  },
+  {
+    "id": "lifecycle-g17b",
+    "why": "G17: Under `auditOnly`, `initialize` never chunks the uncovered frontier, never queues merges, and never drops queued merges the current grammar refuses. Mutant: an auditOnly open drops queued merges the grammar refuses. Compression-lifecycle rule list (cm-rules/compression-lifecycle-rules.md f960968f, Esther-2584); survived every test file reach.py names for its lines and the 11 that read src as text, at fb4cf1046 (J57342, batch G). No run known to reach it yet.",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "      if (!this.config.auditOnly) this.sanitizePersistedMergeQueue(ctx.messageStore);",
+        "replace": "      this.sanitizePersistedMergeQueue(ctx.messageStore);"
+      }
+    ],
+    "flags": [],
+    "note": "unplaced: from Esther-2584's compression-lifecycle mapping (~/.local/state/esther-2584/cm-rules/map/gaps-fixture-mutants.json, sha256 d5dfde3c6eabe28f...)"
+  },
+  {
+    "id": "lifecycle-h4a",
+    "why": "H4: A request-attributable rejection of a merge (`context_length`, `invalid_request`, `safety`, `unsupported`) goes through the same bounded attempt policy, and each retry's merge prompt halves its recall budget. Mutant: a retried merge's recall budget isn't halved. Compression-lifecycle rule list (cm-rules/compression-lifecycle-rules.md f960968f, Esther-2584); survived every test file reach.py names for its lines and the 11 that read src as text, at fb4cf1046 (J57342, batch H). No run known to reach it yet.",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "      Math.round(configuredRecallBudget * 0.5 ** Math.min(mergeAttempts, 4)),",
+        "replace": "      Math.round(configuredRecallBudget),"
+      }
+    ],
+    "flags": [],
+    "note": "unplaced: from Esther-2584's compression-lifecycle mapping (~/.local/state/esther-2584/cm-rules/map/gaps-fixture-mutants.json, sha256 d5dfde3c6eabe28f...)"
+  },
+  {
+    "id": "lifecycle-h7",
+    "why": "H7: A deferral by the caller's provider admission counts nothing and adds no backoff. Mutant: an admission deferral counts toward the merge's failure streak. Compression-lifecycle rule list (cm-rules/compression-lifecycle-rules.md f960968f, Esther-2584); survived every test file reach.py names for its lines and the 11 that read src as text, at fb4cf1046 (J57342, batch H). No run known to reach it yet.",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "          if (!isAdmissionDeferral(error) && this.isCompressionBranchCurrent(sourceBranch)) {",
+        "replace": "          if (this.isCompressionBranchCurrent(sourceBranch)) {"
+      }
+    ],
+    "flags": [],
+    "note": "unplaced: from Esther-2584's compression-lifecycle mapping (~/.local/state/esther-2584/cm-rules/map/gaps-fixture-mutants.json, sha256 d5dfde3c6eabe28f...)"
+  },
+  {
+    "id": "lifecycle-h13a",
+    "why": "H13: A repeating merge-quarantine alarm sounds while any record stands, on the same interval as the chunk quarantine's; `quarantineAlarmIntervalMs: 0` disables it. Mutant: the merge alarm's default interval is 30 minutes. Compression-lifecycle rule list (cm-rules/compression-lifecycle-rules.md f960968f, Esther-2584); survived every test file reach.py names for its lines and the 11 that read src as text, at fb4cf1046 (J57342, batch H). No run known to reach it yet.",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "    const interval = this.config.quarantineAlarmIntervalMs ?? 15 * 60_000;\n    if (interval <= 0) return;\n    const now = Date.now();\n    if (!this.mergeQuarantineAlarmActive",
+        "replace": "    const interval = this.config.quarantineAlarmIntervalMs ?? 30 * 60_000;\n    if (interval <= 0) return;\n    const now = Date.now();\n    if (!this.mergeQuarantineAlarmActive"
+      }
+    ],
+    "flags": [],
+    "note": "unplaced: from Esther-2584's compression-lifecycle mapping (~/.local/state/esther-2584/cm-rules/map/gaps-fixture-mutants.json, sha256 d5dfde3c6eabe28f...)"
+  },
+  {
+    "id": "lifecycle-h13b",
+    "why": "H13: A repeating merge-quarantine alarm sounds while any record stands, on the same interval as the chunk quarantine's; `quarantineAlarmIntervalMs: 0` disables it. Mutant: an interval of 0 doesn't disable the merge alarm. Compression-lifecycle rule list (cm-rules/compression-lifecycle-rules.md f960968f, Esther-2584); survived every test file reach.py names for its lines and the 11 that read src as text, at fb4cf1046 (J57342, batch H). No run known to reach it yet.",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "    if (interval <= 0) return;\n    const now = Date.now();\n    if (!this.mergeQuarantineAlarmActive",
+        "replace": "    const now = Date.now();\n    if (!this.mergeQuarantineAlarmActive"
+      }
+    ],
+    "flags": [],
+    "note": "unplaced: from Esther-2584's compression-lifecycle mapping (~/.local/state/esther-2584/cm-rules/map/gaps-fixture-mutants.json, sha256 d5dfde3c6eabe28f...)"
+  },
+  {
+    "id": "lifecycle-i6",
+    "why": "I6: Unset, there's no cap. Mutant: an unset cap is 8. Compression-lifecycle rule list (cm-rules/compression-lifecycle-rules.md f960968f, Esther-2584); survived every test file reach.py names for its lines and the 11 that read src as text, at fb4cf1046 (J57342, batch IJ). No run known to reach it yet.",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "    const cap = this.config.maxSpeculativeL1s;\n    if (cap === undefined || cap < 0) return false;",
+        "replace": "    const cap = this.config.maxSpeculativeL1s ?? 8;\n    if (cap === undefined || cap < 0) return false;"
+      }
+    ],
+    "flags": [],
+    "note": "unplaced: from Esther-2584's compression-lifecycle mapping (~/.local/state/esther-2584/cm-rules/map/gaps-fixture-mutants.json, sha256 d5dfde3c6eabe28f...)"
+  },
+  {
+    "id": "lifecycle-j4a",
+    "why": "J4: One warning per pause, plus a structured log event `compression:lane-paused`; an admission hold warns and logs `compression:lane-held-by-admission` once per hold, and again when its deadline changes. Mutant: the pause's log event has another name. Compression-lifecycle rule list (cm-rules/compression-lifecycle-rules.md f960968f, Esther-2584); survived every test file reach.py names for its lines and the 11 that read src as text, at fb4cf1046 (J57342, batch IJ). No run known to reach it yet.",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "      event: 'compression:lane-paused',",
+        "replace": "      event: 'compression:lane-pause',"
+      }
+    ],
+    "flags": [],
+    "note": "unplaced: from Esther-2584's compression-lifecycle mapping (~/.local/state/esther-2584/cm-rules/map/gaps-fixture-mutants.json, sha256 d5dfde3c6eabe28f...)"
+  },
+  {
+    "id": "lifecycle-j9b",
+    "why": "J9: The compression queue runs chunks that haven't failed or been quarantine-skipped in this process first, in queue order, then those that have, least recently first. Mutant: failed chunks run most recently failed first. Compression-lifecycle rule list (cm-rules/compression-lifecycle-rules.md f960968f, Esther-2584); survived every test file reach.py names for its lines and the 11 that read src as text, at fb4cf1046 (J57342, batch IJ). No run known to reach it yet.",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "      .sort((a, b) => failedAt.get(a)! - failedAt.get(b)!);",
+        "replace": "      .sort((a, b) => failedAt.get(b)! - failedAt.get(a)!);"
+      }
+    ],
+    "flags": [],
+    "note": "unplaced: from Esther-2584's compression-lifecycle mapping (~/.local/state/esther-2584/cm-rules/map/gaps-fixture-mutants.json, sha256 d5dfde3c6eabe28f...)"
+  },
+  {
+    "id": "lifecycle-j10",
+    "why": "J10: Only a provider's answer ends a pause on the L1 side: a mechanical stub, an adoption or a dedup drop made no call, so it is no landing and doesn't resume the lane. Mutant: a mechanical stub ends the pause as an answer would. Compression-lifecycle rule list (cm-rules/compression-lifecycle-rules.md f960968f, Esther-2584); survived every test file reach.py names for its lines and the 11 that read src as text, at fb4cf1046 (J57342, batch IJ). No run known to reach it yet.",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "      this._compressionCount++;\n      // The span is covered, so its progress and quarantine debt are paid\n      // off. A stub made no call",
+        "replace": "      this._compressionCount++;\n      if (ctx.membrane) this.resumeCompressionLane(ctx.membrane, this.config.compressionModel);\n      // The span is covered, so its progress and quarantine debt are paid\n      // off. A stub made no call"
+      }
+    ],
+    "flags": [],
+    "note": "unplaced: from Esther-2584's compression-lifecycle mapping (~/.local/state/esther-2584/cm-rules/map/gaps-fixture-mutants.json, sha256 d5dfde3c6eabe28f...)"
+  },
+  {
+    "id": "lifecycle-j11",
+    "why": "J11: Work in flight whose branch moved, or whose strategy was reinitialized or detached, during its call writes nothing, logs `compression:branch-result-discarded`, and has its calls cancelled; stale-branch work installs no pause. Mutant: an L1 whose branch moved during its call is stored. Compression-lifecycle rule list (cm-rules/compression-lifecycle-rules.md f960968f, Esther-2584); survived every test file reach.py names for its lines and the 11 that read src as text, at fb4cf1046 (J57342, batch IJ). No run known to reach it yet.",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "      if (!this.isCompressionBranchCurrent(sourceBranch)) {\n        this.logCompressionBranchDiscard(sourceBranch, 'before_summary_persist', quarantineRecord);\n        return;\n      }",
+        "replace": "      if (false && !this.isCompressionBranchCurrent(sourceBranch)) {\n        this.logCompressionBranchDiscard(sourceBranch, 'before_summary_persist', quarantineRecord);\n        return;\n      }"
+      }
+    ],
+    "flags": [],
+    "note": "unplaced: from Esther-2584's compression-lifecycle mapping (~/.local/state/esther-2584/cm-rules/map/gaps-fixture-mutants.json, sha256 d5dfde3c6eabe28f...)"
+  },
+  {
+    "id": "lifecycle-k1a",
+    "why": "K1: While any chunk is quarantined, the alarm repeats at the first `tick()` at least `quarantineAlarmIntervalMs` (15 min) after the last; 0 disables it. Mutant: the chunk alarm's default interval is 30 minutes. Compression-lifecycle rule list (cm-rules/compression-lifecycle-rules.md f960968f, Esther-2584); survived every test file reach.py names for its lines and the 11 that read src as text, at fb4cf1046 (J57342, batch KLMN). No run known to reach it yet.",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "    const interval = this.config.quarantineAlarmIntervalMs ?? 15 * 60_000;\n    if (interval <= 0) return;\n    const now = Date.now();\n    // Idle path",
+        "replace": "    const interval = this.config.quarantineAlarmIntervalMs ?? 30 * 60_000;\n    if (interval <= 0) return;\n    const now = Date.now();\n    // Idle path"
+      }
+    ],
+    "flags": [],
+    "note": "unplaced: from Esther-2584's compression-lifecycle mapping (~/.local/state/esther-2584/cm-rules/map/gaps-fixture-mutants.json, sha256 d5dfde3c6eabe28f...)"
+  },
+  {
+    "id": "lifecycle-k1c",
+    "why": "K1: While any chunk is quarantined, the alarm repeats at the first `tick()` at least `quarantineAlarmIntervalMs` (15 min) after the last; 0 disables it. Mutant: an interval of 0 doesn't disable the chunk alarm. Compression-lifecycle rule list (cm-rules/compression-lifecycle-rules.md f960968f, Esther-2584); survived every test file reach.py names for its lines and the 11 that read src as text, at fb4cf1046 (J57342, batch KLMN). No run known to reach it yet.",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "    if (interval <= 0) return;\n    const now = Date.now();\n    // Idle path",
+        "replace": "    const now = Date.now();\n    // Idle path"
+      }
+    ],
+    "flags": [],
+    "note": "unplaced: from Esther-2584's compression-lifecycle mapping (~/.local/state/esther-2584/cm-rules/map/gaps-fixture-mutants.json, sha256 d5dfde3c6eabe28f...)"
+  },
+  {
+    "id": "lifecycle-l10",
+    "why": "L10: A chunk the rebuild keeps out of the queue for an overlap block counts as pending debt. Mutant: a chunk the overlap guard keeps out of the queue is not counted as debt. Compression-lifecycle rule list (cm-rules/compression-lifecycle-rules.md f960968f, Esther-2584); survived every test file reach.py names for its lines and the 11 that read src as text, at fb4cf1046 (J57342, batch KLMN). No run known to reach it yet.",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "      const pending = closed.filter((c) => !c.compressed);",
+        "replace": "      const pending = closed.filter((c) => !c.compressed && !(c.recordId && this._overlapBlocked.has(c.recordId)));"
+      }
+    ],
+    "flags": [],
+    "note": "unplaced: from Esther-2584's compression-lifecycle mapping (~/.local/state/esther-2584/cm-rules/map/gaps-fixture-mutants.json, sha256 d5dfde3c6eabe28f...)"
+  },
+  {
+    "id": "lifecycle-n3b",
+    "why": "N3: A chunk whose every message some L1 already covers is marked compressed with no call and no summary, with a warning, and its record is left uncompressed as a breadcrumb. Mutant: a fully covered chunk's record is marked compressed, not left as a breadcrumb. Compression-lifecycle rule list (cm-rules/compression-lifecycle-rules.md f960968f, Esther-2584); survived every test file reach.py names for its lines and the 11 that read src as text, at fb4cf1046 (J57342, batch KLMN). No run known to reach it yet.",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "        `is fully covered by existing L1s under different boundaries — dropped, not re-compressed.`,\n      );\n      chunk.compressed = true;",
+        "replace": "        `is fully covered by existing L1s under different boundaries — dropped, not re-compressed.`,\n      );\n      chunk.compressed = true;\n      this.markChunkRecordCompressed(chunk.recordId, 'dedup');"
+      }
+    ],
+    "flags": [],
+    "note": "unplaced: from Esther-2584's compression-lifecycle mapping (~/.local/state/esther-2584/cm-rules/map/gaps-fixture-mutants.json, sha256 d5dfde3c6eabe28f...)"
+  },
+  {
+    "id": "lifecycle-n4b",
+    "why": "N4: A chunk partly covered by an existing L1 is refused on every attempt while the overlap stands, logged once, with no call, and its runs end; compressing only its uncovered part is not what happens. Mutant: the overlap guard logs at every attempt. Compression-lifecycle rule list (cm-rules/compression-lifecycle-rules.md f960968f, Esther-2584); survived every test file reach.py names for its lines and the 11 that read src as text, at fb4cf1046 (J57342, batch KLMN). No run known to reach it yet.",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "      if (!this._overlapBlocked.has(key)) {\n        this._overlapBlocked.add(key);",
+        "replace": "      if (true) {\n        this._overlapBlocked.add(key);"
+      }
+    ],
+    "flags": [],
+    "note": "unplaced: from Esther-2584's compression-lifecycle mapping (~/.local/state/esther-2584/cm-rules/map/gaps-fixture-mutants.json, sha256 d5dfde3c6eabe28f...)"
   }
 ]
