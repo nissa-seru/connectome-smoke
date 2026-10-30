@@ -2289,7 +2289,7 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604)"
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604); at 411633f it changes no record of H1 sonnet/W11 (J58146)"
   },
   {
     "id": "kvu-KU12d",
@@ -2306,7 +2306,7 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604)"
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604); at 411633f it changes no record of H1 sonnet/W11 (J58146)"
   },
   {
     "id": "kvu-KU12e",
@@ -2440,7 +2440,7 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); tried by --place on C7 and H1 opus at ef15b2e's workloads, where W11 under kv-unified refused every compile from step 5 (since released, 6f48e21): changes none of its 9 runs' records (J57892); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604)"
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); tried by --place on C7 and H1 opus at ef15b2e's workloads, where W11 under kv-unified refused every compile from step 5 (since released, 6f48e21): changes none of its 9 runs' records (J57892); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604); at 411633f it changes no record of W7/merges-refused under C7 and H1 opus, and W8 (both), W2 and W9 (J58146)"
   },
   {
     "id": "kvu-KU19d",
@@ -2457,7 +2457,7 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604)"
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604); at 411633f it changes no record of W7/merges-refused under C7 and H1 opus, and W8 (both), W2 and W9 (J58146)"
   },
   {
     "id": "kvu-KU19e",
@@ -2494,7 +2494,7 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604)"
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604); at 411633f it changes no record of W7/merges-refused under C7 and H1 opus, and W8 (both), W2 and W9 (J58146)"
   },
   {
     "id": "kvu-KU20e",
@@ -2511,7 +2511,7 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604)"
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604); at 411633f it changes no record of W7/merges-refused under C7 and H1 opus, and W8 (both), W2 and W9 (J58146)"
   },
   {
     "id": "kvu-KU22a",
@@ -2528,7 +2528,7 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604)"
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604); at 411633f it changes no record of W7/merges-refused under C7 and H1 opus, and W8 (both), W2 and W9 (J58146)"
   },
   {
     "id": "kvu-KU22b",
@@ -2545,7 +2545,7 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604)"
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604); at 411633f it changes no record of W7/merges-refused under C7 and H1 opus, and W8 (both), W2 and W9 (J58146)"
   },
   {
     "id": "kvu-KU22c",
@@ -2582,7 +2582,7 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604)"
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604); at 411633f it changes no record of W7/merges-refused under C7 and H1 opus, and W8 (both), W2 and W9 (J58146)"
   },
   {
     "id": "kvu-KU25b",
@@ -2759,7 +2759,7 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604)"
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604); at 411633f it changes no record of W7/merges-refused under C7 and H1 opus, and W8 (both), W2 and W9 (J58146)"
   },
   {
     "id": "kvu-KU35b",
@@ -2776,7 +2776,7 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); tried by --place on C7 and H1 opus at ef15b2e's workloads, where W11 under kv-unified refused every compile from step 5 (since released, 6f48e21): changes none of its 9 runs' records (J57892); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604)"
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); tried by --place on C7 and H1 opus at ef15b2e's workloads, where W11 under kv-unified refused every compile from step 5 (since released, 6f48e21): changes none of its 9 runs' records (J57892); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604); at 411633f it changes no record of W7/merges-refused under C7 and H1 opus, and W8 (both), W2 and W9 (J58146)"
   },
   {
     "id": "kvu-KU38a",
@@ -2793,7 +2793,7 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); tried by --place on C7 and H1 opus at ef15b2e's workloads, where W11 under kv-unified refused every compile from step 5 (since released, 6f48e21): changes none of its 9 runs' records (J57892); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604)"
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); tried by --place on C7 and H1 opus at ef15b2e's workloads, where W11 under kv-unified refused every compile from step 5 (since released, 6f48e21): changes none of its 9 runs' records (J57892); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604); at 411633f it changes no record of W7/merges-refused under C7 and H1 opus, and W8 (both), W2 and W9 (J58146)"
   },
   {
     "id": "kvu-KU38b",
@@ -2810,7 +2810,7 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604)"
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604); at 411633f it changes no record of W7/merges-refused under C7 and H1 opus, and W8 (both), W2 and W9 (J58146)"
   },
   {
     "id": "kvu-KU40g",
@@ -3426,8 +3426,9 @@
       "C7",
       "H1"
     ],
-    "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604)"
+    "flags": [
+      "H1.claude-opus-4-6/W7/merges-refused"
+    ]
   },
   {
     "id": "kvu-KP3a",
@@ -3564,7 +3565,7 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); tried by --place on C7 and H1 opus at ef15b2e's workloads, where W11 under kv-unified refused every compile from step 5 (since released, 6f48e21): changes none of its 9 runs' records (J57892); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604)"
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); tried by --place on C7 and H1 opus at ef15b2e's workloads, where W11 under kv-unified refused every compile from step 5 (since released, 6f48e21): changes none of its 9 runs' records (J57892); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604); at 411633f it changes no record of W7/merges-refused under C7 and H1 opus, and W8 (both), W2 and W9 (J58146)"
   },
   {
     "id": "kvu-KP6a",
@@ -3779,7 +3780,7 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604)"
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604); at 411633f it changes no record of W7/merges-refused under C7 and H1 opus, and W8 (both), W2 and W9 (J58146)"
   },
   {
     "id": "kvu-KP16b",
@@ -3816,7 +3817,7 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604); at b59e5cf under C7 and H1 opus on W11 (both), W8 (both) and opus W1 it changes no record (J58092); on W10 (both) and W2 under C7 and H1 opus at 8b6990e it changes no record (J58132)"
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604); at b59e5cf under C7 and H1 opus on W11 (both), W8 (both) and opus W1 it changes no record (J58092); on W10 (both) and W2 under C7 and H1 opus at 8b6990e it changes no record (J58132); at 411633f it changes no record of W7/merges-refused under C7 and H1 opus, and W8 (both), W2 and W9 (J58146)"
   },
   {
     "id": "kvu-KX3b",
@@ -4106,7 +4107,7 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604); at b59e5cf under C7 and H1 opus on W11 (both), W8 (both) and opus W1 it changes no record (J58092); on W10 (both) and W2 under C7 and H1 opus at 8b6990e it changes no record (J58132)"
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604); at b59e5cf under C7 and H1 opus on W11 (both), W8 (both) and opus W1 it changes no record (J58092); on W10 (both) and W2 under C7 and H1 opus at 8b6990e it changes no record (J58132); at 411633f it changes no record of W7/merges-refused under C7 and H1 opus, and W8 (both), W2 and W9 (J58146)"
   },
   {
     "id": "kvu-KA2d",
@@ -4123,7 +4124,7 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604); at b59e5cf under C7 and H1 opus on W11 (both), W8 (both) and opus W1 it changes no record (J58092); on W10 (both) and W2 under C7 and H1 opus at 8b6990e it changes no record (J58132)"
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604); at b59e5cf under C7 and H1 opus on W11 (both), W8 (both) and opus W1 it changes no record (J58092); on W10 (both) and W2 under C7 and H1 opus at 8b6990e it changes no record (J58132); at 411633f it changes no record of W7/merges-refused under C7 and H1 opus, and W8 (both), W2 and W9 (J58146)"
   },
   {
     "id": "kvu-KA2e",
@@ -4140,7 +4141,7 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604); at b59e5cf under C7 and H1 opus on W11 (both), W8 (both) and opus W1 it changes no record (J58092); on W10 (both) and W2 under C7 and H1 opus at 8b6990e it changes no record (J58132)"
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604); at b59e5cf under C7 and H1 opus on W11 (both), W8 (both) and opus W1 it changes no record (J58092); on W10 (both) and W2 under C7 and H1 opus at 8b6990e it changes no record (J58132); at 411633f it changes no record of W7/merges-refused under C7 and H1 opus, and W8 (both), W2 and W9 (J58146)"
   },
   {
     "id": "kvu-KA3a",
@@ -4382,7 +4383,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...); infected at its site in the jobs Ambrose-2449's probe named (J58069), but at b59e5cf it changes no record of the 16 H1 and C7 jobs on W1, W2, W6, W8, W9, W10/uncapped and W11 (J58107)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "masked in the fixture's workloads: infected at its site on H1 opus W1, W2, W1/real and W2/real (J58069), but no compile's plan differs there (J58120; the control J58139 sees kvu-s-e12a and kvu-s15a differ on H1 opus W9) (Ambrose-2449, #305052)"
+    }
   },
   {
     "id": "kvu-o-e6",
@@ -4577,7 +4581,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...); infected at its site in the jobs Ambrose-2449's probe named (J58069), but at b59e5cf it changes no record of the 16 H1 and C7 jobs on W1, W2, W6, W8, W9, W10/uncapped and W11 (J58107)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "masked in the fixture's workloads: infected at its site on H1 opus W9, H1 sonnet W9 and both H1 opus W11 variants (J58069), but no compile's plan differs there (J58120; the control J58139 sees kvu-s-e12a and kvu-s15a differ on H1 opus W9) (Ambrose-2449, #305052)"
+    }
   },
   {
     "id": "kvu-o-e13",
@@ -4954,7 +4961,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...); infected at its site in the jobs Ambrose-2449's probe named (J58069), but at b59e5cf it changes no record of the 16 H1 and C7 jobs on W1, W2, W6, W8, W9, W10/uncapped and W11 (J58107)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "masked in the fixture's workloads: infected at its site on H1 sonnet W6, W10/uncapped and W11 (J58069), but no compile's plan differs there (J58120; the control J58139 sees kvu-s-e12a and kvu-s15a differ on H1 opus W9) (Ambrose-2449, #305052)"
+    }
   },
   {
     "id": "kvu-s7b",
@@ -4971,7 +4981,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...); infected at its site in the jobs Ambrose-2449's probe named (J58069), but at b59e5cf it changes no record of the 16 H1 and C7 jobs on W1, W2, W6, W8, W9, W10/uncapped and W11 (J58107)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "masked in the fixture's workloads: infected at its site on both W8s under C7 and H1 opus (J58069), but no compile's plan differs there (J58120; the control J58139 sees kvu-s-e12a and kvu-s15a differ on H1 opus W9) (Ambrose-2449, #305052)"
+    }
   },
   {
     "id": "kvu-s7c",
@@ -5066,7 +5079,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...); infected at its site in the jobs Ambrose-2449's probe named (J58069), but at b59e5cf it changes no record of the 16 H1 and C7 jobs on W1, W2, W6, W8, W9, W10/uncapped and W11 (J58107)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "masked in the fixture's workloads: infected at its site on H1 opus W1, W2 and W2/real, and H1 sonnet W1/real (J58069), but no compile's plan differs there (J58120; the control J58139 sees kvu-s-e12a and kvu-s15a differ on H1 opus W9) (Ambrose-2449, #305052)"
+    }
   },
   {
     "id": "kvu-s13",
@@ -5123,7 +5139,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...); infected at its site in the jobs Ambrose-2449's probe named (J58069), but at b59e5cf it changes no record of the 16 H1 and C7 jobs on W1, W2, W6, W8, W9, W10/uncapped and W11 (J58107)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "masked in the fixture's workloads: infected at its site on all four H1 W11 jobs (J58069), but no compile's plan differs there (J58120; the control J58139 sees kvu-s-e12a and kvu-s15a differ on H1 opus W9) (Ambrose-2449, #305052)"
+    }
   },
   {
     "id": "kvu-c9a",
@@ -5180,7 +5199,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...); infected at its site in the jobs Ambrose-2449's probe named (J58069), but at b59e5cf it changes no record of the 16 H1 and C7 jobs on W1, W2, W6, W8, W9, W10/uncapped and W11 (J58107)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "masked in the fixture's workloads: infected at its site on H1 opus W2, W1/real, W2/real and W5 (J58069), but no compile's plan differs there (J58120; the control J58139 sees kvu-s-e12a and kvu-s15a differ on H1 opus W9) (Ambrose-2449, #305052)"
+    }
   },
   {
     "id": "kvu-c12a",
@@ -5197,7 +5219,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...); infected at its site in the jobs Ambrose-2449's probe named (J58069), but at b59e5cf it changes no record of the 16 H1 and C7 jobs on W1, W2, W6, W8, W9, W10/uncapped and W11 (J58107)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "masked in the fixture's workloads: infected at its site on H1 opus W1, W2, W1/real and W2/real (J58069), but no compile's plan differs there (J58120; the control J58139 sees kvu-s-e12a and kvu-s15a differ on H1 opus W9) (Ambrose-2449, #305052)"
+    }
   },
   {
     "id": "kvu-c12b",
@@ -5214,7 +5239,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...); infected at its site in the jobs Ambrose-2449's probe named (J58069), but at b59e5cf it changes no record of the 16 H1 and C7 jobs on W1, W2, W6, W8, W9, W10/uncapped and W11 (J58107)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "masked in the fixture's workloads: infected at its site on H1 opus W1, W2, W1/real and W2/real (J58069), but no compile's plan differs there (J58120; the control J58139 sees kvu-s-e12a and kvu-s15a differ on H1 opus W9) (Ambrose-2449, #305052)"
+    }
   },
   {
     "id": "kvu-c13",
@@ -5231,7 +5259,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...); infected at its site in the jobs Ambrose-2449's probe named (J58069), but at b59e5cf it changes no record of the 16 H1 and C7 jobs on W1, W2, W6, W8, W9, W10/uncapped and W11 (J58107)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "masked in the fixture's workloads: infected at its site on H1 opus W1, W2, W1/real and W2/real (J58069), but no compile's plan differs there (J58120; the control J58139 sees kvu-s-e12a and kvu-s15a differ on H1 opus W9) (Ambrose-2449, #305052)"
+    }
   },
   {
     "id": "kvu-t2",
@@ -5378,7 +5409,10 @@
       }
     ],
     "flags": [],
-    "note": "unplaced: from Daniel-2612's mapping of Oscar-1005's global and manager list (~/.local/state/daniel-2612/gm/fixture-mutants-gm.json, sha256 b19fec246cf71e16...)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "reached; no recorded change at these steps: W9's step-18 renderAsNewest runs (C3/W9: '1 blocks' for a18.2 and a18.3) and the next compile's record doesn't change (Daniel-2612's G/M commit f5c9b80, his runs runA-runD, #304992; Oscar-1005 #304998)"
+    }
   },
   {
     "id": "gm-m7-group",
@@ -5390,8 +5424,9 @@
         "replace": ""
       }
     ],
-    "flags": [],
-    "note": "unplaced: from Daniel-2612's mapping of Oscar-1005's global and manager list (~/.local/state/daniel-2612/gm/fixture-mutants-gm.json, sha256 b19fec246cf71e16...); tried by --place on C1, C3, C6, C7 and C9 at ef15b2e's workloads, where W11 under kv-unified refused every compile from step 5 (since released, 6f48e21): changes none of its 16 runs' records (J57892)"
+    "flags": [
+      "C5/W5"
+    ]
   },
   {
     "id": "gm-m20-null",
@@ -5403,8 +5438,10 @@
         "replace": "    if (!isRenderStatsCapable(this.strategy)) return undefined as never;\n    return this.strategy.getRenderStats("
       }
     ],
-    "flags": [],
-    "note": "unplaced: from Daniel-2612's mapping of Oscar-1005's global and manager list (~/.local/state/daniel-2612/gm/fixture-mutants-gm.json, sha256 b19fec246cf71e16...); tried by --place on C1, C3, C6, C7 and C9 at ef15b2e's workloads, where W11 under kv-unified refused every compile from step 5 (since released, 6f48e21): changes none of its 16 runs' records (J57892)"
+    "flags": [
+      "C1/W9",
+      "C2/W9"
+    ]
   },
   {
     "id": "gm-m23-pin",
@@ -5430,8 +5467,10 @@
         "replace": "    if (!isPinnableStrategy(this.strategy)) return null as never;"
       }
     ],
-    "flags": [],
-    "note": "unplaced: from Daniel-2612's mapping of Oscar-1005's global and manager list (~/.local/state/daniel-2612/gm/fixture-mutants-gm.json, sha256 b19fec246cf71e16...)"
+    "flags": [
+      "C1/W9",
+      "C2/W9"
+    ]
   },
   {
     "id": "gm-m23-search",
@@ -5443,8 +5482,10 @@
         "replace": "    if (!isSearchableStrategy(this.strategy)) return null as never;"
       }
     ],
-    "flags": [],
-    "note": "unplaced: from Daniel-2612's mapping of Oscar-1005's global and manager list (~/.local/state/daniel-2612/gm/fixture-mutants-gm.json, sha256 b19fec246cf71e16...); tried by --place on C1, C3, C6, C7 and C9 at ef15b2e's workloads, where W11 under kv-unified refused every compile from step 5 (since released, 6f48e21): changes none of its 16 runs' records (J57892)"
+    "flags": [
+      "C1/W9",
+      "C2/W9"
+    ]
   },
   {
     "id": "gm-m23-getsummary",
@@ -5456,8 +5497,10 @@
         "replace": "    if (!isSearchableStrategy(this.strategy)) return undefined as never;"
       }
     ],
-    "flags": [],
-    "note": "unplaced: from Daniel-2612's mapping of Oscar-1005's global and manager list (~/.local/state/daniel-2612/gm/fixture-mutants-gm.json, sha256 b19fec246cf71e16...)"
+    "flags": [
+      "C1/W9",
+      "C2/W9"
+    ]
   },
   {
     "id": "gm-m23-range",
@@ -5485,8 +5528,9 @@
         "replace": "      derived.systemPrompt = this.systemPrompt;\n      (derived as unknown as { compressionHolds: Set<string> }).compressionHolds = this.compressionHolds;\n"
       }
     ],
-    "flags": [],
-    "note": "unplaced: from Daniel-2612's mapping of Oscar-1005's global and manager list (~/.local/state/daniel-2612/gm/fixture-mutants-gm.json, sha256 b19fec246cf71e16...)"
+    "flags": [
+      "C3/W9"
+    ]
   },
   {
     "id": "gm-m27",
@@ -5498,8 +5542,9 @@
         "replace": "    try { (options.store as unknown as { createBranchAt(a: string, b: string, c: number): unknown }).createBranchAt(derivation.branch + '-zz', derivation.branch, 0); } catch { /* */ }\n    const view = (options.store as unknown as DerivableStore).view(derivation.branch);"
       }
     ],
-    "flags": [],
-    "note": "unplaced: from Daniel-2612's mapping of Oscar-1005's global and manager list (~/.local/state/daniel-2612/gm/fixture-mutants-gm.json, sha256 b19fec246cf71e16...)"
+    "flags": [
+      "C3/W9"
+    ]
   },
   {
     "id": "gm-m28-foreign",
@@ -5512,7 +5557,10 @@
       }
     ],
     "flags": [],
-    "note": "unplaced: from Daniel-2612's mapping of Oscar-1005's global and manager list (~/.local/state/daniel-2612/gm/fixture-mutants-gm.json, sha256 b19fec246cf71e16...)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "reached; no recorded change at these steps: W9's step-7 C3 child under C2 compiles at 8x the budget, and its record doesn't change under the mutant (Daniel-2612's G/M commit f5c9b80, his runs runA-runD, #304992; Oscar-1005 #304998)"
+    }
   },
   {
     "id": "gm-m29-first",
@@ -5524,8 +5572,9 @@
         "replace": "    if (text && text.length > 0 && !this.systemPrompt) this.systemPrompt = text;"
       }
     ],
-    "flags": [],
-    "note": "unplaced: from Daniel-2612's mapping of Oscar-1005's global and manager list (~/.local/state/daniel-2612/gm/fixture-mutants-gm.json, sha256 b19fec246cf71e16...)"
+    "flags": [
+      "C3/W9"
+    ]
   },
   {
     "id": "lifecycle-a3a",
@@ -5808,8 +5857,9 @@
         "replace": "    const configuredRecallBudget = mergeSourceOnly ? 0 : (this.config.compressionRecallBudgetTokens ?? 50_000);"
       }
     ],
-    "flags": [],
-    "note": "unplaced: Esther-2584's two-site remake (lifecycle-e5a-v2.json, sha256 370c405a...), which J58124 found a gap against its reach"
+    "flags": [
+      "C7/W7/merges-refused"
+    ]
   },
   {
     "id": "lifecycle-e9b",
@@ -6091,7 +6141,10 @@
       }
     ],
     "flags": [],
-    "note": "unplaced: from Esther-2584's compression-lifecycle mapping (~/.local/state/esther-2584/cm-rules/map/gaps-fixture-mutants.json, sha256 d5dfde3c6eabe28f...)"
+    "gap": {
+      "kind": "equivalent",
+      "why": "the before_summary_persist guard (ab:11709) is backed by the check right after the call returns (ab:10528): removing it alone discards at 10528; with both removed, compression-recall-curve and strategy-detach catch it (J58162) [run] (Esther-2584, #305226)"
+    }
   },
   {
     "id": "lifecycle-k1a",
@@ -6161,5 +6214,278 @@
     ],
     "flags": [],
     "note": "unplaced: from Esther-2584's compression-lifecycle mapping (~/.local/state/esther-2584/cm-rules/map/gaps-fixture-mutants.json, sha256 d5dfde3c6eabe28f...); at 8b6990e it changes no record of the runs Esther-2584's look named (C3 and H1 opus W7/modes, C3/W7/merges-refused, C3 and C7 W7/split, C3 and H1 opus W9, C3 and H1 opus W10/uncapped, H1 opus W10/capped; J58114)"
+  },
+  {
+    "id": "fov-pk2",
+    "why": "PK2: ancestorAt returns an ancestor above the level asked, so accounting counts a higher summary as realizing a lower target; reached when a lineage skips a level (greedy-fold.ts's nextAncestor doc names the case) (flat-oldest-view rule list, survived all 57 files reach.py names, J57229)",
+    "edits": [
+      {
+        "file": "adaptive/picker.ts",
+        "find": "    return known[level] = current && current.level === level ? current : null;",
+        "replace": "    return known[level] = current && current.level >= level ? current : null;"
+      }
+    ],
+    "flags": [],
+    "note": "unplaced: from Hamish-2699's flat, oldest-first and view mapping (~/.local/state/hamish-2699/rules/map/fov-survivors-mutants.json, sha256 eee7caac0e1b0d19...)"
+  },
+  {
+    "id": "fov-pk9a",
+    "why": "PK9: UncoveredDropError's message drops its \"(+N more)\" count of dropped ids past the sample; a public exported error (index.ts:41) thrown by previewContext's refusal (flat-oldest-view rule list, survived all 18 files reach.py names, J57229)",
+    "edits": [
+      {
+        "file": "adaptive/picker.ts",
+        "find": "        (n > 3 ? `, … (+${n - 3} more)` : '') +",
+        "replace": "        '' +"
+      }
+    ],
+    "flags": [],
+    "note": "unplaced: from Hamish-2699's flat, oldest-first and view mapping (~/.local/state/hamish-2699/rules/map/fov-survivors-mutants.json, sha256 eee7caac0e1b0d19...)"
+  },
+  {
+    "id": "fov-pk9b",
+    "why": "PK9: UncoveredDropError's message samples two dropped ids instead of three; a public exported error thrown by previewContext's refusal (flat-oldest-view rule list, survived all 18 files reach.py names, J57229)",
+    "edits": [
+      {
+        "file": "adaptive/picker.ts",
+        "find": "    const sample = opts.droppedIds.slice(0, 3).join(', ');",
+        "replace": "    const sample = opts.droppedIds.slice(0, 2).join(', ');"
+      }
+    ],
+    "flags": [],
+    "note": "unplaced: from Hamish-2699's flat, oldest-first and view mapping (~/.local/state/hamish-2699/rules/map/fov-survivors-mutants.json, sha256 eee7caac0e1b0d19...)"
+  },
+  {
+    "id": "fov-pk9c",
+    "why": "PK9: UncoveredDropError's droppedIds is empty; a public exported error thrown by previewContext's refusal (flat-oldest-view rule list, survived all 18 files reach.py names, J57229)",
+    "edits": [
+      {
+        "file": "adaptive/picker.ts",
+        "find": "    this.droppedIds = opts.droppedIds;",
+        "replace": "    this.droppedIds = [];"
+      }
+    ],
+    "flags": [],
+    "note": "unplaced: from Hamish-2699's flat, oldest-first and view mapping (~/.local/state/hamish-2699/rules/map/fov-survivors-mutants.json, sha256 eee7caac0e1b0d19...)"
+  },
+  {
+    "id": "fov-gf4",
+    "why": "GF4: nextAncestor stops at the next level instead of looking past it, so a lineage that skips a level gets no raise (the case greedy-fold.ts:55-66 names) (flat-oldest-view rule list, survived all 33 files reach.py names, J57229)",
+    "edits": [
+      {
+        "file": "adaptive/greedy-fold.ts",
+        "find": "    for (let k = from + 1; k <= top; k++) {",
+        "replace": "    for (let k = from + 1; k < from + 1; k++) {"
+      }
+    ],
+    "flags": [],
+    "note": "unplaced: from Hamish-2699's flat, oldest-first and view mapping (~/.local/state/hamish-2699/rules/map/fov-survivors-mutants.json, sha256 eee7caac0e1b0d19...)"
+  },
+  {
+    "id": "fov-st3c",
+    "why": "ST3: a summary's leaf walk is never sorted, so leaves reached out of sequence order stay out of order; reachability unconfirmed (I haven't found which writer produces sources out of order) (flat-oldest-view rule list, survived all 78 files reach.py names, J57229)",
+    "edits": [
+      {
+        "file": "adaptive/summary-tree.ts",
+        "find": "    const sorted = ordered ? visited : visited.slice().sort(",
+        "replace": "    const sorted = true ? visited : visited.slice().sort("
+      }
+    ],
+    "flags": [],
+    "note": "unplaced: from Hamish-2699's flat, oldest-first and view mapping (~/.local/state/hamish-2699/rules/map/fov-survivors-mutants.json, sha256 eee7caac0e1b0d19...)"
+  },
+  {
+    "id": "fov-ck2a",
+    "why": "CK2: a body exactly chunkThreshold tokens long is sharded (< for <=) (flat-oldest-view rule list, survived all 74 files reach.py names, J57229)",
+    "edits": [
+      {
+        "file": "adaptive/chunker.ts",
+        "find": "  if (totalApproxTokens <= opts.chunkThreshold) {",
+        "replace": "  if (totalApproxTokens < opts.chunkThreshold) {"
+      }
+    ],
+    "flags": [],
+    "note": "unplaced: from Hamish-2699's flat, oldest-first and view mapping (~/.local/state/hamish-2699/rules/map/fov-survivors-mutants.json, sha256 eee7caac0e1b0d19...)"
+  },
+  {
+    "id": "fov-ck5a",
+    "why": "CK5: a shard may overflow chunkSize by 1.5x rather than 1.25x (flat-oldest-view rule list, survived all 37 files reach.py names, J57229)",
+    "edits": [
+      {
+        "file": "adaptive/chunker.ts",
+        "find": "  const maxChars = opts.chunkSize * opts.charsPerToken * 1.25;",
+        "replace": "  const maxChars = opts.chunkSize * opts.charsPerToken * 1.5;"
+      }
+    ],
+    "flags": [],
+    "note": "unplaced: from Hamish-2699's flat, oldest-first and view mapping (~/.local/state/hamish-2699/rules/map/fov-survivors-mutants.json, sha256 eee7caac0e1b0d19...)"
+  },
+  {
+    "id": "fov-ck6a",
+    "why": "CK6: the split prefers a different seam among competing seams (seam priorities) (flat-oldest-view rule list, survived all 14 files reach.py names, J57229)",
+    "edits": [
+      {
+        "file": "adaptive/chunker.ts",
+        "find": "      priority: hashes.length <= 2 ? 100 : 90,",
+        "replace": "      priority: 90,"
+      }
+    ],
+    "flags": [],
+    "note": "unplaced: from Hamish-2699's flat, oldest-first and view mapping (~/.local/state/hamish-2699/rules/map/fov-survivors-mutants.json, sha256 eee7caac0e1b0d19...)"
+  },
+  {
+    "id": "fov-ck6b",
+    "why": "CK6: the split prefers a different seam among competing seams (seam priorities) (flat-oldest-view rule list, survived all 11 files reach.py names, J57182)",
+    "edits": [
+      {
+        "file": "adaptive/chunker.ts",
+        "find": "    seams.push({ offset: m.index + 1, priority: 80 });",
+        "replace": "    seams.push({ offset: m.index + 1, priority: 60 });"
+      }
+    ],
+    "flags": [],
+    "note": "unplaced: from Hamish-2699's flat, oldest-first and view mapping (~/.local/state/hamish-2699/rules/map/fov-survivors-mutants.json, sha256 eee7caac0e1b0d19...)"
+  },
+  {
+    "id": "fov-ck6c",
+    "why": "CK6: the split prefers a different seam among competing seams (seam priorities) (flat-oldest-view rule list, survived all 18 files reach.py names, J57229)",
+    "edits": [
+      {
+        "file": "adaptive/chunker.ts",
+        "find": "    seams.push({ offset: m.index + m[0].length, priority: 70 });",
+        "replace": "    seams.push({ offset: m.index + m[0].length, priority: 40 });"
+      }
+    ],
+    "flags": [],
+    "note": "unplaced: from Hamish-2699's flat, oldest-first and view mapping (~/.local/state/hamish-2699/rules/map/fov-survivors-mutants.json, sha256 eee7caac0e1b0d19...)"
+  },
+  {
+    "id": "fov-ck7b",
+    "why": "CK7: autobiographical's ingest shards a body only past 3x the chunk target instead of 2x (flat-oldest-view rule list, survived all 119 files reach.py names, J57229)",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "      chunkThreshold: target * 2,",
+        "replace": "      chunkThreshold: target * 3,"
+      }
+    ],
+    "flags": [],
+    "note": "unplaced: from Hamish-2699's flat, oldest-first and view mapping (~/.local/state/hamish-2699/rules/map/fov-survivors-mutants.json, sha256 eee7caac0e1b0d19...)"
+  },
+  {
+    "id": "fov-as4b",
+    "why": "AS4: the adaptive plan's budget leaves the head out (maxTokens minus head) instead of the whole maxTokens with the head inside the picker's accounting (flat-oldest-view rule list, survived all 65 files reach.py names, J57229)",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "    const totalBudget = maxTokens;\n    const slack = this.config.compressionSlackRatio ?? 0.1;",
+        "replace": "    const totalBudget = maxTokens - headTokens;\n    const slack = this.config.compressionSlackRatio ?? 0.1;"
+      }
+    ],
+    "flags": [],
+    "note": "unplaced: from Hamish-2699's flat, oldest-first and view mapping (~/.local/state/hamish-2699/rules/map/fov-survivors-mutants.json, sha256 eee7caac0e1b0d19...)"
+  },
+  {
+    "id": "fov-as4c",
+    "why": "AS4: the default slack is 0.2 instead of 0.1, so the default target is 80% of the budget instead of 90% (flat-oldest-view rule list, survived all 65 files reach.py names, J57229)",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "    const totalBudget = maxTokens;\n    const slack = this.config.compressionSlackRatio ?? 0.1;",
+        "replace": "    const totalBudget = maxTokens;\n    const slack = this.config.compressionSlackRatio ?? 0.2;"
+      }
+    ],
+    "flags": [],
+    "note": "unplaced: from Hamish-2699's flat, oldest-first and view mapping (~/.local/state/hamish-2699/rules/map/fov-survivors-mutants.json, sha256 eee7caac0e1b0d19...)"
+  },
+  {
+    "id": "fov-as27",
+    "why": "AS27: the adaptive select no longer runs assertFullCoverage, the twin of select-b6 on the adaptive path (flat-oldest-view rule list, survived all 64 files reach.py names, J57229)",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "    this.assertFullCoverage(merged, messages, {\n      headStart,",
+        "replace": "    if (false) this.assertFullCoverage(merged, messages, {\n      headStart,"
+      }
+    ],
+    "flags": [],
+    "note": "unplaced: from Hamish-2699's flat, oldest-first and view mapping (~/.local/state/hamish-2699/rules/map/fov-survivors-mutants.json, sha256 eee7caac0e1b0d19...)"
+  },
+  {
+    "id": "fov-as30c",
+    "why": "AS30: a measured cache marker is kept when the stable prefix ends inside the head (flat-oldest-view rule list, survived all 66 files reach.py names, J57229)",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "    let measured = stableEnd > lastHead ? stableEnd : -1;",
+        "replace": "    let measured = stableEnd;"
+      }
+    ],
+    "flags": [],
+    "note": "unplaced: from Hamish-2699's flat, oldest-first and view mapping (~/.local/state/hamish-2699/rules/map/fov-survivors-mutants.json, sha256 eee7caac0e1b0d19...)"
+  },
+  {
+    "id": "fov-as31a",
+    "why": "AS31: a cache-marker band ends at any level rather than the deepest (flat-oldest-view rule list, survived all 40 files reach.py names, J57229)",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "      if (lvl === maxLevel) { end = i; i++; continue; }",
+        "replace": "      if (lvl !== undefined) { end = i; i++; continue; }"
+      }
+    ],
+    "flags": [],
+    "note": "unplaced: from Hamish-2699's flat, oldest-first and view mapping (~/.local/state/hamish-2699/rules/map/fov-survivors-mutants.json, sha256 eee7caac0e1b0d19...)"
+  },
+  {
+    "id": "fov-br1b",
+    "why": "BR1: a branch deleted and remade under the same name keeps its generation, so a strategy holding the old one isn't told (flat-oldest-view rule list, survived all 35 files reach.py names, J57229)",
+    "edits": [
+      {
+        "file": "branch-generation.ts",
+        "find": "    generation: (previous?.generation ?? -1) + 1,\n  };",
+        "replace": "    generation: previous?.name === store.currentBranch().name ? previous.generation : (previous?.generation ?? -1) + 1,\n  };"
+      }
+    ],
+    "flags": [],
+    "note": "unplaced: from Hamish-2699's flat, oldest-first and view mapping (~/.local/state/hamish-2699/rules/map/fov-survivors-mutants.json, sha256 eee7caac0e1b0d19...)"
+  },
+  {
+    "id": "fov-br2b",
+    "why": "BR2: isBranchIdentityCurrent skips the generation check (BR1b's family) (flat-oldest-view rule list, survived all 124 files reach.py names, J57229)",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "      observed.generation === identity.generation;",
+        "replace": "      true;"
+      }
+    ],
+    "flags": [],
+    "note": "unplaced: from Hamish-2699's flat, oldest-first and view mapping (~/.local/state/hamish-2699/rules/map/fov-survivors-mutants.json, sha256 eee7caac0e1b0d19...)"
+  },
+  {
+    "id": "fov-br3",
+    "why": "BR3: requireBranchMutation never refuses a branch-scoped mutation on a stale loaded branch with no initializer current (a fail-closed guard) (flat-oldest-view rule list, survived all 124 files reach.py names, J57229)",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "      this.isBranchIdentityCurrent(this.initializingBranchIdentity)\n    ) return;",
+        "replace": "      true\n    ) return;"
+      }
+    ],
+    "flags": [],
+    "note": "unplaced: from Hamish-2699's flat, oldest-first and view mapping (~/.local/state/hamish-2699/rules/map/fov-survivors-mutants.json, sha256 eee7caac0e1b0d19...)"
+  },
+  {
+    "id": "fov-br2d",
+    "why": "BR2: requireLoadedBranch clears the mirrors even while an initializer is current, the race its comment names (flat-oldest-view rule list, survived all 12 files reach.py names, J57229)",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "      if (!this.isBranchIdentityCurrent(this.initializingBranchIdentity)) {",
+        "replace": "      if (true) {"
+      }
+    ],
+    "flags": [],
+    "note": "unplaced: from Hamish-2699's flat, oldest-first and view mapping (~/.local/state/hamish-2699/rules/map/fov-survivors-mutants.json, sha256 eee7caac0e1b0d19...)"
   }
 ]
