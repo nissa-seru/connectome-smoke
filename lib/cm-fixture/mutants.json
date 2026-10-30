@@ -633,5 +633,304 @@
       "H2"
     ],
     "flags": []
+  },
+  {
+    "id": "pt-pt12",
+    "why": "PT-12: PassthroughStrategy sends every stored image that fits (no image limit) (gap: survived the 22 test files reach.py names; J57117)",
+    "edits": [
+      {
+        "file": "strategies/passthrough.ts",
+        "find": "content: msg.content,\n      });\n\n      totalTokens += tokens;",
+        "replace": "content: msg.content.filter((b) => b.type !== 'image'),\n      });\n\n      totalTokens += tokens;"
+      }
+    ],
+    "configs": [
+      "C1",
+      "H3"
+    ],
+    "flags": []
+  },
+  {
+    "id": "pt-wp4a",
+    "why": "WP-4: reAnchorFraction defaults to 0.5 (gap: survived the 20 test files reach.py names; J57117)",
+    "edits": [
+      {
+        "file": "strategies/windowed-passthrough.ts",
+        "find": "const fraction = options.reAnchorFraction ?? 0.5;",
+        "replace": "const fraction = options.reAnchorFraction ?? 0.75;"
+      }
+    ],
+    "configs": [
+      "C2",
+      "H4"
+    ],
+    "flags": [
+      "C2/W1",
+      "H4/W1"
+    ]
+  },
+  {
+    "id": "pt-wp4b",
+    "why": "WP-4: a reAnchorFraction outside (0, 1] makes the constructor throw (gap: survived the 20 test files reach.py names; J57117)",
+    "edits": [
+      {
+        "file": "strategies/windowed-passthrough.ts",
+        "find": "if (!(fraction > 0 && fraction <= 1)) {",
+        "replace": "if (!(fraction > 0)) {"
+      }
+    ],
+    "configs": [
+      "C2",
+      "H4"
+    ],
+    "flags": []
+  },
+  {
+    "id": "pt-wp7b",
+    "why": "WP-7: a sent compile that re-anchored persists the new anchor (gap: survived the 17 test files reach.py names; J57117)",
+    "edits": [
+      {
+        "file": "strategies/windowed-passthrough.ts",
+        "find": "this.pendingCause = 'window';",
+        "replace": "this.pendingCause = 'window'; this.store?.setStateJson(this.stateId, { anchor: 0 });"
+      }
+    ],
+    "configs": [
+      "C2",
+      "H4"
+    ],
+    "flags": []
+  },
+  {
+    "id": "pt-wp8a",
+    "why": "WP-8: a dry select never moves or persists the anchor (gap: survived the 19 test files reach.py names; J57117)",
+    "edits": [
+      {
+        "file": "strategies/windowed-passthrough.ts",
+        "find": "if (movedAnchor !== undefined && !opts?.dryRun) {",
+        "replace": "if (movedAnchor !== undefined) {"
+      }
+    ],
+    "configs": [
+      "C2",
+      "H4"
+    ],
+    "flags": []
+  },
+  {
+    "id": "pt-wp8b",
+    "why": "WP-8: a dry select places no cache markers and leaves the cache measurement alone (gap: survived the 19 test files reach.py names; J57117)",
+    "edits": [
+      {
+        "file": "strategies/windowed-passthrough.ts",
+        "find": "if (!opts?.dryRun) this.placeCacheMarkers(entries);",
+        "replace": "this.placeCacheMarkers(entries);"
+      }
+    ],
+    "configs": [
+      "C2",
+      "H4"
+    ],
+    "flags": []
+  },
+  {
+    "id": "pt-wp8c",
+    "why": "WP-8: a dry select never refuses (gap: survived the 19 test files reach.py names; J57117)",
+    "edits": [
+      {
+        "file": "strategies/windowed-passthrough.ts",
+        "find": "if (total > maxTokens && !opts?.dryRun) {",
+        "replace": "if (total > maxTokens) {"
+      }
+    ],
+    "configs": [
+      "C2",
+      "H4"
+    ],
+    "flags": []
+  },
+  {
+    "id": "pt-wp10b",
+    "why": "WP-10: a branch change forgets the previous compile's cache measurement (gap: survived the 20 test files reach.py names; J57117)",
+    "edits": [
+      {
+        "file": "strategies/windowed-passthrough.ts",
+        "find": "    this.anchor = 0;\n    this.prevCacheKeys = null;",
+        "replace": "    this.anchor = 0;"
+      }
+    ],
+    "configs": [
+      "C2",
+      "H4"
+    ],
+    "flags": []
+  },
+  {
+    "id": "pt-wp11b",
+    "why": "WP-11: a persisted anchor that isn't a finite non-negative number is read as 0 (gap: survived the 20 test files reach.py names; J57117)",
+    "edits": [
+      {
+        "file": "strategies/windowed-passthrough.ts",
+        "find": "if (typeof value !== 'number' || !Number.isFinite(value) || value < 0)",
+        "replace": "if (typeof value !== 'number')"
+      }
+    ],
+    "configs": [
+      "C2",
+      "H4"
+    ],
+    "flags": []
+  },
+  {
+    "id": "pt-wp13a",
+    "why": "WP-13: takeSelectionCause() says 'window' once, then undefined (gap: survived the 19 test files reach.py names; J57117)",
+    "edits": [
+      {
+        "file": "strategies/windowed-passthrough.ts",
+        "find": "    this.pendingCause = undefined;\n    return cause;",
+        "replace": "    return cause;"
+      }
+    ],
+    "configs": [
+      "C2",
+      "H4"
+    ],
+    "flags": []
+  },
+  {
+    "id": "pt-wp13b",
+    "why": "WP-13: takeSelectionCause() says 'window' after a committed select moved the anchor (gap: survived the 17 test files reach.py names; J57117)",
+    "edits": [
+      {
+        "file": "strategies/windowed-passthrough.ts",
+        "find": "this.pendingCause = 'window';",
+        "replace": "this.pendingCause = undefined;"
+      }
+    ],
+    "configs": [
+      "C2",
+      "H4"
+    ],
+    "flags": []
+  },
+  {
+    "id": "pt-wp14",
+    "why": "WP-14: a derived context inherits the anchor's state slot (gap: survived the 11 test files reach.py names; J57117)",
+    "edits": [
+      {
+        "file": "strategies/windowed-passthrough.ts",
+        "find": "return { stateIds: [this.anchorStateIdOverride ?? `${namespace}/windowed:anchor`], statePrefixes: [] };",
+        "replace": "return { stateIds: [], statePrefixes: [] };"
+      }
+    ],
+    "configs": [
+      "C2",
+      "H4"
+    ],
+    "flags": []
+  },
+  {
+    "id": "pt-wp15",
+    "why": "WP-15: the windowed strategy is always ready (gap: survived the 11 test files reach.py names; J57117)",
+    "edits": [
+      {
+        "file": "strategies/windowed-passthrough.ts",
+        "find": "return { ready: true };",
+        "replace": "return { ready: false, reason: 'mutant' };"
+      }
+    ],
+    "configs": [
+      "C2",
+      "H4"
+    ],
+    "flags": [
+      "C2/W1",
+      "H4/W1"
+    ]
+  },
+  {
+    "id": "pt-wp18",
+    "why": "WP-18: maxMessageTokens is surfaced as ContextStrategy.maxMessageTokens (gap: survived the 20 test files reach.py names; J57117)",
+    "edits": [
+      {
+        "file": "strategies/windowed-passthrough.ts",
+        "find": "this.maxMessageTokens = options.maxMessageTokens;",
+        "replace": "this.__cap = options.maxMessageTokens;"
+      },
+      {
+        "file": "strategies/windowed-passthrough.ts",
+        "find": "const cap = this.maxMessageTokens ?? 0;",
+        "replace": "const cap = this.__cap ?? 0;"
+      }
+    ],
+    "configs": [
+      "C2",
+      "H4"
+    ],
+    "flags": []
+  },
+  {
+    "id": "pt-wp23b",
+    "why": "WP-23: an imageStripDepthTokens of 0 means no depth strip (gap: survived the 19 test files reach.py names; J57117)",
+    "edits": [
+      {
+        "file": "strategies/windowed-passthrough.ts",
+        "find": "if (depthTokens > 0) {",
+        "replace": "if (depthTokens >= 0) {"
+      }
+    ],
+    "configs": [
+      "C2",
+      "H4"
+    ],
+    "flags": []
+  },
+  {
+    "id": "pt-wp26a",
+    "why": "WP-26: exportRenderingFrontier carries the previous compile's cache measurement (gap: survived the 11 test files reach.py names; J57117)",
+    "edits": [
+      {
+        "file": "strategies/windowed-passthrough.ts",
+        "find": "return { strategy: 'windowed-passthrough', prevCacheKeys: this.prevCacheKeys ? [...this.prevCacheKeys] : null };",
+        "replace": "return { strategy: 'windowed-passthrough', prevCacheKeys: null };"
+      }
+    ],
+    "configs": [
+      "C2",
+      "H4"
+    ],
+    "flags": []
+  },
+  {
+    "id": "pt-wp26b",
+    "why": "WP-26: adoptRenderingFrontier takes only the windowed strategy's frontier (gap: survived the 11 test files reach.py names; J57117)",
+    "edits": [
+      {
+        "file": "strategies/windowed-passthrough.ts",
+        "find": "if (!f || f.strategy !== 'windowed-passthrough')",
+        "replace": "if (!f)"
+      }
+    ],
+    "configs": [
+      "C2",
+      "H4"
+    ],
+    "flags": []
+  },
+  {
+    "id": "pt-wp26c",
+    "why": "WP-26: discardRenderingFrontier clears the cache measurement (gap: survived the 11 test files reach.py names; J57117)",
+    "edits": [
+      {
+        "file": "strategies/windowed-passthrough.ts",
+        "find": "discardRenderingFrontier(): void {\n    this.prevCacheKeys = null;",
+        "replace": "discardRenderingFrontier(): void {\n    void 0;"
+      }
+    ],
+    "configs": [
+      "C2",
+      "H4"
+    ],
+    "flags": []
   }
 ]
