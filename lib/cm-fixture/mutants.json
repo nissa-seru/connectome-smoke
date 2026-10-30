@@ -2,16 +2,935 @@
   {
     "id": "merge-threshold-7",
     "why": "the hierarchical select's merge threshold, raised from 6 to 7: W1 and W2 reach merges under the select (C3, C9)",
-    "edits": [{ "file": "strategies/autobiographical.ts", "find": "defaults.mergeThreshold = 6;", "replace": "defaults.mergeThreshold = 7;" }],
-    "flags": ["C3/W1", "C3/W2", "C9/W1", "C9/W2"]
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "defaults.mergeThreshold = 6;",
+        "replace": "defaults.mergeThreshold = 7;"
+      }
+    ],
+    "flags": [
+      "C3/W1",
+      "C3/W2",
+      "C9/W1",
+      "C9/W2"
+    ]
   },
   {
     "id": "recall-label",
     "why": "the words of a recalled memory's question, which every compressing run that sends a summary carries",
     "edits": [
-      { "file": "types/strategy.ts", "find": "summaryContextLabel: 'What do you remember from earlier?'", "replace": "summaryContextLabel: 'What do you recall of what came before?'" },
-      { "file": "strategies/autobiographical.ts", "find": "this.config.summaryContextLabel ?? 'What do you remember from earlier?'", "replace": "this.config.summaryContextLabel ?? 'What do you recall of what came before?'" }
+      {
+        "file": "types/strategy.ts",
+        "find": "summaryContextLabel: 'What do you remember from earlier?'",
+        "replace": "summaryContextLabel: 'What do you recall of what came before?'"
+      },
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "this.config.summaryContextLabel ?? 'What do you remember from earlier?'",
+        "replace": "this.config.summaryContextLabel ?? 'What do you recall of what came before?'"
+      }
     ],
-    "flags": ["C7/W1", "C7/W2"]
+    "flags": [
+      "C7/W1",
+      "C7/W2"
+    ]
+  },
+  {
+    "id": "knowledge-k5b",
+    "why": "K5: classification priority subagent > research (a message with both a subagent and a research tool name is subagent). Knowledge rule list knowledge-rules.md (Daniel-2612); survived the 11 Knowledge test files at fb4cf1046 (J57029, J57063).",
+    "edits": [
+      {
+        "file": "strategies/knowledge.ts",
+        "find": "    if (toolNames.some(n => subagentPrefixes.some(p => n.startsWith(p)))) return 'subagent';\n    if (toolNames.some(n => researchPrefixes.some(p => n.startsWith(p)))) return 'research';",
+        "replace": "    if (toolNames.some(n => researchPrefixes.some(p => n.startsWith(p)))) return 'research';\n    if (toolNames.some(n => subagentPrefixes.some(p => n.startsWith(p)))) return 'subagent';"
+      }
+    ],
+    "configs": [
+      "C9",
+      "H2"
+    ],
+    "flags": []
+  },
+  {
+    "id": "knowledge-k6a",
+    "why": "K6: lesson tool names match exactly, not as prefixes. Knowledge rule list knowledge-rules.md (Daniel-2612); survived the 11 Knowledge test files at fb4cf1046 (J57029, J57063).",
+    "edits": [
+      {
+        "file": "strategies/knowledge.ts",
+        "find": "toolNames.some(n => lessonNames.includes(n))",
+        "replace": "toolNames.some(n => lessonNames.some(p => n.startsWith(p)))"
+      }
+    ],
+    "configs": [
+      "C9",
+      "H2"
+    ],
+    "flags": []
+  },
+  {
+    "id": "knowledge-k7a",
+    "why": "K7: default research prefixes include 'zulip:'. Knowledge rule list knowledge-rules.md (Daniel-2612); survived the 11 Knowledge test files at fb4cf1046 (J57029, J57063).",
+    "edits": [
+      {
+        "file": "strategies/knowledge.ts",
+        "find": "const DEFAULT_RESEARCH_PREFIXES = ['mcpl:', 'zulip:'];",
+        "replace": "const DEFAULT_RESEARCH_PREFIXES = ['mcpl:'];"
+      }
+    ],
+    "configs": [
+      "C9",
+      "H2"
+    ],
+    "flags": []
+  },
+  {
+    "id": "knowledge-k7b",
+    "why": "K7: default subagent prefix is 'subagent:'. Knowledge rule list knowledge-rules.md (Daniel-2612); survived the 11 Knowledge test files at fb4cf1046 (J57029, J57063).",
+    "edits": [
+      {
+        "file": "strategies/knowledge.ts",
+        "find": "const DEFAULT_SUBAGENT_PREFIXES = ['subagent:'];",
+        "replace": "const DEFAULT_SUBAGENT_PREFIXES = ['subagents:'];"
+      }
+    ],
+    "configs": [
+      "C9",
+      "H2"
+    ],
+    "flags": []
+  },
+  {
+    "id": "knowledge-k7c",
+    "why": "K7: default lesson names include 'lessons:update'. Knowledge rule list knowledge-rules.md (Daniel-2612); survived the 11 Knowledge test files at fb4cf1046 (J57029, J57063).",
+    "edits": [
+      {
+        "file": "strategies/knowledge.ts",
+        "find": "const DEFAULT_LESSON_NAMES = ['lessons:create', 'lessons:update'];",
+        "replace": "const DEFAULT_LESSON_NAMES = ['lessons:create'];"
+      }
+    ],
+    "configs": [
+      "C9",
+      "H2"
+    ],
+    "flags": []
+  },
+  {
+    "id": "knowledge-k10",
+    "why": "K10: a tool_result before any tool_use in a rebuild inherits 'synthesis'. Knowledge rule list knowledge-rules.md (Daniel-2612); survived the 11 Knowledge test files at fb4cf1046 (J57029, J57063).",
+    "edits": [
+      {
+        "file": "strategies/knowledge.ts",
+        "find": "let lastToolPhase: PhaseType = 'synthesis';",
+        "replace": "let lastToolPhase: PhaseType = 'research';"
+      }
+    ],
+    "configs": [
+      "C9",
+      "H2"
+    ],
+    "flags": []
+  },
+  {
+    "id": "knowledge-k13a",
+    "why": "K13: a phase or size close needs at least 2 messages. Knowledge rule list knowledge-rules.md (Daniel-2612); survived the 11 Knowledge test files at fb4cf1046 (J57029, J57063).",
+    "edits": [
+      {
+        "file": "strategies/knowledge.ts",
+        "find": "        currentChunk.length >= 2 &&",
+        "replace": "        currentChunk.length >= 1 &&"
+      }
+    ],
+    "configs": [
+      "C9",
+      "H2"
+    ],
+    "flags": []
+  },
+  {
+    "id": "knowledge-k14a",
+    "why": "K14: default research chunk size is 2x targetChunkTokens. Knowledge rule list knowledge-rules.md (Daniel-2612); survived the 11 Knowledge test files at fb4cf1046 (J57029, J57063).",
+    "edits": [
+      {
+        "file": "strategies/knowledge.ts",
+        "find": "return this.knowledgeConfig.maxResearchChunkTokens ?? base * 2;",
+        "replace": "return this.knowledgeConfig.maxResearchChunkTokens ?? base;"
+      }
+    ],
+    "configs": [
+      "C9",
+      "H2"
+    ],
+    "flags": []
+  },
+  {
+    "id": "knowledge-k14b",
+    "why": "K14: default subagent chunk size is 2x targetChunkTokens. Knowledge rule list knowledge-rules.md (Daniel-2612); survived the 11 Knowledge test files at fb4cf1046 (J57029, J57063).",
+    "edits": [
+      {
+        "file": "strategies/knowledge.ts",
+        "find": "return this.knowledgeConfig.maxSubagentChunkTokens ?? base * 2;",
+        "replace": "return this.knowledgeConfig.maxSubagentChunkTokens ?? base;"
+      }
+    ],
+    "configs": [
+      "C9",
+      "H2"
+    ],
+    "flags": []
+  },
+  {
+    "id": "knowledge-k14c",
+    "why": "K14: default synthesis chunk size is 1.5x targetChunkTokens. Knowledge rule list knowledge-rules.md (Daniel-2612); survived the 11 Knowledge test files at fb4cf1046 (J57029, J57063).",
+    "edits": [
+      {
+        "file": "strategies/knowledge.ts",
+        "find": "return this.knowledgeConfig.maxSynthesisChunkTokens ?? Math.round(base * 1.5);",
+        "replace": "return this.knowledgeConfig.maxSynthesisChunkTokens ?? base;"
+      }
+    ],
+    "configs": [
+      "C9",
+      "H2"
+    ],
+    "flags": [
+      "C9/W1",
+      "C9/W2",
+      "H2/W1",
+      "H2/W1/real"
+    ]
+  },
+  {
+    "id": "knowledge-k14d",
+    "why": "K14: default lesson chunk size is 1x targetChunkTokens. Knowledge rule list knowledge-rules.md (Daniel-2612); survived the 11 Knowledge test files at fb4cf1046 (J57029, J57063).",
+    "edits": [
+      {
+        "file": "strategies/knowledge.ts",
+        "find": "return this.knowledgeConfig.maxLessonChunkTokens ?? base;",
+        "replace": "return this.knowledgeConfig.maxLessonChunkTokens ?? base * 2;"
+      }
+    ],
+    "configs": [
+      "C9",
+      "H2"
+    ],
+    "flags": []
+  },
+  {
+    "id": "knowledge-k14e",
+    "why": "K14: maxResearchChunkTokens replaces the research default. Knowledge rule list knowledge-rules.md (Daniel-2612); survived the 11 Knowledge test files at fb4cf1046 (J57029, J57063).",
+    "edits": [
+      {
+        "file": "strategies/knowledge.ts",
+        "find": "return this.knowledgeConfig.maxResearchChunkTokens ?? base * 2;",
+        "replace": "return base * 2;"
+      }
+    ],
+    "configs": [
+      "C9",
+      "H2"
+    ],
+    "flags": []
+  },
+  {
+    "id": "knowledge-k15",
+    "why": "K15: with attachmentsIgnoreSize, chunking counts a message's text tokens only. Knowledge rule list knowledge-rules.md (Daniel-2612); survived the 11 Knowledge test files at fb4cf1046 (J57029, J57063). At W1 and W2 it flags through the estimator swap (the text-only estimate against the store's), not an attachment (Daniel-2612, room-203 #297584); the doc's attachment rule waits for a workload with an image turn.",
+    "edits": [
+      {
+        "file": "strategies/knowledge.ts",
+        "find": "      if (this.config.attachmentsIgnoreSize) {",
+        "replace": "      if (false && this.config.attachmentsIgnoreSize) {"
+      }
+    ],
+    "configs": [
+      "C9",
+      "H2"
+    ],
+    "flags": [
+      "C9/W1",
+      "C9/W2",
+      "H2/W1",
+      "H2/W1/real"
+    ]
+  },
+  {
+    "id": "knowledge-k21a",
+    "why": "K21: a last run of 1 message becomes a chunk (no message in the compressible zone dropped). Knowledge rule list knowledge-rules.md (Daniel-2612); survived the 11 Knowledge test files at fb4cf1046 (J57029, J57063).",
+    "edits": [
+      {
+        "file": "strategies/knowledge.ts",
+        "find": "if (currentChunk.length >= 1 && currentPhase) {",
+        "replace": "if (currentChunk.length >= 2 && currentPhase) {"
+      }
+    ],
+    "configs": [
+      "C9",
+      "H2"
+    ],
+    "flags": [
+      "C9/W1",
+      "C9/W2",
+      "H2/W1",
+      "H2/W1/real",
+      "H2/W2/real"
+    ]
+  },
+  {
+    "id": "knowledge-k23",
+    "why": "K23: a chunk compressed before a rebuild stays compressed with its summary when the rebuild produces the same chunk (survives; gap or equivalent not shown: createChunk also matches an L1 by exact sourceIds). Knowledge rule list knowledge-rules.md (Daniel-2612); survived the 11 Knowledge test files at fb4cf1046 (J57029, J57063).",
+    "edits": [
+      {
+        "file": "strategies/knowledge.ts",
+        "find": "        existingCompressed.set(this.chunkKey(chunk), chunk);",
+        "replace": "        void chunk;"
+      }
+    ],
+    "configs": [
+      "C9",
+      "H2"
+    ],
+    "flags": []
+  },
+  {
+    "id": "knowledge-k25",
+    "why": "K25: chunkPersistenceEnabled is false, so Knowledge persists no chunk records. Knowledge rule list knowledge-rules.md (Daniel-2612); survived the 11 Knowledge test files at fb4cf1046 (J57029, J57063).",
+    "edits": [
+      {
+        "file": "strategies/knowledge.ts",
+        "find": "  protected get chunkPersistenceEnabled(): boolean {\n    return false;",
+        "replace": "  protected get chunkPersistenceEnabled(): boolean {\n    return true;"
+      }
+    ],
+    "configs": [
+      "C9",
+      "H2"
+    ],
+    "flags": []
+  },
+  {
+    "id": "knowledge-k30c",
+    "why": "K30: the synthesis instruction names its target length ('Aim for about N tokens'). Knowledge rule list knowledge-rules.md (Daniel-2612); survived the 11 Knowledge test files at fb4cf1046 (J57029, J57063).",
+    "edits": [
+      {
+        "file": "strategies/knowledge.ts",
+        "find": "Preserve the logic chain. ${leadSuffix} Aim for about ${targetTokens} tokens.",
+        "replace": "Preserve the logic chain. ${leadSuffix}"
+      }
+    ],
+    "configs": [
+      "C9",
+      "H2"
+    ],
+    "flags": [
+      "C9/W1",
+      "C9/W2",
+      "H2/W1",
+      "H2/W2",
+      "H2/W1/real",
+      "H2/W2/real"
+    ]
+  },
+  {
+    "id": "knowledge-k32a",
+    "why": "K32: the merge instruction names the sources' level (L1 summaries for an L2). Knowledge rule list knowledge-rules.md (Daniel-2612); survived the 11 Knowledge test files at fb4cf1046 (J57029, J57063).",
+    "edits": [
+      {
+        "file": "strategies/knowledge.ts",
+        "find": "const levelLabel = targetLevel === 2 ? 'L1 summaries' : 'L2 summaries';",
+        "replace": "const levelLabel = targetLevel === 2 ? 'L2 summaries' : 'L1 summaries';"
+      }
+    ],
+    "configs": [
+      "C9",
+      "H2"
+    ],
+    "flags": [
+      "C9/W1",
+      "C9/W2",
+      "H2/W1",
+      "H2/W2",
+      "H2/W1/real",
+      "H2/W2/real"
+    ]
+  },
+  {
+    "id": "knowledge-k32b",
+    "why": "K32: the merge instruction counts its sources by phase. Knowledge rule list knowledge-rules.md (Daniel-2612); survived the 11 Knowledge test files at fb4cf1046 (J57029, J57063).",
+    "edits": [
+      {
+        "file": "strategies/knowledge.ts",
+        "find": ".map(([phase, count]) => `${count} ${phase}`)",
+        "replace": ".map(([phase]) => `${phase}`)"
+      }
+    ],
+    "configs": [
+      "C9",
+      "H2"
+    ],
+    "flags": [
+      "C9/W1",
+      "C9/W2",
+      "H2/W1",
+      "H2/W2",
+      "H2/W1/real",
+      "H2/W2/real"
+    ]
+  },
+  {
+    "id": "knowledge-k35a",
+    "why": "K35: synthesis stops before its cap once it has reached its floor (the floor term). Knowledge rule list knowledge-rules.md (Daniel-2612); survived the 11 Knowledge test files at fb4cf1046 (J57029, J57063).",
+    "edits": [
+      {
+        "file": "strategies/knowledge.ts",
+        "find": "if (used >= synthesisFloor && used + s.tokens > synthesisCap) break;",
+        "replace": "if (used + s.tokens > synthesisCap) break;"
+      }
+    ],
+    "configs": [
+      "C9",
+      "H2"
+    ],
+    "flags": []
+  },
+  {
+    "id": "knowledge-k35b",
+    "why": "K35: synthesisL1BudgetFloor defaults to 0.4. Knowledge rule list knowledge-rules.md (Daniel-2612); survived the 11 Knowledge test files at fb4cf1046 (J57029, J57063).",
+    "edits": [
+      {
+        "file": "strategies/knowledge.ts",
+        "find": "(this.knowledgeConfig.synthesisL1BudgetFloor ?? 0.4)",
+        "replace": "(this.knowledgeConfig.synthesisL1BudgetFloor ?? 0)"
+      }
+    ],
+    "configs": [
+      "C9",
+      "H2"
+    ],
+    "flags": []
+  },
+  {
+    "id": "knowledge-k35c",
+    "why": "K35: synthesisL1BudgetCap defaults to 0.7. Knowledge rule list knowledge-rules.md (Daniel-2612); survived the 11 Knowledge test files at fb4cf1046 (J57029, J57063).",
+    "edits": [
+      {
+        "file": "strategies/knowledge.ts",
+        "find": "(this.knowledgeConfig.synthesisL1BudgetCap ?? 0.7)",
+        "replace": "(this.knowledgeConfig.synthesisL1BudgetCap ?? 1)"
+      }
+    ],
+    "configs": [
+      "C9",
+      "H2"
+    ],
+    "flags": []
+  },
+  {
+    "id": "knowledge-k37",
+    "why": "K37: summaries of no or another phase are selected after subagent, within the budget. Knowledge rule list knowledge-rules.md (Daniel-2612); survived the 11 Knowledge test files at fb4cf1046 (J57029, J57063).",
+    "edits": [
+      {
+        "file": "strategies/knowledge.ts",
+        "find": "for (const s of [...subagent, ...other]) {",
+        "replace": "for (const s of [...subagent]) {"
+      }
+    ],
+    "configs": [
+      "C9",
+      "H2"
+    ],
+    "flags": []
+  },
+  {
+    "id": "knowledge-k38b",
+    "why": "K38: researchL1BudgetCap defaults to 0.3. Knowledge rule list knowledge-rules.md (Daniel-2612); survived the 11 Knowledge test files at fb4cf1046 (J57029, J57063).",
+    "edits": [
+      {
+        "file": "strategies/knowledge.ts",
+        "find": "(this.knowledgeConfig.researchL1BudgetCap ?? 0.3)",
+        "replace": "(this.knowledgeConfig.researchL1BudgetCap ?? 1)"
+      }
+    ],
+    "configs": [
+      "C9",
+      "H2"
+    ],
+    "flags": []
+  },
+  {
+    "id": "knowledge-k39",
+    "why": "K39: within research, selection stops at the first summary over the cap (break, not continue). Knowledge rule list knowledge-rules.md (Daniel-2612); survived the 11 Knowledge test files at fb4cf1046 (J57029, J57063).",
+    "edits": [
+      {
+        "file": "strategies/knowledge.ts",
+        "find": "      if (researchUsed + s.tokens > researchCap) break;",
+        "replace": "      if (researchUsed + s.tokens > researchCap) continue;"
+      }
+    ],
+    "configs": [
+      "C9",
+      "H2"
+    ],
+    "flags": []
+  },
+  {
+    "id": "knowledge-k40",
+    "why": "K40: selectL1Summaries returns the selected summaries' token sum. Knowledge rule list knowledge-rules.md (Daniel-2612); survived the 11 Knowledge test files at fb4cf1046 (J57029, J57063).",
+    "edits": [
+      {
+        "file": "strategies/knowledge.ts",
+        "find": "return { selected, tokensUsed: used };",
+        "replace": "return { selected, tokensUsed: 0 };"
+      }
+    ],
+    "configs": [
+      "C9",
+      "H2"
+    ],
+    "flags": []
+  },
+  {
+    "id": "knowledge-p-k24l1",
+    "why": "K24: the L1 a model writes for a Knowledge chunk carries the chunk's phaseType (autobiographical.ts:11759). Knowledge rule list knowledge-rules.md (Daniel-2612); a mutant in the parent's code that survived the 11 Knowledge test files at fb4cf1046 (J57100). Only a run that uses KnowledgeStrategy counts for it.",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "        created: Date.now(),\n        phaseType: chunk.phaseType,\n        ...(this.chunkIsWitnessed(chunk) ? { witnessed: true } : {}),",
+        "replace": "        created: Date.now(),\n        ...(this.chunkIsWitnessed(chunk) ? { witnessed: true } : {}),"
+      }
+    ],
+    "configs": [
+      "C9",
+      "H2"
+    ],
+    "flags": [
+      "C9/W1",
+      "C9/W2",
+      "H2/W1",
+      "H2/W2",
+      "H2/W1/real",
+      "H2/W2/real"
+    ]
+  },
+  {
+    "id": "knowledge-p-k24stub",
+    "why": "K24: a stub L1 for a Knowledge chunk carries the chunk's phaseType (autobiographical.ts:9583). Knowledge rule list knowledge-rules.md (Daniel-2612); a mutant in the parent's code that survived the 11 Knowledge test files at fb4cf1046 (J57100). Only a run that uses KnowledgeStrategy counts for it.",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "        created: Date.now(),\n        phaseType: chunk.phaseType,\n        // Stamped as an L1",
+        "replace": "        created: Date.now(),\n        // Stamped as an L1"
+      }
+    ],
+    "configs": [
+      "C9",
+      "H2"
+    ],
+    "flags": [
+      "C9/W1",
+      "C9/W2",
+      "H2/W1",
+      "H2/W2"
+    ]
+  },
+  {
+    "id": "knowledge-p-i3a",
+    "why": "I3: under Knowledge, a queued chunk holding a held message isn't compressed by the tick (autobiographical.ts:7678). Knowledge rule list knowledge-rules.md (Daniel-2612); a mutant in the parent's code that survived the 11 Knowledge test files at fb4cf1046 (J57100). Only a run that uses KnowledgeStrategy counts for it.",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "      if (this.chunkHasHeldMessage(chunk, this.holdBlockedIds(ctx.messageStore))) return;",
+        "replace": "      if (false && this.chunkHasHeldMessage(chunk, this.holdBlockedIds(ctx.messageStore))) return;"
+      }
+    ],
+    "configs": [
+      "C9",
+      "H2"
+    ],
+    "flags": []
+  },
+  {
+    "id": "knowledge-p-i3b",
+    "why": "I3: under Knowledge, an L1 whose span was held mid-request is discarded (autobiographical.ts:11717). Knowledge rule list knowledge-rules.md (Daniel-2612); a mutant in the parent's code that survived the 11 Knowledge test files at fb4cf1046 (J57100). Only a run that uses KnowledgeStrategy counts for it.",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "      if (this.chunkHasHeldMessage(chunk, this.holdBlockedIds(ctx.messageStore))) {\n        this.diag.warn('[autobiographical] discarding L1",
+        "replace": "      if (false && this.chunkHasHeldMessage(chunk, this.holdBlockedIds(ctx.messageStore))) {\n        this.diag.warn('[autobiographical] discarding L1"
+      }
+    ],
+    "configs": [
+      "C9",
+      "H2"
+    ],
+    "flags": []
+  },
+  {
+    "id": "knowledge-p-k20",
+    "why": "K20: under Knowledge's chunker, a chunk partly covered by an existing L1 is refused by the overlap guard (autobiographical.ts:9538). Knowledge rule list knowledge-rules.md (Daniel-2612); a mutant in the parent's code that survived the 11 Knowledge test files at fb4cf1046 (J57100). Only a run that uses KnowledgeStrategy counts for it.",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "    if (overlapIds.length > 0) {",
+        "replace": "    if (false && overlapIds.length > 0) {"
+      }
+    ],
+    "configs": [
+      "C9",
+      "H2"
+    ],
+    "flags": [
+      "H2/W1",
+      "H2/W2",
+      "H2/W1/real",
+      "H2/W2/real"
+    ]
+  },
+  {
+    "id": "knowledge-p-k22",
+    "why": "K22: under Knowledge, a chunk every message of which an L1 already covers is dropped, not compressed again (autobiographical.ts:9521). Knowledge rule list knowledge-rules.md (Daniel-2612); a mutant in the parent's code that survived the 11 Knowledge test files at fb4cf1046 (J57100). Only a run that uses KnowledgeStrategy counts for it.",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "    if (chunk.messages.length > 0 && chunk.messages.every(m => coveredByL1.has(m.id))) {",
+        "replace": "    if (false && chunk.messages.length > 0 && chunk.messages.every(m => coveredByL1.has(m.id))) {"
+      }
+    ],
+    "configs": [
+      "C9",
+      "H2"
+    ],
+    "flags": []
+  },
+  {
+    "id": "knowledge-p-k33",
+    "why": "K33: a reading-mode chunk takes the reading instruction, not Knowledge's phase prompt (autobiographical.ts:9823). Knowledge rule list knowledge-rules.md (Daniel-2612); a mutant in the parent's code that survived the 11 Knowledge test files at fb4cf1046 (J57100). Only a run that uses KnowledgeStrategy counts for it.",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "    const docContext = this.detectDocContext(chunk, ctx);",
+        "replace": "    const docContext = (Date.now() < 0 ? this.detectDocContext(chunk, ctx) : undefined);"
+      }
+    ],
+    "configs": [
+      "C9",
+      "H2"
+    ],
+    "flags": []
+  },
+  {
+    "id": "knowledge-p-k34",
+    "why": "K34: with witnessedIdentityReminder set, a wholly inherited Knowledge chunk gets that reminder after its phase prompt (autobiographical.ts:9828). Knowledge rule list knowledge-rules.md (Daniel-2612); a mutant in the parent's code that survived the 11 Knowledge test files at fb4cf1046 (J57100). Only a run that uses KnowledgeStrategy counts for it.",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "        : this.getCompressionInstruction(chunk, targetTokens),\n      this.chunkIsWitnessed(chunk),\n    );",
+        "replace": "        : this.getCompressionInstruction(chunk, targetTokens),\n      false,\n    );"
+      }
+    ],
+    "configs": [
+      "C9",
+      "H2"
+    ],
+    "flags": []
+  },
+  {
+    "id": "pt-pt12",
+    "why": "PT-12: PassthroughStrategy sends every stored image that fits (no image limit) (gap: survived the 22 test files reach.py names; J57117)",
+    "edits": [
+      {
+        "file": "strategies/passthrough.ts",
+        "find": "content: msg.content,\n      });\n\n      totalTokens += tokens;",
+        "replace": "content: msg.content.filter((b) => b.type !== 'image'),\n      });\n\n      totalTokens += tokens;"
+      }
+    ],
+    "configs": [
+      "C1",
+      "H3"
+    ],
+    "flags": []
+  },
+  {
+    "id": "pt-wp4a",
+    "why": "WP-4: reAnchorFraction defaults to 0.5 (gap: survived the 20 test files reach.py names; J57117)",
+    "edits": [
+      {
+        "file": "strategies/windowed-passthrough.ts",
+        "find": "const fraction = options.reAnchorFraction ?? 0.5;",
+        "replace": "const fraction = options.reAnchorFraction ?? 0.75;"
+      }
+    ],
+    "configs": [
+      "C2",
+      "H4"
+    ],
+    "flags": [
+      "C2/W1",
+      "H4/W1"
+    ]
+  },
+  {
+    "id": "pt-wp4b",
+    "why": "WP-4: a reAnchorFraction outside (0, 1] makes the constructor throw (gap: survived the 20 test files reach.py names; J57117)",
+    "edits": [
+      {
+        "file": "strategies/windowed-passthrough.ts",
+        "find": "if (!(fraction > 0 && fraction <= 1)) {",
+        "replace": "if (!(fraction > 0)) {"
+      }
+    ],
+    "configs": [
+      "C2",
+      "H4"
+    ],
+    "flags": []
+  },
+  {
+    "id": "pt-wp7b",
+    "why": "WP-7: a sent compile that re-anchored persists the new anchor (gap: survived the 17 test files reach.py names; J57117)",
+    "edits": [
+      {
+        "file": "strategies/windowed-passthrough.ts",
+        "find": "this.pendingCause = 'window';",
+        "replace": "this.pendingCause = 'window'; this.store?.setStateJson(this.stateId, { anchor: 0 });"
+      }
+    ],
+    "configs": [
+      "C2",
+      "H4"
+    ],
+    "flags": []
+  },
+  {
+    "id": "pt-wp8a",
+    "why": "WP-8: a dry select never moves or persists the anchor (gap: survived the 19 test files reach.py names; J57117)",
+    "edits": [
+      {
+        "file": "strategies/windowed-passthrough.ts",
+        "find": "if (movedAnchor !== undefined && !opts?.dryRun) {",
+        "replace": "if (movedAnchor !== undefined) {"
+      }
+    ],
+    "configs": [
+      "C2",
+      "H4"
+    ],
+    "flags": []
+  },
+  {
+    "id": "pt-wp8b",
+    "why": "WP-8: a dry select places no cache markers and leaves the cache measurement alone (gap: survived the 19 test files reach.py names; J57117)",
+    "edits": [
+      {
+        "file": "strategies/windowed-passthrough.ts",
+        "find": "if (!opts?.dryRun) this.placeCacheMarkers(entries);",
+        "replace": "this.placeCacheMarkers(entries);"
+      }
+    ],
+    "configs": [
+      "C2",
+      "H4"
+    ],
+    "flags": []
+  },
+  {
+    "id": "pt-wp8c",
+    "why": "WP-8: a dry select never refuses (gap: survived the 19 test files reach.py names; J57117)",
+    "edits": [
+      {
+        "file": "strategies/windowed-passthrough.ts",
+        "find": "if (total > maxTokens && !opts?.dryRun) {",
+        "replace": "if (total > maxTokens) {"
+      }
+    ],
+    "configs": [
+      "C2",
+      "H4"
+    ],
+    "flags": []
+  },
+  {
+    "id": "pt-wp10b",
+    "why": "WP-10: a branch change forgets the previous compile's cache measurement (gap: survived the 20 test files reach.py names; J57117)",
+    "edits": [
+      {
+        "file": "strategies/windowed-passthrough.ts",
+        "find": "    this.anchor = 0;\n    this.prevCacheKeys = null;",
+        "replace": "    this.anchor = 0;"
+      }
+    ],
+    "configs": [
+      "C2",
+      "H4"
+    ],
+    "flags": []
+  },
+  {
+    "id": "pt-wp11b",
+    "why": "WP-11: a persisted anchor that isn't a finite non-negative number is read as 0 (gap: survived the 20 test files reach.py names; J57117)",
+    "edits": [
+      {
+        "file": "strategies/windowed-passthrough.ts",
+        "find": "if (typeof value !== 'number' || !Number.isFinite(value) || value < 0)",
+        "replace": "if (typeof value !== 'number')"
+      }
+    ],
+    "configs": [
+      "C2",
+      "H4"
+    ],
+    "flags": []
+  },
+  {
+    "id": "pt-wp13a",
+    "why": "WP-13: takeSelectionCause() says 'window' once, then undefined (gap: survived the 19 test files reach.py names; J57117)",
+    "edits": [
+      {
+        "file": "strategies/windowed-passthrough.ts",
+        "find": "    this.pendingCause = undefined;\n    return cause;",
+        "replace": "    return cause;"
+      }
+    ],
+    "configs": [
+      "C2",
+      "H4"
+    ],
+    "flags": []
+  },
+  {
+    "id": "pt-wp13b",
+    "why": "WP-13: takeSelectionCause() says 'window' after a committed select moved the anchor (gap: survived the 17 test files reach.py names; J57117)",
+    "edits": [
+      {
+        "file": "strategies/windowed-passthrough.ts",
+        "find": "this.pendingCause = 'window';",
+        "replace": "this.pendingCause = undefined;"
+      }
+    ],
+    "configs": [
+      "C2",
+      "H4"
+    ],
+    "flags": []
+  },
+  {
+    "id": "pt-wp14",
+    "why": "WP-14: a derived context inherits the anchor's state slot (gap: survived the 11 test files reach.py names; J57117)",
+    "edits": [
+      {
+        "file": "strategies/windowed-passthrough.ts",
+        "find": "return { stateIds: [this.anchorStateIdOverride ?? `${namespace}/windowed:anchor`], statePrefixes: [] };",
+        "replace": "return { stateIds: [], statePrefixes: [] };"
+      }
+    ],
+    "configs": [
+      "C2",
+      "H4"
+    ],
+    "flags": []
+  },
+  {
+    "id": "pt-wp15",
+    "why": "WP-15: the windowed strategy is always ready (gap: survived the 11 test files reach.py names; J57117)",
+    "edits": [
+      {
+        "file": "strategies/windowed-passthrough.ts",
+        "find": "return { ready: true };",
+        "replace": "return { ready: false, reason: 'mutant' };"
+      }
+    ],
+    "configs": [
+      "C2",
+      "H4"
+    ],
+    "flags": [
+      "C2/W1",
+      "H4/W1"
+    ]
+  },
+  {
+    "id": "pt-wp18",
+    "why": "WP-18: maxMessageTokens is surfaced as ContextStrategy.maxMessageTokens (gap: survived the 20 test files reach.py names; J57117)",
+    "edits": [
+      {
+        "file": "strategies/windowed-passthrough.ts",
+        "find": "this.maxMessageTokens = options.maxMessageTokens;",
+        "replace": "this.__cap = options.maxMessageTokens;"
+      },
+      {
+        "file": "strategies/windowed-passthrough.ts",
+        "find": "const cap = this.maxMessageTokens ?? 0;",
+        "replace": "const cap = this.__cap ?? 0;"
+      }
+    ],
+    "configs": [
+      "C2",
+      "H4"
+    ],
+    "flags": []
+  },
+  {
+    "id": "pt-wp23b",
+    "why": "WP-23: an imageStripDepthTokens of 0 means no depth strip (gap: survived the 19 test files reach.py names; J57117)",
+    "edits": [
+      {
+        "file": "strategies/windowed-passthrough.ts",
+        "find": "if (depthTokens > 0) {",
+        "replace": "if (depthTokens >= 0) {"
+      }
+    ],
+    "configs": [
+      "C2",
+      "H4"
+    ],
+    "flags": []
+  },
+  {
+    "id": "pt-wp26a",
+    "why": "WP-26: exportRenderingFrontier carries the previous compile's cache measurement (gap: survived the 11 test files reach.py names; J57117)",
+    "edits": [
+      {
+        "file": "strategies/windowed-passthrough.ts",
+        "find": "return { strategy: 'windowed-passthrough', prevCacheKeys: this.prevCacheKeys ? [...this.prevCacheKeys] : null };",
+        "replace": "return { strategy: 'windowed-passthrough', prevCacheKeys: null };"
+      }
+    ],
+    "configs": [
+      "C2",
+      "H4"
+    ],
+    "flags": []
+  },
+  {
+    "id": "pt-wp26b",
+    "why": "WP-26: adoptRenderingFrontier takes only the windowed strategy's frontier (gap: survived the 11 test files reach.py names; J57117)",
+    "edits": [
+      {
+        "file": "strategies/windowed-passthrough.ts",
+        "find": "if (!f || f.strategy !== 'windowed-passthrough')",
+        "replace": "if (!f)"
+      }
+    ],
+    "configs": [
+      "C2",
+      "H4"
+    ],
+    "flags": []
+  },
+  {
+    "id": "pt-wp26c",
+    "why": "WP-26: discardRenderingFrontier clears the cache measurement (gap: survived the 11 test files reach.py names; J57117)",
+    "edits": [
+      {
+        "file": "strategies/windowed-passthrough.ts",
+        "find": "discardRenderingFrontier(): void {\n    this.prevCacheKeys = null;",
+        "replace": "discardRenderingFrontier(): void {\n    void 0;"
+      }
+    ],
+    "configs": [
+      "C2",
+      "H4"
+    ],
+    "flags": []
   }
 ]

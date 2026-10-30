@@ -5,7 +5,7 @@
 //   node lanes/cm-fixture.mjs check --cm DIR [--commit SHA] [--workers N] [--runs ID,ID] [--workloads W1,W2]
 //   node lanes/cm-fixture.mjs regenerate --cm DIR [--commit SHA] [--workers N] [--runs ID,ID] [--workloads W1,W2]
 //   node lanes/cm-fixture.mjs checkpoints --release VERSION [--workers N]
-//   node lanes/cm-fixture.mjs readiness --cm DIR [--workers N]
+//   node lanes/cm-fixture.mjs readiness --cm DIR [--workers N] [--mutants FILE] [--runs ID,ID] [--workloads W1,W2]
 //
 // check: runs the matrix once and compares each run's record with fixtures/cm-fixture/records. Exit 0 when every
 // record matches, 1 when any differs, a run has no record, or a run failed, and 2 when the check couldn't run.
@@ -18,6 +18,11 @@
 // record the same, and each mutant in lib/cm-fixture/mutants.json ({ id, why, edits: [{ file, find, replace }], flags:
 // runs, CONFIG/WORKLOAD pairs or workloads }), applied, must change a record of a run it names.
 // A mutant whose text no longer occurs exactly once in the tree is stale, and fails readiness until it's updated.
+// A mutant's optional `configs` names the configurations whose runs count for it. A mutant with no flags is unplaced:
+// readiness runs it against W1, W2 and every run another mutant names, of its configurations, reports which of their
+// records it changes, and isn't ready until its flags are written; --runs and --workloads narrow the runs an unplaced
+// mutant is tried against. --mutants reads another file of mutants in the same form, such as a rule
+// list's survivors before they're placed.
 
 import { execFileSync } from 'node:child_process';
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, symlinkSync, unlinkSync, writeFileSync } from 'node:fs';
@@ -43,7 +48,7 @@ function args(argv) {
   const o = { command, workers: 10, runs: null, workloads: null };
   for (let i = 0; i < rest.length; i++) {
     const k = rest[i], v = rest[i + 1];
-    if (k === '--cm') { o.cm = resolve(v); i++; } else if (k === '--release') { o.release = v; i++; } else if (k === '--commit') { o.commit = v; i++; } else if (k === '--workers') { o.workers = Number(v); i++; } else if (k === '--runs') { o.runs = new Set(v.split(',')); i++; } else if (k === '--workloads') { o.workloads = new Set(v.split(',')); i++; } else throw new Error(`unknown argument ${k}`);
+    if (k === '--cm') { o.cm = resolve(v); i++; } else if (k === '--mutants') { o.mutants = resolve(v); i++; } else if (k === '--release') { o.release = v; i++; } else if (k === '--commit') { o.commit = v; i++; } else if (k === '--workers') { o.workers = Number(v); i++; } else if (k === '--runs') { o.runs = new Set(v.split(',')); i++; } else if (k === '--workloads') { o.workloads = new Set(v.split(',')); i++; } else throw new Error(`unknown argument ${k}`);
   }
   if (!['check', 'regenerate', 'checkpoints', 'readiness'].includes(command)) throw new Error('the command is check, regenerate, checkpoints or readiness');
   if (!Number.isInteger(o.workers) || o.workers < 1) throw new Error('--workers is a whole number from 1');
@@ -96,18 +101,26 @@ function mutated(cm, dir, edits) {
   return null;
 }
 
-/** Each mutant flags a run it names, and a no-op flags none: { ok, lines }. */
+/**
+ * Each mutant flags a run it names, and a no-op flags none: { ok, lines }. A run that renders no record under a
+ * mutant is reported as such and doesn't count as flagging: a mutant that breaks the build would otherwise flag every
+ * run it reaches. A base run that renders none, or that the driver ends, fails readiness.
+ */
 async function readiness(o, house, work) {
-  const mutants = JSON.parse(readFileSync(join(LIB, 'mutants.json'), 'utf8'));
+  const mutants = JSON.parse(readFileSync(o.mutants ?? join(LIB, 'mutants.json'), 'utf8'));
   const all = matrix(house);
-  const named = (m) => all.filter((j) => m.flags.some((f) => f === j.id || f === j.workload || f === `${j.config}/${j.workload}`));
+  const unplaced = (m) => !m.flags?.length;
+  const counts = (m, j) => !m.configs || m.configs.some((c) => j.config === c || j.config.startsWith(`${c}.`));
+  const named = (m) => all.filter((j) => counts(m, j) && (m.flags ?? []).some((f) => f === j.id || f === j.workload || f === `${j.config}/${j.workload}`));
   const lines = [];
   let ok = true;
-  const recordsAt = async (cm, jobs, at) => (await runOnce({ ...o, cm, membraneDir: o.cm }, jobs, at)).records;
-  const base = await recordsAt(o.cm, all.filter((j) => mutants.some((m) => named(m).includes(j)) || ['W1', 'W2'].includes(j.workload)), join(work, 'base'));
+  const runIn = (cm, jobs, at) => runOnce({ ...o, cm, membraneDir: o.cm }, jobs, at);
+  const baseJobs = all.filter((j) => mutants.some((m) => named(m).includes(j)) || ['W1', 'W2'].includes(j.workload));
+  const { records: base, failed: baseFailed } = await runIn(o.cm, baseJobs, join(work, 'base'));
+  for (const f of baseFailed) { ok = false; lines.push(`base: ${f.id} ${base.has(f.id) ? 'was ended by the driver' : 'rendered no record'} (${f.why})`); }
   const noop = join(work, 'noop');
   mutated(o.cm, noop, [{ file: 'index.ts', append: '\n// cm-fixture readiness: a change that changes nothing.\n' }]);
-  const after = await recordsAt(noop, [...base.keys()].map((id) => all.find((j) => j.id === id)), join(work, 'noop-run'));
+  const after = (await runIn(noop, baseJobs, join(work, 'noop-run'))).records;
   const moved = [...base].filter(([id, text]) => after.get(id) !== text).map(([id]) => id);
   ok &&= moved.length === 0;
   lines.push(moved.length === 0 ? `no-op: every record the same (${base.size} runs)` : `no-op: FAILED, records changed in ${moved.join(', ')}`);
@@ -115,11 +128,19 @@ async function readiness(o, house, work) {
     const dir = join(work, `mutant-${m.id}`);
     const stale = mutated(o.cm, dir, m.edits);
     if (stale) { ok = false; lines.push(`${m.id}: STALE, its text doesn't occur exactly once in src/${stale.file}`); continue; }
-    const jobs = named(m);
-    const records = await recordsAt(dir, jobs, join(work, `mutant-${m.id}-run`));
-    const flagged = jobs.filter((j) => records.get(j.id) !== base.get(j.id)).map((j) => j.id);
+    const jobs = unplaced(m) ? baseJobs.filter((j) => counts(m, j) && (!o.runs || o.runs.has(j.id)) && (!o.workloads || o.workloads.has(j.workload))) : named(m);
+    const { records, failed } = await runIn(dir, jobs, join(work, `mutant-${m.id}-run`));
+    const flagged = jobs.filter((j) => base.has(j.id) && records.has(j.id) && records.get(j.id) !== base.get(j.id)).map((j) => j.id);
+    const missing = failed.filter((f) => !records.has(f.id));
+    const norecord = missing.length ? ` (${missing.length} rendered no record, the first ${missing[0].id}: ${missing[0].why})` : '';
+    if (unplaced(m)) {
+      ok = false;
+      if (failed.length && missing.length === jobs.length) { lines.push(`${m.id}: UNPLACED; no run rendered a record${norecord}`); continue; }
+      lines.push(flagged.length ? `${m.id}: UNPLACED; changes the records of ${flagged.join(', ')}${norecord}` : `${m.id}: UNPLACED; changes none of the ${jobs.length} runs' records${norecord} (${m.why})`);
+      continue;
+    }
     ok &&= flagged.length > 0;
-    lines.push(flagged.length ? `${m.id}: flagged in ${flagged.join(', ')}` : `${m.id}: NOT FLAGGED in ${jobs.map((j) => j.id).join(', ')} (${m.why})`);
+    lines.push(flagged.length ? `${m.id}: flagged in ${flagged.join(', ')}${norecord}` : `${m.id}: NOT FLAGGED in ${jobs.map((j) => j.id).join(', ')}${norecord} (${m.why})`);
   }
   return { ok, lines };
 }
