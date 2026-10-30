@@ -10,8 +10,9 @@
 // check: runs the matrix once and compares each run's record with fixtures/cm-fixture/records. Exit 0 when every
 // record matches, 1 when any differs, a run has no record, or a run failed, and 2 when the check couldn't run.
 // regenerate: runs the matrix twice, refuses unless both runs render every record the same, and refuses a record
-// holding an INVARIANT line that fixtures/cm-fixture/expected-failures.json doesn't name with its issue. Otherwise it
-// writes the records, removes those of runs the matrix no longer has, and prints what changed, for the pull request.
+// holding an INVARIANT line that fixtures/cm-fixture/expected-failures.json doesn't name with its issue (an entry
+// names a run's lines of one invariant, or, with `match`, a regular expression, those whose detail it matches).
+// Otherwise it writes the records, removes those of runs the matrix no longer has, and prints what changed.
 // checkpoints: replaces fixtures/cm-fixture/checkpoints with the stores the continuations start from, written by the
 // context-manager release named, installed from npm (checkpoints.mjs).
 // readiness: whether the fixture sees what it's for, in copies of the tree: a no-op change (a comment) must leave every
@@ -149,13 +150,18 @@ function expectedFailures() {
   if (!existsSync(EXPECTED_FAILURES)) return [];
   const list = JSON.parse(readFileSync(EXPECTED_FAILURES, 'utf8'));
   for (const f of list) if (!f.run || !f.invariant || !f.issue) throw new Error(`${EXPECTED_FAILURES}: each entry names its run, invariant and issue (the issue text record, such as post:post-342, until it is filed)`);
-  return list;
+  return list.map((f) => ({ ...f, match: f.match === undefined ? null : new RegExp(f.match) }));
 }
 
 /** The INVARIANT lines a record holds that no expected failure names. */
 function unexpectedInvariants(id, text, expected) {
-  const named = new Set(expected.filter((f) => f.run === id).map((f) => f.invariant));
-  return text.split('\n').filter((l) => /^\s*INVARIANT /.test(l)).filter((l) => !named.has(l.trim().slice('INVARIANT '.length).split(':')[0]));
+  const entries = expected.filter((f) => f.run === id);
+  return text.split('\n').filter((l) => /^\s*INVARIANT /.test(l)).filter((l) => {
+    const line = l.trim().slice('INVARIANT '.length);
+    const name = line.split(':')[0];
+    const detail = line.slice(name.length + 2);
+    return !entries.some((f) => f.invariant === name && (f.match === null || f.match.test(detail)));
+  });
 }
 
 function summary(id, d) {
