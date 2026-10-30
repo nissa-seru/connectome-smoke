@@ -1333,7 +1333,10 @@
       "H2"
     ],
     "flags": [],
-    "note": "unplaced at 322d30e (Desmond-2579, #302111): not checked; to be placed where its premise lives (Oscar-1005, #302165)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "as lifecycle-f2a: the `?? '[Recall {id}]'` default (autobiographical.ts:17645) is reached only when a caller sets recallHeaderTemplate to undefined or null explicitly; DEFAULT_AUTOBIOGRAPHICAL_CONFIG sets it (types/strategy.ts:2702), connectome-host passes it only when a recipe defines it (framework-strategy.ts:33, :159-161), and agent-framework doesn't name it [read] (Esther-2584's scan of every row's `this.config.K ?? N` edit, #305902; Oscar-1005's F2a ruling, #305862)"
+    }
   },
   {
     "id": "select-i3b",
