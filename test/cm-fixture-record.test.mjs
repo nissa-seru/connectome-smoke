@@ -8,7 +8,7 @@ import { diffRecords } from '../lib/cm-fixture/record-diff.mjs';
 
 // A small trace, as readTrace returns one: a run that adds two turns and compiles each, the second with a summary
 // sent as a recall pair whose question is the library's own words.
-function trace({ commit = 'aaaa111', label = 'What do you remember from earlier?', refuse = false, refusal = 'over', violation = null, marker = false, membrane = '0.9.0', cause = null, system = undefined, receipt = null, endError = null } = {}) {
+function trace({ commit = 'aaaa111', label = 'What do you remember from earlier?', refuse = false, refusal = 'over', violation = null, marker = false, membrane = '0.9.0', cause = null, system = undefined, receipt = null, endError = null, lateViolation = null } = {}) {
   const blobs = new Map();
   const blob = (v) => { const id = digest(v); blobs.set(id, v); return id; };
   const user = (n) => [{ type: 'text', text: `m1_${n}ux Continue with part ${n}, please.` }];
@@ -35,6 +35,7 @@ function trace({ commit = 'aaaa111', label = 'What do you remember from earlier?
   events.push({ kind: 'step', step: 2, written: [], removed: [], waiting: null, pending: null, ready: true, logs: {}, lines: [], violations: [] });
   const header = { kind: 'run', schema: SCHEMA, run: 'C3/W1', config: 'C3', workload: 'W1', variant: null, arm: 'candidate', seed: 7, scale: 15, from: null, library: { commit, version: '0.24.2' }, membrane: { version: membrane }, fixture: { version: 'f', standin: 's1', clock: { epoch: '2026-01-05T09:00:00.000Z', stepMs: 240000 } } };
   const end = endError ? { kind: 'end', ok: false, wallMs: 3, error: { class: endError.class, message: blob(endError.message), where: 'library' } } : { kind: 'end', ok: true, wallMs: 3 };
+  if (lateViolation) end.violations = [lateViolation];
   return { header, events, blobs, end };
 }
 
@@ -113,6 +114,13 @@ test("an H1 send's receipt shows the chain's head, a failure after sending, and 
   assert.match(renderRecord(trace({ receipt: { accepted: false, withReference: true } })), /compile .* receipt none\+ref$/m);
   const moved = diffRecords(renderRecord(trace({ receipt: { accepted: true, withReference: true, head } })), renderRecord(trace({ receipt: { accepted: true, withReference: true, head: { ...head, hash: 'ffffff0123456789' } } })));
   assert.ok(moved.groups.length > 0, 'a receipt hash that moves is a change');
+});
+
+test('a check the workload found broken after its last step shows after the end, and blocks as any newly broken invariant does', () => {
+  const late = renderRecord(trace({ lateViolation: { invariant: 'workload', detail: 'reached L2, short of L3' } }));
+  assert.match(late, /^end ok\n  INVARIANT workload: reached L2, short of L3$/m);
+  const d = diffRecords(renderRecord(trace()), late);
+  assert.equal(d.blocking.length, 1);
 });
 
 test("a summariser request's system prompt, where a host's setSystemPrompt goes, is part of its template", () => {

@@ -274,10 +274,12 @@ test("a receipt records the chain's head with its leaves named as messages are, 
     rec.compiled(m, budget, compiled(...m.messages.map((x, i) => [sent(x), raw(i + 1)])));
     rec.receipt({ accepted: false, failed: true, withReference: { unreadable: 'no kvUnifiedReceipts.cache' } }, m);
     await rec.endStep(m);
+    rec.violation('workload', 'a check over the whole run, after its last step');
     await rec.end(null);
     const [first, second] = readTrace(readFileSync(file, 'utf8')).events.filter((e) => e.kind === 'compile');
     assert.deepEqual(first.receipt, { accepted: true, withReference: true, head: { sequence: 3, hash: 'f'.repeat(16), changes: 2, digest: digest([['a1.1', ['r2', 1, 3]], ['a1.3', null]]) } });
     assert.deepEqual(second.receipt, { accepted: false, failed: true, withReference: { unreadable: 'no kvUnifiedReceipts.cache' } });
+    assert.deepEqual(readTrace(readFileSync(file, 'utf8')).end.violations, [{ invariant: 'workload', detail: 'a check over the whole run, after its last step' }], 'a check after the last step is written with the end');
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
