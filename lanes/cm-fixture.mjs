@@ -24,11 +24,13 @@
 // updated. A mutant's optional `configs` names the configurations whose runs count for it.
 // A mutant with no flags is unplaced, and isn't ready until its flags are written. With --place, readiness runs it
 // against W1, W2 and every run another mutant names, of its configurations, and reports which of their records it
-// changes; without it, it lists it untried. A mutant with a `gap` ({ kind: unreachable or equivalent, why }) is one the
+// changes, trying its runs a batch of --workers at a time (W11, W9 and W8 first) and stopping at the first batch that
+// flags; without it, it lists it untried. A mutant with a `gap` ({ kind: unreachable or equivalent, why }) is one the
 // fixture can't see, by that reason: readiness lists it, and with --gaps tries it as it tries an unplaced one, failing
 // if it now changes a record. --runs and --workloads narrow the W1 and W2 runs readiness uses, for its no-op and the
 // mutants it tries alike; the run a placed mutant is checked in always runs. --mutants reads another file of mutants in
-// the same form, such as a rule list's survivors before they're placed.
+// the same form, such as a rule list's survivors before they're placed. --plan prints the runs it would make, and
+// makes none.
 
 import { execFileSync } from 'node:child_process';
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, symlinkSync, unlinkSync, writeFileSync } from 'node:fs';
@@ -51,10 +53,10 @@ const recordFile = (id) => traceFileName(id).replace(/\.jsonl$/, '.txt');
 
 function args(argv) {
   const [command, ...rest] = argv;
-  const o = { command, workers: 10, runs: null, workloads: null, place: false, gaps: false, allFlags: false };
+  const o = { command, workers: 10, runs: null, workloads: null, place: false, gaps: false, allFlags: false, plan: false };
   for (let i = 0; i < rest.length; i++) {
     const k = rest[i], v = rest[i + 1];
-    if (k === '--cm') { o.cm = resolve(v); i++; } else if (k === '--mutants') { o.mutants = resolve(v); i++; } else if (k === '--release') { o.release = v; i++; } else if (k === '--commit') { o.commit = v; i++; } else if (k === '--workers') { o.workers = Number(v); i++; } else if (k === '--runs') { o.runs = new Set(v.split(',')); i++; } else if (k === '--workloads') { o.workloads = new Set(v.split(',')); i++; } else if (k === '--place') o.place = true; else if (k === '--gaps') o.gaps = true; else if (k === '--all-flags') o.allFlags = true; else throw new Error(`unknown argument ${k}`);
+    if (k === '--cm') { o.cm = resolve(v); i++; } else if (k === '--mutants') { o.mutants = resolve(v); i++; } else if (k === '--release') { o.release = v; i++; } else if (k === '--commit') { o.commit = v; i++; } else if (k === '--workers') { o.workers = Number(v); i++; } else if (k === '--runs') { o.runs = new Set(v.split(',')); i++; } else if (k === '--workloads') { o.workloads = new Set(v.split(',')); i++; } else if (k === '--place') o.place = true; else if (k === '--gaps') o.gaps = true; else if (k === '--all-flags') o.allFlags = true; else if (k === '--plan') o.plan = true; else throw new Error(`unknown argument ${k}`);
   }
   if (!['check', 'regenerate', 'checkpoints', 'readiness'].includes(command)) throw new Error('the command is check, regenerate, checkpoints or readiness');
   if (!Number.isInteger(o.workers) || o.workers < 1) throw new Error('--workers is a whole number from 1');
@@ -129,6 +131,15 @@ async function readiness(o, house, work) {
   const runIn = (cm, jobs, at) => runOnce({ ...o, cm, membraneDir: o.cm }, jobs, at);
   const inScope = (j) => (!o.runs || o.runs.has(j.id)) && (!o.workloads || o.workloads.has(j.workload));
   const baseJobs = all.filter((j) => mutants.some((m) => tried(m) && !unplaced(m) && checkedIn(m).includes(j)) || (['W1', 'W2'].includes(j.workload) && inScope(j)));
+  if (o.plan) {
+    // What the run would do, without running it: the runs each step takes, for pricing.
+    const planned = mutants.filter(tried);
+    const runsOf = (m) => (unplaced(m) ? baseJobs.filter((j) => counts(m, j) && inScope(j)) : checkedIn(m)).length;
+    const per = planned.map(runsOf);
+    lines.push(`plan: base ${baseJobs.length} runs, no-op ${baseJobs.length}, ${planned.length} mutants ${per.reduce((a, b) => a + b, 0)} runs (most ${Math.max(0, ...per)}, fewest ${Math.min(...per)})`);
+    for (const m of planned) lines.push(`plan: ${m.id} ${runsOf(m)} runs`);
+    return { ok: true, lines };
+  }
   const { records: base, failed: baseFailed } = await runIn(o.cm, baseJobs, join(work, 'base'));
   for (const f of baseFailed) { ok = false; lines.push(`base: ${f.id} ${base.has(f.id) ? 'was ended by the driver' : 'rendered no record'} (${f.why})`); }
   const noop = join(work, 'noop');
@@ -146,9 +157,20 @@ async function readiness(o, house, work) {
     const dir = join(work, `mutant-${m.id}`);
     const stale = mutated(o.cm, dir, m.edits);
     if (stale) { ok = false; lines.push(`${m.id}: STALE, its text doesn't occur exactly once in src/${stale.file}`); continue; }
-    const jobs = unplaced(m) ? baseJobs.filter((j) => counts(m, j) && inScope(j)) : checkedIn(m);
-    const { records, failed } = await runIn(dir, jobs, join(work, `mutant-${m.id}-run`));
-    const flagged = jobs.filter((j) => base.has(j.id) && records.has(j.id) && records.get(j.id) !== base.get(j.id)).map((j) => j.id);
+    const tries = unplaced(m) ? placementOrder(baseJobs.filter((j) => counts(m, j) && inScope(j))) : checkedIn(m);
+    // An unplaced mutant or a gap needs one flag: its runs go a batch of --workers at a time, most likely first, and
+    // stop at the batch that flags.
+    const step = unplaced(m) ? o.workers : tries.length;
+    const records = new Map(), failed = [], jobs = [];
+    let flagged = [];
+    for (let at = 0; at < tries.length && flagged.length === 0; at += step) {
+      const batch = tries.slice(at, at + step);
+      const r = await runIn(dir, batch, join(work, `mutant-${m.id}-run-${at}`));
+      for (const [id, text] of r.records) records.set(id, text);
+      failed.push(...r.failed);
+      jobs.push(...batch);
+      flagged = jobs.filter((j) => base.has(j.id) && records.has(j.id) && records.get(j.id) !== base.get(j.id)).map((j) => j.id);
+    }
     const missing = failed.filter((f) => !records.has(f.id));
     const norecord = missing.length ? ` (${missing.length} rendered no record, the first ${missing[0].id}: ${missing[0].why})` : '';
     if (m.gap) {
@@ -159,13 +181,20 @@ async function readiness(o, house, work) {
     if (unplaced(m)) {
       ok = false;
       if (failed.length && missing.length === jobs.length) { lines.push(`${m.id}: UNPLACED; no run rendered a record${norecord}`); continue; }
-      lines.push(flagged.length ? `${m.id}: UNPLACED; changes the records of ${flagged.join(', ')}${norecord}` : `${m.id}: UNPLACED; changes none of the ${jobs.length} runs' records${norecord} (${m.why})`);
+      lines.push(flagged.length ? `${m.id}: UNPLACED; changes the records of ${flagged.join(', ')} (${jobs.length} of its ${tries.length} runs tried)${norecord}` : `${m.id}: UNPLACED; changes none of the ${jobs.length} runs' records${norecord} (${m.why})`);
       continue;
     }
     ok &&= flagged.length > 0;
     lines.push(flagged.length ? `${m.id}: flagged in ${flagged.join(', ')}${norecord}` : `${m.id}: NOT FLAGGED in ${jobs.map((j) => j.id).join(', ')}${norecord} (${m.why})`);
   }
   return { ok, lines };
+}
+
+/** The runs a placement tries first: where survivors' premises most often live (W11, W9, W8), then the rest. */
+const PLACEMENT_FIRST = ['W11', 'W9', 'W8'];
+function placementOrder(jobs) {
+  const rank = (j) => { const k = PLACEMENT_FIRST.indexOf(j.workload); return k === -1 ? PLACEMENT_FIRST.length : k; };
+  return jobs.map((j, i) => [j, i]).sort((a, b) => rank(a[0]) - rank(b[0]) || a[1] - b[1]).map(([j]) => j);
 }
 
 function expectedFailures() {
@@ -227,7 +256,7 @@ async function main() {
     if (o.command === 'readiness') {
       const r = await readiness(o, house, work);
       for (const l of r.lines) process.stdout.write(`${l}\n`);
-      process.stdout.write(`cm-fixture readiness: ${r.ok ? 'ready' : 'NOT READY'} at ${o.commit.slice(0, 12)}, in ${((performance.now() - started) / 1000).toFixed(1)} s\n`);
+      process.stdout.write(`cm-fixture readiness: ${o.plan ? 'planned, nothing run,' : r.ok ? 'ready' : 'NOT READY'} at ${o.commit.slice(0, 12)}, in ${((performance.now() - started) / 1000).toFixed(1)} s\n`);
       return r.ok ? 0 : 1;
     }
     const first = await runOnce(o, jobs, join(work, 'a'));
