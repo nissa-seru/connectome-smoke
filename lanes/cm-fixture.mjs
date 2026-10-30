@@ -5,6 +5,7 @@
 //   node lanes/cm-fixture.mjs check --cm DIR [--commit SHA] [--workers N] [--runs ID,ID] [--workloads W1,W2]
 //   node lanes/cm-fixture.mjs regenerate --cm DIR [--commit SHA] [--workers N] [--runs ID,ID] [--workloads W1,W2]
 //   node lanes/cm-fixture.mjs checkpoints --release VERSION [--workers N]
+//   node lanes/cm-fixture.mjs readiness --cm DIR [--workers N]
 //
 // check: runs the matrix once and compares each run's record with fixtures/cm-fixture/records. Exit 0 when every
 // record matches, 1 when any differs, a run has no record, or a run failed, and 2 when the check couldn't run.
@@ -13,9 +14,13 @@
 // writes the records, removes those of runs the matrix no longer has, and prints what changed, for the pull request.
 // checkpoints: replaces fixtures/cm-fixture/checkpoints with the stores the continuations start from, written by the
 // context-manager release named, installed from npm (checkpoints.mjs).
+// readiness: whether the fixture sees what it's for, in copies of the tree: a no-op change (a comment) must leave every
+// record the same, and each mutant in lib/cm-fixture/mutants.json ({ id, why, edits: [{ file, find, replace }], flags:
+// runs, CONFIG/WORKLOAD pairs or workloads }), applied, must change a record of a run it names.
+// A mutant whose text no longer occurs exactly once in the tree is stale, and fails readiness until it's updated.
 
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, unlinkSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, symlinkSync, unlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -40,7 +45,7 @@ function args(argv) {
     const k = rest[i], v = rest[i + 1];
     if (k === '--cm') { o.cm = resolve(v); i++; } else if (k === '--release') { o.release = v; i++; } else if (k === '--commit') { o.commit = v; i++; } else if (k === '--workers') { o.workers = Number(v); i++; } else if (k === '--runs') { o.runs = new Set(v.split(',')); i++; } else if (k === '--workloads') { o.workloads = new Set(v.split(',')); i++; } else throw new Error(`unknown argument ${k}`);
   }
-  if (!['check', 'regenerate', 'checkpoints'].includes(command)) throw new Error('the command is check, regenerate or checkpoints');
+  if (!['check', 'regenerate', 'checkpoints', 'readiness'].includes(command)) throw new Error('the command is check, regenerate, checkpoints or readiness');
   if (!Number.isInteger(o.workers) || o.workers < 1) throw new Error('--workers is a whole number from 1');
   if (command === 'checkpoints') {
     if (!/^\d+\.\d+\.\d+$/.test(o.release ?? '')) throw new Error('--release names a context-manager version on npm, such as 0.24.2');
@@ -55,7 +60,7 @@ function args(argv) {
 async function runOnce(o, jobs, work) {
   const traceDir = join(work, 'traces');
   const results = await runArm({
-    arm: { name: 'candidate', cmDir: o.cm, membraneDir: o.cm, commit: o.commit },
+    arm: { name: 'candidate', cmDir: o.cm, membraneDir: o.membraneDir ?? o.cm, commit: o.commit },
     jobs, workers: o.workers, traceDir, checkpointDir: CHECKPOINTS, workDir: join(work, 'runs'),
     recorder: join(LIB, 'trace.mjs'), house: join(LIB, 'house.json'),
   });
@@ -71,10 +76,58 @@ async function runOnce(o, jobs, work) {
   return { records, failed };
 }
 
+/**
+ * A copy of a tree's src with edits made, sharing its node_modules: each edit's `find` must occur exactly once in its
+ * file, or `append` is added at the file's end. Returns the first edit that can't be made, or null.
+ */
+function mutated(cm, dir, edits) {
+  mkdirSync(dir, { recursive: true });
+  cpSync(join(cm, 'src'), join(dir, 'src'), { recursive: true });
+  cpSync(join(cm, 'package.json'), join(dir, 'package.json'));
+  symlinkSync(join(cm, 'node_modules'), join(dir, 'node_modules'));
+  for (const edit of edits) {
+    const file = join(dir, 'src', edit.file);
+    if (!existsSync(file)) return edit;
+    const text = readFileSync(file, 'utf8');
+    if (edit.append !== undefined) { writeFileSync(file, text + edit.append); continue; }
+    if (text.split(edit.find).length !== 2) return edit;
+    writeFileSync(file, text.replace(edit.find, edit.replace));
+  }
+  return null;
+}
+
+/** Each mutant flags a run it names, and a no-op flags none: { ok, lines }. */
+async function readiness(o, house, work) {
+  const mutants = JSON.parse(readFileSync(join(LIB, 'mutants.json'), 'utf8'));
+  const all = matrix(house);
+  const named = (m) => all.filter((j) => m.flags.some((f) => f === j.id || f === j.workload || f === `${j.config}/${j.workload}`));
+  const lines = [];
+  let ok = true;
+  const recordsAt = async (cm, jobs, at) => (await runOnce({ ...o, cm, membraneDir: o.cm }, jobs, at)).records;
+  const base = await recordsAt(o.cm, all.filter((j) => mutants.some((m) => named(m).includes(j)) || ['W1', 'W2'].includes(j.workload)), join(work, 'base'));
+  const noop = join(work, 'noop');
+  mutated(o.cm, noop, [{ file: 'index.ts', append: '\n// cm-fixture readiness: a change that changes nothing.\n' }]);
+  const after = await recordsAt(noop, [...base.keys()].map((id) => all.find((j) => j.id === id)), join(work, 'noop-run'));
+  const moved = [...base].filter(([id, text]) => after.get(id) !== text).map(([id]) => id);
+  ok &&= moved.length === 0;
+  lines.push(moved.length === 0 ? `no-op: every record the same (${base.size} runs)` : `no-op: FAILED, records changed in ${moved.join(', ')}`);
+  for (const m of mutants) {
+    const dir = join(work, `mutant-${m.id}`);
+    const stale = mutated(o.cm, dir, m.edits);
+    if (stale) { ok = false; lines.push(`${m.id}: STALE, its text doesn't occur exactly once in src/${stale.file}`); continue; }
+    const jobs = named(m);
+    const records = await recordsAt(dir, jobs, join(work, `mutant-${m.id}-run`));
+    const flagged = jobs.filter((j) => records.get(j.id) !== base.get(j.id)).map((j) => j.id);
+    ok &&= flagged.length > 0;
+    lines.push(flagged.length ? `${m.id}: flagged in ${flagged.join(', ')}` : `${m.id}: NOT FLAGGED in ${jobs.map((j) => j.id).join(', ')} (${m.why})`);
+  }
+  return { ok, lines };
+}
+
 function expectedFailures() {
   if (!existsSync(EXPECTED_FAILURES)) return [];
   const list = JSON.parse(readFileSync(EXPECTED_FAILURES, 'utf8'));
-  for (const f of list) if (!f.run || !f.invariant || !f.issue) throw new Error(`${EXPECTED_FAILURES}: each entry names its run, invariant and issue`);
+  for (const f of list) if (!f.run || !f.invariant || !f.issue) throw new Error(`${EXPECTED_FAILURES}: each entry names its run, invariant and issue (the issue text record, such as post:post-342, until it is filed)`);
   return list;
 }
 
@@ -117,6 +170,12 @@ async function main() {
   const work = mkdtempSync(join(tmpdir(), 'cm-fixture-'));
   try {
     const started = performance.now();
+    if (o.command === 'readiness') {
+      const r = await readiness(o, house, work);
+      for (const l of r.lines) process.stdout.write(`${l}\n`);
+      process.stdout.write(`cm-fixture readiness: ${r.ok ? 'ready' : 'NOT READY'} at ${o.commit.slice(0, 12)}, in ${((performance.now() - started) / 1000).toFixed(1)} s\n`);
+      return r.ok ? 0 : 1;
+    }
     const first = await runOnce(o, jobs, join(work, 'a'));
     const seconds = ((performance.now() - started) / 1000).toFixed(1);
     if (o.command === 'check') {

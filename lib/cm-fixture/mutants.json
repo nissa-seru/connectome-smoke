@@ -1,0 +1,17 @@
+[
+  {
+    "id": "merge-threshold-7",
+    "why": "the hierarchical select's merge threshold, raised from 6 to 7: W1 and W2 reach merges under the select (C3, C9)",
+    "edits": [{ "file": "strategies/autobiographical.ts", "find": "defaults.mergeThreshold = 6;", "replace": "defaults.mergeThreshold = 7;" }],
+    "flags": ["C3/W1", "C3/W2", "C9/W1", "C9/W2"]
+  },
+  {
+    "id": "recall-label",
+    "why": "the words of a recalled memory's question, which every compressing run that sends a summary carries",
+    "edits": [
+      { "file": "types/strategy.ts", "find": "summaryContextLabel: 'What do you remember from earlier?'", "replace": "summaryContextLabel: 'What do you recall of what came before?'" },
+      { "file": "strategies/autobiographical.ts", "find": "this.config.summaryContextLabel ?? 'What do you remember from earlier?'", "replace": "this.config.summaryContextLabel ?? 'What do you recall of what came before?'" }
+    ],
+    "flags": ["C7/W1", "C7/W2"]
+  }
+]

@@ -1,0 +1,5 @@
+[
+  { "run": "C1/W1", "invariant": "shape", "issue": "post:post-342", "what": "PassthroughStrategy, cutting from the oldest end, opens a request with a tool result whose call it dropped" },
+  { "run": "H3/W1", "invariant": "shape", "issue": "post:post-342", "what": "connectome-host's passthrough recipe: PassthroughStrategy's cut, as C1/W1" },
+  { "run": "H4/W1", "invariant": "shape", "issue": "anima-research/context-manager#370", "what": "the subconscious's WindowedPassthroughStrategy: its re-anchor opens a request with a tool result whose call it dropped" }
+]
