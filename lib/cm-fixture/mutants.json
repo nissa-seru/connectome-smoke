@@ -1559,8 +1559,9 @@
     "configs": [
       "C6"
     ],
-    "flags": [],
-    "note": "unplaced at 322d30e (Desmond-2579, #302111): not checked; to be placed where its premise lives (Oscar-1005, #302165); W9's step-8 prepared pace at cebbb5d doesn't place it under C6 (Desmond-2579, J57762, #303254)"
+    "flags": [
+      "C6/W9"
+    ]
   },
   {
     "id": "kvs-KS17b",
@@ -1592,8 +1593,9 @@
     "configs": [
       "C6"
     ],
-    "flags": [],
-    "note": "unplaced at 322d30e (Desmond-2579, #302111): not checked; to be placed where its premise lives (Oscar-1005, #302165); W9's step-8 prepared pace at cebbb5d doesn't place it under C6 (Desmond-2579, J57762, #303254)"
+    "flags": [
+      "C6/W9"
+    ]
   },
   {
     "id": "kvs-KS18b",
@@ -1642,8 +1644,9 @@
     "configs": [
       "C6"
     ],
-    "flags": [],
-    "note": "unplaced at 322d30e (Desmond-2579, #302111): not checked; to be placed where its premise lives (Oscar-1005, #302165); on W11 at cebbb5d it doesn't flag under C6, C7 or either H1 (Desmond-2579, J57792, #303254); why not checked"
+    "flags": [
+      "C6/W11"
+    ]
   },
   {
     "id": "kvs-KS24b",
@@ -1699,8 +1702,9 @@
     "configs": [
       "C6"
     ],
-    "flags": [],
-    "note": "unplaced at 322d30e (Desmond-2579, #302111): not checked; to be placed where its premise lives (Oscar-1005, #302165); W9's step-8 prepared pace at cebbb5d doesn't place it under C6 (Desmond-2579, J57762, #303254)"
+    "flags": [
+      "C6/W11"
+    ]
   },
   {
     "id": "kvs-KC8a",
@@ -1716,7 +1720,10 @@
       "C6"
     ],
     "flags": [],
-    "note": "unplaced at 322d30e (Desmond-2579, #302111): not checked; to be placed where its premise lives (Oscar-1005, #302165); W9's step-8 prepared pace at cebbb5d doesn't place it under C6 (Desmond-2579, J57762, #303254)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "in the fixture's workloads: W9's window at 3,333 tokens a step doesn't make a plan more than 35% worse in loss than its ideal, which strict reach needs (Gordon-2414's premise; Desmond-2579 #303651; Oscar-1005 #303653)"
+    }
   },
   {
     "id": "kvs-KC14",
@@ -1732,7 +1739,10 @@
       "C6"
     ],
     "flags": [],
-    "note": "unplaced at 322d30e (Desmond-2579, #302111): not checked; to be placed where its premise lives (Oscar-1005, #302165); W9's step-8 prepared pace at cebbb5d doesn't place it under C6 (Desmond-2579, J57762, #303254)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "in the fixture's workloads: W9's window at 3,333 tokens a step doesn't put the ideal between the window and the live budget, which 'escalated' needs (Gordon-2414's premise; Desmond-2579 #303651; Oscar-1005 #303653)"
+    }
   },
   {
     "id": "kvs-KC22a",
@@ -1764,7 +1774,10 @@
       "C6"
     ],
     "flags": [],
-    "note": "unplaced at 322d30e (Desmond-2579, #302111): not checked; to be placed where its premise lives (Oscar-1005, #302165); on W11 at cebbb5d it doesn't flag under C6, C7 or either H1 (Desmond-2579, J57792, #303254); why not checked"
+    "gap": {
+      "kind": "unreachable",
+      "why": "in the fixture's workloads: under C6, W11's compiles send no summary at L3 where a document mark could land under it; step 8's compile sent none at b03f27f and 6f48e21, so the mark falls back to older history under an L2. In J57792 that compile did send an L3, and J57792 differs from these commits by the step-6 mark and the 574 lock (Desmond-2579, #303806, #303877)"
+    }
   },
   {
     "id": "kvs-KC27",
@@ -1780,7 +1793,10 @@
       "C6"
     ],
     "flags": [],
-    "note": "unplaced at 322d30e (Desmond-2579, #302111): not checked; to be placed where its premise lives (Oscar-1005, #302165); on W11 at cebbb5d it doesn't flag under C6, C7 or either H1 (Desmond-2579, J57792, #303254); why not checked"
+    "gap": {
+      "kind": "unreachable",
+      "why": "in the fixture's workloads: under C6, W11's compiles send no summary at L3 where a document mark could land under it; step 8's compile sent none at b03f27f and 6f48e21, so the mark falls back to older history under an L2. In J57792 that compile did send an L3, and J57792 differs from these commits by the step-6 mark and the 574 lock (Desmond-2579, #303806, #303877)"
+    }
   },
   {
     "id": "kvs-KC28",
@@ -1815,8 +1831,9 @@
       "H1",
       "H2"
     ],
-    "flags": [],
-    "note": "unplaced at 322d30e (Desmond-2579, #302111): needs a report that isn't finite and positive, a fault the stand-in never makes [read]; a fault workload is to be priced (#302165); on W11 at cebbb5d it doesn't flag under C6, C7 or either H1 (Desmond-2579, J57792, #303254); why not checked"
+    "flags": [
+      "W11"
+    ]
   },
   {
     "id": "cal-C5b",
@@ -2051,5 +2068,3065 @@
       "kind": "equivalent",
       "why": "changes only compileMs, a time, which no record carries [read]"
     }
+  },
+  {
+    "id": "kvu-KU2a",
+    "why": "KU-2: before the first solve, lastResult reads as an infeasible result instead of null. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Alfred-2570).",
+    "edits": [
+      {
+        "file": "adaptive/strategies/kv-unified.ts",
+        "find": "  get lastResult(): ParetoPolicySolveResult | null {\n    return this.last;\n",
+        "replace": "  get lastResult(): ParetoPolicySolveResult | null {\n    return this.last ?? ({ feasible: false } as unknown as ParetoPolicySolveResult);\n"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KU3a",
+    "why": "KU-3: an infeasible solve leaves lastResult at the previous feasible solve instead of this one. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Alfred-2570).",
+    "edits": [
+      {
+        "file": "adaptive/strategies/kv-unified.ts",
+        "find": "    this.last = result;\n    this.demandEvaluations = [];\n",
+        "replace": "    this.last = result.feasible ? result : this.last;\n    this.demandEvaluations = [];\n"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KU3b",
+    "why": "KU-3: the per-solve reset of demandEvaluations is dropped, so a solve reports the previous solve's evaluations. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Alfred-2570).",
+    "edits": [
+      {
+        "file": "adaptive/strategies/kv-unified.ts",
+        "find": "    this.demandEvaluations = [];\n    this.requests = [];\n",
+        "replace": "    this.requests = [];\n"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KU3c",
+    "why": "KU-3: the per-solve reset of requests is dropped, so a solve's requests carry the previous solve's. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Alfred-2570).",
+    "edits": [
+      {
+        "file": "adaptive/strategies/kv-unified.ts",
+        "find": "    this.demandEvaluations = [];\n    this.requests = [];\n",
+        "replace": "    this.demandEvaluations = [];\n"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KU5c",
+    "why": "KU-5: a missing alpha is no longer refused under requireExplicitPolicy. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Alfred-2570).",
+    "edits": [
+      {
+        "file": "adaptive/strategies/kv-unified.ts",
+        "find": "    'alpha', 'budgetLowRatio', 'budgetHighRatio', 'budgetUnderLambda',\n",
+        "replace": "    'budgetLowRatio', 'budgetHighRatio', 'budgetUnderLambda',\n"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KU5e",
+    "why": "KU-5: a zero bucket-size option passes validation instead of being refused. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Alfred-2570).",
+    "edits": [
+      {
+        "file": "adaptive/strategies/kv-unified.ts",
+        "find": "    if (!Number.isFinite(value) || (value ?? 0) <= 0) {",
+        "replace": "    if (!Number.isFinite(value) || (value ?? 0) < 0) {"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KU5f",
+    "why": "KU-5: a negative adoptEpsilon passes validation instead of being refused. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Alfred-2570).",
+    "edits": [
+      {
+        "file": "adaptive/strategies/kv-unified.ts",
+        "find": "  if (!Number.isFinite(options.adoptEpsilon) || (options.adoptEpsilon ?? -1) < 0) {",
+        "replace": "  if (!Number.isFinite(options.adoptEpsilon)) {"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KU5h",
+    "why": "KU-5: with both forest flags true, the strategy no longer refuses; the forest refuses the pair instead, without the 'kv-unified ' prefix (core:597-601 against ku:1047-1050), and after any forest issue it finds first (core:590). Gordon-2414, #303526. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Alfred-2570).",
+    "edits": [
+      {
+        "file": "adaptive/strategies/kv-unified.ts",
+        "find": "  if (options.treeifyNonContiguousSummaries && options.preserveGapBearingSummaries) {\n    throw new Error(",
+        "replace": "  if (options.treeifyNonContiguousSummaries && options.preserveGapBearingSummaries) {\n    void (0);\n  }\n  if (false) {\n    throw new Error("
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KU5i",
+    "why": "KU-5: requireExplicitPolicy's validation runs after the solve instead of before any work, so an invalid policy is solved with before it's refused. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Alfred-2570).",
+    "edits": [
+      {
+        "file": "adaptive/strategies/kv-unified.ts",
+        "find": "    if (this.options.requireExplicitPolicy) validateExplicitOptions(this.options);\n    const t0 = performance.now();\n",
+        "replace": "    const t0 = performance.now();\n"
+      },
+      {
+        "file": "adaptive/strategies/kv-unified.ts",
+        "find": "    const t2 = performance.now();\n    this.last = result;\n",
+        "replace": "    const t2 = performance.now();\n    if (this.options.requireExplicitPolicy) validateExplicitOptions(this.options);\n    this.last = result;\n"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KU10",
+    "why": "KU-10: the ceiling fallback asks the forest's feasibility at no wall instead of at maxTokens, so it reports feasible where the wall rules every cut out. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Alfred-2570).",
+    "edits": [
+      {
+        "file": "adaptive/strategies/kv-unified.ts",
+        "find": "  const feasibility = forest.minimumTokens(options.maxTokens);\n",
+        "replace": "  const feasibility = forest.minimumTokens(Infinity);\n"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KU12c",
+    "why": "KU-12: a pinned chunk with no L1 is counted as missing-L1 demand. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Alfred-2570).",
+    "edits": [
+      {
+        "file": "adaptive/strategies/kv-unified.ts",
+        "find": "      !chunk.l1Id &&\n      !chunk.pinned &&\n",
+        "replace": "      !chunk.l1Id &&\n"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KU12d",
+    "why": "KU-12: a chunk the agent locked, with no L1, is counted as missing-L1 demand. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Alfred-2570).",
+    "edits": [
+      {
+        "file": "adaptive/strategies/kv-unified.ts",
+        "find": "      !chunk.pinned &&\n      !chunk.lockedByAgent &&\n",
+        "replace": "      !chunk.pinned &&\n"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KU12e",
+    "why": "KU-12: a head-zone chunk with no L1 is counted as missing-L1 demand. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Alfred-2570).",
+    "edits": [
+      {
+        "file": "adaptive/strategies/kv-unified.ts",
+        "find": "      !inputs.headChunkIds.has(chunk.id) &&\n      !inputs.tailChunkIds.has(chunk.id);\n",
+        "replace": "      !inputs.tailChunkIds.has(chunk.id);\n"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KU12f",
+    "why": "KU-12: a tail-zone chunk with no L1 is counted as missing-L1 demand. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Alfred-2570).",
+    "edits": [
+      {
+        "file": "adaptive/strategies/kv-unified.ts",
+        "find": "      !inputs.headChunkIds.has(chunk.id) &&\n      !inputs.tailChunkIds.has(chunk.id);\n",
+        "replace": "      !inputs.headChunkIds.has(chunk.id);\n"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KU13a",
+    "why": "KU-13: the infeasible-constraints error no longer says 'kv-unified constraints are infeasible'. #416's new test asserts /infeasible/ on this error, so this row is caught once #416 lands. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Alfred-2570).",
+    "edits": [
+      {
+        "file": "adaptive/strategies/kv-unified.ts",
+        "find": "        `kv-unified constraints are infeasible` +",
+        "replace": "        `kv-unified constraints conflict` +"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KU13b",
+    "why": "KU-13: the infeasible-constraints error names one binding leaf instead of up to five. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Alfred-2570).",
+    "edits": [
+      {
+        "file": "adaptive/strategies/kv-unified.ts",
+        "find": "        .slice(0, 5)\n",
+        "replace": "        .slice(0, 1)\n"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KU13c",
+    "why": "KU-13: the infeasible-constraints error drops the certificate's suggestion. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Alfred-2570).",
+    "edits": [
+      {
+        "file": "adaptive/strategies/kv-unified.ts",
+        "find": "          `: ${result.feasibility.certificate.suggestion}`,",
+        "replace": "          ``,"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KU15a",
+    "why": "KU-15: levelsBySequence is given even when the sequences aren't dense. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Alfred-2570).",
+    "edits": [
+      {
+        "file": "adaptive/strategies/kv-unified.ts",
+        "find": "      if (dense) levelsBySequence = levels;\n",
+        "replace": "      levelsBySequence = levels;\n"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KU19a",
+    "why": "KU-19: a non-summary root no longer ends the current run of merge candidates, so summaries either side of it can join one run. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Alfred-2570).",
+    "edits": [
+      {
+        "file": "adaptive/strategies/kv-unified.ts",
+        "find": "    if (root.kind !== 'summary') { flush(); continue; }",
+        "replace": "    if (root.kind !== 'summary') { continue; }"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KU19d",
+    "why": "KU-19: a run of merge candidates continues across a gap in sequences, as long as the level matches. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Alfred-2570).",
+    "edits": [
+      {
+        "file": "adaptive/strategies/kv-unified.ts",
+        "find": "      (previous.level !== summary.level || previous.lastSequence + 1 !== summary.firstSequence)",
+        "replace": "      (previous.level !== summary.level)"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KU19e",
+    "why": "KU-19: a mergeThreshold below 2 is no longer raised to 2, so a single summary can form a merge candidate. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Alfred-2570).",
+    "edits": [
+      {
+        "file": "adaptive/strategies/kv-unified.ts",
+        "find": "  const threshold = Math.max(2, Math.floor(config.mergeThreshold));",
+        "replace": "  const threshold = Math.max(1, Math.floor(config.mergeThreshold));"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KU20d",
+    "why": "KU-20: a candidate's expected recall cost ignores recallPairTokens and uses each summary's own tokens. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Alfred-2570).",
+    "edits": [
+      {
+        "file": "adaptive/strategies/kv-unified.ts",
+        "find": "        .map((summary) => inputs.recallPairTokens?.get(summary.id) ?? summary.tokens)",
+        "replace": "        .map((summary) => summary.tokens)"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KU20e",
+    "why": "KU-20: the conservative recall bound ignores the expected recall tokens and uses only fallbackRecallTokens. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Alfred-2570).",
+    "edits": [
+      {
+        "file": "adaptive/strategies/kv-unified.ts",
+        "find": "        existingCosts, 0.8, Math.max(expectedRecallTokens, config.fallbackRecallTokens),",
+        "replace": "        existingCosts, 0.8, config.fallbackRecallTokens,"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KU22a",
+    "why": "KU-22: candidates with no estimated reduction are no longer filtered out. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Alfred-2570).",
+    "edits": [
+      {
+        "file": "adaptive/strategies/kv-unified.ts",
+        "find": "    .filter((candidate) => candidate.estimatedReduction > 0)\n",
+        "replace": ""
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KU22b",
+    "why": "KU-22: candidates are ordered by smallest estimated reduction first. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Alfred-2570).",
+    "edits": [
+      {
+        "file": "adaptive/strategies/kv-unified.ts",
+        "find": "      b.estimatedReduction - a.estimatedReduction ||\n",
+        "replace": "      a.estimatedReduction - b.estimatedReduction ||\n"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KU22c",
+    "why": "KU-22: a maxCandidates of 0, or a fraction, still keeps at least one candidate (rounded up). Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Alfred-2570).",
+    "edits": [
+      {
+        "file": "adaptive/strategies/kv-unified.ts",
+        "find": "      .slice(0, Math.max(0, Math.floor(config.maxCandidates)));",
+        "replace": "      .slice(0, Math.max(1, Math.ceil(config.maxCandidates)));"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KU22e",
+    "why": "KU-22: a candidate's estimated reduction uses the expected recall tokens instead of the conservative ones. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Alfred-2570).",
+    "edits": [
+      {
+        "file": "adaptive/strategies/kv-unified.ts",
+        "find": "        estimatedReduction: childTokens - conservativeRecallTokens,",
+        "replace": "        estimatedReduction: childTokens - expectedRecallTokens,"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KU25b",
+    "why": "KU-25: a candidate whose conservative what-if is infeasible is kept as solved instead of dropped. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Alfred-2570).",
+    "edits": [
+      {
+        "file": "adaptive/strategies/kv-unified.ts",
+        "find": "      return conservative?.feasible ? [{ candidate, conservative }] : [];",
+        "replace": "      return conservative?.feasible ? [{ candidate, conservative }] : conservative === null ? [] : [{ candidate, conservative: conservative as never }];"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KU26a",
+    "why": "KU-26: the cache and continuity floors ignore the solved candidates' floors. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Alfred-2570).",
+    "edits": [
+      {
+        "file": "adaptive/strategies/kv-unified.ts",
+        "find": "      for (const { conservative } of solved) {\n        cacheFloor = Math.min(cacheFloor, conservative.cacheFloor);\n        continuityFloor = Math.min(continuityFloor, conservative.continuityFloor);\n      }\n",
+        "replace": "      for (const { conservative } of solved) {\n        void conservative;\n      }\n"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KU26b",
+    "why": "KU-26: the continuity floor takes the solved candidates' maximum instead of their minimum. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Alfred-2570).",
+    "edits": [
+      {
+        "file": "adaptive/strategies/kv-unified.ts",
+        "find": "        continuityFloor = Math.min(continuityFloor, conservative.continuityFloor);\n",
+        "replace": "        continuityFloor = Math.max(continuityFloor, conservative.continuityFloor);\n"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KU27d",
+    "why": "KU-27: a candidate whose full solve is infeasible is marked proven instead of removed. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Alfred-2570).",
+    "edits": [
+      {
+        "file": "adaptive/strategies/kv-unified.ts",
+        "find": "          else if (!full.feasible) solved.splice(solved.indexOf(entry), 1);\n",
+        "replace": "          else if (!full.feasible) proven.add(entry);\n"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KU29d",
+    "why": "KU-29: a candidate whose expected what-if is infeasible stays in the ranking with no expected improvement, instead of being skipped. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Alfred-2570).",
+    "edits": [
+      {
+        "file": "adaptive/strategies/kv-unified.ts",
+        "find": "            if (!expected.feasible) continue;\n            expectedImprovement = baseBest - best(expected);\n",
+        "replace": "            if (expected.feasible) expectedImprovement = baseBest - best(expected);\n"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KU30b",
+    "why": "KU-30: the ranking no longer orders by expected improvement. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Alfred-2570).",
+    "edits": [
+      {
+        "file": "adaptive/strategies/kv-unified.ts",
+        "find": "        b.expectedImprovement - a.expectedImprovement ||\n",
+        "replace": ""
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KU31a",
+    "why": "KU-31: a candidate whose conservative propagation isn't approximation-bounded is no longer excluded. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Alfred-2570).",
+    "edits": [
+      {
+        "file": "adaptive/strategies/kv-unified.ts",
+        "find": "              !conservative.propagation.approximationBounded ||\n",
+        "replace": ""
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KU34b",
+    "why": "KU-34: when the initial joint solve is infeasible, every candidate's request is emitted instead of none. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Alfred-2570).",
+    "edits": [
+      {
+        "file": "adaptive/strategies/kv-unified.ts",
+        "find": "    const initial = solveJoint(this.options);\n    if (!initial.feasible) return [];\n",
+        "replace": "    const initial = solveJoint(this.options);\n    if (!initial.feasible) return candidates.map((candidate) => candidate.request);\n"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KU35a",
+    "why": "KU-35: the floors ignore the joint solve's cache and continuity floors. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Alfred-2570).",
+    "edits": [
+      {
+        "file": "adaptive/strategies/kv-unified.ts",
+        "find": "    let cacheFloor = Math.min(baseline.cacheFloor, joint.cacheFloor);\n    let continuityFloor = Math.min(baseline.continuityFloor, joint.continuityFloor);\n",
+        "replace": "    let cacheFloor = baseline.cacheFloor;\n    let continuityFloor = baseline.continuityFloor;\n"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KU35b",
+    "why": "KU-35: each pool's floors replace the running floors instead of lowering them. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Alfred-2570).",
+    "edits": [
+      {
+        "file": "adaptive/strategies/kv-unified.ts",
+        "find": "      cacheFloor = Math.min(cacheFloor, pool.cacheFloor);\n      continuityFloor = Math.min(continuityFloor, pool.continuityFloor);\n",
+        "replace": "      cacheFloor = pool.cacheFloor;\n      continuityFloor = pool.continuityFloor;\n"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KU38a",
+    "why": "KU-38: the frontier used for demand is the joint solve's selected cut, not its best under the floors. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Alfred-2570).",
+    "edits": [
+      {
+        "file": "adaptive/strategies/kv-unified.ts",
+        "find": "    const frontier = (joint.bestUnder\n      ? joint.bestUnder(cacheFloor, continuityFloor)\n",
+        "replace": "    const frontier = (joint.bestUnder\n      ? joint.selected\n"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KU38b",
+    "why": "KU-38: a candidate counts as presented where any source leaf sits at or above its level, not exactly at it. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Alfred-2570).",
+    "edits": [
+      {
+        "file": "adaptive/strategies/kv-unified.ts",
+        "find": "      whatIf.base.summary(sourceId)?.leafIds.some((leafId) => frontier.get(leafId) === candidate.level))));",
+        "replace": "      whatIf.base.summary(sourceId)?.leafIds.some((leafId) => (frontier.get(leafId) ?? 0) >= candidate.level))));"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KU40g",
+    "why": "KU-40: the memo key omits the presentation's leaves, so a changed presentation reuses a stale memo entry. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Alfred-2570).",
+    "edits": [
+      {
+        "file": "adaptive/strategies/kv-unified.ts",
+        "find": "    for (const [id, leaf] of presentation.leaves) { str(id); num(leaf.level); num(leaf.lastChangedSeq); str(leaf.repHash); }",
+        "replace": "    void presentation.leaves;"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KU40j",
+    "why": "KU-40: the memo key omits the calibration multiplier, so a changed multiplier reuses a stale memo entry. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Alfred-2570).",
+    "edits": [
+      {
+        "file": "adaptive/strategies/kv-unified.ts",
+        "find": "  num(options.adoptEpsilon); num(options.hysteresisCertificate ? 1 : 0); num(multiplier);",
+        "replace": "  num(options.adoptEpsilon); num(options.hysteresisCertificate ? 1 : 0);"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KF1a",
+    "why": "KF-1: a negative headTokens is no longer refused by the forest. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Alfred-2570).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified.ts",
+        "find": "      inputs.headTokens < 0 ||\n      !Number.isFinite(inputs.tailTokens) ||\n",
+        "replace": "      !Number.isFinite(inputs.tailTokens) ||\n"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KF1b",
+    "why": "KF-1: a duplicate chunk id is no longer refused by the forest. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Alfred-2570).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified.ts",
+        "find": "      if (chunkById.has(chunk.id)) {\n        issues.push({\n          code: 'duplicate-chunk-id',",
+        "replace": "      if (chunkById.has(chunk.id) && Math.random() > 2) {\n        issues.push({\n          code: 'duplicate-chunk-id',"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KF1c",
+    "why": "KF-1: two chunks at one sequence are no longer refused by the forest. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Alfred-2570).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified.ts",
+        "find": "      if (previousAtSequence !== undefined) {\n",
+        "replace": "      if (previousAtSequence !== undefined && Math.random() > 2) {\n"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KF1d",
+    "why": "KF-1: a non-finite rawTokens is no longer refused by the forest. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Alfred-2570).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified.ts",
+        "find": "      if (!Number.isFinite(chunk.rawTokens) || chunk.rawTokens < 0) {\n        issues.push({",
+        "replace": "      if (chunk.rawTokens < 0) {\n        issues.push({"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KF1i",
+    "why": "KF-1: a non-finite recallTokens is no longer refused by the forest. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Alfred-2570).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified.ts",
+        "find": "        if (!Number.isFinite(recallTokens) || recallTokens < 0) {",
+        "replace": "        if (recallTokens < 0) {"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KF1j",
+    "why": "KF-1: the forest's error carries only the first issue, not all of them. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Alfred-2570).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified.ts",
+        "find": "    if (issues.length > 0) throw new CanonicalForestError(issues);\n",
+        "replace": "    if (issues.length > 0) throw new CanonicalForestError(issues.slice(0, 1));\n"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KF6b",
+    "why": "KF-6: an externally accounted leaf's raw tokens are counted in renderedTokens. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Alfred-2570).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified.ts",
+        "find": "              renderedTokens: leaf.externallyAccounted ? 0 : leaf.rawTokens,",
+        "replace": "              renderedTokens: leaf.rawTokens,"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KF7e",
+    "why": "KF-7: derive reuses a previous forest whose leaf has the same id at another sequence. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Alfred-2570).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified.ts",
+        "find": "      if (leaf.id !== b.id || leaf.sequence !== b.sequence) return null;",
+        "replace": "      if (leaf.id !== b.id) return null;"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KF7g",
+    "why": "KF-7: derive accepts an appended chunk at or below the previous last sequence. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Alfred-2570).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified.ts",
+        "find": "      if (chunk.sequence <= lastSequence || previous.leaf(chunk.id) !== null) return null;",
+        "replace": "      if (previous.leaf(chunk.id) !== null) return null;"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KF7j",
+    "why": "KF-7: a chunk whose carried level changed counts as unchanged for reuse. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Alfred-2570).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified.ts",
+        "find": "  if (leaf.rawTokens !== chunk.rawTokens || leaf.carriedLevel !== chunk.currentResolution) return false;",
+        "replace": "  if (leaf.rawTokens !== chunk.rawTokens) return false;"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KF7k",
+    "why": "KF-7: derive reuses a previous forest built with a different treeifyNonContiguousSummaries. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Alfred-2570).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified.ts",
+        "find": "      Boolean(options.treeifyNonContiguousSummaries) !== Boolean(po.treeifyNonContiguousSummaries) ||\n",
+        "replace": "      false ||\n"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KF8d",
+    "why": "KF-8: a chunk in overlapExempt is no longer exempted. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Alfred-2570).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified.ts",
+        "find": "    if (options.overlapExempt?.has(chunk.id)) {",
+        "replace": "    if (options.overlapExempt?.has(chunk.id) && Math.random() > 2) {"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KF12",
+    "why": "KF-12: a head-zone chunk with a level pin gets no head-zone raw constraint. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Alfred-2570).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified.ts",
+        "find": "    if (inputs.headChunkIds.has(chunk.id)) {\n      constraints.push({ kind: 'raw', source: 'head-zone' });\n    }",
+        "replace": "    if (inputs.headChunkIds.has(chunk.id) && chunk.pinLevel === undefined) {\n      constraints.push({ kind: 'raw', source: 'head-zone' });\n    }"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KF15b",
+    "why": "KF-15: tokensForFrontier prices a frontier that selects an available but disallowed level, instead of throwing. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Alfred-2570).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified.ts",
+        "find": "      const level = frontier.get(leaf.id) ?? 0;\n      if (!leaf.allowedLevels.includes(level)) {\n        throw new Error(`frontier selects disallowed L${level} for ${leaf.id}`);\n      }",
+        "replace": "      const level = frontier.get(leaf.id) ?? 0;\n      if (!leaf.availableLevels.includes(level)) {\n        throw new Error(`frontier selects disallowed L${level} for ${leaf.id}`);\n      }"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KF16a",
+    "why": "KF-16: a floor exactly one token over maxTokens is reported feasible. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Alfred-2570).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified.ts",
+        "find": "    if (floorTokens > maxTokens) {\n      return {\n        feasible: false,",
+        "replace": "    if (floorTokens > maxTokens + 1) {\n      return {\n        feasible: false,"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KF17a",
+    "why": "KF-17: the certificate names only the first binding leaf. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Alfred-2570).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified.ts",
+        "find": "      bindingLeaves: this.constraintConflicts,\n",
+        "replace": "      bindingLeaves: this.constraintConflicts.slice(0, 1),\n"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KF17b",
+    "why": "KF-17: a leaf whose allowed levels start at 0 but include others counts as raw-forced in the certificate. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Alfred-2570).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified.ts",
+        "find": "          leaf.allowedLevels.length === 1 &&\n          leaf.allowedLevels[0] === 0\n",
+        "replace": "          leaf.allowedLevels[0] === 0\n"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KF17d",
+    "why": "KF-17: the certificate's shortfall can be negative. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Alfred-2570).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified.ts",
+        "find": "        : Math.max(0, floorTokens - maxTokens);",
+        "replace": "        : floorTokens - maxTokens;"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KF17e",
+    "why": "KF-17: an infinite maxTokens gets a shortfall computed against it instead of the no-wall form. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Alfred-2570).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified.ts",
+        "find": "      floorTokens === null || !Number.isFinite(maxTokens)\n",
+        "replace": "      floorTokens === null\n"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KF18a",
+    "why": "KF-18: every leaf is offered for raw selection, including those whose allowed levels exclude 0. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Alfred-2570).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified.ts",
+        "find": "        select: leaf.allowedLevels.includes(0)\n",
+        "replace": "        select: true\n"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KF18b",
+    "why": "KF-18: a summary with no participants is offered for selection. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Alfred-2570).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified.ts",
+        "find": "        select:\n          participants.length > 0\n",
+        "replace": "        select:\n          participants.length >= 0\n"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KF19a",
+    "why": "KF-19: exact cut enumeration's default leaf limit is 13, not 12. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Alfred-2570).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified.ts",
+        "find": "    const maxLeaves = options.maxLeaves ?? 12;",
+        "replace": "    const maxLeaves = options.maxLeaves ?? 13;"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KF19c",
+    "why": "KF-19: exact cut enumeration runs over a forest with constraint conflicts instead of returning no candidates. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Alfred-2570).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified.ts",
+        "find": "${this.orderedLeafList.length}`,\n      );\n    }\n    if (this.constraintConflicts.length > 0) {",
+        "replace": "${this.orderedLeafList.length}`,\n      );\n    }\n    if (false) {"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KF19e",
+    "why": "KF-19: the label ceiling is enforced at twice its value. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Alfred-2570).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified.ts",
+        "find": "      if (labelsCreated > labelCeiling) {",
+        "replace": "      if (labelsCreated > labelCeiling * 2) {"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KP1b",
+    "why": "KP-1: a negative value for the non-negative policy keys passes validation. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Alfred-2570).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified-policy.ts",
+        "find": "    if (!Number.isFinite(policy[key]) || policy[key] < 0) {\n      throw new KvUnifiedPolicyError(`${key} must be finite and non-negative`);",
+        "replace": "    if (!Number.isFinite(policy[key])) {\n      throw new KvUnifiedPolicyError(`${key} must be finite and non-negative`);"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KP1d",
+    "why": "KP-1: a zero value for the positive policy keys passes validation. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Alfred-2570).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified-policy.ts",
+        "find": "    if (!Number.isFinite(policy[key]) || policy[key] <= 0) {",
+        "replace": "    if (!Number.isFinite(policy[key]) || policy[key] < 0) {"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KP1e",
+    "why": "KP-1: a value over 1 for the unit-interval policy keys passes validation. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Alfred-2570).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified-policy.ts",
+        "find": "    if (!Number.isFinite(policy[key]) || policy[key] < 0 || policy[key] > 1) {",
+        "replace": "    if (!Number.isFinite(policy[key]) || policy[key] < 0) {"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KP1i",
+    "why": "KP-1: continuityStableHalfLife is no longer validated. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Alfred-2570).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified-policy.ts",
+        "find": "    'continuityRecencyHalfLifeTokens',\n    'continuityStableHalfLife',\n  ];",
+        "replace": "    'continuityRecencyHalfLifeTokens',\n  ];"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KP2b",
+    "why": "KP-2: the cache term scores the whole cache loss, ignoring cacheFloor. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Alfred-2570).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified-policy.ts",
+        "find": "  return fidelity + budget + quadratic(Math.max(0, cache - cacheFloor), policy.cacheScale, policy.cacheLambda) +",
+        "replace": "  return fidelity + budget + quadratic(Math.max(0, cache), policy.cacheScale, policy.cacheLambda) + 0 * cacheFloor +"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KP3a",
+    "why": "KP-3: a calibration multiplier over 1 is used instead of falling back to 1. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Alfred-2570).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified-policy.ts",
+        "find": "  if (!Number.isFinite(value) || value < 0 || value > 1) return 1;",
+        "replace": "  if (!Number.isFinite(value) || value < 0) return 1;"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KP3c",
+    "why": "KP-3: the multiplier scales the cache term too. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Alfred-2570).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified-policy.ts",
+        "find": "  return fidelity + budget + quadratic(Math.max(0, cache - cacheFloor), policy.cacheScale, policy.cacheLambda) +",
+        "replace": "  return fidelity + budget + multiplier * quadratic(Math.max(0, cache - cacheFloor), policy.cacheScale, policy.cacheLambda) +"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KP3d",
+    "why": "KP-3: an invalid multiplier falls back to 0 instead of 1. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Alfred-2570).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified-policy.ts",
+        "find": "  if (!Number.isFinite(value) || value < 0 || value > 1) return 1;",
+        "replace": "  if (!Number.isFinite(value) || value < 0 || value > 1) return 0;"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KP4a",
+    "why": "KP-4: salience is clamped at 0 instead of 0.2, so a chunk of salience 0 has no fidelity weight. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Alfred-2570).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified-policy.ts",
+        "find": "  const salience = clamp(chunk.salience ?? 1, 0.2, 1);\n  return salience * age ** (-policy.alpha) * chunk.rawTokens;",
+        "replace": "  const salience = clamp(chunk.salience ?? 1, 0, 1);\n  return salience * age ** (-policy.alpha) * chunk.rawTokens;"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KP4b",
+    "why": "KP-4: a non-finite value clamps to the high bound instead of the low one. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Alfred-2570).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified-policy.ts",
+        "find": "  if (!Number.isFinite(value)) return low;",
+        "replace": "  if (!Number.isFinite(value)) return high;"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KP4e",
+    "why": "KP-4: tail-zone chunks count toward fidelity loss. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Alfred-2570).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified-policy.ts",
+        "find": "      if (this.inputs.headChunkIds.has(chunk.id) || this.inputs.tailChunkIds.has(chunk.id)) continue;\n      loss += fidelityLeafLoss(",
+        "replace": "      if (this.inputs.headChunkIds.has(chunk.id)) continue;\n      loss += fidelityLeafLoss("
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KP5a",
+    "why": "KP-5: the budget-under penalty is normalised by maxTokens instead of the low target. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Alfred-2570).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified-policy.ts",
+        "find": "    policy.budgetUnderLambda * (under / positive(low)) ** 2 +",
+        "replace": "    policy.budgetUnderLambda * (under / positive(maxTokens)) ** 2 +"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KP6a",
+    "why": "KP-6: a changed representation at the same level costs no continuity. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Alfred-2570).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified-policy.ts",
+        "find": "  if (!previous || (repHash === previous.repHash && level === previous.level)) return 0;",
+        "replace": "  if (!previous || level === previous.level) return 0;"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KP6c",
+    "why": "KP-6: continuity's recency half-life is doubled. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Alfred-2570).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified-policy.ts",
+        "find": "    : policy.continuityRecencyFloor + (1 - policy.continuityRecencyFloor) * 2 ** (-recencyAge / halfLife);",
+        "replace": "    : policy.continuityRecencyFloor + (1 - policy.continuityRecencyFloor) * 2 ** (-recencyAge / (2 * halfLife));"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KP6d",
+    "why": "KP-6: continuity's recency weight loses its floor term. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Alfred-2570).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified-policy.ts",
+        "find": "    : policy.continuityRecencyFloor + (1 - policy.continuityRecencyFloor) * 2 ** (-recencyAge / halfLife);",
+        "replace": "    : (1 - policy.continuityRecencyFloor) * 2 ** (-recencyAge / halfLife);"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KP7g",
+    "why": "KP-7: a ratio exactly on a bucket edge falls into the lower bucket. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Alfred-2570).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified-policy.ts",
+        "find": "  while (k > 0 && edges[k] > ratio) k--;",
+        "replace": "  while (k > 0 && edges[k] >= ratio) k--;"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KP8e",
+    "why": "KP-8: the cache comparison runs without currentImmutablePrefixHash. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Alfred-2570).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified-policy.ts",
+        "find": "      options.cache !== undefined &&\n      options.currentImmutablePrefixHash !== undefined &&\n",
+        "replace": "      options.cache !== undefined &&\n"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KP11c",
+    "why": "KP-11: ties on score prefer more rendered tokens instead of fewer. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Alfred-2570).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified-policy.ts",
+        "find": "  return a.score - b.score || a.renderedTokens - b.renderedTokens ||",
+        "replace": "  return a.score - b.score || b.renderedTokens - a.renderedTokens ||"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KP11e",
+    "why": "KP-11: a frontier leaf the forest no longer holds makes the presentation count as changed, instead of being skipped. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Alfred-2570).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified-policy.ts",
+        "find": "      if (!this.forest.leaf(leafId)) continue;\n      const level = frontier.get(leafId) ?? 0;",
+        "replace": "      if (!this.forest.leaf(leafId)) return false;\n      const level = frontier.get(leafId) ?? 0;"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KP11g",
+    "why": "KP-11: a changed representation at the same level doesn't count as a presentation change. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Alfred-2570).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified-policy.ts",
+        "find": "      if (level !== previous.level || this.representationHash(leafId, level) !== previous.repHash) {",
+        "replace": "      if (level !== previous.level) {"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KP13",
+    "why": "KP-13: the exact policy checks feasibility at no wall instead of maxTokens. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Alfred-2570).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified-policy.ts",
+        "find": "    const feasibility = this.forest.minimumTokens(options.maxTokens);\n    if (!feasibility.feasible) return { feasible: false, feasibility };\n\n    const enumeration =",
+        "replace": "    const feasibility = this.forest.minimumTokens(Number.POSITIVE_INFINITY);\n    if (!feasibility.feasible) return { feasible: false, feasibility };\n\n    const enumeration ="
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KP14",
+    "why": "KP-14: the exact oracle's no-candidate error loses its text. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Alfred-2570).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified-policy.ts",
+        "find": "      throw new Error('kv-unified exact oracle produced no candidate under a feasible hard wall');",
+        "replace": "      throw new Error('kv-unified produced nothing');"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KP15d",
+    "why": "KP-15: the best candidate is the highest score instead of the lowest. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Alfred-2570).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified-policy.ts",
+        "find": "        if (value < bestScore || tie) { best = c; bestScore = value; }",
+        "replace": "        if (value > bestScore || tie) { best = c; bestScore = value; }"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KP16b",
+    "why": "KP-16: maxCandidates overrides an explicit labelCeiling. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Alfred-2570).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified-policy.ts",
+        "find": "              labelCeiling: options.labelCeiling ?? options.maxCandidates,",
+        "replace": "              labelCeiling: options.maxCandidates ?? options.labelCeiling,"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KX2b",
+    "why": "KX-2: a what-if's holder is keyed by its candidates alone, not their recall cost, so a what-if at one cost takes the holder made at another in the same compile; by reading, a label-ceiling stop recorded at a candidate's conservative cost then skips its expected-cost what-if (strategies/kv-unified.ts:537-542). Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Duncan-2410's half, J57361).",
+    "edits": [
+      {
+        "file": "adaptive/strategies/kv-unified.ts",
+        "find": "  return candidates.map(({ candidate, recallTokens }) => `${candidate.id}\\0${recallTokens}`).join('\\n');",
+        "replace": "  return candidates.map(({ candidate }) => `${candidate.id}`).join('\\n');"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KX3b",
+    "why": "KX-3: the bounded path's continuity floor is the exact loss of the candidate with the lowest upper bound, without refining the others whose lower bound is below it, so the floor can sit above the true one; by reading, only where two candidates' continuity losses are within rounding of each other. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Duncan-2410's half, J57361).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified-selective.ts",
+        "find": "      if (source[i].continuity.lower < continuityFloor) continuityFloor = Math.min(continuityFloor, refine(i).continuityLoss);",
+        "replace": "      void refine;"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KX3g",
+    "why": "KX-3: the bounded path carries the first presentation-matching candidate it scores rather than the best one, so with an epsilon and several matching candidates retained, hysteresis can keep a worse matching layout, or fall to the winner where the best matching one was within epsilon. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Duncan-2410's half, J57361).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified-selective.ts",
+        "find": "    if (matching && (!carried || comparePolicyCandidates(c, carried, leafIds) < 0)) carried = c;",
+        "replace": "    if (matching && !carried) carried = c;"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KX5a",
+    "why": "KX-5: a solve with no candidates throws 'kv-unified: none' instead of 'kv-unified has no feasible terminal candidates'. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Duncan-2410's half, J57361).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified-selective.ts",
+        "find": "  if (source.length === 0) throw new Error('kv-unified has no feasible terminal candidates');",
+        "replace": "  if (source.length === 0) throw new Error('kv-unified: none');"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KR10l",
+    "why": "KR-10: a persisted head whose layoutHash isn't a string loads instead of failing loudly. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Duncan-2410's half, J57361).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified-receipts.ts",
+        "find": "    typeof head.layoutHash !== 'string' ||\n",
+        "replace": ""
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KR1a",
+    "why": "KR-1: begin accepts an empty submission id instead of refusing it. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Duncan-2410's half, J57361).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified-receipts.ts",
+        "find": "    if (!submission.submissionId) throw new Error('kv-unified submissionId must be non-empty');",
+        "replace": "    void submission.submissionId;"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KR6c",
+    "why": "KR-6: a leaf whose representation or lastChangedSeq changed at the same level is left out of the new head's changes, and so out of its hash. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Duncan-2410's half, J57361).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified-receipts.ts",
+        "find": "    if (before === after || sameLeaf(before, after)) continue;",
+        "replace": "    if (before === after || before?.level === after.level) continue;"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KR6g",
+    "why": "KR-6: the receipt hash is taken over the payload with its changes emptied, so it no longer covers which leaves changed. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Duncan-2410's half, J57361).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified-receipts.ts",
+        "find": "    const receiptHash = createHash('sha256').update(JSON.stringify(receiptPayload)).digest('hex');",
+        "replace": "    const receiptHash = createHash('sha256').update(JSON.stringify({ ...receiptPayload, changes: [] })).digest('hex');"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KR7b",
+    "why": "KR-7: fail also drops the chain's cache reference, so after a failed submission the chain no longer holds the cache the last accepted one recorded. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Duncan-2410's half, J57361).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified-receipts.ts",
+        "find": "    this.requirePending(submissionId);\n    this.pending = null;\n    this.markSettled(submissionId);\n  }",
+        "replace": "    this.requirePending(submissionId);\n    this.pending = null;\n    this.cacheValue = null;\n    this.markSettled(submissionId);\n  }"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KA10a",
+    "why": "KA-10: the receipt's snapshot state is registered under every folding strategy, not only kv-unified, so a store opened under another strategy registers it too. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Duncan-2410's half, J57361).",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "    if (this.config.foldingStrategy === 'kv-unified') {\n      registerState({\n        id: this.kvUnifiedReceiptStateId,",
+        "replace": "    if (true) {\n      registerState({\n        id: this.kvUnifiedReceiptStateId,"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KA10d",
+    "why": "KA-10: a (re)initialize keeps the previous draft, so a submission begun before the next compile binds the draft from before it. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Duncan-2410's half, J57361).",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "          ? KvUnifiedReceiptChain.deserialize(receiptState as unknown as SerializedReceiptChain)\n          : new KvUnifiedReceiptChain();\n        this.kvUnifiedDraft = null;",
+        "replace": "          ? KvUnifiedReceiptChain.deserialize(receiptState as unknown as SerializedReceiptChain)\n          : new KvUnifiedReceiptChain();"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KA10e",
+    "why": "KA-10: discardRenderingFrontier leaves the in-memory receipt chain as it was, while the persisted receipt is still nulled, so the next presentation diffs against the old chain. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Duncan-2410's half, J57361).",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "      this.kvUnifiedReceipts = new KvUnifiedReceiptChain();\n      this.kvUnifiedDraft = null;\n      this.kvUnifiedPendingLayout = null;\n      this.kvUnifiedPendingMarkerUnitIndices = [];\n      this.kvUnifiedPendingImmutablePrefixHash = null;\n      this.store.setStateJson(this.kvUnifiedReceiptStateId, null);",
+        "replace": "      this.kvUnifiedDraft = null;\n      this.kvUnifiedPendingLayout = null;\n      this.kvUnifiedPendingMarkerUnitIndices = [];\n      this.kvUnifiedPendingImmutablePrefixHash = null;\n      this.store.setStateJson(this.kvUnifiedReceiptStateId, null);"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KA10g",
+    "why": "KA-10: a persisted receipt state that isn't an object (a string or a number) goes to deserialize and throws at load instead of starting an empty chain. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Duncan-2410's half, J57361).",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "        this.kvUnifiedReceipts = receiptState && typeof receiptState === 'object'\n",
+        "replace": "        this.kvUnifiedReceipts = receiptState\n"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KA14b",
+    "why": "KA-14: where more than one marked prefix differs, the self-check names the last that differs instead of the first. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Duncan-2410's half, J57361).",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "    const through = [...rebuilt.wanted].find((id) => rebuilt.hashes.get(id) !== sent.get(id));",
+        "replace": "    const through = [...rebuilt.wanted].reverse().find((id) => rebuilt.hashes.get(id) !== sent.get(id));"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KA1a2",
+    "why": "KA-1: foldingStrategy kv-unified without a kvUnified configuration isn't refused with the named error ('... live defaults are forbidden'); the build then throws a TypeError reading the absent configuration's policy. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Duncan-2410's half, J57526).",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "      const configured = this.config.kvUnified;\n      if (!configured) {",
+        "replace": "      const configured = this.config.kvUnified!;\n      if (!configured && Math.random() > 2) {"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KA2c",
+    "why": "KA-2: latent demand's mergeThreshold defaults to 5 rather than 6 when the config sets none. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Duncan-2410's half, J57361).",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "          mergeThreshold: this.config.mergeThreshold ?? 6,\n          fallbackRecallTokens:",
+        "replace": "          mergeThreshold: this.config.mergeThreshold ?? 5,\n          fallbackRecallTokens:"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KA2d",
+    "why": "KA-2: latent demand's fallback recall cost is summaryTargetTokens rather than summaryTargetTokens + 20. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Duncan-2410's half, J57361).",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "          fallbackRecallTokens: Math.max(1, (this.config.summaryTargetTokens ?? 2_000) + 20),",
+        "replace": "          fallbackRecallTokens: Math.max(1, (this.config.summaryTargetTokens ?? 2_000)),"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KA2e",
+    "why": "KA-2: latent demand considers at most 8 candidates rather than 16. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Duncan-2410's half, J57361).",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "          maxCandidates: 16,\n          // One what-if solve",
+        "replace": "          maxCandidates: 8,\n          // One what-if solve"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KA3a",
+    "why": "KA-3: the presentation handed to the solver names currentSeq one past the receipt head's sequence, so every presented leaf's age reads one higher. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Duncan-2410's half, J57361).",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "                currentSeq: this.kvUnifiedReceipts.head.sequence,\n                leaves: this.kvUnifiedReceipts.leaves,",
+        "replace": "                currentSeq: this.kvUnifiedReceipts.head.sequence + 1,\n                leaves: this.kvUnifiedReceipts.leaves,"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KA4a",
+    "why": "KA-4: a continuity relaxation is applied whatever its reason, not only for surgery, budget-transition or infrastructure. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Duncan-2410's half, J57361).",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "      relaxation.reason === 'budget-transition' ||\n      relaxation.reason === 'infrastructure';",
+        "replace": "      relaxation.reason === 'budget-transition' ||\n      relaxation.reason === 'infrastructure' || true;"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KA4b",
+    "why": "KA-4: a continuity relaxation whose multiplier is above 1 is applied rather than giving 1. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Duncan-2410's half, J57361).",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "      relaxation.multiplier >= 0 &&\n      relaxation.multiplier <= 1;",
+        "replace": "      relaxation.multiplier >= 0;"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KA4f",
+    "why": "KA-4: a relaxation's expiresAt need not be finite, so an infinite expiry with a multiplier below 1 applies and never expires. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Duncan-2410's half, J57361).",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "      Number.isFinite(relaxation.expiresAt) &&\n      (relaxation.multiplier === 1",
+        "replace": "      (relaxation.multiplier === 1"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KA6a",
+    "why": "KA-6: every leaf's presented record is rebuilt with lastChangedSeq the next sequence at each compile, even where its representation and level are unchanged, so unchanged leaves read as changed and their ages restart. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Duncan-2410's half, J57361).",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "        leaves.set(chunk.id, previous && previous.repHash === repHash && previous.level === level\n          ? previous\n          : { repHash, level, lastChangedSeq: nextSequence });",
+        "replace": "        leaves.set(chunk.id, { repHash, level, lastChangedSeq: nextSequence });"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KA6b",
+    "why": "KA-6: a changed leaf's lastChangedSeq is the head's sequence + 2 rather than + 1. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Duncan-2410's half, J57361).",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "      const nextSequence = (this.kvUnifiedReceipts.head?.sequence ?? 0) + 1;",
+        "replace": "      const nextSequence = (this.kvUnifiedReceipts.head?.sequence ?? 0) + 2;"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KA6d",
+    "why": "KA-6: a leaf whose representation changed at an unchanged level keeps its previous presented record, its old repHash included. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Duncan-2410's half, J57361).",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "        leaves.set(chunk.id, previous && previous.repHash === repHash && previous.level === level\n",
+        "replace": "        leaves.set(chunk.id, previous && previous.level === level\n"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KA7a2",
+    "why": "KA-7: beginKvUnifiedSubmission refuses only when the strategy isn't kv-unified and there's no draft, so a kv-unified submission with no draft throws a TypeError instead of the named error, and under another folding strategy a held draft is bound rather than refused. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Duncan-2410's half, J57526).",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "    if (this.config.foldingStrategy !== 'kv-unified' || !this.kvUnifiedDraft) {\n      throw new Error('No kv-unified presentation draft is available for submission');",
+        "replace": "    if (this.config.foldingStrategy !== 'kv-unified' && !this.kvUnifiedDraft) {\n      throw new Error('No kv-unified presentation draft is available for submission');"
+      },
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "leaves: this.kvUnifiedDraft.leaves });",
+        "replace": "leaves: this.kvUnifiedDraft!.leaves });"
+      },
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "this.kvUnifiedPendingLayout = this.kvUnifiedDraft.layout;",
+        "replace": "this.kvUnifiedPendingLayout = this.kvUnifiedDraft!.layout;"
+      },
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "[...this.kvUnifiedDraft.markerUnitIndices]",
+        "replace": "[...this.kvUnifiedDraft!.markerUnitIndices]"
+      },
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "this.kvUnifiedDraft.immutablePrefixHash ?? null",
+        "replace": "this.kvUnifiedDraft!.immutablePrefixHash ?? null"
+      },
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "this.kvUnifiedDraft.render ?? null",
+        "replace": "this.kvUnifiedDraft!.render ?? null"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-KA8b2",
+    "why": "KA-8: an acceptance keeps a cache reference when the draft had no immutable-prefix hash, recording the reference with a null hash. Survived every file reach.py names at fb4cf1046 (kv-unified mapping, Duncan-2410's half, J57526).",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "      this.kvUnifiedPendingLayout &&\n      this.kvUnifiedPendingImmutablePrefixHash &&\n      args.wireReceipt.markers.length === this.kvUnifiedPendingMarkerUnitIndices.length",
+        "replace": "      this.kvUnifiedPendingLayout &&\n      args.wireReceipt.markers.length === this.kvUnifiedPendingMarkerUnitIndices.length"
+      },
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "        immutablePrefixHash: this.kvUnifiedPendingImmutablePrefixHash,\n        layout: this.kvUnifiedPendingLayout,",
+        "replace": "        immutablePrefixHash: this.kvUnifiedPendingImmutablePrefixHash as string,\n        layout: this.kvUnifiedPendingLayout,"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+  },
+  {
+    "id": "kvu-pk4",
+    "why": "kv-unified solver internals, rule G5 (Without a grid, dominance): this edit at src/adaptive/kv-unified-packed.ts:170-170 breaks it, and it survived every file reach.py names for those lines (Ambrose-2449's mapping, rules.md).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified-packed.ts",
+        "find": "      (s.data[(a) * LABEL_STRIDE + LabelField.Tokens] < s.data[(b) * LABEL_STRIDE + LabelField.Tokens] || s.data[(a) * LABEL_STRIDE + LabelField.Continuity] < s.data[(b) * LABEL_STRIDE + LabelField.Continuity]",
+        "replace": "      (true || s.data[(a) * LABEL_STRIDE + LabelField.Continuity] < s.data[(b) * LABEL_STRIDE + LabelField.Continuity]"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...)"
+  },
+  {
+    "id": "kvu-e17b",
+    "why": "kv-unified solver internals, rule G8 (The score bound covers the grid): this edit at src/adaptive/kv-unified-pareto.ts:725-726 breaks it, and it survived every file reach.py names for those lines (Ambrose-2449's mapping, rules.md).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified-pareto.ts",
+        "find": "      rho * continuitySlope * continuityError +\n      hysteresis\n",
+        "replace": "      rho * continuitySlope * continuityError\n"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...)"
+  },
+  {
+    "id": "kvu-o-e6",
+    "why": "kv-unified solver internals, rule G10 (The minimum-token cut is always a candidate): this edit at src/adaptive/kv-unified-pareto.ts:629-629 breaks it, and it survived every file reach.py names for those lines (Ambrose-2449's mapping, rules.md).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified-pareto.ts",
+        "find": "    if (!terminal.some((candidate) =>\n      Math.abs(candidate.renderedTokens - feasibility.floorTokens) <= tokenRoundoff &&",
+        "replace": "    if (terminal.length === 0 && !terminal.some((candidate) =>\n      Math.abs(candidate.renderedTokens - feasibility.floorTokens) <= tokenRoundoff &&"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...)"
+  },
+  {
+    "id": "kvu-pk7",
+    "why": "kv-unified solver internals, rule G10 (The minimum-token cut is always a candidate): this edit at src/adaptive/kv-unified-packed.ts:447-447 breaks it, and it survived every file reach.py names for those lines (Ambrose-2449's mapping, rules.md).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified-packed.ts",
+        "find": "    if (!terminal.some((candidate) => {",
+        "replace": "    if (terminal.length === 0 && !terminal.some((candidate) => {"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...)"
+  },
+  {
+    "id": "kvu-s-e6",
+    "why": "kv-unified solver internals, rule G10 (The minimum-token cut is always a candidate): this edit at src/adaptive/kv-unified-subtree.ts:426-426 breaks it, and it survived every file reach.py names for those lines (Ambrose-2449's mapping, rules.md).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified-subtree.ts",
+        "find": "    if (!terminal.some((candidate) => {\n      if (Math.abs(candidate.tokens - feasibility.floorTokens) > roundoff) return false;",
+        "replace": "    if (terminal.length === 0 && !terminal.some((candidate) => {\n      if (Math.abs(candidate.tokens - feasibility.floorTokens) > roundoff) return false;"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...)"
+  },
+  {
+    "id": "kvu-pk11",
+    "why": "kv-unified solver internals, rule G12 (Progress is observation only): this edit at src/adaptive/kv-unified-packed.ts:428-428 breaks it, and it survived every file reach.py names for those lines (Ambrose-2449's mapping, rules.md).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified-packed.ts",
+        "find": "    this.progress('propagated', labels.length);\n    const evaluator",
+        "replace": "    this.progress('propagated', labels.length);\n    if (this.options.onProgress && labels.length > 1) labels = labels.slice(0, 1);\n    const evaluator"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...)"
+  },
+  {
+    "id": "kvu-s-g12",
+    "why": "kv-unified solver internals, rule G12 (Progress is observation only): this edit at src/adaptive/kv-unified-subtree.ts:921-921 breaks it, and it survived every file reach.py names for those lines (Ambrose-2449's mapping, rules.md).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified-subtree.ts",
+        "find": "    if (this.states % 1000 === 0) this.options.onProgress?.({",
+        "replace": "    if (this.options.onProgress && result.length > 1) result.length = 1;\n    if (this.states % 1000 === 0) this.options.onProgress?.({"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...)"
+  },
+  {
+    "id": "kvu-s-g13",
+    "why": "kv-unified solver internals, rule G13 (Externally accounted leaves stay out of the middle): this edit at src/adaptive/kv-unified-subtree.ts:701-701 breaks it, and it survived every file reach.py names for those lines (Ambrose-2449's mapping, rules.md).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified-subtree.ts",
+        "find": "      if (!this.external[i] && (!active || active.has(i))) live.push(i);",
+        "replace": "      if (!active || active.has(i)) live.push(i);"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...)"
+  },
+  {
+    "id": "kvu-o-e12b",
+    "why": "kv-unified solver internals, rule G16 (Buffered emissions): this edit at src/adaptive/kv-unified-pareto.ts:555-555 breaks it, and it survived every file reach.py names for those lines (Ambrose-2449's mapping, rules.md).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified-pareto.ts",
+        "find": "          this.flushPendingEmissions(label, Math.min(child.sequence, flushLimit), options, markerByUnit),",
+        "replace": "          this.flushPendingEmissions(label, flushLimit, options, markerByUnit),"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...)"
+  },
+  {
+    "id": "kvu-pk15b",
+    "why": "kv-unified solver internals, rule G16 (Buffered emissions): this edit at src/adaptive/kv-unified-packed.ts:350-350 breaks it, and it survived every file reach.py names for those lines (Ambrose-2449's mapping, rules.md).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified-packed.ts",
+        "find": "      if (this.cacheRelevant && this.buffered) for (const id of labels) this.flush(id, Math.min(child.firstSequence, limit));",
+        "replace": "      if (this.cacheRelevant && this.buffered) for (const id of labels) this.flush(id, limit);"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...)"
+  },
+  {
+    "id": "kvu-s-e12a",
+    "why": "kv-unified solver internals, rule G16 (Buffered emissions): this edit at src/adaptive/kv-unified-subtree.ts:835-835 breaks it, and it survived every file reach.py names for those lines (Ambrose-2449's mapping, rules.md).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified-subtree.ts",
+        "find": "    const ordered = [...label.pending].sort((a, b) =>\n      a.sequence - b.sequence ||",
+        "replace": "    const ordered = [...label.pending].sort((a, b) =>\n      b.sequence - a.sequence ||"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...)"
+  },
+  {
+    "id": "kvu-s-e12b",
+    "why": "kv-unified solver internals, rule G16 (Buffered emissions): this edit at src/adaptive/kv-unified-subtree.ts:745-745 breaks it, and it survived every file reach.py names for those lines (Ambrose-2449's mapping, rules.md).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified-subtree.ts",
+        "find": "        this.flush(label, Math.min(child.firstSequence, flushLimit)));",
+        "replace": "        this.flush(label, flushLimit));"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...)"
+  },
+  {
+    "id": "kvu-o-e13",
+    "why": "kv-unified solver internals, rule G17 (Cache matching): this edit at src/adaptive/kv-unified-pareto.ts:831-831 breaks it, and it survived every file reach.py names for those lines (Ambrose-2449's mapping, rules.md).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified-pareto.ts",
+        "find": "        if (marker !== undefined) { cache.cachedTokens = marker; cache.cachedUnits = cache.matchedUnits; }\n      } else cache.intact = false;",
+        "replace": "        if (marker !== undefined) { cache.cachedTokens = marker; cache.cachedUnits = cache.matchedUnits; }\n      }"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...)"
+  },
+  {
+    "id": "kvu-pk16",
+    "why": "kv-unified solver internals, rule G17 (Cache matching): this edit at src/adaptive/kv-unified-packed.ts:273-273 breaks it, and it survived every file reach.py names for those lines (Ambrose-2449's mapping, rules.md).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified-packed.ts",
+        "find": "      } else s.data[(id) * LABEL_STRIDE + LabelField.Intact] = 0;\n    }\n  }",
+        "replace": "      }\n    }\n  }"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...)"
+  },
+  {
+    "id": "kvu-o-e14",
+    "why": "kv-unified solver internals, rule G18 (When a receipt applies): this edit at src/adaptive/kv-unified-pareto.ts:367-369 breaks it, and it survived every file reach.py names for those lines (Ambrose-2449's mapping, rules.md).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified-pareto.ts",
+        "find": "    const cacheRelevant =\n      options.cache !== undefined &&\n      options.currentImmutablePrefixHash !== undefined &&\n      options.cache.immutablePrefixHash === options.currentImmutablePrefixHash;\n    const markerByUnit = new Map(\n      (options.cache?.markers ?? []).map((marker) => [marker.unitIndex, marker.offset]),\n    );\n    const externalIds = this.leaves",
+        "replace": "    const cacheRelevant =\n      options.cache !== undefined;\n    const markerByUnit = new Map(\n      (options.cache?.markers ?? []).map((marker) => [marker.unitIndex, marker.offset]),\n    );\n    const externalIds = this.leaves"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...)"
+  },
+  {
+    "id": "kvu-pk17",
+    "why": "kv-unified solver internals, rule G18 (When a receipt applies): this edit at src/adaptive/kv-unified-packed.ts:101-101 breaks it, and it survived every file reach.py names for those lines (Ambrose-2449's mapping, rules.md).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified-packed.ts",
+        "find": "      options.cache.immutablePrefixHash === options.currentImmutablePrefixHash;\n    this.markers",
+        "replace": "      true;\n    this.markers"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...)"
+  },
+  {
+    "id": "kvu-o-e15",
+    "why": "kv-unified solver internals, rule G19 (What keys hold): this edit at src/adaptive/kv-unified-pareto.ts:438-438 breaks it, and it survived every file reach.py names for those lines (Ambrose-2449's mapping, rules.md).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified-pareto.ts",
+        "find": "      const cacheClass = cacheClasses.get(label.cache.cachedUnits) ?? 0;",
+        "replace": "      const cacheClass = label.cache.matchedUnits;"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...)"
+  },
+  {
+    "id": "kvu-pk18",
+    "why": "kv-unified solver internals, rule G19 (What keys hold): this edit at src/adaptive/kv-unified-packed.ts:141-141 breaks it, and it survived every file reach.py names for those lines (Ambrose-2449's mapping, rules.md).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified-packed.ts",
+        "find": "    const c = this.cacheClasses.get(s.data[(id) * LABEL_STRIDE + LabelField.CachedUnits]) ?? 0;",
+        "replace": "    const c = s.data[(id) * LABEL_STRIDE + LabelField.Matched];"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...)"
+  },
+  {
+    "id": "kvu-o-g21",
+    "why": "kv-unified solver internals, rule G21 (New material): this edit at src/adaptive/kv-unified-pareto.ts:518-518 breaks it, and it survived every file reach.py names for those lines (Ambrose-2449's mapping, rules.md).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified-pareto.ts",
+        "find": "        const extension = this.isExtension(summary.leafIds, options);",
+        "replace": "        const extension = this.isExtension(participants, options);"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...)"
+  },
+  {
+    "id": "kvu-p-g21",
+    "why": "kv-unified solver internals, rule G21 (New material): this edit at src/adaptive/kv-unified-packed.ts:322-322 breaks it, and it survived every file reach.py names for those lines (Ambrose-2449's mapping, rules.md).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified-packed.ts",
+        "find": "      if (presentation && summary.leafIds.length > 0 && summary.leafIds.every((id) => !presentation.leaves.has(id))) extension = tokens;",
+        "replace": "      if (presentation && ids.length > 0 && ids.every((id) => !presentation.leaves.has(id))) extension = tokens;"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...)"
+  },
+  {
+    "id": "kvu-s14",
+    "why": "kv-unified solver internals, rule G21 (New material): this edit at src/adaptive/kv-unified-subtree.ts:719-719 breaks it, and it survived every file reach.py names for those lines (Ambrose-2449's mapping, rules.md). its titled test (subtree: \"an accepted leaf that is a protected hole keeps its summary from counting as new material\") compares subtree and object terminals, which the terminal evaluator scores exactly whatever the labels' extension, so it never reaches the labels' new-material decision.",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified-subtree.ts",
+        "find": "      const extension = this.isExtension(indices);\n      const assigned: Label = {",
+        "replace": "      const extension = this.isExtension(participants);\n      const assigned: Label = {"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...)"
+  },
+  {
+    "id": "kvu-pk9",
+    "why": "kv-unified solver internals, rule G22 (The candidate list stays lazy): this edit at src/adaptive/kv-unified-packed.ts:486-486 breaks it, and it survived every file reach.py names for those lines (Ambrose-2449's mapping, rules.md). exactTerminalEvaluations is read before the list, so only time shows it.",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified-packed.ts",
+        "find": "      get candidates() { return result.candidates; },",
+        "replace": "      candidates: result.candidates,"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...)"
+  },
+  {
+    "id": "kvu-s-e18",
+    "why": "kv-unified solver internals, rule G22 (The candidate list stays lazy): this edit at src/adaptive/kv-unified-subtree.ts:469-469 breaks it, and it survived every file reach.py names for those lines (Ambrose-2449's mapping, rules.md). only time shows it.",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified-subtree.ts",
+        "find": "      get candidates() { return scored.candidates; },\n      propagation: {",
+        "replace": "      candidates: scored.candidates,\n      propagation: {"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...)"
+  },
+  {
+    "id": "kvu-g27",
+    "why": "kv-unified solver internals, rule G27 (A label's losses are its assignments' losses): this edit at src/adaptive/kv-unified-packed.ts:306-306 breaks it, and it survived every file reach.py names for those lines (Ambrose-2449's mapping, rules.md).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified-packed.ts",
+        "find": "      if (level > 0) fidelity += this.fidelityBase[i] * level;",
+        "replace": "      if (level > 0) fidelity += this.fidelityBase[i] * (level + 1);"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...)"
+  },
+  {
+    "id": "kvu-g28",
+    "why": "kv-unified solver internals, rule G28 (A solve is a function of its inputs): this edit at src/adaptive/kv-unified-packed.ts:149-149 breaks it, and it survived every file reach.py names for those lines (Ambrose-2449's mapping, rules.md).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified-packed.ts",
+        "find": "      this.signature(a).localeCompare(this.signature(b));",
+        "replace": "      (Math.random() < 0.5 ? -1 : 1);"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...)"
+  },
+  {
+    "id": "kvu-pl1",
+    "why": "kv-unified solver internals, rule L1 (Each cut covers each leaf once): this edit at src/adaptive/kv-unified-pareto.ts:315-315 breaks it, and it survived every file reach.py names for those lines (Ambrose-2449's mapping, rules.md).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified-pareto.ts",
+        "find": "        if (overlap || (mask & bit(oldest)) === 0n) continue;",
+        "replace": "        if ((mask & bit(oldest)) === 0n) continue;"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...)"
+  },
+  {
+    "id": "kvu-ps5",
+    "why": "kv-unified solver internals, rule P6 (Lazy nodes): this edit at src/adaptive/kv-unified-packed-storage.ts:37-37 breaks it, and it survived every file reach.py names for those lines (Ambrose-2449's mapping, rules.md). observable only through packedTraceNodes.",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified-packed-storage.ts",
+        "find": "    if (action === 0) return parent;\n",
+        "replace": ""
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...)"
+  },
+  {
+    "id": "kvu-ps6",
+    "why": "kv-unified solver internals, rule P6 (Lazy nodes): this edit at src/adaptive/kv-unified-packed-storage.ts:167-167 breaks it, and it survived every file reach.py names for those lines (Ambrose-2449's mapping, rules.md). observable only through packedTraceNodes.",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified-packed-storage.ts",
+        "find": "    this.data[at + LabelField.PendingAction] = action;\n    this.data[at + LabelField.Fidelity] += fidelity;",
+        "replace": "    this.data[at + LabelField.Trace] = this.traces.append(this.data[at + LabelField.Trace], action);\n    this.data[at + LabelField.Fidelity] += fidelity;"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...)"
+  },
+  {
+    "id": "kvu-p10a",
+    "why": "kv-unified solver internals, rule P10 (A prune's groups are exact): this edit at src/adaptive/kv-unified-packed-storage.ts:211-225 breaks it, and it survived every file reach.py names for those lines (Ambrose-2449's mapping, rules.md).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified-packed-storage.ts",
+        "find": "  group(key: string | number): number {\n    const dense = typeof key === 'number' && Number.isInteger(key) && key >= 0 && key < this.epochs.length;\n    if (dense && this.epochs[key] === this.epoch) return this.slots[key];\n    if (!dense) {\n      const found = this.sparse.get(key);\n      if (found !== undefined) return found;\n    }\n    const group = this.count++;\n    if (group >= this.head.length) {\n      const length = this.head.length * 2;\n      const head = new Int32Array(length); head.set(this.head); this.head = head;\n      for (const key of ['fidelity', 'continuity', 'tokens', 'extension', 'size'] as const) {\n        const copy = new Uint32Array(length); copy.set(this[key]); this[key] = copy;\n      }\n    }\n    this.head[group] = -1; this.size[group] = 0;\n    this.fidelity[group] = this.continuity[group] = this.tokens[group] = this.extension[group] = 0;\n    if (dense) { this.epochs[key] = this.epoch; this.slots[key] = group; }\n    else this.sparse.set(key, group);\n    return group;\n  }\n",
+        "replace": "  group(key: string | number): number {\n    const dense = typeof key === 'number' && Number.isInteger(key) && key >= 0 && key < this.epochs.length;\n    if (dense && this.epochs[key] === this.epoch) return this.slots[key];\n    if (!dense) {\n      const found = this.sparse.get(String(key));\n      if (found !== undefined) return found;\n    }\n    const group = this.count++;\n    if (group >= this.head.length) {\n      const length = this.head.length * 2;\n      const head = new Int32Array(length); head.set(this.head); this.head = head;\n      for (const key of ['fidelity', 'continuity', 'tokens', 'extension', 'size'] as const) {\n        const copy = new Uint32Array(length); copy.set(this[key]); this[key] = copy;\n      }\n    }\n    this.head[group] = -1; this.size[group] = 0;\n    this.fidelity[group] = this.continuity[group] = this.tokens[group] = this.extension[group] = 0;\n    if (dense) { this.epochs[key] = this.epoch; this.slots[key] = group; }\n    else this.sparse.set(String(key), group);\n    return group;\n  }\n"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...)"
+  },
+  {
+    "id": "kvu-ps12",
+    "why": "kv-unified solver internals, rule P11 (A new prune starts empty): this edit at src/adaptive/kv-unified-packed-storage.ts:203-203 breaks it, and it survived every file reach.py names for those lines (Ambrose-2449's mapping, rules.md). needs 2^32 prunes, or an injectable starting epoch: a long-run or construction assertion.",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified-packed-storage.ts",
+        "find": "if (this.epoch === 0) { this.epochs.fill(0); this.epoch = 1; }",
+        "replace": "if (this.epoch === 0) { this.epoch = 1; }"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...)"
+  },
+  {
+    "id": "kvu-s6b",
+    "why": "kv-unified solver internals, rule S6 (The span hash covers what a delta reads from a leaf): this edit at src/adaptive/kv-unified-subtree.ts:313-316 breaks it, and it survived every file reach.py names for those lines (Ambrose-2449's mapping, rules.md).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified-subtree.ts",
+        "find": "      a = mix(a, c1 ^ allowed ^ (this.previousMatches[i] << 1 | this.external[i]));\n      let b = mix(c1 ^ Math.imul(i + 1, 0xc2b2ae35), f0 ^ r1);\n      b = mix(b, f1 ^ Math.imul(allowed, 0x27d4eb2f) ^ (this.previousLevel[i] + 2));\n      b = mix(b, c0 ^ (this.previousMatches[i] << 1 | this.external[i]) ^ leaf.availableLevels.length);",
+        "replace": "      a = mix(a, c1 ^ allowed ^ (this.external[i]));\n      let b = mix(c1 ^ Math.imul(i + 1, 0xc2b2ae35), f0 ^ r1);\n      b = mix(b, f1 ^ Math.imul(allowed, 0x27d4eb2f) ^ (this.previousLevel[i] + 2));\n      b = mix(b, c0 ^ (this.external[i]) ^ leaf.availableLevels.length);"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...)"
+  },
+  {
+    "id": "kvu-s7b",
+    "why": "kv-unified solver internals, rule S7 (The solve key): this edit at src/adaptive/kv-unified-subtree.ts:376-376 breaks it, and it survived every file reach.py names for those lines (Ambrose-2449's mapping, rules.md).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified-subtree.ts",
+        "find": "      this.tBucket, this.kBucket, this.fBucket, options.maxTokens, this.cacheRelevant ? 1 : 0,",
+        "replace": "      this.tBucket, this.kBucket, this.fBucket, this.cacheRelevant ? 1 : 0,"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...)"
+  },
+  {
+    "id": "kvu-s7c",
+    "why": "kv-unified solver internals, rule S7 (The solve key): this edit at src/adaptive/kv-unified-subtree.ts:376-376 breaks it, and it survived every file reach.py names for those lines (Ambrose-2449's mapping, rules.md).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified-subtree.ts",
+        "find": "      this.tBucket, this.kBucket, this.fBucket, options.maxTokens, this.cacheRelevant ? 1 : 0,",
+        "replace": "      options.maxTokens, this.cacheRelevant ? 1 : 0,"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...)"
+  },
+  {
+    "id": "kvu-s17",
+    "why": "kv-unified solver internals, rule S10 (Counters replay on reuse): this edit at src/adaptive/kv-unified-subtree.ts:673-673 breaks it, and it survived every file reach.py names for those lines (Ambrose-2449's mapping, rules.md).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified-subtree.ts",
+        "find": "      expanded: this.expanded - before.expanded, dominated: this.dominated - before.dominated, maximum: this.peak,",
+        "replace": "      expanded: this.expanded - before.expanded, dominated: this.dominated - before.dominated, maximum: Math.max(before.maximum, this.peak),"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...)"
+  },
+  {
+    "id": "kvu-s10",
+    "why": "kv-unified solver internals, rule S12 (Where the memo lives): this edit at src/adaptive/kv-unified-subtree.ts:550-550 breaks it, and it survived every file reach.py names for those lines (Ambrose-2449's mapping, rules.md). observable only through summariesReused with no reuse holder.",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified-subtree.ts",
+        "find": "    let entry = this.memo ? this.memo.get(summary.id) : unheld.get(summary);",
+        "replace": "    let entry = this.memo ? this.memo.get(summary.id) : undefined;"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...)"
+  },
+  {
+    "id": "kvu-s15a",
+    "why": "kv-unified solver internals, rule S13 (The intact entry): this edit at src/adaptive/kv-unified-subtree.ts:628-628 breaks it, and it survived every file reach.py names for those lines (Ambrose-2449's mapping, rules.md).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified-subtree.ts",
+        "find": "      slice += `${this.units[k].kind}:${this.units[k].key}:${this.markers.get(k + 1) ?? ''}|`;",
+        "replace": "      slice += `${this.units[k].kind}:${this.units[k].key}:|`;"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...)"
+  },
+  {
+    "id": "kvu-s15b",
+    "why": "kv-unified solver internals, rule S13 (The intact entry): this edit at src/adaptive/kv-unified-subtree.ts:631-631 breaks it, and it survived every file reach.py names for those lines (Ambrose-2449's mapping, rules.md).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified-subtree.ts",
+        "find": "    if (entry.intact && entry.intact.units === units && entry.intact.slice === slice) {",
+        "replace": "    if (entry.intact && entry.intact.slice === slice) {"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...)"
+  },
+  {
+    "id": "kvu-s13",
+    "why": "kv-unified solver internals, rule S14 (Ownerless roots): this edit at src/adaptive/kv-unified-subtree.ts:414-414 breaks it, and it survived every file reach.py names for those lines (Ambrose-2449's mapping, rules.md).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified-subtree.ts",
+        "find": "      if (run.length > 0) labels = this.prune(labels.map((label) => this.rawRun(label, run, true)), options.maxTokens);",
+        "replace": "      if (run.length > 0) labels = this.prune(labels.map((label) => this.rawRun(label, run, false)), options.maxTokens);"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...)"
+  },
+  {
+    "id": "kvu-s15",
+    "why": "kv-unified solver internals, rule S15 (Diagnostics stay out of results): this edit at src/adaptive/kv-unified-subtree.ts:451-451 breaks it, and it survived every file reach.py names for those lines (Ambrose-2449's mapping, rules.md). needs KVU_SUBTREE_DIAG set, which no test sets.",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified-subtree.ts",
+        "find": "    if (this.diag) {\n",
+        "replace": "    if (this.diag && labels.length > 1) labels.length = 1;\n    if (this.diag) {\n"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...)"
+  },
+  {
+    "id": "kvu-c5b",
+    "why": "kv-unified solver internals, rule C5 (What it declines without trying): this edit at src/adaptive/kv-unified-certificate.ts:406-406 breaks it, and it survived every file reach.py names for those lines (Ambrose-2449's mapping, rules.md).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified-certificate.ts",
+        "find": "      forest.constraintConflicts.length > 0) return null;",
+        "replace": "      forest.constraintConflicts.length > 1e9) return null;"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...)"
+  },
+  {
+    "id": "kvu-c9a",
+    "why": "kv-unified solver internals, rule C9 (Context limits): this edit at src/adaptive/kv-unified-certificate.ts:240-240 breaks it, and it survived every file reach.py names for those lines (Ambrose-2449's mapping, rules.md).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified-certificate.ts",
+        "find": "  const contextLimit = 4 * (leaves.length + inputs.summaries.size) + 256;",
+        "replace": "  const contextLimit = 400 * (leaves.length + inputs.summaries.size) + 256;"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...)"
+  },
+  {
+    "id": "kvu-c9b",
+    "why": "kv-unified solver internals, rule C9 (Context limits): this edit at src/adaptive/kv-unified-certificate.ts:246-246 breaks it, and it survived every file reach.py names for those lines (Ambrose-2449's mapping, rules.md).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified-certificate.ts",
+        "find": "  const membershipLimit = 32 * (leaves.length + inputs.summaries.size) + 1024;",
+        "replace": "  const membershipLimit = 3200 * (leaves.length + inputs.summaries.size) + 1024;"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...)"
+  },
+  {
+    "id": "kvu-c10",
+    "why": "kv-unified solver internals, rule C10 (Forced transitions and new walls): this edit at src/adaptive/kv-unified-certificate.ts:601-601 breaks it, and it survived every file reach.py names for those lines (Ambrose-2449's mapping, rules.md).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified-certificate.ts",
+        "find": "    .filter((candidate) => candidate.renderedTokens <= options.maxTokens);",
+        "replace": "    .filter((candidate) => candidate.renderedTokens <= Infinity);"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...)"
+  },
+  {
+    "id": "kvu-c12a",
+    "why": "kv-unified solver internals, rule C12 (Graph reuse): this edit at src/adaptive/kv-unified-certificate.ts:174-174 breaks it, and it survived every file reach.py names for those lines (Ambrose-2449's mapping, rules.md).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified-certificate.ts",
+        "find": "    if (leaf.id !== previous[i].id || leaf.summaryIds.length > 0) return null;",
+        "replace": "    if (leaf.id !== previous[i].id) return null;"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...)"
+  },
+  {
+    "id": "kvu-c12b",
+    "why": "kv-unified solver internals, rule C12 (Graph reuse): this edit at src/adaptive/kv-unified-certificate.ts:486-486 breaks it, and it survived every file reach.py names for those lines (Ambrose-2449's mapping, rules.md).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified-certificate.ts",
+        "find": "    nodeFidelity[i] = fidelity;",
+        "replace": "    nodeFidelity[i] = node.fidelity || fidelity;"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...)"
+  },
+  {
+    "id": "kvu-c13",
+    "why": "kv-unified solver internals, rule C13 (The fixed-level check is reused by identity): this edit at src/adaptive/kv-unified-certificate.ts:437-437 breaks it, and it survived every file reach.py names for those lines (Ambrose-2449's mapping, rules.md).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified-certificate.ts",
+        "find": "known.leaves[i] === leaf && known.previous[i] === previous",
+        "replace": "known.leaves[i] === leaf"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...)"
+  },
+  {
+    "id": "kvu-t2",
+    "why": "kv-unified solver internals, rule T2 (Continuity distance): this edit at src/adaptive/kv-unified-terminal.ts:317-317 breaks it, and it survived every file reach.py names for those lines (Ambrose-2449's mapping, rules.md).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified-terminal.ts",
+        "find": "          : Math.max(1, Math.abs(level - previous.level));",
+        "replace": "          : Math.abs(level - previous.level);"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...)"
+  },
+  {
+    "id": "kvu-t3a",
+    "why": "kv-unified solver internals, rule T3 (Exact cache churn): this edit at src/adaptive/kv-unified-terminal.ts:383-383 breaks it, and it survived every file reach.py names for those lines (Ambrose-2449's mapping, rules.md).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified-terminal.ts",
+        "find": "        } else this.firstEmission[code] = Math.min(this.firstEmission[code], index);",
+        "replace": "        }"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...)"
+  },
+  {
+    "id": "kvu-t4a",
+    "why": "kv-unified solver internals, rule T4 (`estimate` is exact where it can be): this edit at src/adaptive/kv-unified-terminal.ts:388-388 breaks it, and it survived every file reach.py names for those lines (Ambrose-2449's mapping, rules.md).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified-terminal.ts",
+        "find": "    if (leaves !== this.ids.length || !Number.isFinite(fidelity) || !Number.isFinite(continuity)) {",
+        "replace": "    if (!Number.isFinite(fidelity) || !Number.isFinite(continuity)) {"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...)"
+  },
+  {
+    "id": "kvu-t8a",
+    "why": "kv-unified solver internals, rule T8 (The presentation is read per scope): this edit at src/adaptive/kv-unified-terminal.ts:72-72 breaks it, and it survived every file reach.py names for those lines (Ambrose-2449's mapping, rules.md).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified-terminal.ts",
+        "find": "  if (known && known.presentation === presentation && known.ownership === forest.ownership",
+        "replace": "  if (known && known.ownership === forest.ownership"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...)"
+  },
+  {
+    "id": "kvu-t8b",
+    "why": "kv-unified solver internals, rule T8 (The presentation is read per scope): this edit at src/adaptive/kv-unified-terminal.ts:78-78 breaks it, and it survived every file reach.py names for those lines (Ambrose-2449's mapping, rules.md).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified-terminal.ts",
+        "find": "      same = a === b || a.id === b.id;",
+        "replace": "      same = true;"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...)"
+  },
+  {
+    "id": "kvu-t12",
+    "why": "kv-unified solver internals, rule T12 (Diagnostic fields are non-enumerable): this edit at src/adaptive/kv-unified-terminal.ts:551-551 breaks it, and it survived every file reach.py names for those lines (Ambrose-2449's mapping, rules.md).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified-terminal.ts",
+        "find": "    Object.defineProperty(candidate, 'levels', { get: getLevels, enumerable: false });",
+        "replace": "    Object.defineProperty(candidate, 'levels', { get: getLevels, enumerable: true });"
+      }
+    ],
+    "configs": [
+      "C7",
+      "H1"
+    ],
+    "flags": [],
+    "note": "unplaced: from Ambrose-2449's kv-unified solver internals (~/.local/state/ambrose-2449/kvu-rules/gaps.json, sha256 c006792984287171...)"
+  },
+  {
+    "id": "gm-g1-enforce",
+    "why": "G1: G1 Fits or refuses. Oscar-1005's global-and-manager list (16f95aacda6847d7), mapped by Daniel-2612; survived every file reach.py names for src/strategies/autobiographical.ts:16734-16735, and the src-as-text files, at fb4cf1046 (J57228; catching files' baseline J57524).",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "    const graceLimit = this.config.enforceBudget === false\n      ? Number.POSITIVE_INFINITY",
+        "replace": "    const graceLimit = false\n      ? Number.POSITIVE_INFINITY"
+      }
+    ],
+    "flags": [],
+    "note": "unplaced: from Daniel-2612's mapping of Oscar-1005's global and manager list (~/.local/state/daniel-2612/gm/fixture-mutants-gm.json, sha256 b19fec246cf71e16...)"
+  },
+  {
+    "id": "gm-g8-commits",
+    "why": "G8: G8 renderAsNewest foresees the next compile's form. Oscar-1005's global-and-manager list (16f95aacda6847d7), mapped by Daniel-2612; survived every file reach.py names for src/strategies/autobiographical.ts:20812-20818, and the src-as-text files, at fb4cf1046 (J57228; catching files' baseline J57524).",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "      return ids.map((id) => {\n        const first = firstOf.get(id);\n        return first === undefined ? null : rendered.get(first) ?? null;\n      });\n    } finally {\n      this._dryRunSelect = false;\n      restore();",
+        "replace": "      return ids.map((id) => {\n        const first = firstOf.get(id);\n        return first === undefined ? null : rendered.get(first) ?? null;\n      });\n    } finally {\n      this._dryRunSelect = false;"
+      }
+    ],
+    "flags": [],
+    "note": "unplaced: from Daniel-2612's mapping of Oscar-1005's global and manager list (~/.local/state/daniel-2612/gm/fixture-mutants-gm.json, sha256 b19fec246cf71e16...)"
+  },
+  {
+    "id": "gm-m7-group",
+    "why": "M7: M7 addMessage's hold comes first. Oscar-1005's global-and-manager list (16f95aacda6847d7), mapped by Daniel-2612; survived every file reach.py names for src/context-manager.ts:747-748, and the src-as-text files, at fb4cf1046 (J57228; catching files' baseline J57524).",
+    "edits": [
+      {
+        "file": "context-manager.ts",
+        "find": "      if (held.length > 1) this.compressionHoldGroups.set(id, held);\n",
+        "replace": ""
+      }
+    ],
+    "flags": [],
+    "note": "unplaced: from Daniel-2612's mapping of Oscar-1005's global and manager list (~/.local/state/daniel-2612/gm/fixture-mutants-gm.json, sha256 b19fec246cf71e16...)"
+  },
+  {
+    "id": "gm-m20-null",
+    "why": "M20: M20 getRenderStats. Oscar-1005's global-and-manager list (16f95aacda6847d7), mapped by Daniel-2612; survived every file reach.py names for src/context-manager.ts:2510-2511, and the src-as-text files, at fb4cf1046 (J57228; catching files' baseline J57524).",
+    "edits": [
+      {
+        "file": "context-manager.ts",
+        "find": "    if (!isRenderStatsCapable(this.strategy)) return null;\n    return this.strategy.getRenderStats(",
+        "replace": "    if (!isRenderStatsCapable(this.strategy)) return undefined as never;\n    return this.strategy.getRenderStats("
+      }
+    ],
+    "flags": [],
+    "note": "unplaced: from Daniel-2612's mapping of Oscar-1005's global and manager list (~/.local/state/daniel-2612/gm/fixture-mutants-gm.json, sha256 b19fec246cf71e16...)"
+  },
+  {
+    "id": "gm-m23-pin",
+    "why": "M23: M23 Capability answers. Oscar-1005's global-and-manager list (16f95aacda6847d7), mapped by Daniel-2612; survived every file reach.py names for src/context-manager.ts:2380-2382, and the src-as-text files, at fb4cf1046 (J57228; catching files' baseline J57524).",
+    "edits": [
+      {
+        "file": "context-manager.ts",
+        "find": "    this.requireInitialized('pinRange');\n    if (!isPinnableStrategy(this.strategy)) {\n      throw new Error('Active strategy does not support pins');",
+        "replace": "    this.requireInitialized('pinRange');\n    if (!isPinnableStrategy(this.strategy)) {\n      return '' as string;"
+      }
+    ],
+    "flags": [],
+    "note": "unplaced: from Daniel-2612's mapping of Oscar-1005's global and manager list (~/.local/state/daniel-2612/gm/fixture-mutants-gm.json, sha256 b19fec246cf71e16...)"
+  },
+  {
+    "id": "gm-m23-listpins",
+    "why": "M23: M23 Capability answers. Oscar-1005's global-and-manager list (16f95aacda6847d7), mapped by Daniel-2612; survived every file reach.py names for src/context-manager.ts:2441-2441, and the src-as-text files, at fb4cf1046 (J57228; catching files' baseline J57524).",
+    "edits": [
+      {
+        "file": "context-manager.ts",
+        "find": "    if (!isPinnableStrategy(this.strategy)) return [];",
+        "replace": "    if (!isPinnableStrategy(this.strategy)) return null as never;"
+      }
+    ],
+    "flags": [],
+    "note": "unplaced: from Daniel-2612's mapping of Oscar-1005's global and manager list (~/.local/state/daniel-2612/gm/fixture-mutants-gm.json, sha256 b19fec246cf71e16...)"
+  },
+  {
+    "id": "gm-m23-search",
+    "why": "M23: M23 Capability answers. Oscar-1005's global-and-manager list (16f95aacda6847d7), mapped by Daniel-2612; survived every file reach.py names for src/context-manager.ts:2458-2458, and the src-as-text files, at fb4cf1046 (J57228; catching files' baseline J57524).",
+    "edits": [
+      {
+        "file": "context-manager.ts",
+        "find": "    if (!isSearchableStrategy(this.strategy)) return [];",
+        "replace": "    if (!isSearchableStrategy(this.strategy)) return null as never;"
+      }
+    ],
+    "flags": [],
+    "note": "unplaced: from Daniel-2612's mapping of Oscar-1005's global and manager list (~/.local/state/daniel-2612/gm/fixture-mutants-gm.json, sha256 b19fec246cf71e16...)"
+  },
+  {
+    "id": "gm-m23-getsummary",
+    "why": "M23: M23 Capability answers. Oscar-1005's global-and-manager list (16f95aacda6847d7), mapped by Daniel-2612; survived every file reach.py names for src/context-manager.ts:2465-2465, and the src-as-text files, at fb4cf1046 (J57228; catching files' baseline J57524).",
+    "edits": [
+      {
+        "file": "context-manager.ts",
+        "find": "    if (!isSearchableStrategy(this.strategy)) return null;",
+        "replace": "    if (!isSearchableStrategy(this.strategy)) return undefined as never;"
+      }
+    ],
+    "flags": [],
+    "note": "unplaced: from Daniel-2612's mapping of Oscar-1005's global and manager list (~/.local/state/daniel-2612/gm/fixture-mutants-gm.json, sha256 b19fec246cf71e16...)"
+  },
+  {
+    "id": "gm-m23-range",
+    "why": "M23: M23 Capability answers. Oscar-1005's global-and-manager list (16f95aacda6847d7), mapped by Daniel-2612; survived every file reach.py names for src/context-manager.ts:2484-2484, and the src-as-text files, at fb4cf1046 (J57228; catching files' baseline J57524).",
+    "edits": [
+      {
+        "file": "context-manager.ts",
+        "find": "    return this.strategy.listSummariesInRange(this.strategyMessageView(), opts);",
+        "replace": "    try { return this.strategy.listSummariesInRange(this.strategyMessageView(), opts); } catch { return []; }"
+      }
+    ],
+    "flags": [],
+    "note": "unplaced: from Daniel-2612's mapping of Oscar-1005's global and manager list (~/.local/state/daniel-2612/gm/fixture-mutants-gm.json, sha256 b19fec246cf71e16...)"
+  },
+  {
+    "id": "gm-m25-holds",
+    "why": "M25: M25 derive inherits a checkpoint and writes apart. Oscar-1005's global-and-manager list (16f95aacda6847d7), mapped by Daniel-2612; survived every file reach.py names for src/context-manager.ts:1392-1393, and the src-as-text files, at fb4cf1046 (J57228; catching files' baseline J57524).",
+    "edits": [
+      {
+        "file": "context-manager.ts",
+        "find": "      derived.systemPrompt = this.systemPrompt;\n",
+        "replace": "      derived.systemPrompt = this.systemPrompt;\n      (derived as unknown as { compressionHolds: Set<string> }).compressionHolds = this.compressionHolds;\n"
+      }
+    ],
+    "flags": [],
+    "note": "unplaced: from Daniel-2612's mapping of Oscar-1005's global and manager list (~/.local/state/daniel-2612/gm/fixture-mutants-gm.json, sha256 b19fec246cf71e16...)"
+  },
+  {
+    "id": "gm-m27",
+    "why": "M27: M27 reopenDerived reads cold. Oscar-1005's global-and-manager list (16f95aacda6847d7), mapped by Daniel-2612; survived every file reach.py names for src/context-manager.ts:1452-1452, and the src-as-text files, at fb4cf1046 (J57228; catching files' baseline J57524).",
+    "edits": [
+      {
+        "file": "context-manager.ts",
+        "find": "    const view = (options.store as unknown as DerivableStore).view(derivation.branch);",
+        "replace": "    try { (options.store as unknown as { createBranchAt(a: string, b: string, c: number): unknown }).createBranchAt(derivation.branch + '-zz', derivation.branch, 0); } catch { /* */ }\n    const view = (options.store as unknown as DerivableStore).view(derivation.branch);"
+      }
+    ],
+    "flags": [],
+    "note": "unplaced: from Daniel-2612's mapping of Oscar-1005's global and manager list (~/.local/state/daniel-2612/gm/fixture-mutants-gm.json, sha256 b19fec246cf71e16...)"
+  },
+  {
+    "id": "gm-m28-foreign",
+    "why": "M28: M28 Frontier hand-over. Oscar-1005's global-and-manager list (16f95aacda6847d7), mapped by Daniel-2612; survived every file reach.py names for src/strategies/autobiographical.ts:2904-2906, and the src-as-text files, at fb4cf1046 (J57228; catching files' baseline J57524).",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "    this.requireLoadedBranch('adoptRenderingFrontier');\n    const f = frontier as Partial<AutobiographicalRenderingFrontier> | null | undefined;\n    if (!f || f.strategy !== 'autobiographical') return;",
+        "replace": "    this.requireLoadedBranch('adoptRenderingFrontier');\n    const f = frontier as Partial<AutobiographicalRenderingFrontier> | null | undefined;\n    if (!f) return;"
+      }
+    ],
+    "flags": [],
+    "note": "unplaced: from Daniel-2612's mapping of Oscar-1005's global and manager list (~/.local/state/daniel-2612/gm/fixture-mutants-gm.json, sha256 b19fec246cf71e16...)"
+  },
+  {
+    "id": "gm-m29-first",
+    "why": "M29: M29 The system prompt is one slot. Oscar-1005's global-and-manager list (16f95aacda6847d7), mapped by Daniel-2612; survived every file reach.py names for src/context-manager.ts:2705-2705, and the src-as-text files, at fb4cf1046 (J57228; catching files' baseline J57524).",
+    "edits": [
+      {
+        "file": "context-manager.ts",
+        "find": "    if (text && text.length > 0) this.systemPrompt = text;",
+        "replace": "    if (text && text.length > 0 && !this.systemPrompt) this.systemPrompt = text;"
+      }
+    ],
+    "flags": [],
+    "note": "unplaced: from Daniel-2612's mapping of Oscar-1005's global and manager list (~/.local/state/daniel-2612/gm/fixture-mutants-gm.json, sha256 b19fec246cf71e16...)"
   }
 ]
