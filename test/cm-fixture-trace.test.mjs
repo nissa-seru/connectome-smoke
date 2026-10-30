@@ -79,6 +79,55 @@ test('a tool result whose call isn\'t in the message before it breaks shape', ()
   assert.deepEqual(check(m, whole), []);
 });
 
+// A store holding a body in three shards (2, 3, 4) between two short messages, and summaries over parts of it.
+function shardedManager() {
+  const shard = (n, letter) => ({ id: String(n), sequence: n, participant: 'User', bodyGroupId: 'g', shardIndex: n - 2, content: [{ type: 'text', text: `${letter.repeat(40)} ` }] });
+  const messages = [
+    { id: '1', sequence: 1, participant: 'Junga', content: [{ type: 'text', text: 'paste it' }] },
+    shard(2, 'A'), shard(3, 'B'), shard(4, 'C'),
+    { id: '5', sequence: 5, participant: 'Junga', content: [{ type: 'text', text: 'read it' }] },
+  ];
+  const summary = (id, sourceIds) => ({ id, level: 1, sourceLevel: 0, sourceIds, content: `summary ${id}`, tokens: 5 });
+  const summaries = { 'L1-A': summary('L1-A', ['2']), 'L1-B': summary('L1-B', ['3', '4']), 'L1-X': summary('L1-X', ['3']) };
+  return { ...manager(), getAllMessages: () => messages, getSummary: (id) => summaries[id] ?? null, messages };
+}
+const withSources = (c, sources) => checkCompile(shardedManager(), budget, c, sources.map((s) => ({ sources: s, content: 'x' })), { compresses: true });
+const said = (text) => ({ participant: 'User', content: [{ type: 'text', text }] });
+const recalled = (id) => ({ participant: 'Junga', content: [{ type: 'text', text: `summary ${id}` }] });
+
+test('a body whose shards are under two summaries, each over its own shards, breaks no coverage, and a shard under two does', () => {
+  const m = shardedManager();
+  const parted = { messages: [m.messages[0], recalled('L1-A'), recalled('L1-B'), m.messages[4]] };
+  assert.deepEqual(withSources(parted, [['r:1'], ['s:L1-A@1'], ['s:L1-B@1'], ['r:5']]), []);
+  const twice = { messages: [m.messages[0], recalled('L1-X'), recalled('L1-B'), m.messages[4]] };
+  const v = withSources(twice, [['r:1'], ['s:L1-X@1'], ['s:L1-B@1'], ['r:5']]);
+  assert.ok(v.some((x) => x.invariant === 'coverage' && /1 stored messages under two summaries sent: 3 in L1-X, L1-B/.test(x.detail)), JSON.stringify(v));
+});
+
+test("a body partly raw beside a summary of its other shards breaks nothing, and a shard both raw and summarised breaks beside-sources", () => {
+  const m = shardedManager();
+  const partly = { messages: [m.messages[0], said(m.messages[1].content[0].text), recalled('L1-B'), m.messages[4]] };
+  assert.deepEqual(withSources(partly, [['r:1'], ['r:2!shards'], ['s:L1-B@1'], ['r:5']]), []);
+  const both = { messages: [m.messages[0], said(m.messages[1].content[0].text + m.messages[2].content[0].text), recalled('L1-B'), m.messages[4]] };
+  const v = withSources(both, [['r:1'], ['r:2!shards'], ['s:L1-B@1'], ['r:5']]);
+  assert.ok(v.some((x) => x.invariant === 'beside-sources' && /3 raw beside L1-B/.test(x.detail)), JSON.stringify(v));
+  const whole = { messages: [m.messages[0], said('AAA'), recalled('L1-B'), m.messages[4]] };
+  assert.ok(withSources(whole, [['r:1'], ['r:2'], ['s:L1-B@1'], ['r:5']]).some((x) => x.invariant === 'beside-sources'), 'a whole raw copy holds every shard');
+});
+
+test("a call or result the store holds unpaired, sent as stored, breaks no shape", () => {
+  const messages = [
+    { id: '1', sequence: 1, participant: 'User', content: [{ type: 'text', text: 'go' }] },
+    { id: '2', sequence: 2, participant: 'Junga', content: [{ type: 'tool_use', id: 'lost', name: 'read_file', input: {} }] },
+    { id: '3', sequence: 3, participant: 'User', content: [{ type: 'text', text: 'and?' }] },
+    { id: '4', sequence: 4, participant: 'User', content: [{ type: 'tool_result', toolUseId: 'ghost', content: 'late' }] },
+    { id: '5', sequence: 5, participant: 'Junga', content: [{ type: 'text', text: 'done' }] },
+  ];
+  const m = { ...manager(), getAllMessages: () => messages, getSummary: () => null };
+  const c = { messages: messages.map(sent), provenance: { messages: messages.map((x) => raw(Number(x.id))) } };
+  assert.deepEqual(check(m, c, { compresses: false }), []);
+});
+
 test('a message carrying a body\'s thinking without that body\'s calls breaks thinking', () => {
   const m = manager();
   const parted = compiled([sent(m.messages[0]), raw(1)], [{ participant: 'Junga', content: [m.messages[1].content[0]] }, raw(2)], [sent(m.messages[2]), raw(3)], [sent(m.messages[3]), raw(4)]);
