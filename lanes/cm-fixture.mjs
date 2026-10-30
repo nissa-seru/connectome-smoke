@@ -20,8 +20,9 @@
 // record the same, and each mutant in lib/cm-fixture/mutants.json ({ id, why, edits: [{ file, find, replace }], flags:
 // runs, CONFIG/WORKLOAD pairs or workloads }), applied, must change a record of a run it names. Its flags list every
 // run placement found it changing; readiness runs the first of them in the matrix's order, or all of them with
-// --all-flags. A mutant whose text no longer occurs exactly once in the tree is stale, and fails readiness until it's
-// updated. A mutant's optional `configs` names the configurations whose runs count for it.
+// --all-flags, where each must still change. A mutant whose text no longer occurs exactly once in the tree is stale,
+// and fails readiness until it's updated. A mutant's optional `configs` names the configurations whose runs count for
+// it, and a flag naming no run they allow is refused, since no check would ever run it.
 // A mutant with no flags is unplaced, and isn't ready until its flags are written. With --place, readiness runs it
 // against W1, W2 and every run another mutant names, of its configurations, and reports which of their records it
 // changes, trying its runs a batch of --workers at a time (W11, W9 and W8 first) and stopping at the first batch that
@@ -127,6 +128,9 @@ async function readiness(o, house, work) {
   for (const m of mutants) {
     if (m.gap && !['unreachable', 'equivalent'].includes(m.gap.kind)) throw new Error(`${m.id}: a gap's kind is unreachable or equivalent`);
     if (m.gap && !unplaced(m)) throw new Error(`${m.id}: a gap has no flags`);
+    for (const f of m.flags ?? []) {
+      if (!all.some((j) => counts(m, j) && (f === j.id || f === j.workload || f === `${j.config}/${j.workload}`))) throw new Error(`${m.id}: its flag ${f} names no run its configs (${(m.configs ?? []).join(', ')}) allow`);
+    }
   }
   const runIn = (cm, jobs, at) => runOnce({ ...o, cm, membraneDir: o.cm }, jobs, at);
   // The runs the no-op and the mutants it tries use: W1 and W2, or what --runs and --workloads name.
@@ -188,8 +192,12 @@ async function readiness(o, house, work) {
       lines.push(flagged.length ? `${m.id}: UNPLACED; changes the records of ${flagged.join(', ')} (${jobs.length} of its ${tries.length} runs tried)${norecord}` : `${m.id}: UNPLACED; changes none of the ${jobs.length} runs' records${norecord} (${m.why})`);
       continue;
     }
-    ok &&= flagged.length > 0;
-    lines.push(flagged.length ? `${m.id}: flagged in ${flagged.join(', ')}${norecord}` : `${m.id}: NOT FLAGGED in ${jobs.map((j) => j.id).join(', ')}${norecord} (${m.why})`);
+    // With --all-flags every run it names must still change; otherwise the one it's checked in.
+    const unflagged = jobs.filter((j) => !flagged.includes(j.id)).map((j) => j.id);
+    ok &&= flagged.length > 0 && (!o.allFlags || unflagged.length === 0);
+    lines.push(flagged.length === 0
+      ? `${m.id}: NOT FLAGGED in ${unflagged.join(', ')}${norecord} (${m.why})`
+      : `${m.id}: flagged in ${flagged.join(', ')}${o.allFlags && unflagged.length ? `; NOT FLAGGED in ${unflagged.join(', ')}` : ''}${norecord}`);
   }
   return { ok, lines };
 }
