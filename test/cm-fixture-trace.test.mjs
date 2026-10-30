@@ -115,6 +115,16 @@ test("a body partly raw beside a summary of its other shards breaks nothing, and
   assert.ok(withSources(whole, [['r:1'], ['r:2'], ['s:L1-B@1'], ['r:5']]).some((x) => x.invariant === 'beside-sources'), 'a whole raw copy holds every shard');
 });
 
+test("a partial raw copy of a body starts where the shards it carries start, for store order", () => {
+  const m = shardedManager();
+  const [A, , C] = [1, 2, 3].map((k) => m.messages[k].content[0].text);
+  const later = { messages: [m.messages[0], recalled('L1-X'), said(C), m.messages[4]] };
+  const order = (vs) => vs.filter((v) => /covers from sequence/.test(v.detail)).map((v) => v.detail);
+  assert.deepEqual(order(withSources(later, [['r:1'], ['s:L1-X@1'], ['r:2!shards'], ['r:5']])), [], 'the copy carries shard 4, after the summary of shard 3');
+  const earlier = { messages: [m.messages[0], recalled('L1-X'), said(A), m.messages[4]] };
+  assert.deepEqual(order(withSources(earlier, [['r:1'], ['s:L1-X@1'], ['r:2!shards'], ['r:5']])), ['message 2 covers from sequence 2, before message 1\'s 3']);
+});
+
 test("a call or result the store holds unpaired, sent as stored, breaks no shape", () => {
   const messages = [
     { id: '1', sequence: 1, participant: 'User', content: [{ type: 'text', text: 'go' }] },
@@ -201,7 +211,9 @@ test('the recorder writes a trace that reads back, counts the step\'s log lines 
     const file = join(dir, 't.jsonl');
     const header = { run: 'C3/W1', config: 'C3', workload: 'W1', variant: null, arm: 'base', seed: 1, scale: 15, from: null, library: { commit: 'c', version: 'v' }, membrane: { version: 'm' }, fixture: { version: 'f' } };
     const rec = await openRecorder({ file, header });
-    const m = manager();
+    // listBranches promises no order: the recorder lists them by id.
+    const branches = [{ id: '10', name: 'fork', head: 12, created: 0 }, { id: '1', name: 'main', head: 9, created: 0 }, { id: '2', name: 'side', head: 4, created: 0 }];
+    const m = { ...manager(), listBranches: () => branches };
     rec.step(1);
     m.messages.forEach((x) => rec.added(x.participant, x.content, x.id));
     console.warn('[compression-quarantine] one ns=agents/junga');
@@ -220,7 +232,7 @@ test('the recorder writes a trace that reads back, counts the step\'s log lines 
     assert.deepEqual(c.violations, []);
     assert.deepEqual(step.written.map((s) => [s.id, s.sources]), [['L1-0', ['a1.0', 'a1.1']]]);
     const cp = t.events.find((e) => e.kind === 'checkpoint');
-    assert.deepEqual(cp.branches, [{ id: '1', name: 'main', head: 9 }]);
+    assert.deepEqual(cp.branches, [{ id: '1', name: 'main', head: 9 }, { id: '2', name: 'side', head: 4 }, { id: '10', name: 'fork', head: 12 }]);
   } finally {
     console.warn = warn;
     rmSync(dir, { recursive: true, force: true });
