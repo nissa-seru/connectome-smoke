@@ -8,7 +8,7 @@ import { diffRecords } from '../lib/cm-fixture/record-diff.mjs';
 
 // A small trace, as readTrace returns one: a run that adds two turns and compiles each, the second with a summary
 // sent as a recall pair whose question is the library's own words.
-function trace({ commit = 'aaaa111', label = 'What do you remember from earlier?', refuse = false, violation = null, marker = false, membrane = '0.9.0', cause = null } = {}) {
+function trace({ commit = 'aaaa111', label = 'What do you remember from earlier?', refuse = false, violation = null, marker = false, membrane = '0.9.0', cause = null, system = undefined } = {}) {
   const blobs = new Map();
   const blob = (v) => { const id = digest(v); blobs.set(id, v); return id; };
   const user = (n) => [{ type: 'text', text: `m1_${n}ux Continue with part ${n}, please.` }];
@@ -21,6 +21,8 @@ function trace({ commit = 'aaaa111', label = 'What do you remember from earlier?
     { sources: ['r:a1.0'], content: blob({ participant: 'User', content: user(1) }), ...(marker ? { marker: { message: true, blocks: [] } } : {}) },
     { sources: ['r:a1.1'], content: blob({ participant: 'Junga', content: reply(1) }) },
   ], violations: [] });
+  const request = { ...(system === undefined ? {} : { system }), messages: [{ role: 'user', content: [{ type: 'text', text: 'Summarise what follows, in about 133 tokens.' }, ...user(1), ...reply(1)] }] };
+  events.push({ kind: 'call', step: 1, n: 0, carried: [], target: 133, request: blob(request), answer: { kind: 'text', text: blob('Summary of part one, in the stand-in\'s words.') } });
   events.push({ kind: 'step', step: 1, written: [{ id: 'L1-0', level: 1, sources: ['a1.0', 'a1.1'], content: blob('Summary of part one, in the stand-in\'s words.') }], removed: [], waiting: null, pending: null, ready: true, logs: { 'plan-vs-actual': 1 }, lines: [], violations: [] });
   add(2, 0, 'User', user(2));
   events.push(refuse
@@ -83,6 +85,14 @@ test('a compile the record has that now refuses blocks, and so does an invariant
   assert.match(broken.blocking[0].actual, /INVARIANT shape/);
   // Back the other way, a compile that now compiles, or an invariant that now holds, is a change but blocks nothing.
   assert.deepEqual(diffRecords(renderRecord(trace({ refuse: true })), base).blocking, []);
+});
+
+test("a summariser request's system prompt, where a host's setSystemPrompt goes, is part of its template", () => {
+  const none = renderRecord(trace()), one = renderRecord(trace({ system: 'You are Junga.' })), other = renderRecord(trace({ system: 'You are Junga, revised.' }));
+  assert.notEqual(none, one, 'setting a system prompt changes the record');
+  assert.notEqual(one, other, 'changing it changes the record');
+  assert.match(one, /You are Junga\./);
+  assert.equal(renderRecord(trace({ system: 'You are Junga.' })), one, 'the same prompt renders the same record');
 });
 
 test('what a record depends on besides the library, such as membrane\'s version, shows as a header change', () => {

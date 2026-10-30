@@ -28,7 +28,7 @@ test('a trace that is cut off, malformed or names a blob it never wrote is refus
   assert.throws(() => readTrace(lines(blob(content), header, end)), /trace:1: a trace opens with run, not blob/);
   assert.throws(() => readTrace(lines(header, { ...compiled, extra: 1 }, end)), /trace:2: compile with unknown field extra/);
   assert.throws(() => readTrace(lines(header, { ...blob(content), value: { other: 1 } }, end)), /trace:2: blob id is not its value's digest/);
-  assert.throws(() => readTrace(lines({ ...header, run: 'C7/W11', workload: 'W11' }, end)), /trace:1: not a run id/);
+  assert.throws(() => readTrace(lines({ ...header, run: 'C7/W12', workload: 'W12' }, end)), /trace:1: not a run id/);
   assert.throws(() => readTrace(lines(header, end, compiled)), /trace:3: an event after end/);
   assert.throws(() => readTrace(lines(header, { ...compiled, outcome: 'refused', messages: undefined }, end)), /a refused compile without its error/);
   const call = { kind: 'call', step: 1, n: 0, carried: ['L1-0', 'm5_2ux'], target: 133, request: digest(content), answer: { kind: 'text' } };
