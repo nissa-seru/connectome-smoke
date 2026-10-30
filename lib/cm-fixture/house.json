@@ -1,0 +1,157 @@
+{
+  "host": {
+    "name": "@animalabs/connectome-host",
+    "version": "0.20.0"
+  },
+  "agentFramework": {
+    "version": "0.30.0"
+  },
+  "contextManager": {
+    "version": "0.24.2"
+  },
+  "configs": {
+    "H1.claude-opus-4-6": {
+      "class": "AutobiographicalStrategy",
+      "options": {
+        "recentWindowTokens": 120000,
+        "headWindowTokens": 4000,
+        "autoTickOnNewMessage": true,
+        "summaryContextLabel": "A summary follows, standing in for earlier conversation, tool calls and results included. The exact text it replaces isn't shown.",
+        "summaryParticipant": "Junga",
+        "maxMessageTokens": 10000,
+        "compressionModel": "claude-opus-4-6",
+        "adaptiveResolution": true,
+        "foldingStrategy": "kv-unified",
+        "kvUnified": {
+          "policy": {
+            "alpha": 0.7,
+            "budgetLowRatio": 0.6,
+            "budgetHighRatio": 0.85,
+            "budgetUnderLambda": 1000,
+            "budgetOverLambda": 4000,
+            "cacheLambda": 1,
+            "cacheScale": 100000,
+            "cacheReadPrice": 0.1,
+            "cacheWritePrice": 2,
+            "continuityLambda": 1,
+            "continuityScale": 100000,
+            "continuityRecencyHalfLifeTokens": 100000,
+            "continuityRecencyFloor": 0.2,
+            "continuityStableHalfLife": 16,
+            "continuityStableFloor": 0.25
+          },
+          "tokenBucketSize": 50000,
+          "continuityBucketSize": 50000,
+          "fidelityBucketSize": 100000,
+          "labelCeiling": 100000,
+          "adoptEpsilon": 3000,
+          "treeifyNonContiguousSummaries": false,
+          "preserveGapBearingSummaries": false,
+          "hysteresisCertificate": true
+        }
+      },
+      "budget": {
+        "maxTokens": 300000,
+        "reserveForResponse": 16384
+      },
+      "model": "claude-opus-4-6",
+      "recipes": [
+        "knowledge-miner.json",
+        "triumvirate.json",
+        "webui-fleet-test.json",
+        "webui-test.json",
+        "zulip-miner.json"
+      ],
+      "sameAs": [
+        {
+          "model": "claude-sonnet-4-6",
+          "recipes": [
+            "mcpl-editor-test.json"
+          ]
+        }
+      ]
+    },
+    "H1.claude-sonnet-4-5-20250929": {
+      "class": "AutobiographicalStrategy",
+      "options": {
+        "recentWindowTokens": 67200,
+        "headWindowTokens": 4000,
+        "autoTickOnNewMessage": true,
+        "summaryContextLabel": "A summary follows, standing in for earlier conversation, tool calls and results included. The exact text it replaces isn't shown.",
+        "summaryParticipant": "Junga",
+        "maxMessageTokens": 10000,
+        "compressionModel": "claude-sonnet-4-5-20250929",
+        "adaptiveResolution": true,
+        "foldingStrategy": "kv-unified",
+        "kvUnified": {
+          "policy": {
+            "alpha": 0.7,
+            "budgetLowRatio": 0.6,
+            "budgetHighRatio": 0.85,
+            "budgetUnderLambda": 1000,
+            "budgetOverLambda": 4000,
+            "cacheLambda": 1,
+            "cacheScale": 100000,
+            "cacheReadPrice": 0.1,
+            "cacheWritePrice": 2,
+            "continuityLambda": 1,
+            "continuityScale": 100000,
+            "continuityRecencyHalfLifeTokens": 100000,
+            "continuityRecencyFloor": 0.2,
+            "continuityStableHalfLife": 16,
+            "continuityStableFloor": 0.25
+          },
+          "tokenBucketSize": 50000,
+          "continuityBucketSize": 50000,
+          "fidelityBucketSize": 100000,
+          "labelCeiling": 100000,
+          "adoptEpsilon": 3000,
+          "treeifyNonContiguousSummaries": false,
+          "preserveGapBearingSummaries": false,
+          "hysteresisCertificate": true
+        }
+      },
+      "budget": {
+        "maxTokens": 168000,
+        "reserveForResponse": 16384
+      },
+      "model": "claude-sonnet-4-5-20250929",
+      "recipes": [
+        "claude-export-revive.json"
+      ],
+      "sameAs": []
+    },
+    "H2": {
+      "class": "KnowledgeStrategy",
+      "options": {
+        "recentWindowTokens": 80000,
+        "headWindowTokens": 2000,
+        "autoTickOnNewMessage": true,
+        "summaryParticipant": "Junga",
+        "maxMessageTokens": 10000,
+        "compressionModel": "claude-opus-4-6"
+      },
+      "budget": null,
+      "model": "claude-opus-4-6"
+    },
+    "H3": {
+      "class": "PassthroughStrategy",
+      "options": {},
+      "budget": {
+        "maxTokens": 300000,
+        "reserveForResponse": 16384
+      }
+    },
+    "H4": {
+      "class": "WindowedPassthroughStrategy",
+      "options": {
+        "maxMessageTokens": 10000
+      },
+      "budget": {
+        "maxTokens": 300000,
+        "reserveForResponse": 16384
+      },
+      "from": "agent-framework's createSubconsciousAgent: no shipped recipe sets subconscious.reAnchorFraction; maxMessageTokens is the primary's (H1.claude-opus-4-6)"
+    }
+  }
+}
