@@ -8,7 +8,7 @@ import { diffRecords } from '../lib/cm-fixture/record-diff.mjs';
 
 // A small trace, as readTrace returns one: a run that adds two turns and compiles each, the second with a summary
 // sent as a recall pair whose question is the library's own words.
-function trace({ commit = 'aaaa111', label = 'What do you remember from earlier?', refuse = false, violation = null, marker = false, membrane = '0.9.0' } = {}) {
+function trace({ commit = 'aaaa111', label = 'What do you remember from earlier?', refuse = false, violation = null, marker = false, membrane = '0.9.0', cause = null } = {}) {
   const blobs = new Map();
   const blob = (v) => { const id = digest(v); blobs.set(id, v); return id; };
   const user = (n) => [{ type: 'text', text: `m1_${n}ux Continue with part ${n}, please.` }];
@@ -29,7 +29,7 @@ function trace({ commit = 'aaaa111', label = 'What do you remember from earlier?
       { sources: ['s:L1-0@1'], content: blob({ participant: 'Context Manager', content: [{ type: 'text', text: label }] }) },
       { sources: ['s:L1-0@1'], content: blob({ participant: 'Junga', content: [{ type: 'text', text: 'Summary of part one, in the stand-in\'s words.' }] }) },
       { sources: ['r:a2.0'], content: blob({ participant: 'User', content: user(2) }) },
-    ], violations: violation ? [violation] : [] });
+    ], ...(cause ? { layout: { cause, memberIds: [] } } : {}), violations: violation ? [violation] : [] });
   events.push({ kind: 'step', step: 2, written: [], removed: [], waiting: null, pending: null, ready: true, logs: {}, lines: [], violations: [] });
   const header = { kind: 'run', schema: SCHEMA, run: 'C3/W1', config: 'C3', workload: 'W1', variant: null, arm: 'candidate', seed: 7, scale: 15, from: null, library: { commit, version: '0.24.2' }, membrane: { version: membrane }, fixture: { version: 'f', standin: 's1', clock: { epoch: '2026-01-05T09:00:00.000Z', stepMs: 240000 } } };
   return { header, events, blobs, end: { kind: 'end', ok: true, wallMs: 3 } };
@@ -50,6 +50,14 @@ test('consecutive messages the run added read as a range, the summary as its rec
   assert.doesNotMatch(r, /Continue with part/);
   // A cache marker ends a range and shows as ^.
   assert.match(renderRecord(trace({ marker: true })), /^ {2}compile a1\.0\^ a1\.1$/m);
+});
+
+test('a compile whose layout names why the selection moved shows that cause on its line, and a change of it is a change', () => {
+  const without = renderRecord(trace()), withCause = renderRecord(trace({ cause: 'window' }));
+  assert.match(withCause, /^ {2}compile L1-0@1\[T:context-manager-L1,T:junga-L1\] a2\.0 cause window$/m);
+  assert.doesNotMatch(without, / cause /);
+  assert.equal(diffRecords(without, withCause).same, false);
+  assert.equal(diffRecords(withCause, renderRecord(trace({ cause: 'budget-fit' }))).same, false);
 });
 
 test('a change of the library\'s words is one change, in the template table alone', () => {
