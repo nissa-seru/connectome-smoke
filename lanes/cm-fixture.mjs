@@ -10,20 +10,25 @@
 // check: runs the matrix once and compares each run's record with fixtures/cm-fixture/records. Exit 0 when every
 // record matches, 1 when any differs, a run has no record, or a run failed, and 2 when the check couldn't run.
 // regenerate: runs the matrix twice, refuses unless both runs render every record the same, and refuses a record
-// holding an INVARIANT line that fixtures/cm-fixture/expected-failures.json doesn't name with its issue (an entry
-// names a run's lines of one invariant, or, with `match`, a regular expression, those whose detail it matches).
+// holding an INVARIANT line, or an end line where the library ended the run, that
+// fixtures/cm-fixture/expected-failures.json doesn't name with its issue (an entry names a run's lines of one invariant,
+// `end` for the end line, or, with `match`, a regular expression, those whose detail it matches).
 // Otherwise it writes the records, removes those of runs the matrix no longer has, and prints what changed.
 // checkpoints: replaces fixtures/cm-fixture/checkpoints with the stores the continuations start from, written by the
 // context-manager release named, installed from npm (checkpoints.mjs).
 // readiness: whether the fixture sees what it's for, in copies of the tree: a no-op change (a comment) must leave every
 // record the same, and each mutant in lib/cm-fixture/mutants.json ({ id, why, edits: [{ file, find, replace }], flags:
-// runs, CONFIG/WORKLOAD pairs or workloads }), applied, must change a record of a run it names.
-// A mutant whose text no longer occurs exactly once in the tree is stale, and fails readiness until it's updated.
-// A mutant's optional `configs` names the configurations whose runs count for it. A mutant with no flags is unplaced:
-// readiness runs it against W1, W2 and every run another mutant names, of its configurations, reports which of their
-// records it changes, and isn't ready until its flags are written; --runs and --workloads narrow the runs an unplaced
-// mutant is tried against. --mutants reads another file of mutants in the same form, such as a rule
-// list's survivors before they're placed.
+// runs, CONFIG/WORKLOAD pairs or workloads }), applied, must change a record of a run it names. Its flags list every
+// run placement found it changing; readiness runs the first of them in the matrix's order, or all of them with
+// --all-flags. A mutant whose text no longer occurs exactly once in the tree is stale, and fails readiness until it's
+// updated. A mutant's optional `configs` names the configurations whose runs count for it.
+// A mutant with no flags is unplaced, and isn't ready until its flags are written. With --place, readiness runs it
+// against W1, W2 and every run another mutant names, of its configurations, and reports which of their records it
+// changes; without it, it lists it untried. A mutant with a `gap` ({ kind: unreachable or equivalent, why }) is one the
+// fixture can't see, by that reason: readiness lists it, and with --gaps tries it as it tries an unplaced one, failing
+// if it now changes a record. --runs and --workloads narrow the W1 and W2 runs readiness uses, for its no-op and the
+// mutants it tries alike; the run a placed mutant is checked in always runs. --mutants reads another file of mutants in
+// the same form, such as a rule list's survivors before they're placed.
 
 import { execFileSync } from 'node:child_process';
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, symlinkSync, unlinkSync, writeFileSync } from 'node:fs';
@@ -46,10 +51,10 @@ const recordFile = (id) => traceFileName(id).replace(/\.jsonl$/, '.txt');
 
 function args(argv) {
   const [command, ...rest] = argv;
-  const o = { command, workers: 10, runs: null, workloads: null };
+  const o = { command, workers: 10, runs: null, workloads: null, place: false, gaps: false, allFlags: false };
   for (let i = 0; i < rest.length; i++) {
     const k = rest[i], v = rest[i + 1];
-    if (k === '--cm') { o.cm = resolve(v); i++; } else if (k === '--mutants') { o.mutants = resolve(v); i++; } else if (k === '--release') { o.release = v; i++; } else if (k === '--commit') { o.commit = v; i++; } else if (k === '--workers') { o.workers = Number(v); i++; } else if (k === '--runs') { o.runs = new Set(v.split(',')); i++; } else if (k === '--workloads') { o.workloads = new Set(v.split(',')); i++; } else throw new Error(`unknown argument ${k}`);
+    if (k === '--cm') { o.cm = resolve(v); i++; } else if (k === '--mutants') { o.mutants = resolve(v); i++; } else if (k === '--release') { o.release = v; i++; } else if (k === '--commit') { o.commit = v; i++; } else if (k === '--workers') { o.workers = Number(v); i++; } else if (k === '--runs') { o.runs = new Set(v.split(',')); i++; } else if (k === '--workloads') { o.workloads = new Set(v.split(',')); i++; } else if (k === '--place') o.place = true; else if (k === '--gaps') o.gaps = true; else if (k === '--all-flags') o.allFlags = true; else throw new Error(`unknown argument ${k}`);
   }
   if (!['check', 'regenerate', 'checkpoints', 'readiness'].includes(command)) throw new Error('the command is check, regenerate, checkpoints or readiness');
   if (!Number.isInteger(o.workers) || o.workers < 1) throw new Error('--workers is a whole number from 1');
@@ -113,10 +118,17 @@ async function readiness(o, house, work) {
   const unplaced = (m) => !m.flags?.length;
   const counts = (m, j) => !m.configs || m.configs.some((c) => j.config === c || j.config.startsWith(`${c}.`));
   const named = (m) => all.filter((j) => counts(m, j) && (m.flags ?? []).some((f) => f === j.id || f === j.workload || f === `${j.config}/${j.workload}`));
+  const checkedIn = (m) => (o.allFlags ? named(m) : named(m).slice(0, 1));
+  const tried = (m) => (m.gap ? o.gaps : unplaced(m) ? o.place : true);
   const lines = [];
   let ok = true;
+  for (const m of mutants) {
+    if (m.gap && !['unreachable', 'equivalent'].includes(m.gap.kind)) throw new Error(`${m.id}: a gap's kind is unreachable or equivalent`);
+    if (m.gap && !unplaced(m)) throw new Error(`${m.id}: a gap has no flags`);
+  }
   const runIn = (cm, jobs, at) => runOnce({ ...o, cm, membraneDir: o.cm }, jobs, at);
-  const baseJobs = all.filter((j) => mutants.some((m) => named(m).includes(j)) || ['W1', 'W2'].includes(j.workload));
+  const inScope = (j) => (!o.runs || o.runs.has(j.id)) && (!o.workloads || o.workloads.has(j.workload));
+  const baseJobs = all.filter((j) => mutants.some((m) => tried(m) && !unplaced(m) && checkedIn(m).includes(j)) || (['W1', 'W2'].includes(j.workload) && inScope(j)));
   const { records: base, failed: baseFailed } = await runIn(o.cm, baseJobs, join(work, 'base'));
   for (const f of baseFailed) { ok = false; lines.push(`base: ${f.id} ${base.has(f.id) ? 'was ended by the driver' : 'rendered no record'} (${f.why})`); }
   const noop = join(work, 'noop');
@@ -126,14 +138,24 @@ async function readiness(o, house, work) {
   ok &&= moved.length === 0;
   lines.push(moved.length === 0 ? `no-op: every record the same (${base.size} runs)` : `no-op: FAILED, records changed in ${moved.join(', ')}`);
   for (const m of mutants) {
+    if (!tried(m)) {
+      if (m.gap) lines.push(`${m.id}: GAP, ${m.gap.kind}: ${m.gap.why}`);
+      else { ok = false; lines.push(`${m.id}: UNPLACED, not tried (--place tries it)`); }
+      continue;
+    }
     const dir = join(work, `mutant-${m.id}`);
     const stale = mutated(o.cm, dir, m.edits);
     if (stale) { ok = false; lines.push(`${m.id}: STALE, its text doesn't occur exactly once in src/${stale.file}`); continue; }
-    const jobs = unplaced(m) ? baseJobs.filter((j) => counts(m, j) && (!o.runs || o.runs.has(j.id)) && (!o.workloads || o.workloads.has(j.workload))) : named(m);
+    const jobs = unplaced(m) ? baseJobs.filter((j) => counts(m, j) && inScope(j)) : checkedIn(m);
     const { records, failed } = await runIn(dir, jobs, join(work, `mutant-${m.id}-run`));
     const flagged = jobs.filter((j) => base.has(j.id) && records.has(j.id) && records.get(j.id) !== base.get(j.id)).map((j) => j.id);
     const missing = failed.filter((f) => !records.has(f.id));
     const norecord = missing.length ? ` (${missing.length} rendered no record, the first ${missing[0].id}: ${missing[0].why})` : '';
+    if (m.gap) {
+      ok &&= flagged.length === 0;
+      lines.push(flagged.length ? `${m.id}: GAP NOW FLAGS in ${flagged.join(', ')}${norecord}; its gap is stale` : `${m.id}: GAP, ${m.gap.kind}, still changes none of the ${jobs.length} runs' records${norecord}`);
+      continue;
+    }
     if (unplaced(m)) {
       ok = false;
       if (failed.length && missing.length === jobs.length) { lines.push(`${m.id}: UNPLACED; no run rendered a record${norecord}`); continue; }
@@ -153,14 +175,19 @@ function expectedFailures() {
   return list.map((f) => ({ ...f, match: f.match === undefined ? null : new RegExp(f.match) }));
 }
 
-/** The INVARIANT lines a record holds that no expected failure names. */
+/**
+ * The failure lines a record holds that no expected failure names: its INVARIANT lines, and its end line where the
+ * library ended the run (`end library CLASS`), named as the invariant `end` with the detail `library CLASS`.
+ */
 function unexpectedInvariants(id, text, expected) {
   const entries = expected.filter((f) => f.run === id);
-  return text.split('\n').filter((l) => /^\s*INVARIANT /.test(l)).filter((l) => {
+  const named = (name, detail) => entries.some((f) => f.invariant === name && (f.match === null || f.match.test(detail)));
+  return text.split('\n').filter((l) => {
+    if (/^end library /.test(l)) return !named('end', l.slice('end '.length).split(' logs ')[0]);
+    if (!/^\s*INVARIANT /.test(l)) return false;
     const line = l.trim().slice('INVARIANT '.length);
     const name = line.split(':')[0];
-    const detail = line.slice(name.length + 2);
-    return !entries.some((f) => f.invariant === name && (f.match === null || f.match.test(detail)));
+    return !named(name, line.slice(name.length + 2));
   });
 }
 
