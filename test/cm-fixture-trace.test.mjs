@@ -125,6 +125,26 @@ test("a partial raw copy of a body starts where the shards it carries start, for
   assert.deepEqual(order(withSources(earlier, [['r:1'], ['s:L1-X@1'], ['r:2!shards'], ['r:5']])), ['message 2 covers from sequence 2, before message 1\'s 3']);
 });
 
+test('after a head-window reset, a request that opens with the head and then the history from before it keeps store order', () => {
+  const store = (participant) => [
+    { id: '1', sequence: 1, participant: 'User', content: [{ type: 'text', text: 'one' }] },
+    { id: '2', sequence: 2, participant: 'Junga', content: [{ type: 'text', text: 'two' }] },
+    { id: '3', sequence: 3, participant: 'User', content: [{ type: 'text', text: 'three' }] },
+    { id: '4', sequence: 4, participant, content: [{ type: 'text', text: '[Topic Transition] A new topic.' }] },
+    { id: '5', sequence: 5, participant: 'User', content: [{ type: 'text', text: 'five' }] },
+  ];
+  const summaries = { 'L1-0': { id: 'L1-0', level: 1, sourceLevel: 0, sourceIds: ['1', '2'], content: 'a summary', tokens: 5 } };
+  const order = (participant, sources) => {
+    const messages = store(participant);
+    const m = { ...manager(), getAllMessages: () => messages, getSummary: (id) => summaries[id] ?? null };
+    const c = { messages: sources.map(() => ({ participant: 'User', content: [{ type: 'text', text: 'x' }] })), provenance: { messages: [] } };
+    return checkCompile(m, budget, c, sources.map((x) => ({ sources: x, content: 'x' })), { compresses: true }).filter((v) => /covers from sequence/.test(v.detail)).map((v) => v.detail);
+  };
+  assert.deepEqual(order('Context Manager', [['r:4'], ['s:L1-0@1'], ['r:3'], ['r:5']]), [], 'the head, then the history, then what follows the head');
+  assert.deepEqual(order('User', [['r:4'], ['s:L1-0@1'], ['r:3'], ['r:5']]), ["message 1 covers from sequence 1, before message 0's 4", "message 2 covers from sequence 3, before message 0's 4"], 'with no transition there is no head to go first');
+  assert.deepEqual(order('Context Manager', [['r:5'], ['s:L1-0@1'], ['r:3'], ['r:4']]), ["message 1 covers from sequence 1, before message 0's 5", "message 2 covers from sequence 3, before message 0's 5", "message 3 covers from sequence 4, before message 0's 5"], 'a request may open early only with the head itself');
+});
+
 test("a call or result the store holds unpaired, sent as stored, breaks no shape", () => {
   const messages = [
     { id: '1', sequence: 1, participant: 'User', content: [{ type: 'text', text: 'go' }] },

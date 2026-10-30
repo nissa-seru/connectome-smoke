@@ -50,7 +50,12 @@
       "C9",
       "H2"
     ],
-    "flags": []
+    "flags": [
+      "C9/W7/merges-refused",
+      "H2/W1",
+      "C9/W1",
+      "H2/W7/merges-refused"
+    ]
   },
   {
     "id": "knowledge-k6a",
@@ -66,7 +71,12 @@
       "C9",
       "H2"
     ],
-    "flags": []
+    "flags": [
+      "C9/W7/merges-refused",
+      "H2/W1",
+      "C9/W1",
+      "H2/W7/merges-refused"
+    ]
   },
   {
     "id": "knowledge-k7a",
@@ -82,7 +92,14 @@
       "C9",
       "H2"
     ],
-    "flags": []
+    "flags": [
+      "C9/W7/merges-refused",
+      "H2/W1",
+      "H2/W2",
+      "C9/W1",
+      "H2/W7/merges-refused",
+      "C9/W2"
+    ]
   },
   {
     "id": "knowledge-k7b",
@@ -98,7 +115,14 @@
       "C9",
       "H2"
     ],
-    "flags": []
+    "flags": [
+      "C9/W7/merges-refused",
+      "H2/W1",
+      "H2/W2",
+      "C9/W1",
+      "H2/W7/merges-refused",
+      "C9/W2"
+    ]
   },
   {
     "id": "knowledge-k7c",
@@ -114,7 +138,12 @@
       "C9",
       "H2"
     ],
-    "flags": []
+    "flags": [
+      "C9/W7/merges-refused",
+      "H2/W1",
+      "C9/W1",
+      "H2/W7/merges-refused"
+    ]
   },
   {
     "id": "knowledge-k10",
@@ -130,7 +159,8 @@
       "C9",
       "H2"
     ],
-    "flags": []
+    "flags": [],
+    "note": "unplaced at 322d30e (Desmond-2579, #302111): not checked; to be placed where its premise lives (Oscar-1005, #302165)"
   },
   {
     "id": "knowledge-k13a",
@@ -146,7 +176,16 @@
       "C9",
       "H2"
     ],
-    "flags": []
+    "flags": [
+      "C9/W9",
+      "C9/W8/enforced",
+      "C9/W7/merges-refused",
+      "H2/W1",
+      "C9/W1",
+      "H2/W7/merges-refused",
+      "C9/W2",
+      "C9/W8/unenforced"
+    ]
   },
   {
     "id": "knowledge-k14a",
@@ -162,7 +201,21 @@
       "C9",
       "H2"
     ],
-    "flags": []
+    "flags": [
+      "C9/W7/from-c5",
+      "C9/W9",
+      "H2/W9",
+      "C9/W8/enforced",
+      "C9/W7/merges-refused",
+      "H2/W1",
+      "H2/W2",
+      "C9/W1",
+      "H2/W7/merges-refused",
+      "C9/W2",
+      "H2/W8/unenforced",
+      "C9/W8/unenforced",
+      "H2/W8/enforced"
+    ]
   },
   {
     "id": "knowledge-k14b",
@@ -178,7 +231,19 @@
       "C9",
       "H2"
     ],
-    "flags": []
+    "flags": [
+      "C9/W9",
+      "H2/W9",
+      "C9/W8/enforced",
+      "C9/W7/merges-refused",
+      "H2/W2",
+      "C9/W1",
+      "H2/W7/merges-refused",
+      "C9/W2",
+      "H2/W8/unenforced",
+      "C9/W8/unenforced",
+      "H2/W8/enforced"
+    ]
   },
   {
     "id": "knowledge-k14c",
@@ -195,10 +260,15 @@
       "H2"
     ],
     "flags": [
-      "C9/W1",
-      "C9/W2",
+      "C9/W9",
+      "H2/W9",
+      "C9/W8/enforced",
+      "C9/W7/merges-refused",
       "H2/W1",
-      "H2/W1/real"
+      "C9/W1",
+      "H2/W7/merges-refused",
+      "C9/W8/unenforced",
+      "H2/W8/enforced"
     ]
   },
   {
@@ -215,7 +285,10 @@
       "C9",
       "H2"
     ],
-    "flags": []
+    "flags": [
+      "C9/W7/merges-refused",
+      "C9/W1"
+    ]
   },
   {
     "id": "knowledge-k14e",
@@ -231,7 +304,11 @@
       "C9",
       "H2"
     ],
-    "flags": []
+    "flags": [],
+    "gap": {
+      "kind": "unreachable",
+      "why": "needs maxResearchChunkTokens, which no configuration sets [read]"
+    }
   },
   {
     "id": "knowledge-k15",
@@ -248,10 +325,19 @@
       "H2"
     ],
     "flags": [
-      "C9/W1",
-      "C9/W2",
+      "C9/W7/from-c5",
+      "C9/W9",
+      "H2/W9",
+      "C9/W8/enforced",
+      "C9/W7/merges-refused",
       "H2/W1",
-      "H2/W1/real"
+      "H2/W2",
+      "C9/W1",
+      "H2/W7/merges-refused",
+      "C9/W2",
+      "H2/W8/unenforced",
+      "C9/W8/unenforced",
+      "H2/W8/enforced"
     ]
   },
   {
@@ -269,11 +355,17 @@
       "H2"
     ],
     "flags": [
-      "C9/W1",
-      "C9/W2",
+      "C9/W9",
+      "H2/W9",
+      "C9/W7/merges-refused",
       "H2/W1",
-      "H2/W1/real",
-      "H2/W2/real"
+      "H2/W2",
+      "C9/W1",
+      "H2/W7/merges-refused",
+      "C9/W2",
+      "H2/W8/unenforced",
+      "C9/W8/unenforced",
+      "H2/W8/enforced"
     ]
   },
   {
@@ -290,7 +382,10 @@
       "C9",
       "H2"
     ],
-    "flags": []
+    "flags": [
+      "C9/W9",
+      "H2/W9"
+    ]
   },
   {
     "id": "knowledge-k25",
@@ -306,7 +401,16 @@
       "C9",
       "H2"
     ],
-    "flags": []
+    "flags": [
+      "C9/W9",
+      "H2/W9",
+      "C9/W8/enforced",
+      "C9/W7/merges-refused",
+      "H2/W7/merges-refused",
+      "H2/W8/unenforced",
+      "C9/W8/unenforced",
+      "H2/W8/enforced"
+    ]
   },
   {
     "id": "knowledge-k30c",
@@ -323,13 +427,20 @@
       "H2"
     ],
     "flags": [
-      "C9/W1",
-      "C9/W2",
+      "C9/W9",
+      "H2/W9",
+      "C9/W8/enforced",
+      "C9/W7/merges-refused",
       "H2/W1",
       "H2/W2",
-      "H2/W1/real",
-      "H2/W2/real"
-    ]
+      "C9/W1",
+      "H2/W7/merges-refused",
+      "C9/W2",
+      "H2/W8/unenforced",
+      "C9/W8/unenforced",
+      "H2/W8/enforced"
+    ],
+    "note": "flags through the stand-in's error only: the mutant changes a compression prompt the stand-in refuses (Desmond-2579's placement, J57541)"
   },
   {
     "id": "knowledge-k32a",
@@ -346,12 +457,18 @@
       "H2"
     ],
     "flags": [
-      "C9/W1",
-      "C9/W2",
+      "C9/W9",
+      "H2/W9",
+      "C9/W8/enforced",
+      "C9/W7/merges-refused",
       "H2/W1",
       "H2/W2",
-      "H2/W1/real",
-      "H2/W2/real"
+      "C9/W1",
+      "H2/W7/merges-refused",
+      "C9/W2",
+      "H2/W8/unenforced",
+      "C9/W8/unenforced",
+      "H2/W8/enforced"
     ]
   },
   {
@@ -369,12 +486,18 @@
       "H2"
     ],
     "flags": [
-      "C9/W1",
-      "C9/W2",
+      "C9/W9",
+      "H2/W9",
+      "C9/W8/enforced",
+      "C9/W7/merges-refused",
       "H2/W1",
       "H2/W2",
-      "H2/W1/real",
-      "H2/W2/real"
+      "C9/W1",
+      "H2/W7/merges-refused",
+      "C9/W2",
+      "H2/W8/unenforced",
+      "C9/W8/unenforced",
+      "H2/W8/enforced"
     ]
   },
   {
@@ -391,7 +514,11 @@
       "C9",
       "H2"
     ],
-    "flags": []
+    "flags": [],
+    "gap": {
+      "kind": "equivalent",
+      "why": "at the stand-in's near-uniform summary sizes: the floor term matters only where one summary is over 0.3 of the L1 room [read; sizes by J57513]"
+    }
   },
   {
     "id": "knowledge-k35b",
@@ -407,7 +534,11 @@
       "C9",
       "H2"
     ],
-    "flags": []
+    "flags": [],
+    "gap": {
+      "kind": "equivalent",
+      "why": "at the stand-in's near-uniform summary sizes: the floor term matters only where one summary is over 0.3 of the L1 room [read; sizes by J57513]"
+    }
   },
   {
     "id": "knowledge-k35c",
@@ -423,7 +554,8 @@
       "C9",
       "H2"
     ],
-    "flags": []
+    "flags": [],
+    "note": "unplaced at 322d30e (Desmond-2579, #302111): not checked; to be placed where its premise lives (Oscar-1005, #302165)"
   },
   {
     "id": "knowledge-k37",
@@ -439,7 +571,8 @@
       "C9",
       "H2"
     ],
-    "flags": []
+    "flags": [],
+    "note": "unplaced at 322d30e (Desmond-2579, #302111): C9 opening C5's store is refused at open at fb4cf1046 (D34) [run, J57541]; it opens at Fern's D34 branch (J57480, J57558), where k37 hasn't been placed"
   },
   {
     "id": "knowledge-k38b",
@@ -455,7 +588,8 @@
       "C9",
       "H2"
     ],
-    "flags": []
+    "flags": [],
+    "note": "unplaced at 322d30e (Desmond-2579, #302111): not checked; to be placed where its premise lives (Oscar-1005, #302165)"
   },
   {
     "id": "knowledge-k39",
@@ -471,7 +605,11 @@
       "C9",
       "H2"
     ],
-    "flags": []
+    "flags": [],
+    "gap": {
+      "kind": "equivalent",
+      "why": "at the stand-in's near-uniform summary sizes: the floor term matters only where one summary is over 0.3 of the L1 room [read; sizes by J57513]"
+    }
   },
   {
     "id": "knowledge-k40",
@@ -487,7 +625,8 @@
       "C9",
       "H2"
     ],
-    "flags": []
+    "flags": [],
+    "note": "unplaced at 322d30e (Desmond-2579, #302111): binds only where the room left after the summaries limits the tail [read]"
   },
   {
     "id": "knowledge-p-k24l1",
@@ -504,12 +643,18 @@
       "H2"
     ],
     "flags": [
-      "C9/W1",
-      "C9/W2",
+      "C9/W9",
+      "H2/W9",
+      "C9/W8/enforced",
+      "C9/W7/merges-refused",
       "H2/W1",
       "H2/W2",
-      "H2/W1/real",
-      "H2/W2/real"
+      "C9/W1",
+      "H2/W7/merges-refused",
+      "C9/W2",
+      "H2/W8/unenforced",
+      "C9/W8/unenforced",
+      "H2/W8/enforced"
     ]
   },
   {
@@ -527,10 +672,17 @@
       "H2"
     ],
     "flags": [
-      "C9/W1",
-      "C9/W2",
+      "C9/W9",
+      "H2/W9",
+      "C9/W7/merges-refused",
       "H2/W1",
-      "H2/W2"
+      "H2/W2",
+      "C9/W1",
+      "H2/W7/merges-refused",
+      "C9/W2",
+      "H2/W8/unenforced",
+      "C9/W8/unenforced",
+      "H2/W8/enforced"
     ]
   },
   {
@@ -547,7 +699,9 @@
       "C9",
       "H2"
     ],
-    "flags": []
+    "flags": [
+      "C9/W9"
+    ]
   },
   {
     "id": "knowledge-p-i3b",
@@ -563,7 +717,9 @@
       "C9",
       "H2"
     ],
-    "flags": []
+    "flags": [
+      "C9/W9"
+    ]
   },
   {
     "id": "knowledge-p-k20",
@@ -580,10 +736,10 @@
       "H2"
     ],
     "flags": [
+      "H2/W9",
       "H2/W1",
-      "H2/W2",
-      "H2/W1/real",
-      "H2/W2/real"
+      "H2/W7/merges-refused",
+      "H2/W8/enforced"
     ]
   },
   {
@@ -600,7 +756,10 @@
       "C9",
       "H2"
     ],
-    "flags": []
+    "flags": [
+      "C9/W9",
+      "H2/W9"
+    ]
   },
   {
     "id": "knowledge-p-k33",
@@ -616,7 +775,11 @@
       "C9",
       "H2"
     ],
-    "flags": []
+    "flags": [],
+    "gap": {
+      "kind": "unreachable",
+      "why": "Knowledge shards a message only under adaptiveResolution, which no configuration sets for Knowledge (#298529) [read]"
+    }
   },
   {
     "id": "knowledge-p-k34",
@@ -632,7 +795,10 @@
       "C9",
       "H2"
     ],
-    "flags": []
+    "flags": [
+      "C9/W9",
+      "H2/W9"
+    ]
   },
   {
     "id": "pt-pt12",
@@ -648,7 +814,8 @@
       "C1",
       "H3"
     ],
-    "flags": []
+    "flags": [],
+    "note": "unplaced at 322d30e (Desmond-2579, #302111): not checked; to be placed where its premise lives (Oscar-1005, #302165)"
   },
   {
     "id": "pt-wp4a",
@@ -683,7 +850,10 @@
       "C2",
       "H4"
     ],
-    "flags": []
+    "flags": [
+      "H4/W9",
+      "C2/W9"
+    ]
   },
   {
     "id": "pt-wp7b",
@@ -699,7 +869,11 @@
       "C2",
       "H4"
     ],
-    "flags": []
+    "flags": [
+      "C5/W9",
+      "H4/W9",
+      "C2/W9"
+    ]
   },
   {
     "id": "pt-wp8a",
@@ -715,7 +889,12 @@
       "C2",
       "H4"
     ],
-    "flags": []
+    "flags": [
+      "H4/W8/unenforced",
+      "H4/W8/enforced",
+      "C2/W8/enforced",
+      "C2/W8/unenforced"
+    ]
   },
   {
     "id": "pt-wp8b",
@@ -731,7 +910,12 @@
       "C2",
       "H4"
     ],
-    "flags": []
+    "flags": [
+      "H4/W8/unenforced",
+      "H4/W8/enforced",
+      "C2/W8/enforced",
+      "C2/W8/unenforced"
+    ]
   },
   {
     "id": "pt-wp8c",
@@ -747,7 +931,12 @@
       "C2",
       "H4"
     ],
-    "flags": []
+    "flags": [
+      "H4/W8/unenforced",
+      "H4/W8/enforced",
+      "C2/W8/enforced",
+      "C2/W8/unenforced"
+    ]
   },
   {
     "id": "pt-wp10b",
@@ -763,7 +952,10 @@
       "C2",
       "H4"
     ],
-    "flags": []
+    "flags": [
+      "H4/W9",
+      "C2/W9"
+    ]
   },
   {
     "id": "pt-wp11b",
@@ -779,7 +971,11 @@
       "C2",
       "H4"
     ],
-    "flags": []
+    "flags": [],
+    "gap": {
+      "kind": "equivalent",
+      "why": "JSON keeps no NaN or Infinity, and a negative anchor selects the window 0 selects [read]"
+    }
   },
   {
     "id": "pt-wp13a",
@@ -795,7 +991,15 @@
       "C2",
       "H4"
     ],
-    "flags": []
+    "flags": [
+      "H4/W8/unenforced",
+      "H4/W8/enforced",
+      "H4/W3",
+      "C2/W3",
+      "C2/W8/enforced",
+      "C2/W8/unenforced",
+      "C2/W9"
+    ]
   },
   {
     "id": "pt-wp13b",
@@ -811,7 +1015,16 @@
       "C2",
       "H4"
     ],
-    "flags": []
+    "flags": [
+      "H4/W8/unenforced",
+      "H4/W8/enforced",
+      "H4/W3",
+      "H4/W9",
+      "C2/W3",
+      "C2/W8/enforced",
+      "C2/W8/unenforced",
+      "C2/W9"
+    ]
   },
   {
     "id": "pt-wp14",
@@ -827,7 +1040,10 @@
       "C2",
       "H4"
     ],
-    "flags": []
+    "flags": [
+      "H4/W9",
+      "C2/W9"
+    ]
   },
   {
     "id": "pt-wp15",
@@ -867,7 +1083,11 @@
       "C2",
       "H4"
     ],
-    "flags": []
+    "flags": [],
+    "gap": {
+      "kind": "unreachable",
+      "why": "agent-framework reads maxMessageTokens only for the tool-result inline cap, min(24,000, 4 x it), and the house's 40,000 never binds there (framework.ts:28762-28810) [read]"
+    }
   },
   {
     "id": "pt-wp23b",
@@ -883,7 +1103,11 @@
       "C2",
       "H4"
     ],
-    "flags": []
+    "flags": [],
+    "gap": {
+      "kind": "unreachable",
+      "why": "no configuration sets imageStripDepthTokens to 0 [read]"
+    }
   },
   {
     "id": "pt-wp26a",
@@ -899,7 +1123,10 @@
       "C2",
       "H4"
     ],
-    "flags": []
+    "flags": [
+      "H4/W9",
+      "C2/W9"
+    ]
   },
   {
     "id": "pt-wp26b",
@@ -915,7 +1142,8 @@
       "C2",
       "H4"
     ],
-    "flags": []
+    "flags": [],
+    "note": "unplaced at 322d30e (Desmond-2579, #302111): not checked; to be placed where its premise lives (Oscar-1005, #302165)"
   },
   {
     "id": "pt-wp26c",
@@ -931,6 +1159,880 @@
       "C2",
       "H4"
     ],
-    "flags": []
+    "flags": [],
+    "gap": {
+      "kind": "equivalent",
+      "why": "initialize nulls prevCacheKeys before derive's discard, and derive is discard's only caller [read]"
+    }
+  },
+  {
+    "id": "select-b3",
+    "why": "B3: with enforceBudget false the threshold select refuses past the plain budget (graceLimit = maxTokens), where it should take no ceiling (select-path rule list, survived all 60 files reach.py names, J57150)",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "    const graceLimit = this.config.enforceBudget === false\n      ? Number.POSITIVE_INFINITY\n      : Math.floor(maxTokens * (1 + Math.max(0, this.config.overBudgetGraceRatio ?? 0)));",
+        "replace": "    const graceLimit = this.config.enforceBudget === false\n      ? maxTokens\n      : Math.floor(maxTokens * (1 + Math.max(0, this.config.overBudgetGraceRatio ?? 0)));"
+      }
+    ],
+    "configs": [
+      "C3",
+      "C4",
+      "C9",
+      "H2"
+    ],
+    "flags": [
+      "C4/W8/unenforced",
+      "H2/W8/unenforced",
+      "C9/W8/unenforced",
+      "C3/W8/unenforced"
+    ]
+  },
+  {
+    "id": "select-b6",
+    "why": "B6: the threshold select no longer runs assertFullCoverage, so a select that lost middle content would return it (select-path rule list, survived all 60 files reach.py names, J57150)",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "    this.assertFullCoverage(entries, messages, { headStart, headEnd, recentStart: effectiveRecentStart });\n    this.assertMiddleCoverage();\n    this.postProcessToolEntries(entries);",
+        "replace": "    this.assertMiddleCoverage();\n    this.postProcessToolEntries(entries);"
+      }
+    ],
+    "configs": [
+      "C3",
+      "C4",
+      "C9",
+      "H2"
+    ],
+    "flags": [],
+    "gap": {
+      "kind": "unreachable",
+      "why": "without a prior defect: the coverage check it removes fails only where a select has already lost middle content [read]"
+    }
+  },
+  {
+    "id": "select-d4b",
+    "why": "D4: the recent window keeps a leading tool_result whose call it evicted (pairing repair then leaves a '[tool call omitted]' entry) (select-path rule list, survived all 91 files reach.py names, J57150)",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "      !this.hasToolUse(messages[accepted[0]])\n    ) {\n      accepted.shift();",
+        "replace": "      !this.hasToolUse(messages[accepted[0]])\n    ) {\n      break;"
+      }
+    ],
+    "configs": [
+      "C3",
+      "C4",
+      "C5",
+      "C6",
+      "C7",
+      "C8",
+      "C9",
+      "H1",
+      "H2"
+    ],
+    "flags": [],
+    "note": "unplaced at 322d30e (Desmond-2579, #302111); on W6 at 8205ea4 it doesn't flag in any compressing configuration either (J57677, #302632)"
+  },
+  {
+    "id": "select-e1a",
+    "why": "E1: L3's unused level budget no longer carries down to L2 (select-path rule list, survived all 60 files reach.py names, J57150)",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "    const l2Effective = l2Budget + l3Carryover;",
+        "replace": "    const l2Effective = l2Budget;"
+      }
+    ],
+    "configs": [
+      "C3",
+      "C4",
+      "C9",
+      "H2"
+    ],
+    "flags": [],
+    "note": "unplaced at 322d30e (Desmond-2579, #302111): not checked; to be placed where its premise lives (Oscar-1005, #302165)"
+  },
+  {
+    "id": "select-e1b",
+    "why": "E1: L3 summaries are taken past l3BudgetTokens (select-path rule list, survived all 15 files reach.py names, J57150)",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "      if (l3Used + s.tokens > l3Budget) break;\n",
+        "replace": ""
+      }
+    ],
+    "configs": [
+      "C3",
+      "C4",
+      "C9",
+      "H2"
+    ],
+    "flags": [],
+    "note": "unplaced at 322d30e (Desmond-2579, #302111): not checked; to be placed where its premise lives (Oscar-1005, #302165)"
+  },
+  {
+    "id": "select-e5a",
+    "why": "E5: a summary with no content is emitted as an empty recall pair (select-path rule list, survived all 37 files reach.py names, J57150)",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "            if (!summary.content || !summary.content.trim()) continue;\n            const headerText = this.buildRecallHeader(summary);",
+        "replace": "            const headerText = this.buildRecallHeader(summary);"
+      }
+    ],
+    "configs": [
+      "C3",
+      "C4",
+      "C9",
+      "H2"
+    ],
+    "flags": [],
+    "note": "unplaced at 322d30e (Desmond-2579, #302111): not checked; to be placed where its premise lives (Oscar-1005, #302165)"
+  },
+  {
+    "id": "select-e5b",
+    "why": "E5: an empty summary claims coverage in coverage completion (select-path rule list, survived all 37 files reach.py names, J57150)",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "        if (s.mergedInto) continue;\n        if (!s.content || !s.content.trim()) continue;\n        for (const leaf of leavesOf(s)) {",
+        "replace": "        if (s.mergedInto) continue;\n        for (const leaf of leavesOf(s)) {"
+      }
+    ],
+    "configs": [
+      "C3",
+      "C4",
+      "C9",
+      "H2"
+    ],
+    "flags": [],
+    "note": "unplaced at 322d30e (Desmond-2579, #302111): not checked; to be placed where its premise lives (Oscar-1005, #302165)"
+  },
+  {
+    "id": "select-g3b",
+    "why": "G3: the default recall header is '[Recall]', not '[Recall {id}]' (select-path rule list, survived all 37 files reach.py names, J57150)",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "    const template = this.config.recallHeaderTemplate ?? '[Recall {id}]';",
+        "replace": "    const template = this.config.recallHeaderTemplate ?? '[Recall]';"
+      }
+    ],
+    "configs": [
+      "C3",
+      "C4",
+      "C5",
+      "C6",
+      "C7",
+      "C8",
+      "C9",
+      "H1",
+      "H2"
+    ],
+    "flags": [],
+    "note": "unplaced at 322d30e (Desmond-2579, #302111): not checked; to be placed where its premise lives (Oscar-1005, #302165)"
+  },
+  {
+    "id": "select-i3b",
+    "why": "I3: an entry left empty by dropping orphan results gets no placeholder text block (select-path rule list, survived all 18 files reach.py names, J57150)",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "            : unitOf(entry) !== entry ? [] : [{ type: 'text', text: '[tool call omitted]' }];",
+        "replace": "            : [];"
+      }
+    ],
+    "configs": [
+      "C3",
+      "C4",
+      "C5",
+      "C6",
+      "C7",
+      "C8",
+      "C9",
+      "H1",
+      "H2"
+    ],
+    "flags": [
+      "W6"
+    ]
+  },
+  {
+    "id": "select-j1",
+    "why": "J1: the threshold path puts a second cache marker on the last tail entry (select-path rule list, survived all 60 files reach.py names, J57150)",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "    const tailStats = this.emitRecentNewestFirst(entries, store, messages, effectiveRecentStart, msgCap, graceLimit, totalTokens);",
+        "replace": "    const tailStats = this.emitRecentNewestFirst(entries, store, messages, effectiveRecentStart, msgCap, graceLimit, totalTokens);\n    if (entries.length > 0) entries[entries.length - 1].cacheMarker = true;"
+      }
+    ],
+    "configs": [
+      "C3",
+      "C4",
+      "C9",
+      "H2"
+    ],
+    "flags": [
+      "C9/W8/enforced",
+      "C4/W8/enforced",
+      "H2/W1",
+      "C4/W7/modes",
+      "C3/W1",
+      "H2/W2",
+      "C3/W8/enforced",
+      "C4/W8/unenforced",
+      "C9/W1",
+      "C9/W2",
+      "C4/W2",
+      "C4/W1",
+      "C3/W7/modes",
+      "H2/W8/unenforced",
+      "H2/W7/modes",
+      "C9/W8/unenforced",
+      "C3/W8/unenforced",
+      "H2/W8/enforced",
+      "C3/W2",
+      "C9/W7/modes"
+    ]
+  },
+  {
+    "id": "kvs-KS2a",
+    "why": "KS-2: targetFrontier() returns an empty map, not null, before the first solve. Survived all 12 test files reach.py names at fb4cf1046 (Gordon-2414's kv-stable mapping).",
+    "edits": [
+      {
+        "file": "adaptive/strategies/kv-stable.ts",
+        "find": "    return this._lastTarget;\n",
+        "replace": "    return this._lastTarget ?? new Map();\n"
+      }
+    ],
+    "configs": [
+      "C6"
+    ],
+    "flags": [],
+    "gap": {
+      "kind": "unreachable",
+      "why": "targetFrontier() has no reader in context-manager, agent-framework or connectome-host, and AutobiographicalStrategy builds a KvStableStrategy for each pick (buildPicker) and solves it once, so nothing reads it before a solve [read, fb4cf1046: autobiographical.ts 13874-13891, 16152-16163; picker.ts 531]"
+    }
+  },
+  {
+    "id": "kvs-KS2b",
+    "why": "KS-2: lastPlan() returns an empty plan, not null, before the first solve. Survived all 26 test files reach.py names at fb4cf1046 (Gordon-2414's kv-stable mapping).",
+    "edits": [
+      {
+        "file": "adaptive/strategies/kv-stable.ts",
+        "find": "    return this._lastPlan;\n",
+        "replace": "    return this._lastPlan ?? ({ resolutions: new Map() } as unknown as ControlPlan);\n"
+      }
+    ],
+    "configs": [
+      "C6"
+    ],
+    "flags": [],
+    "gap": {
+      "kind": "unreachable",
+      "why": "the library reads lastPlan() only after the one solve of the KvStableStrategy each pick builds (autobiographical.ts 13977), so never before a solve [read, fb4cf1046]"
+    }
+  },
+  {
+    "id": "kvs-KS3a",
+    "why": "KS-3: targetFrontier() keeps the first solve's frontier. Survived all 29 test files reach.py names at fb4cf1046 (Gordon-2414's kv-stable mapping).",
+    "edits": [
+      {
+        "file": "adaptive/strategies/kv-stable.ts",
+        "find": "this._lastTarget = plan.resolutions;",
+        "replace": "this._lastTarget ??= plan.resolutions;"
+      }
+    ],
+    "configs": [
+      "C6"
+    ],
+    "flags": [],
+    "gap": {
+      "kind": "unreachable",
+      "why": "each pick builds its own KvStableStrategy and solves it once, so its first solve is its only one; targetFrontier() has no reader in the library or the house's hosts [read, fb4cf1046]"
+    }
+  },
+  {
+    "id": "kvs-KS3b",
+    "why": "KS-3: lastPlan() keeps the first solve's plan. Survived all 29 test files reach.py names at fb4cf1046 (Gordon-2414's kv-stable mapping).",
+    "edits": [
+      {
+        "file": "adaptive/strategies/kv-stable.ts",
+        "find": "this._lastPlan = plan;",
+        "replace": "this._lastPlan ??= plan;"
+      }
+    ],
+    "configs": [
+      "C6"
+    ],
+    "flags": [],
+    "gap": {
+      "kind": "unreachable",
+      "why": "each pick builds its own KvStableStrategy and solves it once (autobiographical.ts 13874-13891, 16152-16163; picker.ts 531), so its first plan is its only one [read, fb4cf1046]"
+    }
+  },
+  {
+    "id": "kvs-KS8",
+    "why": "KS-8: a pin at level 0 isn't put in the raw zone. Survived all 16 test files reach.py names at fb4cf1046 (Gordon-2414's kv-stable mapping).",
+    "edits": [
+      {
+        "file": "adaptive/strategies/kv-stable.ts",
+        "find": "        if (c.pinLevel <= 0) rawZone.add(c.id);\n",
+        "replace": "        if (c.pinLevel <= 0) void 0;\n"
+      }
+    ],
+    "configs": [
+      "C6"
+    ],
+    "flags": [],
+    "note": "unplaced at 322d30e (Desmond-2579, #302111): not checked; to be placed where its premise lives (Oscar-1005, #302165)"
+  },
+  {
+    "id": "kvs-KS9",
+    "why": "KS-9: a pin-max-level 0 isn't put in the raw zone. Survived all 13 test files reach.py names at fb4cf1046 (Gordon-2414's kv-stable mapping).",
+    "edits": [
+      {
+        "file": "adaptive/strategies/kv-stable.ts",
+        "find": "        if (c.pinMaxLevel <= 0) rawZone.add(c.id);\n",
+        "replace": "        if (c.pinMaxLevel <= 0) void 0;\n"
+      }
+    ],
+    "configs": [
+      "C6"
+    ],
+    "flags": [],
+    "note": "unplaced at 322d30e (Desmond-2579, #302111): not checked; to be placed where its premise lives (Oscar-1005, #302165)"
+  },
+  {
+    "id": "kvs-KS11",
+    "why": "KS-11: a locked chunk with a pin-max-level isn't frozen. Survived all 13 test files reach.py names at fb4cf1046 (Gordon-2414's kv-stable mapping).",
+    "edits": [
+      {
+        "file": "adaptive/strategies/kv-stable.ts",
+        "find": "        if (c.lockedByAgent) frozen.add(c.id);\n",
+        "replace": "        void 0;\n"
+      }
+    ],
+    "configs": [
+      "C6"
+    ],
+    "flags": [],
+    "note": "unplaced at 322d30e (Desmond-2579, #302111): not checked; to be placed where its premise lives (Oscar-1005, #302165)"
+  },
+  {
+    "id": "kvs-KS16",
+    "why": "KS-16: a protected leaf beside a recall keeps its held level only when its salience is above 0.5. Survived all 30 test files reach.py names at fb4cf1046 (Gordon-2414's kv-stable mapping).",
+    "edits": [
+      {
+        "file": "adaptive/kv-control.ts",
+        "find": "          if ((caps.get(leafId) ?? 0) < 0) continue; // protected: keeps its held level beside the recall\n",
+        "replace": "          if ((caps.get(leafId) ?? 0) < 0 && salienceOf(byId.get(leafId)!) > 0.5) continue; // protected: keeps its held level beside the recall\n"
+      }
+    ],
+    "configs": [
+      "C6"
+    ],
+    "flags": [],
+    "note": "unplaced at 322d30e (Desmond-2579, #302111): not checked; to be placed where its premise lives (Oscar-1005, #302165)"
+  },
+  {
+    "id": "kvs-KS17a",
+    "why": "KS-17: foldAt ignores goalTotalTokens. Survived all 29 test files reach.py names at fb4cf1046 (Gordon-2414's kv-stable mapping). Its option is never set by configuration: no file in connectome-host (origin/main 5416caab6) or agent-framework (a64cfc010f) names goalTotalTokens, goalTargetTokens or strictReach. The strategy sets all three itself, at autobiographical.ts:16159-16161, on a compile given a prepared budget (a prepared window transition), so it is reachable through a workload that makes one.",
+    "edits": [
+      {
+        "file": "adaptive/strategies/kv-stable.ts",
+        "find": "      foldAtTokens: this.opts.goalTotalTokens ?? budget.totalBudget,\n",
+        "replace": "      foldAtTokens: budget.totalBudget,\n"
+      }
+    ],
+    "configs": [
+      "C6"
+    ],
+    "flags": [],
+    "note": "unplaced at 322d30e (Desmond-2579, #302111): not checked; to be placed where its premise lives (Oscar-1005, #302165)"
+  },
+  {
+    "id": "kvs-KS17b",
+    "why": "KS-17: the wall W takes goalTotalTokens instead of the live budget. Survived all 29 test files reach.py names at fb4cf1046 (Gordon-2414's kv-stable mapping). Its option is never set by configuration: no file in connectome-host (origin/main 5416caab6) or agent-framework (a64cfc010f) names goalTotalTokens, goalTargetTokens or strictReach. The strategy sets all three itself, at autobiographical.ts:16159-16161, on a compile given a prepared budget (a prepared window transition), so it is reachable through a workload that makes one.",
+    "edits": [
+      {
+        "file": "adaptive/strategies/kv-stable.ts",
+        "find": "      windowTokens: budget.totalBudget,\n",
+        "replace": "      windowTokens: this.opts.goalTotalTokens ?? budget.totalBudget,\n"
+      }
+    ],
+    "configs": [
+      "C6"
+    ],
+    "flags": [
+      "C6/W9"
+    ]
+  },
+  {
+    "id": "kvs-KS17c",
+    "why": "KS-17: the target ignores goalTargetTokens. Survived all 29 test files reach.py names at fb4cf1046 (Gordon-2414's kv-stable mapping). Its option is never set by configuration: no file in connectome-host (origin/main 5416caab6) or agent-framework (a64cfc010f) names goalTotalTokens, goalTargetTokens or strictReach. The strategy sets all three itself, at autobiographical.ts:16159-16161, on a compile given a prepared budget (a prepared window transition), so it is reachable through a workload that makes one.",
+    "edits": [
+      {
+        "file": "adaptive/strategies/kv-stable.ts",
+        "find": "      targetTokens: this.opts.goalTargetTokens ?? budget.targetBudget,\n",
+        "replace": "      targetTokens: budget.targetBudget,\n"
+      }
+    ],
+    "configs": [
+      "C6"
+    ],
+    "flags": [],
+    "note": "unplaced at 322d30e (Desmond-2579, #302111): not checked; to be placed where its premise lives (Oscar-1005, #302165)"
+  },
+  {
+    "id": "kvs-KS18b",
+    "why": "KS-18: the default quality-gap ratio is 0.7, not 0.35. Survived all 35 test files reach.py names at fb4cf1046 (Gordon-2414's kv-stable mapping).",
+    "edits": [
+      {
+        "file": "adaptive/kv-control.ts",
+        "find": "  const gapRatio = p.qualityGapRatio ?? 0.35;\n",
+        "replace": "  const gapRatio = p.qualityGapRatio ?? 0.7;\n"
+      }
+    ],
+    "configs": [
+      "C6"
+    ],
+    "flags": [],
+    "note": "unplaced at 322d30e (Desmond-2579, #302111): not checked; to be placed where its premise lives (Oscar-1005, #302165)"
+  },
+  {
+    "id": "kvs-KS19",
+    "why": "KS-19: now is the newest sequence plus 1000, so every age grows by 1000. Survived all 29 test files reach.py names at fb4cf1046 (Gordon-2414's kv-stable mapping).",
+    "edits": [
+      {
+        "file": "adaptive/strategies/kv-stable.ts",
+        "find": "      if (c.sequence > now) now = c.sequence;\n",
+        "replace": "      if (c.sequence > now) now = c.sequence + 1000;\n"
+      }
+    ],
+    "configs": [
+      "C6"
+    ],
+    "flags": [
+      "C6/W8/unenforced",
+      "C6/W8/enforced"
+    ]
+  },
+  {
+    "id": "kvs-KS24a",
+    "why": "KS-24: the base skips the fixed level for a chunk that is also locked. Survived all 35 test files reach.py names at fb4cf1046 (Gordon-2414's kv-stable mapping).",
+    "edits": [
+      {
+        "file": "adaptive/kv-control.ts",
+        "find": "    } else if (fixedLevels.has(c.id)) {\n      // Pin-at-k",
+        "replace": "    } else if (fixedLevels.has(c.id) && !frozen.has(c.id)) {\n      // Pin-at-k"
+      }
+    ],
+    "configs": [
+      "C6"
+    ],
+    "flags": [],
+    "note": "unplaced at 322d30e (Desmond-2579, #302111): not checked; to be placed where its premise lives (Oscar-1005, #302165)"
+  },
+  {
+    "id": "kvs-KS24b",
+    "why": "KS-24: a locked chunk with a pin-at-level is also frozen, and the base skips the fixed level for it. Survived all 35 test files reach.py names at fb4cf1046 (Gordon-2414's kv-stable mapping).",
+    "edits": [
+      {
+        "file": "adaptive/strategies/kv-stable.ts",
+        "find": "        if (c.pinLevel <= 0) rawZone.add(c.id);\n        else fixedPins.push({ id: c.id, level: c.pinLevel });\n",
+        "replace": "        if (c.lockedByAgent) frozen.add(c.id);\n        if (c.pinLevel <= 0) rawZone.add(c.id);\n        else fixedPins.push({ id: c.id, level: c.pinLevel });\n"
+      },
+      {
+        "file": "adaptive/kv-control.ts",
+        "find": "    } else if (fixedLevels.has(c.id)) {\n      // Pin-at-k",
+        "replace": "    } else if (fixedLevels.has(c.id) && !frozen.has(c.id)) {\n      // Pin-at-k"
+      }
+    ],
+    "configs": [
+      "C6"
+    ],
+    "flags": [],
+    "note": "unplaced at 322d30e (Desmond-2579, #302111): not checked; to be placed where its premise lives (Oscar-1005, #302165)"
+  },
+  {
+    "id": "kvs-KS26",
+    "why": "KS-26: demand skips a chunk held at a fixed level. Survived all 18 test files reach.py names at fb4cf1046 (Gordon-2414's kv-stable mapping).",
+    "edits": [
+      {
+        "file": "adaptive/strategies/kv-stable.ts",
+        "find": "const uncovered = !c.l1Id && !rawZone.has(c.id) && !frozen.has(c.id);",
+        "replace": "const uncovered = !c.l1Id && !rawZone.has(c.id) && !frozen.has(c.id) && !fixedLevels.has(c.id);"
+      }
+    ],
+    "configs": [
+      "C6"
+    ],
+    "flags": [],
+    "note": "unplaced at 322d30e (Desmond-2579, #302111): not checked; to be placed where its premise lives (Oscar-1005, #302165)"
+  },
+  {
+    "id": "kvs-KC4",
+    "why": "KC-4: the ideal is adopted only within half the trust region. Survived all 34 test files reach.py names at fb4cf1046 (Gordon-2414's kv-stable mapping).",
+    "edits": [
+      {
+        "file": "adaptive/kv-control.ts",
+        "find": "  if (idealPert <= P) {",
+        "replace": "  if (idealPert <= P / 2) {"
+      }
+    ],
+    "configs": [
+      "C6"
+    ],
+    "flags": [],
+    "note": "unplaced at 322d30e (Desmond-2579, #302111): not checked; to be placed where its premise lives (Oscar-1005, #302165)"
+  },
+  {
+    "id": "kvs-KC8a",
+    "why": "KC-8: strict reach no longer lifts the quality-gap ceiling. Survived all 35 test files reach.py names at fb4cf1046 (Gordon-2414's kv-stable mapping). Its option is never set by configuration: no file in connectome-host (origin/main 5416caab6) or agent-framework (a64cfc010f) names goalTotalTokens, goalTargetTokens or strictReach. The strategy sets all three itself, at autobiographical.ts:16159-16161, on a compile given a prepared budget (a prepared window transition), so it is reachable through a workload that makes one.",
+    "edits": [
+      {
+        "file": "adaptive/kv-control.ts",
+        "find": "  const gapCeiling = (strictReach ? Number.POSITIVE_INFINITY : gapRatio) * Math.max(1, idealLoss);",
+        "replace": "  const gapCeiling = gapRatio * Math.max(1, idealLoss);"
+      }
+    ],
+    "configs": [
+      "C6"
+    ],
+    "flags": [],
+    "note": "unplaced at 322d30e (Desmond-2579, #302111): not checked; to be placed where its premise lives (Oscar-1005, #302165)"
+  },
+  {
+    "id": "kvs-KC14",
+    "why": "KC-14: escalated compares the ideal's tokens with foldAt, not W. Survived all 35 test files reach.py names at fb4cf1046 (Gordon-2414's kv-stable mapping). Its option is never set by configuration: no file in connectome-host (origin/main 5416caab6) or agent-framework (a64cfc010f) names goalTotalTokens, goalTargetTokens or strictReach. The strategy sets all three itself, at autobiographical.ts:16159-16161, on a compile given a prepared budget (a prepared window transition), so it is reachable through a workload that makes one.",
+    "edits": [
+      {
+        "file": "adaptive/kv-control.ts",
+        "find": "    escalated: ideal.tokens > p.windowTokens,\n",
+        "replace": "    escalated: ideal.tokens > p.foldAtTokens,\n"
+      }
+    ],
+    "configs": [
+      "C6"
+    ],
+    "flags": [],
+    "note": "unplaced at 322d30e (Desmond-2579, #302111): not checked; to be placed where its premise lives (Oscar-1005, #302165)"
+  },
+  {
+    "id": "kvs-KC22a",
+    "why": "KC-22: salience isn't clamped to [0, 1]. Survived all 27 test files reach.py names at fb4cf1046 (Gordon-2414's kv-stable mapping).",
+    "edits": [
+      {
+        "file": "adaptive/kv-control.ts",
+        "find": "  return Math.min(1, Math.max(0, s));\n",
+        "replace": "  return s;\n"
+      }
+    ],
+    "configs": [
+      "C6"
+    ],
+    "flags": [],
+    "note": "unplaced at 322d30e (Desmond-2579, #302111): not checked; to be placed where its premise lives (Oscar-1005, #302165)"
+  },
+  {
+    "id": "kvs-KC26",
+    "why": "KC-26: the fold-then-project loop stops after one round. Survived all 35 test files reach.py names at fb4cf1046 (Gordon-2414's kv-stable mapping).",
+    "edits": [
+      {
+        "file": "adaptive/kv-control.ts",
+        "find": "  if (tokens <= windowTokens || tokens >= projTokens || round >= 2) {",
+        "replace": "  if (true) {"
+      }
+    ],
+    "configs": [
+      "C6"
+    ],
+    "flags": [],
+    "note": "unplaced at 322d30e (Desmond-2579, #302111): not checked; to be placed where its premise lives (Oscar-1005, #302165)"
+  },
+  {
+    "id": "kvs-KC27",
+    "why": "KC-27: the projection walks shallowest-first. Survived all 35 test files reach.py names at fb4cf1046 (Gordon-2414's kv-stable mapping).",
+    "edits": [
+      {
+        "file": "adaptive/kv-control.ts",
+        "find": "      (a, b) => (F.get(b.id) ?? 0) - (F.get(a.id) ?? 0),",
+        "replace": "      (a, b) => (F.get(a.id) ?? 0) - (F.get(b.id) ?? 0),"
+      }
+    ],
+    "configs": [
+      "C6"
+    ],
+    "flags": [],
+    "note": "unplaced at 322d30e (Desmond-2579, #302111): not checked; to be placed where its premise lives (Oscar-1005, #302165)"
+  },
+  {
+    "id": "kvs-KC28",
+    "why": "KC-28: the returned token count is the ledger's, not a render after projection. Survived all 35 test files reach.py names at fb4cf1046 (Gordon-2414's kv-stable mapping).",
+    "edits": [
+      {
+        "file": "adaptive/kv-control.ts",
+        "find": "  const tokens = renderLayout(inputs, tree, F).totalTokens;\n  // Fits, or",
+        "replace": "  const tokens = ledger.tokens;\n  // Fits, or"
+      }
+    ],
+    "configs": [
+      "C6"
+    ],
+    "flags": [],
+    "note": "unplaced at 322d30e (Desmond-2579, #302111): not checked; to be placed where its premise lives (Oscar-1005, #302165)"
+  },
+  {
+    "id": "cal-C4",
+    "why": "C4: a report whose total isn't finite and positive consumes the arm, so the next real report after it isn't learned from. Survived every file reach.py names at fb4cf1046 (Beth-2709's calibration mapping, J57257/J57389).",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "    if (!Number.isFinite(realTotal) || realTotal <= 0) return;",
+        "replace": "    if (!Number.isFinite(realTotal) || realTotal <= 0) { this._calibrationArmed = false; return; }"
+      }
+    ],
+    "configs": [
+      "H1",
+      "H2"
+    ],
+    "flags": [],
+    "note": "unplaced at 322d30e (Desmond-2579, #302111): needs a report that isn't finite and positive, a fault the stand-in never makes [read]; a fault workload is to be priced (#302165)"
+  },
+  {
+    "id": "cal-C5b",
+    "why": "C5: thinking the manager leaves out can take the compile's estimate below 0. Survived every file reach.py names at fb4cf1046 (Beth-2709's calibration mapping, J57257/J57389).",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "this._lastCompileEstimate = Math.max(0, this._lastCompileEstimate - tokens);",
+        "replace": "this._lastCompileEstimate = this._lastCompileEstimate - tokens;"
+      }
+    ],
+    "configs": [
+      "H1",
+      "H2"
+    ],
+    "flags": [],
+    "note": "unplaced at 322d30e (Desmond-2579, #302111): needs thinking larger than the rest of a compile; on W4 at 8205ea4 it doesn't flag under C5, C7, C9, both H1s or H2 (J57678, #302632)"
+  },
+  {
+    "id": "cal-C6",
+    "why": "C6: reportRealInputTokens no longer refuses a branch the strategy hasn't loaded. Survived every file reach.py names at fb4cf1046 (Beth-2709's calibration mapping, J57257/J57389).",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "    this.requireLoadedBranch('reportRealInputTokens');\n",
+        "replace": ""
+      }
+    ],
+    "configs": [
+      "H1",
+      "H2"
+    ],
+    "flags": [],
+    "note": "unplaced at 322d30e (Desmond-2579, #302111): needs a report for a branch that isn't loaded, a fault the stand-in never makes [read]; a fault workload is to be priced (#302165)"
+  },
+  {
+    "id": "cal-C7a",
+    "why": "C7: loading a branch no longer clears the sample's arm, so a report after a switch can be learned against the old branch's estimate. Survived every file reach.py names at fb4cf1046 (Beth-2709's calibration mapping, J57257/J57389).",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "    this._answerCostCache.clear();\n    this._calibrationArmed = false;\n",
+        "replace": "    this._answerCostCache.clear();\n"
+      }
+    ],
+    "configs": [
+      "H1",
+      "H2"
+    ],
+    "flags": [],
+    "note": "unplaced at 322d30e (Desmond-2579, #302111): not checked; to be placed where its premise lives (Oscar-1005, #302165)"
+  },
+  {
+    "id": "cal-S3a",
+    "why": "S3: the ratio band's top is 1.5, not 1.8; it differs only where the multiplier in force is above 1 and the implied multiplier is past the ceiling. Survived every file reach.py names at fb4cf1046 (Beth-2709's calibration mapping, J57257/J57389).",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "    const ratioInBand = ratio >= 0.6 && ratio <= 1.8;",
+        "replace": "    const ratioInBand = ratio >= 0.6 && ratio <= 1.5;"
+      }
+    ],
+    "configs": [
+      "H1",
+      "H2"
+    ],
+    "flags": [],
+    "note": "unplaced at 322d30e (Desmond-2579, #302111): needs an implied multiplier past the ceiling with the multiplier in force between 1.5 and 1.8 [read]"
+  },
+  {
+    "id": "cal-S12a",
+    "why": "S12: an applied sample no longer sets the store's multiplier; the next adaptive select's load applies it, so it differs for store estimates read between a sample and the next select, compression requests among them (V7). Survived every file reach.py names at fb4cf1046 (Beth-2709's calibration mapping, J57257/J57389).",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "    this._calibrationDeclared = declared;\n    this.applyCalibration();\n    this.persistCalibration();\n  }",
+        "replace": "    this._calibrationDeclared = declared;\n    this.persistCalibration();\n  }"
+      }
+    ],
+    "configs": [
+      "H1",
+      "H2"
+    ],
+    "flags": [
+      "H1.claude-opus-4-6/W2",
+      "H1.claude-sonnet-4-5-20250929/W8/enforced",
+      "H1.claude-opus-4-6/W1",
+      "H1.claude-sonnet-4-5-20250929/W2",
+      "H1.claude-opus-4-6/W9",
+      "H1.claude-sonnet-4-5-20250929/W1"
+    ]
+  },
+  {
+    "id": "cal-P4",
+    "why": "P4: a state write that throws escapes the sample instead of being swallowed. Survived every file reach.py names at fb4cf1046 (Beth-2709's calibration mapping, J57257/J57389).",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "        ...(this._calibrationDeclared ? { declaredOverhead: true } : {}),\n      });\n    } catch { /* persistence is best-effort */ }",
+        "replace": "        ...(this._calibrationDeclared ? { declaredOverhead: true } : {}),\n      });\n    } catch (e) { throw e; }"
+      }
+    ],
+    "configs": [
+      "H1",
+      "H2"
+    ],
+    "flags": [],
+    "note": "unplaced at 322d30e (Desmond-2579, #302111): needs a state write that throws, a fault the stand-in never makes [read]; a fault workload is to be priced (#302165)"
+  },
+  {
+    "id": "cal-V4a",
+    "why": "V4: a derived store rebuilt cold no longer starts at its parent's multiplier. Survived every file reach.py names at fb4cf1046 (Beth-2709's calibration mapping, J57257/J57389).",
+    "edits": [
+      {
+        "file": "message-store.ts",
+        "find": "      cold.tokenCalibration = this.tokenCalibration;\n",
+        "replace": ""
+      }
+    ],
+    "configs": [
+      "H1",
+      "H2"
+    ],
+    "flags": [],
+    "note": "unplaced at 322d30e (Desmond-2579, #302111): needs a cold rebuild of a derived store [read]"
+  },
+  {
+    "id": "cal-V4b",
+    "why": "V4: a derived store seeded from its parent starts at 1, not its parent's multiplier. Survived every file reach.py names at fb4cf1046 (Beth-2709's calibration mapping, J57257/J57389).",
+    "edits": [
+      {
+        "file": "message-store.ts",
+        "find": "        tokenCalibration: this.tokenCalibration,\n      },",
+        "replace": "        tokenCalibration: 1,\n      },"
+      }
+    ],
+    "configs": [
+      "H1",
+      "H2"
+    ],
+    "flags": [
+      "H1.claude-sonnet-4-5-20250929/W9",
+      "H1.claude-opus-4-6/W9"
+    ]
+  },
+  {
+    "id": "cal-V5a",
+    "why": "V5: a merged view reports a multiplier of 1, not its primary's. Survived every file reach.py names at fb4cf1046 (Beth-2709's calibration mapping, J57257/J57389).",
+    "edits": [
+      {
+        "file": "message-view.ts",
+        "find": "    getTokenCalibration: primary.getTokenCalibration\n      ? () => primary.getTokenCalibration!()",
+        "replace": "    getTokenCalibration: primary.getTokenCalibration\n      ? () => 1"
+      }
+    ],
+    "configs": [
+      "H1",
+      "H2"
+    ],
+    "flags": [],
+    "note": "unplaced at 322d30e (Desmond-2579, #302111): needs a merged view, which no workload uses [read]"
+  },
+  {
+    "id": "cal-V5b",
+    "why": "V5: a filtered view reports a multiplier of 1, not its view's. Survived every file reach.py names at fb4cf1046 (Beth-2709's calibration mapping, J57257/J57389).",
+    "edits": [
+      {
+        "file": "message-view.ts",
+        "find": "    getTokenCalibration: view.getTokenCalibration\n      ? () => view.getTokenCalibration!()",
+        "replace": "    getTokenCalibration: view.getTokenCalibration\n      ? () => 1"
+      }
+    ],
+    "configs": [
+      "H1",
+      "H2"
+    ],
+    "flags": [],
+    "note": "unplaced at 322d30e (Desmond-2579, #302111): needs a filtered view, which no workload uses [read]"
+  },
+  {
+    "id": "cal-V7a",
+    "why": "V7: a compression request's messages are priced at raw estimates, not at the store's multiplier. Survived every file reach.py names at fb4cf1046 (Beth-2709's calibration mapping, J57257/J57389).",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "    const tokensOf = (content: ContentBlock[]): number =>\n      ctx.messageStore.estimateTokens({ content } as unknown as StoredMessage);",
+        "replace": "    const tokensOf = (content: ContentBlock[]): number =>\n      Math.round(ctx.messageStore.estimateTokens({ content } as unknown as StoredMessage) / (ctx.messageStore.getTokenCalibration?.() ?? 1));"
+      }
+    ],
+    "configs": [
+      "H1",
+      "H2"
+    ],
+    "flags": [],
+    "note": "unplaced at 322d30e (Desmond-2579, #302111): not checked; to be placed where its premise lives (Oscar-1005, #302165)"
+  },
+  {
+    "id": "cal-R3",
+    "why": "R3: a fold journal entry's rendered tokens ignore the layout's multiplier. Survived every file reach.py names at fb4cf1046 (Beth-2709's calibration mapping, J57257/J57389).",
+    "edits": [
+      {
+        "file": "fold-journal.ts",
+        "find": "  return Math.round(base * (Number.isFinite(calibration) && calibration > 0 ? calibration : 1));",
+        "replace": "  return Math.round(base);"
+      }
+    ],
+    "configs": [
+      "H1",
+      "H2"
+    ],
+    "flags": [],
+    "note": "unplaced at 322d30e (Desmond-2579, #302111): the driver never calls acceptRound, so no fold journal entry is written [read]"
+  },
+  {
+    "id": "cal-R4",
+    "why": "R4: a provisional-calibration retry restarts compileMs, leaving out the refused first attempt. Survived every file reach.py names at fb4cf1046 (Beth-2709's calibration mapping, J57257/J57389).",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "        this._lastPreview = undefined;\n        return this.selectByWindowRule(store, adaptive, dryRun);",
+        "replace": "        this._lastPreview = undefined;\n        this._selectStartedAt = performance.now();\n        return this.selectByWindowRule(store, adaptive, dryRun);"
+      }
+    ],
+    "configs": [
+      "H1",
+      "H2"
+    ],
+    "flags": [],
+    "gap": {
+      "kind": "equivalent",
+      "why": "changes only compileMs, a time, which no record carries [read]"
+    }
   }
 ]
