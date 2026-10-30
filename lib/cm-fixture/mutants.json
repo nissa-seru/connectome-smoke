@@ -5023,8 +5023,9 @@
         "replace": "    this.requireInitialized('pinRange');\n    if (!isPinnableStrategy(this.strategy)) {\n      return '' as string;"
       }
     ],
-    "flags": [],
-    "note": "unplaced: from Daniel-2612's mapping of Oscar-1005's global and manager list (~/.local/state/daniel-2612/gm/fixture-mutants-gm.json, sha256 b19fec246cf71e16...)"
+    "flags": [
+      "C1/W9"
+    ]
   },
   {
     "id": "gm-m23-listpins",
@@ -5076,7 +5077,10 @@
       }
     ],
     "flags": [],
-    "note": "unplaced: from Daniel-2612's mapping of Oscar-1005's global and manager list (~/.local/state/daniel-2612/gm/fixture-mutants-gm.json, sha256 b19fec246cf71e16...)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "in the fixture's workloads: it needs a second handle switching the store's branch, and no workload opens two (W10's one call, level2(), catches any throw and counts 0, so the mutant's [] reads the same there) (Daniel-2612 #304381; Oscar-1005 #304400) [read]"
+    }
   },
   {
     "id": "gm-m25-holds",

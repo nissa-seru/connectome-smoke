@@ -27,10 +27,10 @@
 // changes, trying its runs a batch of --workers at a time (W11, W9 and W8 first) and stopping at the first batch that
 // flags; without it, it lists it untried. A mutant with a `gap` ({ kind: unreachable or equivalent, why }) is one the
 // fixture can't see, by that reason: readiness lists it, and with --gaps tries it as it tries an unplaced one, failing
-// if it now changes a record. --runs and --workloads narrow the W1 and W2 runs readiness uses, for its no-op and the
-// mutants it tries alike; the run a placed mutant is checked in always runs. --mutants reads another file of mutants in
-// the same form, such as a rule list's survivors before they're placed. --plan prints the runs it would make, and
-// makes none.
+// if it now changes a record. --runs and --workloads replace W1 and W2 with the runs they name, for the no-op and the
+// mutants it tries alike, which then try only those; the run a placed mutant is checked in always runs. --mutants reads
+// another file of mutants in the same form, such as a rule list's survivors before they're placed. --plan prints the
+// runs it would make, and makes none.
 
 import { execFileSync } from 'node:child_process';
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, symlinkSync, unlinkSync, writeFileSync } from 'node:fs';
@@ -129,12 +129,16 @@ async function readiness(o, house, work) {
     if (m.gap && !unplaced(m)) throw new Error(`${m.id}: a gap has no flags`);
   }
   const runIn = (cm, jobs, at) => runOnce({ ...o, cm, membraneDir: o.cm }, jobs, at);
-  const inScope = (j) => (!o.runs || o.runs.has(j.id)) && (!o.workloads || o.workloads.has(j.workload));
-  const baseJobs = all.filter((j) => mutants.some((m) => tried(m) && !unplaced(m) && checkedIn(m).includes(j)) || (['W1', 'W2'].includes(j.workload) && inScope(j)));
+  // The runs the no-op and the mutants it tries use: W1 and W2, or what --runs and --workloads name.
+  const narrowed = Boolean(o.runs || o.workloads);
+  const inScope = (j) => (narrowed ? (!o.runs || o.runs.has(j.id)) && (!o.workloads || o.workloads.has(j.workload)) : ['W1', 'W2'].includes(j.workload));
+  const baseJobs = all.filter((j) => mutants.some((m) => tried(m) && !unplaced(m) && checkedIn(m).includes(j)) || inScope(j));
+  // An unplaced mutant tries those runs and, unless they're narrowed, every run another mutant is checked in.
+  const placeIn = (m) => baseJobs.filter((j) => counts(m, j) && (!narrowed || inScope(j)));
   if (o.plan) {
     // What the run would do, without running it: the runs each step takes, for pricing.
     const planned = mutants.filter(tried);
-    const runsOf = (m) => (unplaced(m) ? baseJobs.filter((j) => counts(m, j) && inScope(j)) : checkedIn(m)).length;
+    const runsOf = (m) => (unplaced(m) ? placeIn(m) : checkedIn(m)).length;
     const per = planned.map(runsOf);
     lines.push(`plan: base ${baseJobs.length} runs, no-op ${baseJobs.length}, ${planned.length} mutants ${per.reduce((a, b) => a + b, 0)} runs (most ${Math.max(0, ...per)}, fewest ${Math.min(...per)})`);
     for (const m of planned) lines.push(`plan: ${m.id} ${runsOf(m)} runs`);
@@ -157,7 +161,7 @@ async function readiness(o, house, work) {
     const dir = join(work, `mutant-${m.id}`);
     const stale = mutated(o.cm, dir, m.edits);
     if (stale) { ok = false; lines.push(`${m.id}: STALE, its text doesn't occur exactly once in src/${stale.file}`); continue; }
-    const tries = unplaced(m) ? placementOrder(baseJobs.filter((j) => counts(m, j) && inScope(j))) : checkedIn(m);
+    const tries = unplaced(m) ? placementOrder(placeIn(m)) : checkedIn(m);
     // An unplaced mutant or a gap needs one flag: its runs go a batch of --workers at a time, most likely first, and
     // stop at the batch that flags.
     const step = unplaced(m) ? o.workers : tries.length;
