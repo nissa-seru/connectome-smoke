@@ -4,7 +4,7 @@ import { spawnSync } from 'node:child_process';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { parseChange, satisfies, buildGraph, dependentsOf, topoOrder, classifyInstallFailure, parseTestFailures, runnerSummary, nodeFailingTests, testFailureFields, filesystemFull, diskFull, testCommand, mergeCommand } from '../lib/stack.mjs';
+import { parseChange, satisfies, buildGraph, dependentsOf, topoOrder, classifyInstallFailure, parseTestFailures, runnerSummary, nodeFailingTests, testFailureFields, filesystemFull, diskFull, testCommand, mergeCommand, startsBlocked } from '../lib/stack.mjs';
 
 test('parseTestFailures names failing tests as bun, node, TAP and vitest print them', () => {
   const bun = [
@@ -302,6 +302,16 @@ test("a package's tests run by the script its repository's CI runs where the che
   assert.equal(testCommand({ R: {}, pj: { scripts: {} } }, () => true), null);
 });
 
+test("the host's starts fail when heartbeat-mcpl's build passed but made no entry, and are skipped when an earlier step already failed for it", () => {
+  const entry = (exists) => ({ exists, path: 'src/heartbeat-mcpl/dist/src/index.js' });
+  const ready = { hostCheckout: true, hostInstalled: true, heartbeatEntry: entry(true), heartbeatBuildFailed: false };
+  assert.equal(startsBlocked(ready), null);
+  assert.deepEqual(startsBlocked({ ...ready, heartbeatEntry: entry(false) }), { fail: true, why: "heartbeat-mcpl's build made no src/heartbeat-mcpl/dist/src/index.js" });
+  assert.equal(startsBlocked({ ...ready, heartbeatEntry: entry(false), heartbeatBuildFailed: true }).fail, false);
+  assert.equal(startsBlocked({ ...ready, hostInstalled: false, heartbeatEntry: entry(false) }).fail, false);
+  assert.equal(startsBlocked({ ...ready, hostCheckout: false }).fail, false);
+});
+
 test('the same changes merged onto the same main at two clock times make the same merge commit, chained changes included', async () => {
   const dir = mkdtempSync(join(tmpdir(), 'smoke-merge-'));
   const git = (args, env = {}) => {
@@ -319,12 +329,14 @@ test('the same changes merged onto the same main at two clock times make the sam
     const two = git(['rev-parse', 'HEAD']);
     git(['checkout', '-q', 'main']); commit('main moves on');
     const main = git(['rev-parse', 'HEAD']);
-    const mergeAll = () => {
+    const mergeAll = (machineEnv = {}) => {
       git(['checkout', '-q', '--detach', main]);
       for (const [spec, head] of [['pull/1', one], ['pull/2', two]]) {
-        const m = mergeCommand(spec, head, git(['log', '-1', '--format=%cI', head]));
-        const r = spawnSync(m.argv[0], m.argv.slice(1), { cwd: dir, encoding: 'utf-8', env: { ...process.env, ...m.env } });
+        const headDate = git(['log', '-1', '--format=%cI', head]);
+        const m = mergeCommand(spec, head, headDate);
+        const r = spawnSync(m.argv[0], m.argv.slice(1), { cwd: dir, encoding: 'utf-8', env: { ...process.env, ...machineEnv, ...m.env } });
         assert.equal(r.status, 0, r.stderr);
+        assert.equal(git(['log', '-1', '--format=%aI %cI']), `${headDate} ${headDate}`, `${spec}'s merge is dated by its head`);
       }
       return git(['rev-parse', 'HEAD']);
     };
@@ -332,6 +344,8 @@ test('the same changes merged onto the same main at two clock times make the sam
     const second = Math.floor(Date.now() / 1000);
     while (Math.floor(Date.now() / 1000) === second) await new Promise((r) => setTimeout(r, 20));
     assert.equal(mergeAll(), first);
+    const another = { GIT_AUTHOR_NAME: 'someone', GIT_AUTHOR_EMAIL: 'someone@else', GIT_COMMITTER_NAME: 'someone', GIT_COMMITTER_EMAIL: 'someone@else' };
+    assert.equal(mergeAll(another), first, 'a machine whose environment names another author makes the same commit');
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }

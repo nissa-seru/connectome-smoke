@@ -27,9 +27,9 @@
  *   4. Combined tree, in dependency order: for the changed packages and every
  *      package depending on them (every package in main mode) that has a
  *      stack dependency, build, typecheck and test against the other
- *      checkouts. The host is always checked: typecheck, `bun test` (its
- *      `npm test`) and the two starts. The dependents come from each
- *      checkout's package.json, not a fixed table.
+ *      checkouts. The host is always checked: typecheck, its tests as its CI
+ *      runs them (`scripts/test-on-tmpfs.sh`) and the two starts. The
+ *      dependents come from each checkout's package.json, not a fixed table.
  *   5. Where the host is a change or one of its dependents, and always in
  *      main mode: the strategy fixture on the combined tree's host
  *      (lib/strategies/lane.mjs), which continues a cached deep store and
@@ -58,8 +58,8 @@ import { createHash } from 'node:crypto';
 import { makeReport, bootTwice, parseArgs, spawnToFiles } from '../lib/common.mjs';
 import { checkStores, listFixtures } from '../lib/stores.mjs';
 import { fileURLToPath as pathOfUrl } from 'node:url';
-import { parseChange, satisfies, buildGraph, topoOrder, classifyInstallFailure, testFailureFields, diskFull, checkScope, typecheckCommand, testCommand, mergeCommand } from '../lib/stack.mjs';
-import { parseLane, planUnits, laneUnits, outcomeOf } from '../lib/lanes.mjs';
+import { parseChange, satisfies, buildGraph, topoOrder, classifyInstallFailure, testFailureFields, diskFull, checkScope, typecheckCommand, testCommand, mergeCommand, startsBlocked } from '../lib/stack.mjs';
+import { parseLane, planUnits, laneUnits, unrecordedUnits, outcomeOf } from '../lib/lanes.mjs';
 import { check as strategiesCheck, cacheRoot as strategiesCacheRoot } from '../lib/strategies/lane.mjs';
 import { configurations as strategyConfigurations } from '../lib/strategies/script.mjs';
 
@@ -107,6 +107,7 @@ const LIMITS = [
   'The combined tree links each main whatever range the dependent declares; `links` marks each link the declared range does not admit, where a combined failure may reflect an unreleased version rather than the change.',
   'chronicle comes from the host\'s npm install unless chronicle is the change or pinned with --main.',
   'The resolution proof writes .smoke-resolve.mjs into each checkout it probes and removes it afterwards; a run killed mid-probe leaves it in the work tree.',
+  'Lanes share their prep steps but not each other\'s test side effects: a test that writes into a checkout changes only its own lane\'s later steps, and the lanes\' recorded commits can\'t show it.',
 ];
 
 mkdirSync(LOGS, { recursive: true });
@@ -561,9 +562,18 @@ async function boots(hostPkg, tree, installed, heartbeatEntry, strategies, unit)
   };
   const strategiesMeta = { repo: HOST, pkg: HOST, tree, unit, id: `${meta.idPrefix}:strategies:${STRATEGIES}`, stage: `strategies:${STRATEGIES}` };
   const skipStrategies = (why) => { if (strategies) skip(`${HOST} ${tree} strategy fixture`, why, strategiesMeta); };
-  if (!hostPkg || !installed.has(HOST) || !existsSync(heartbeatEntry)) {
-    const why = !hostPkg ? 'no host checkout' : !installed.has(HOST) ? 'the host\'s install failed' : `heartbeat-mcpl's ${rel(heartbeatEntry)} is missing (its build failed)`;
-    for (const n of [1, 2]) skip(`${HOST} ${tree} boot #${n}`, why, { ...meta, id: `${meta.idPrefix}:boot-${n}`, stage: `boot-${n}` });
+  const blocked = startsBlocked({
+    hostCheckout: !!hostPkg, hostInstalled: installed.has(HOST),
+    heartbeatEntry: { exists: existsSync(heartbeatEntry), path: rel(heartbeatEntry) },
+    heartbeatBuildFailed: report.steps.some((s) => s.pkg === 'heartbeat-mcpl' && (s.stage === 'install' || s.stage === 'build') && s.status !== 'pass'),
+  });
+  if (blocked) {
+    const { why } = blocked;
+    for (const n of [1, 2]) {
+      const bootMeta = { ...meta, id: `${meta.idPrefix}:boot-${n}`, stage: `boot-${n}` };
+      if (n === 1 && blocked.fail) await step(`${HOST} ${tree} boot #1`, () => { throw smokeError(why); }, bootMeta);
+      else skip(`${HOST} ${tree} boot #${n}`, why, bootMeta);
+    }
     skipStores(why);
     skipStrategies(why);
     flush();
@@ -707,6 +717,10 @@ function outcome() {
 }
 
 function done() {
+  if (report.lanes?.units) {
+    const why = report.fatal ? 'the lane stopped at a fatal error' : `the lane stopped at ${report.steps.findLast((s) => s.status === 'fail')?.id ?? 'a step that failed'}`;
+    for (const unit of unrecordedUnits(report.lanes.units, report.steps)) skip(`${unit}: not run`, why, { id: `${unit}:not-run`, stage: 'not-run', unit });
+  }
   const o = outcome();
   const code = { pass: 0, break: 1, error: 2, conflict: 3 }[o];
   report.finishedAt = new Date().toISOString();

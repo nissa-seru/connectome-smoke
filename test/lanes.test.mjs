@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseLane, planUnits, laneUnits, outcomeOf } from '../lib/lanes.mjs';
+import { parseLane, planUnits, laneUnits, unrecordedUnits, outcomeOf } from '../lib/lanes.mjs';
 import { buildGraph, topoOrder, checkScope, typecheckCommand, testCommand } from '../lib/stack.mjs';
 
 const HOST = 'connectome-host';
@@ -28,7 +28,7 @@ test('--lane is I/N with 0 <= I < N, and no --lane is the whole check, 0/1', () 
   assert.deepEqual(parseLane(undefined), { index: 0, of: 1 });
   assert.deepEqual(parseLane('0/1'), { index: 0, of: 1 });
   assert.deepEqual(parseLane('2/5'), { index: 2, of: 5 });
-  for (const bad of ['', '5/5', '6/5', '-1/3', '1/0', '01/3', '1/03', 'a/b', '1/3x', '1', '1/3/4']) {
+  for (const bad of ['', '5/5', '6/5', '-1/3', '1/0', '01/3', '1/03', 'a/b', '1/3x', '1', '1/3/4', '0/9007199254740993', `0/${'9'.repeat(400)}`]) {
     assert.throws(() => parseLane(bad), /expected I\/N/, bad);
   }
 });
@@ -75,6 +75,20 @@ test('every unit runs in exactly one of N lanes, one lane runs the whole plan, a
     const own = Array.from({ length: plan.length }, (_, index) => laneUnits(plan, { index, of: plan.length }));
     assert.deepEqual(own, plan.map((u) => [u]));
   }
+  const [a, b, c, d, e] = planFor('change', ['context-manager']);
+  assert.deepEqual([0, 1, 2].map((index) => laneUnits([a, b, c, d, e], { index, of: 3 })), [[a, d], [b, e], [c]], 'unit k in lane k mod N');
+});
+
+test("a lane that stops early names each of its units no record carries, so it can record them as not run", () => {
+  const units = ['agent-framework:own', 'connectome-host:combined', 'connectome-host:starts'];
+  const steps = [
+    { id: 'agent-framework:install', status: 'pass' },
+    { id: 'agent-framework:own:test', status: 'fail', unit: 'agent-framework:own' },
+    { id: 'compose:link', status: 'fail' },
+  ];
+  assert.deepEqual(unrecordedUnits(units, steps), ['connectome-host:combined', 'connectome-host:starts']);
+  assert.deepEqual(unrecordedUnits(units, [...steps, { id: 'connectome-host:combined:typecheck', status: 'skip', unit: 'connectome-host:combined' }]), ['connectome-host:starts']);
+  assert.deepEqual(unrecordedUnits([], steps), []);
 });
 
 function union(lanes) {
@@ -82,7 +96,7 @@ function union(lanes) {
   for (const steps of lanes) {
     for (const s of steps) {
       const prev = byId.get(s.id);
-      const rank = (x) => ({ fail: 2, pass: 1, skip: 0 }[x.status]);
+      const rank = (x) => x.status === 'fail' ? (x.cause === 'conflict' ? 4 : x.infra ? 3 : 2) : { pass: 1, skip: 0 }[x.status];
       if (!prev || rank(s) > rank(prev)) byId.set(s.id, s);
     }
   }
@@ -95,18 +109,20 @@ test("the worst of the lanes' outcomes is the outcome of the union of their step
   const bad = (id, extra = {}) => ({ id, status: 'fail', ...extra });
   const prep = [ok('agent-framework:clone'), ok('agent-framework:install', { tree: 'own', changed: true }), ok('connectome-host:install', { tree: 'own', changed: false }), ok('compose:link')];
   const cases = [
-    { name: 'all pass', mode: 'change', lanes: [[...prep, ok('agent-framework:own:test')], [...prep, ok('connectome-host:combined:test')]] },
-    { name: 'one lane breaks', mode: 'change', lanes: [[...prep, ok('agent-framework:own:test')], [...prep, bad('connectome-host:combined:test')]] },
-    { name: 'one lane breaks, another could not run', mode: 'change', lanes: [[...prep, bad('agent-framework:own:test')], [...prep, bad('connectome-host:combined:strategies:default', { infra: true })]] },
-    { name: "an unchanged package's own install fails in one lane only", mode: 'change', lanes: [[...prep.slice(0, 2), bad('connectome-host:install', { tree: 'own', changed: false }), prep[3]], [...prep, bad('connectome-host:combined:test')]] },
-    { name: 'the same in main mode is a break', mode: 'main', lanes: [[...prep.slice(0, 2), bad('connectome-host:install', { tree: 'own', changed: false }), prep[3]], [...prep, ok('connectome-host:combined:test')]] },
-    { name: 'a conflict in every lane', mode: 'change', lanes: [[bad('agent-framework:clone', { cause: 'conflict' })], [bad('agent-framework:clone', { cause: 'conflict' })]] },
-    { name: 'a lane stopped by a fatal error', mode: 'change', lanes: [[...prep, ok('agent-framework:own:test')], [...prep]], fatal: [null, 'TypeError'] },
-    { name: 'a lane stopped by a fatal error while another breaks', mode: 'change', lanes: [[...prep, bad('agent-framework:own:test')], [...prep]], fatal: [null, 'TypeError'] },
+    { name: 'all pass', expect: 'pass', mode: 'change', lanes: [[...prep, ok('agent-framework:own:test')], [...prep, ok('connectome-host:combined:test')]] },
+    { name: 'one lane breaks', expect: 'break', mode: 'change', lanes: [[...prep, ok('agent-framework:own:test')], [...prep, bad('connectome-host:combined:test')]] },
+    { name: 'one lane breaks, another could not run', expect: 'error', mode: 'change', lanes: [[...prep, bad('agent-framework:own:test')], [...prep, bad('connectome-host:combined:strategies:default', { infra: true })]] },
+    { name: "an unchanged package's own install fails in one lane only", expect: 'error', mode: 'change', lanes: [[...prep.slice(0, 2), bad('connectome-host:install', { tree: 'own', changed: false }), prep[3]], [...prep, bad('connectome-host:combined:test')]] },
+    { name: 'the same in main mode is a break', expect: 'break', mode: 'main', lanes: [[...prep.slice(0, 2), bad('connectome-host:install', { tree: 'own', changed: false }), prep[3]], [...prep, ok('connectome-host:combined:test')]] },
+    { name: 'one prep step fails plainly in one lane and as could-not-run in another', expect: 'error', mode: 'change', lanes: [[prep[0], bad('agent-framework:install', { tree: 'own', changed: true }), ...prep.slice(2)], [prep[0], bad('agent-framework:install', { tree: 'own', changed: true, infra: true }), ...prep.slice(2)]] },
+    { name: 'a conflict in every lane', expect: 'conflict', mode: 'change', lanes: [[bad('agent-framework:clone', { cause: 'conflict' })], [bad('agent-framework:clone', { cause: 'conflict' })]] },
+    { name: 'a lane stopped by a fatal error', expect: 'error', mode: 'change', lanes: [[...prep, ok('agent-framework:own:test')], [...prep]], fatal: [null, 'TypeError'] },
+    { name: 'a lane stopped by a fatal error while another breaks', expect: 'error', mode: 'change', lanes: [[...prep, bad('agent-framework:own:test')], [...prep]], fatal: [null, 'TypeError'] },
   ];
   for (const c of cases) {
     const each = c.lanes.map((steps, i) => outcomeOf({ mode: c.mode, fatal: c.fatal?.[i] ?? null, steps }).outcome);
     const whole = outcomeOf({ mode: c.mode, fatal: c.fatal?.find(Boolean) ?? null, steps: union(c.lanes) });
-    assert.equal(worst(each), whole.outcome, c.name);
+    assert.equal(worst(each), c.expect, c.name);
+    assert.equal(whole.outcome, c.expect, c.name);
   }
 });
