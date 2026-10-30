@@ -2084,7 +2084,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "buildPicker makes a new strategy for every pick and Picker.run solves it once, so there's no state before a first solve and no second solve to reset (as KS-2, KS-3) (Alfred-2570 #304461, looks ~/.local/state/alfred-2570/kvu-map/looks-1.md 71d9ed48; Oscar-1005 #304475) [read]"
+    }
   },
   {
     "id": "kvu-KU3a",
@@ -2101,7 +2104,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); tried by --place on C7 and H1 opus at ef15b2e's workloads, where W11 under kv-unified refused every compile from step 5 (since released, 6f48e21): changes none of its 9 runs' records (J57892)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "buildPicker makes a new strategy for every pick and Picker.run solves it once, so there's no state before a first solve and no second solve to reset (as KS-2, KS-3) (Alfred-2570 #304461, looks ~/.local/state/alfred-2570/kvu-map/looks-1.md 71d9ed48; Oscar-1005 #304475) [read]"
+    }
   },
   {
     "id": "kvu-KU3b",
@@ -2118,7 +2124,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "buildPicker makes a new strategy for every pick and Picker.run solves it once, so there's no state before a first solve and no second solve to reset (as KS-2, KS-3) (Alfred-2570 #304461, looks ~/.local/state/alfred-2570/kvu-map/looks-1.md 71d9ed48; Oscar-1005 #304475) [read]"
+    }
   },
   {
     "id": "kvu-KU3c",
@@ -2135,7 +2144,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); tried by --place on C7 and H1 opus at ef15b2e's workloads, where W11 under kv-unified refused every compile from step 5 (since released, 6f48e21): changes none of its 9 runs' records (J57892)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "buildPicker makes a new strategy for every pick and Picker.run solves it once, so there's no state before a first solve and no second solve to reset (as KS-2, KS-3) (Alfred-2570 #304461, looks ~/.local/state/alfred-2570/kvu-map/looks-1.md 71d9ed48; Oscar-1005 #304475) [read]"
+    }
   },
   {
     "id": "kvu-KU5c",
@@ -2152,7 +2164,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "in the fixture's configurations: it needs a malformed kvUnified block, one broken configuration per check; a test gap for the tests-only pull request (Alfred-2570 #304461, looks ~/.local/state/alfred-2570/kvu-map/looks-1.md 71d9ed48; Oscar-1005 #304475) [read]"
+    }
   },
   {
     "id": "kvu-KU5e",
@@ -2169,7 +2184,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "in the fixture's configurations: it needs a malformed kvUnified block, one broken configuration per check; a test gap for the tests-only pull request (Alfred-2570 #304461, looks ~/.local/state/alfred-2570/kvu-map/looks-1.md 71d9ed48; Oscar-1005 #304475) [read]"
+    }
   },
   {
     "id": "kvu-KU5f",
@@ -2186,7 +2204,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "in the fixture's configurations: it needs a malformed kvUnified block, one broken configuration per check; a test gap for the tests-only pull request (Alfred-2570 #304461, looks ~/.local/state/alfred-2570/kvu-map/looks-1.md 71d9ed48; Oscar-1005 #304475) [read]"
+    }
   },
   {
     "id": "kvu-KU5h",
@@ -2203,7 +2224,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "in the fixture's configurations: it needs a malformed kvUnified block, one broken configuration per check; a test gap for the tests-only pull request (Alfred-2570 #304461, looks ~/.local/state/alfred-2570/kvu-map/looks-1.md 71d9ed48; Oscar-1005 #304475) [read]"
+    }
   },
   {
     "id": "kvu-KU5i",
@@ -2225,7 +2249,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "in the fixture's configurations: it needs a malformed kvUnified block, one broken configuration per check; a test gap for the tests-only pull request (Alfred-2570 #304461, looks ~/.local/state/alfred-2570/kvu-map/looks-1.md 71d9ed48; Oscar-1005 #304475) [read]"
+    }
   },
   {
     "id": "kvu-KU10",
@@ -2242,7 +2269,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "no house configuration nears the label ceiling: under the host's standard block the label peak stayed 43 at 2.0M raw tokens (Esther, #157046); a variant would pin a fallback residents don't reach (Alfred-2570 #304461, looks ~/.local/state/alfred-2570/kvu-map/looks-1.md 71d9ed48; Oscar-1005 #304475) [read]"
+    }
   },
   {
     "id": "kvu-KU12c",
@@ -2429,7 +2459,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "in the fixture's configurations: it needs a mergeThreshold below 2; a test gap for the tests-only pull request (Alfred-2570 #304461, looks ~/.local/state/alfred-2570/kvu-map/looks-1.md 71d9ed48; Oscar-1005 #304475) [read]"
+    }
   },
   {
     "id": "kvu-KU20d",
@@ -2514,7 +2547,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "maxCandidates is fixed at 16 by buildPicker (Alfred-2570 #304461, looks ~/.local/state/alfred-2570/kvu-map/looks-1.md 71d9ed48; Oscar-1005 #304475) [read]"
+    }
   },
   {
     "id": "kvu-KU22e",
@@ -2786,7 +2822,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); tried by --place on C7 and H1 opus at ef15b2e's workloads, where W11 under kv-unified refused every compile from step 5 (since released, 6f48e21): changes none of its 9 runs' records (J57892)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "the forest's input checks: the strategy builds those inputs from the store, so none of the values they refuse arise (Alfred-2570 #304461, looks ~/.local/state/alfred-2570/kvu-map/looks-1.md 71d9ed48; Oscar-1005 #304475) [read]"
+    }
   },
   {
     "id": "kvu-KF1b",
@@ -2803,7 +2842,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "the forest's input checks: the strategy builds those inputs from the store, so none of the values they refuse arise (Alfred-2570 #304461, looks ~/.local/state/alfred-2570/kvu-map/looks-1.md 71d9ed48; Oscar-1005 #304475) [read]"
+    }
   },
   {
     "id": "kvu-KF1c",
@@ -2820,7 +2862,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "the forest's input checks: the strategy builds those inputs from the store, so none of the values they refuse arise (Alfred-2570 #304461, looks ~/.local/state/alfred-2570/kvu-map/looks-1.md 71d9ed48; Oscar-1005 #304475) [read]"
+    }
   },
   {
     "id": "kvu-KF1d",
@@ -2837,7 +2882,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "the forest's input checks: the strategy builds those inputs from the store, so none of the values they refuse arise (Alfred-2570 #304461, looks ~/.local/state/alfred-2570/kvu-map/looks-1.md 71d9ed48; Oscar-1005 #304475) [read]"
+    }
   },
   {
     "id": "kvu-KF1i",
@@ -2854,7 +2902,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "the forest's input checks: the strategy builds those inputs from the store, so none of the values they refuse arise (Alfred-2570 #304461, looks ~/.local/state/alfred-2570/kvu-map/looks-1.md 71d9ed48; Oscar-1005 #304475) [read]"
+    }
   },
   {
     "id": "kvu-KF1j",
@@ -2871,7 +2922,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "the forest's input checks: the strategy builds those inputs from the store, so none of the values they refuse arise (Alfred-2570 #304461, looks ~/.local/state/alfred-2570/kvu-map/looks-1.md 71d9ed48; Oscar-1005 #304475) [read]"
+    }
   },
   {
     "id": "kvu-KF6b",
@@ -2956,7 +3010,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "no workload previews with overrides that change a forest flag (W8's dry compiles pass none; Desmond-2579 #304470) (Alfred-2570 #304461, looks ~/.local/state/alfred-2570/kvu-map/looks-1.md 71d9ed48; Oscar-1005 #304475) [read]"
+    }
   },
   {
     "id": "kvu-KF8d",
@@ -2973,7 +3030,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "overlapExempt, which no production caller sets (Alfred-2570 #304461, looks ~/.local/state/alfred-2570/kvu-map/looks-1.md 71d9ed48; Oscar-1005 #304475) [read]"
+    }
   },
   {
     "id": "kvu-KF12",
@@ -3007,7 +3067,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "an invariant no correct engine trips (Alfred-2570 #304461, looks ~/.local/state/alfred-2570/kvu-map/looks-1.md 71d9ed48; Oscar-1005 #304475) [read]"
+    }
   },
   {
     "id": "kvu-KF16a",
@@ -3143,7 +3206,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "the exact oracle's solve and its enumeration: exported, but nothing in src calls them (Alfred-2570 #304461, looks ~/.local/state/alfred-2570/kvu-map/looks-1.md 71d9ed48; Oscar-1005 #304475) [read]"
+    }
   },
   {
     "id": "kvu-KF19c",
@@ -3160,7 +3226,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "the exact oracle's solve and its enumeration: exported, but nothing in src calls them (Alfred-2570 #304461, looks ~/.local/state/alfred-2570/kvu-map/looks-1.md 71d9ed48; Oscar-1005 #304475) [read]"
+    }
   },
   {
     "id": "kvu-KF19e",
@@ -3177,7 +3246,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "it needs labels between the ceiling and twice it, which no house configuration reaches (#157046) (Alfred-2570 #304461, looks ~/.local/state/alfred-2570/kvu-map/looks-1.md 71d9ed48; Oscar-1005 #304475) [read]"
+    }
   },
   {
     "id": "kvu-KP1b",
@@ -3194,7 +3266,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "in the fixture's configurations: it needs a malformed kvUnified block, one broken configuration per check; a test gap for the tests-only pull request (Alfred-2570 #304461, looks ~/.local/state/alfred-2570/kvu-map/looks-1.md 71d9ed48; Oscar-1005 #304475) [read]"
+    }
   },
   {
     "id": "kvu-KP1d",
@@ -3211,7 +3286,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "in the fixture's configurations: it needs a malformed kvUnified block, one broken configuration per check; a test gap for the tests-only pull request (Alfred-2570 #304461, looks ~/.local/state/alfred-2570/kvu-map/looks-1.md 71d9ed48; Oscar-1005 #304475) [read]"
+    }
   },
   {
     "id": "kvu-KP1e",
@@ -3228,7 +3306,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "in the fixture's configurations: it needs a malformed kvUnified block, one broken configuration per check; a test gap for the tests-only pull request (Alfred-2570 #304461, looks ~/.local/state/alfred-2570/kvu-map/looks-1.md 71d9ed48; Oscar-1005 #304475) [read]"
+    }
   },
   {
     "id": "kvu-KP1i",
@@ -3245,7 +3326,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "in the fixture's configurations: it needs a malformed kvUnified block, one broken configuration per check; a test gap for the tests-only pull request (Alfred-2570 #304461, looks ~/.local/state/alfred-2570/kvu-map/looks-1.md 71d9ed48; Oscar-1005 #304475) [read]"
+    }
   },
   {
     "id": "kvu-KP2b",
@@ -3534,7 +3618,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "the exact oracle's solve and its enumeration: exported, but nothing in src calls them (Alfred-2570 #304461, looks ~/.local/state/alfred-2570/kvu-map/looks-1.md 71d9ed48; Oscar-1005 #304475) [read]"
+    }
   },
   {
     "id": "kvu-KP14",
@@ -3551,7 +3638,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "an invariant no correct engine trips (Alfred-2570 #304461, looks ~/.local/state/alfred-2570/kvu-map/looks-1.md 71d9ed48; Oscar-1005 #304475) [read]"
+    }
   },
   {
     "id": "kvu-KP15d",
@@ -3585,7 +3675,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "the exact oracle's solve and its enumeration: exported, but nothing in src calls them (Alfred-2570 #304461, looks ~/.local/state/alfred-2570/kvu-map/looks-1.md 71d9ed48; Oscar-1005 #304475) [read]"
+    }
   },
   {
     "id": "kvu-KX2b",
@@ -3670,7 +3763,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); tried by --place on C7 and H1 opus at ef15b2e's workloads, where W11 under kv-unified refused every compile from step 5 (since released, 6f48e21): changes none of its 9 runs' records (J57892)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "it needs a malformed persisted receipt state, which no public call writes (Duncan-2410 #304455; Oscar-1005 #304465) [read]"
+    }
   },
   {
     "id": "kvu-KR1a",
@@ -3687,7 +3783,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); tried by --place on C7 and H1 opus at ef15b2e's workloads, where W11 under kv-unified refused every compile from step 5 (since released, 6f48e21): changes none of its 9 runs' records (J57892)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "no host makes this call: the driver and agent-framework begin a submission only from membrane's wire receipt after a compile, with a non-empty id, and pass a prefix hash under kv-unified; a test gap for the tests-only pull request (Duncan-2410 #304455; Oscar-1005 #304465) [read]"
+    }
   },
   {
     "id": "kvu-KR6c",
@@ -3755,7 +3854,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+    "gap": {
+      "kind": "equivalent",
+      "why": "a registered state slot adds no message, summary, pin, hold, branch or setting, which is all a checkpoint reads (Duncan-2410 #304455; Oscar-1005 #304465) [read]"
+    }
   },
   {
     "id": "kvu-KA10d",
@@ -3772,7 +3874,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "no host makes this call: the driver and agent-framework begin a submission only from membrane's wire receipt after a compile, with a non-empty id, and pass a prefix hash under kv-unified; a test gap for the tests-only pull request (Duncan-2410 #304455; Oscar-1005 #304465) [read]"
+    }
   },
   {
     "id": "kvu-KA10e",
@@ -3806,7 +3911,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); tried by --place on C7 and H1 opus at ef15b2e's workloads, where W11 under kv-unified refused every compile from step 5 (since released, 6f48e21): changes none of its 9 runs' records (J57892)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "it needs a malformed persisted receipt state, which no public call writes (Duncan-2410 #304455; Oscar-1005 #304465) [read]"
+    }
   },
   {
     "id": "kvu-KA14b",
@@ -3823,7 +3931,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "the self-check fires only when marked prefixes already differ, so not without a prior defect (Duncan-2410 #304455; Oscar-1005 #304465) [read]"
+    }
   },
   {
     "id": "kvu-KA1a2",
@@ -3840,7 +3951,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "every kv-unified configuration takes the host's kvUnified block (configs.mjs) (Duncan-2410 #304455; Oscar-1005 #304465) [read]"
+    }
   },
   {
     "id": "kvu-KA2c",
@@ -3925,7 +4039,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); tried by --place on C7 and H1 opus at ef15b2e's workloads, where W11 under kv-unified refused every compile from step 5 (since released, 6f48e21): changes none of its 9 runs' records (J57892)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "no host passes kvUnifiedContinuityRelaxation (none in agent-framework's src), and the driver passes none (Duncan-2410 #304455; Oscar-1005 #304465) [read]"
+    }
   },
   {
     "id": "kvu-KA4b",
@@ -3942,7 +4059,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "no host passes kvUnifiedContinuityRelaxation (none in agent-framework's src), and the driver passes none (Duncan-2410 #304455; Oscar-1005 #304465) [read]"
+    }
   },
   {
     "id": "kvu-KA4f",
@@ -3959,7 +4079,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); tried by --place on C7 and H1 opus at ef15b2e's workloads, where W11 under kv-unified refused every compile from step 5 (since released, 6f48e21): changes none of its 9 runs' records (J57892)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "no host passes kvUnifiedContinuityRelaxation (none in agent-framework's src), and the driver passes none (Duncan-2410 #304455; Oscar-1005 #304465) [read]"
+    }
   },
   {
     "id": "kvu-KA6a",
@@ -4052,7 +4175,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); tried by --place on C7 and H1 opus at ef15b2e's workloads, where W11 under kv-unified refused every compile from step 5 (since released, 6f48e21): changes none of its 9 runs' records (J57892)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "no host makes this call: the driver and agent-framework begin a submission only from membrane's wire receipt after a compile, with a non-empty id, and pass a prefix hash under kv-unified; a test gap for the tests-only pull request (Duncan-2410 #304455; Oscar-1005 #304465) [read]"
+    }
   },
   {
     "id": "kvu-KA8b2",
@@ -4074,7 +4200,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); tried by --place on C7 and H1 opus at ef15b2e's workloads, where W11 under kv-unified refused every compile from step 5 (since released, 6f48e21): changes none of its 9 runs' records (J57892)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "no host makes this call: the driver and agent-framework begin a submission only from membrane's wire receipt after a compile, with a non-empty id, and pass a prefix hash under kv-unified; a test gap for the tests-only pull request (Duncan-2410 #304455; Oscar-1005 #304465) [read]"
+    }
   },
   {
     "id": "kvu-pk4",
