@@ -5,18 +5,25 @@
  * source lane, as its step `connectome-host:combined:strategies:default`; this is for
  * writing the cache it continues from, and for checking a host by hand.
  *
- *   node lanes/strategies.mjs write [--candidate <spec or packed release>] [--configurations a,b]
+ *   node lanes/strategies.mjs write [--candidate <spec or packed release>] [--overlay <pack.tgz>,...] [--configurations a,b]
  *   node lanes/strategies.mjs check --host-dir <dir> --install-dir <dir> [--configuration <name>]
  *   options: --cache <dir> (default ~/.cache/connectome-smoke/strategies), --workdir <dir>, --out <dir>
  *
  * `write` installs connectome-host as a consumer would, the last release when no
- * --candidate is given, and writes each configuration's deep store under the cache for
- * this lane version (lib/strategies/lane.mjs, laneVersion, which covers lib/strategies/ and
- * lib/common.mjs). A change to those files is merged into the fork's main only after
- * `write` has run from that change's head on the VPS, so no check waits on a write. For
- * each configuration it then makes the cut's drift run (lane.mjs, driftRun): a run of
- * DRIFT_TURNS turns from an empty store, judged as the write's prefix is, whose store
- * isn't kept. A check's own fallback write never makes one.
+ * --candidate is given. `--overlay` then installs packed releases of the host's
+ * dependencies over that install, as a consumer upgrading one package would, so a
+ * candidate of context-manager, agent-framework, membrane or chronicle is written under the
+ * host release it would reach, and the store's key names each by its version and its
+ * pack's integrity. A pack of a package outside lane.mjs's KEY_PACKAGES is refused, since
+ * the key wouldn't name it, and so is an install where any copy of an overlaid package
+ * isn't the pack, as when the pack is outside a dependent's range. `write` then writes
+ * each configuration's deep store under the cache for this lane version
+ * (lib/strategies/lane.mjs, laneVersion, which covers lib/strategies/ and lib/common.mjs).
+ * A change to those files is merged into the fork's main only after `write` has run from
+ * that change's head on the VPS, so no check waits on a write. For each configuration it
+ * then makes the cut's drift run (lane.mjs, driftRun): a run of DRIFT_TURNS turns from an
+ * empty store, judged as the write's prefix is, whose store isn't kept. A check's own
+ * fallback write never makes one.
  *
  * `check` continues the cached store for one configuration under the host at --host-dir,
  * whose stack resolves from --install-dir, as a check does, with no base.
@@ -25,11 +32,12 @@
  * checks or drift run flagged, or its trial reached the bound lacking a product besides L3
  * (lane.mjs, lacking, writeFlagged) · 2: couldn't run.
  */
-import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
-import { parseArgs } from '../lib/common.mjs';
-import { cacheRoot, check, driftRun, installStack, lacking, laneVersion, notExercised, writeFlagged, writeStore } from '../lib/strategies/lane.mjs';
+import { parseArgs, sh } from '../lib/common.mjs';
+import { KEY_PACKAGES, cacheRoot, check, driftRun, installStack, lacking, laneVersion, notExercised, stackVersions, writeFlagged, writeStore } from '../lib/strategies/lane.mjs';
 import { configurations } from '../lib/strategies/script.mjs';
 
 const [command, ...rest] = process.argv.slice(2);
@@ -49,8 +57,30 @@ if (command === 'write') {
   const names = String(opt('configurations', 'default')).split(',').map((s) => s.trim()).filter(Boolean);
   const unknown = names.filter((n) => !all[n]);
   if (unknown.length) fail(`no configuration ${unknown.join(', ')}; there are ${Object.keys(all).join(', ')}`);
+  const overlay = String(opt('overlay', '')).split(',').map((s) => s.trim()).filter(Boolean).map((p) => resolve(p));
+  const packs = overlay.map((p) => {
+    let name, integrity;
+    try {
+      name = JSON.parse(sh('tar', ['-xzOf', p, 'package/package.json']).stdout).name;
+      integrity = `sha512-${createHash('sha512').update(readFileSync(p)).digest('base64')}`;
+    } catch (e) { fail(`the overlay ${p} couldn't be read as a packed release: ${e.message}`); }
+    if (!KEY_PACKAGES.includes(name)) fail(`the overlay ${p} is ${name}, which a store's key doesn't name; overlay one of ${KEY_PACKAGES.join(', ')}`);
+    return { path: p, name, integrity };
+  });
   let stack;
   try { stack = installStack({ spec: opt('candidate', 'latest'), dir: join(work, 'stack') }); } catch (e) { fail(`the install failed: ${e.message}`); }
+  if (packs.length) {
+    try {
+      sh('npm', ['install', '--no-audit', '--no-fund', '--loglevel=error', '--global=false', '--location=project', `--prefix=${stack.installDir}`, ...overlay], { cwd: stack.installDir, timeout: 900_000 });
+      stack.versions = stackVersions(stack.hostDir, { installDir: stack.installDir });
+    } catch (e) { fail(`the overlay install failed: ${e.message}`); }
+    const lock = JSON.parse(readFileSync(join(stack.installDir, 'package-lock.json'), 'utf-8')).packages ?? {};
+    for (const { path, name, integrity } of packs) {
+      const copies = Object.entries(lock).filter(([at]) => at.endsWith(`node_modules/${name}`));
+      const notThePack = copies.filter(([, l]) => l.integrity !== integrity);
+      if (!copies.length || notThePack.length) fail(`the overlay ${path} didn't replace every copy of ${name}: ${copies.map(([at, l]) => `${at} from ${l.resolved}`).join('; ')}`);
+    }
+  }
   console.log(`[smoke:strategies] installed ${Object.entries(stack.versions).map(([k, v]) => `${k.replace('@animalabs/', '')}@${v}`).join(' ')}`);
   const results = [];
   const failWrite = (name, stage, e) => {
