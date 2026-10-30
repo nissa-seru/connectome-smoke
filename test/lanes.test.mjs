@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseLane, planUnits, laneUnits, unrecordedUnits, outcomeOf } from '../lib/lanes.mjs';
+import { parseLane, planUnits, laneUnits, notRunUnits, outcomeOf } from '../lib/lanes.mjs';
 import { buildGraph, topoOrder, checkScope, typecheckCommand, testCommand } from '../lib/stack.mjs';
 
 const HOST = 'connectome-host';
@@ -79,16 +79,18 @@ test('every unit runs in exactly one of N lanes, one lane runs the whole plan, a
   assert.deepEqual([0, 1, 2].map((index) => laneUnits([a, b, c, d, e], { index, of: 3 })), [[a, d], [b, e], [c]], 'unit k in lane k mod N');
 });
 
-test("a lane that stops early names each of its units no record carries, so it can record them as not run", () => {
+test("a lane that stops early records each of its units no record carries as not run, and a lane that ran to its end records none", () => {
   const units = ['agent-framework:own', 'connectome-host:combined', 'connectome-host:starts'];
   const steps = [
     { id: 'agent-framework:install', status: 'pass' },
     { id: 'agent-framework:own:test', status: 'fail', unit: 'agent-framework:own' },
     { id: 'compose:link', status: 'fail' },
   ];
-  assert.deepEqual(unrecordedUnits(units, steps), ['connectome-host:combined', 'connectome-host:starts']);
-  assert.deepEqual(unrecordedUnits(units, [...steps, { id: 'connectome-host:combined:typecheck', status: 'skip', unit: 'connectome-host:combined' }]), ['connectome-host:starts']);
-  assert.deepEqual(unrecordedUnits([], steps), []);
+  assert.deepEqual(notRunUnits({ units, steps, stoppedAt: 'compose:link' }), ['connectome-host:combined', 'connectome-host:starts']);
+  assert.deepEqual(notRunUnits({ units, steps: [...steps, { id: 'connectome-host:combined:typecheck', status: 'skip', unit: 'connectome-host:combined' }], stoppedAt: 'a fatal error' }), ['connectome-host:starts']);
+  assert.deepEqual(notRunUnits({ units: [], steps, stoppedAt: 'compose:link' }), []);
+  const passing = [{ id: 'agent-framework:own:test', status: 'pass', unit: 'agent-framework:own' }];
+  assert.deepEqual(notRunUnits({ units, steps: passing, stoppedAt: null }), []);
 });
 
 function union(lanes) {

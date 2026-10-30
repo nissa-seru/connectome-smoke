@@ -59,7 +59,7 @@ import { makeReport, bootTwice, parseArgs, spawnToFiles } from '../lib/common.mj
 import { checkStores, listFixtures } from '../lib/stores.mjs';
 import { fileURLToPath as pathOfUrl } from 'node:url';
 import { parseChange, satisfies, buildGraph, topoOrder, classifyInstallFailure, testFailureFields, diskFull, checkScope, typecheckCommand, testCommand, mergeCommand, startsBlocked } from '../lib/stack.mjs';
-import { parseLane, planUnits, laneUnits, unrecordedUnits, outcomeOf } from '../lib/lanes.mjs';
+import { parseLane, planUnits, laneUnits, notRunUnits, outcomeOf } from '../lib/lanes.mjs';
 import { check as strategiesCheck, cacheRoot as strategiesCacheRoot } from '../lib/strategies/lane.mjs';
 import { configurations as strategyConfigurations } from '../lib/strategies/script.mjs';
 
@@ -345,11 +345,11 @@ let MY_UNITS = new Set();
   const composed = await step('compose: link every stack package under one @animalabs root', () => compose(),
     { id: 'compose:link', stage: 'compose', log: logFile('compose:link') });
   flush();
-  if (!composed) { skip('compose: resolution proof', 'compose failed', { id: 'compose:resolution', stage: 'compose' }); return done(); }
+  if (!composed) { skip('compose: resolution proof', 'compose failed', { id: 'compose:resolution', stage: 'compose' }); return done('compose:link'); }
   const resolved = await step('compose: every package resolves its stack dependencies to the linked checkouts, under node and bun',
     () => resolutionProof(), { id: 'compose:resolution', stage: 'compose', log: logFile('compose:resolution') });
   flush();
-  if (!resolved) return done();
+  if (!resolved) return done('compose:resolution');
 
   // -- 4. combined tree: the changed packages and their dependents, in dependency order --
   for (const key of order) {
@@ -370,7 +370,7 @@ let MY_UNITS = new Set();
   }
   if (MY_UNITS.has(`${HOST}:starts`)) await boots(hostPkg, 'combined', installed, heartbeatEntry, reachesHost, `${HOST}:starts`);
   done();
-})().catch((e) => { log(`FATAL ${e?.stack || e}`); report.fatal = String(e?.stack || e); done(); });
+})().catch((e) => { log(`FATAL ${e?.stack || e}`); report.fatal = String(e?.stack || e); done('a fatal error'); });
 
 // ------------------------------------------------------------------ stages
 
@@ -716,10 +716,9 @@ function outcome() {
   return o;
 }
 
-function done() {
-  if (report.lanes?.units) {
-    const why = report.fatal ? 'the lane stopped at a fatal error' : `the lane stopped at ${report.steps.findLast((s) => s.status === 'fail')?.id ?? 'a step that failed'}`;
-    for (const unit of unrecordedUnits(report.lanes.units, report.steps)) skip(`${unit}: not run`, why, { id: `${unit}:not-run`, stage: 'not-run', unit });
+function done(stoppedAt = null) {
+  for (const unit of notRunUnits({ units: report.lanes?.units ?? [], steps: report.steps, stoppedAt })) {
+    skip(`${unit}: not run`, `the lane stopped at ${stoppedAt}`, { id: `${unit}:not-run`, stage: 'not-run', unit });
   }
   const o = outcome();
   const code = { pass: 0, break: 1, error: 2, conflict: 3 }[o];
