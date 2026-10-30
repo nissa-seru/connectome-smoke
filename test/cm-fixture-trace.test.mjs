@@ -152,6 +152,19 @@ test('a passthrough request breaks shape where it opens with a result, and nowhe
   assert.deepEqual(shapes(check(m, request(m, [6, 7, 8]), { compresses: true })), ['message 1: result t2 answers no call in the message before it'], 'where the configuration compresses, it parts a pair the store holds');
 });
 
+test('a passthrough request may open with a message holding a call and its own result, or with a result whose call the store never held', () => {
+  const messages = [
+    { id: '1', sequence: 1, participant: 'User', content: [{ type: 'text', text: 'go' }] },
+    { id: '2', sequence: 2, participant: 'Junga', content: [{ type: 'tool_use', id: 'b1', name: 'read_file', input: {} }, { type: 'tool_result', toolUseId: 'b1', content: 'file' }] },
+    { id: '3', sequence: 3, participant: 'User', content: [{ type: 'tool_result', toolUseId: 'ghost', content: 'late' }] },
+    { id: '4', sequence: 4, participant: 'Junga', content: [{ type: 'text', text: 'done' }] },
+  ];
+  const m = { ...manager(), getAllMessages: () => messages, getSummary: () => null, messages };
+  assert.deepEqual(shapes(check(m, request(m, [2, 3, 4]), { compresses: false })), [], 'the bundled message opens it whole');
+  assert.deepEqual(shapes(check(m, request(m, [3, 4]), { compresses: false })), [], 'the ghost goes out as stored');
+  assert.deepEqual(shapes(check(m, request(m, [1, 2, 3, 4]), { compresses: true })), [], 'a call answered in its own message is answered, under any configuration');
+});
+
 test("a passthrough request that leaves out a message of a pair inside its own span breaks shape", () => {
   const m = pairsManager();
   assert.deepEqual(shapes(check(m, request(m, [1, 2, 4, 5, 6, 7, 8]), { compresses: false })), ['message 1: call t1 unanswered in the message after it']);
