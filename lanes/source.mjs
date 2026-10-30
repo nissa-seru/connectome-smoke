@@ -21,7 +21,7 @@
 import { mkdtempSync, mkdirSync, existsSync, rmSync, symlinkSync, readdirSync, readFileSync, lstatSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
-import { makeReport, sh, bootTwice, finish, parseArgs, failureLines } from '../lib/common.mjs';
+import { makeReport, sh, bootTwice, finish, parseArgs, failureMessage } from '../lib/common.mjs';
 
 const { opt } = parseArgs(process.argv.slice(2));
 const WORK = opt('workdir') ? resolve(opt('workdir')) : mkdtempSync(join(tmpdir(), 'connectome-smoke-source-'));
@@ -59,8 +59,7 @@ function run(dir, cmdline, timeout = 900_000) {
   const r = sh(cmd, a, { cwd: dir, timeout, allowFail: true, env: { CI: '1', FORCE_COLOR: '0' } });
   if (r.status !== 0) {
     const out = (r.stdout + '\n' + r.stderr).trim().split('\n');
-    const interesting = failureLines(out);
-    throw new Error(`\`${cmdline}\` in ${dir.replace(WORK, '.')} exited ${r.status}${r.signal ? ' ' + r.signal : ''}\n${(interesting.length ? interesting : out.slice(-30)).join('\n')}`);
+    throw new Error(failureMessage(`\`${cmdline}\` in ${dir.replace(WORK, '.')} exited ${r.status}${r.signal ? ' ' + r.signal : ''}`, out));
   }
   return r;
 }
