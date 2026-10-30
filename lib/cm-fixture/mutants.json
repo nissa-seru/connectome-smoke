@@ -1488,7 +1488,10 @@
       "C6"
     ],
     "flags": [],
-    "note": "unplaced at 322d30e (Desmond-2579, #302111): not checked; to be placed where its premise lives (Oscar-1005, #302165)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "level-0 and maxLevel: 0 pins over an already-summarised range aren't honoured at base (C6/W11's 160 pins lines, D3), so a raw-zone mutant has nothing to change (Oscar-1005, #303374)"
+    }
   },
   {
     "id": "kvs-KS9",
@@ -1504,7 +1507,10 @@
       "C6"
     ],
     "flags": [],
-    "note": "unplaced at 322d30e (Desmond-2579, #302111): not checked; to be placed where its premise lives (Oscar-1005, #302165)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "level-0 and maxLevel: 0 pins over an already-summarised range aren't honoured at base (C6/W11's 160 pins lines, D3), so a raw-zone mutant has nothing to change (Oscar-1005, #303374)"
+    }
   },
   {
     "id": "kvs-KS11",
@@ -1519,8 +1525,9 @@
     "configs": [
       "C6"
     ],
-    "flags": [],
-    "note": "unplaced at 322d30e (Desmond-2579, #302111): not checked; to be placed where its premise lives (Oscar-1005, #302165)"
+    "flags": [
+      "C6/W11"
+    ]
   },
   {
     "id": "kvs-KS16",
@@ -1535,8 +1542,9 @@
     "configs": [
       "C6"
     ],
-    "flags": [],
-    "note": "unplaced at 322d30e (Desmond-2579, #302111): not checked; to be placed where its premise lives (Oscar-1005, #302165)"
+    "flags": [
+      "C6/W11"
+    ]
   },
   {
     "id": "kvs-KS17a",
@@ -1552,7 +1560,7 @@
       "C6"
     ],
     "flags": [],
-    "note": "unplaced at 322d30e (Desmond-2579, #302111): not checked; to be placed where its premise lives (Oscar-1005, #302165)"
+    "note": "unplaced at 322d30e (Desmond-2579, #302111): not checked; to be placed where its premise lives (Oscar-1005, #302165); W9's step-8 prepared pace at cebbb5d doesn't place it under C6 (Desmond-2579, J57762, #303254)"
   },
   {
     "id": "kvs-KS17b",
@@ -1585,7 +1593,7 @@
       "C6"
     ],
     "flags": [],
-    "note": "unplaced at 322d30e (Desmond-2579, #302111): not checked; to be placed where its premise lives (Oscar-1005, #302165)"
+    "note": "unplaced at 322d30e (Desmond-2579, #302111): not checked; to be placed where its premise lives (Oscar-1005, #302165); W9's step-8 prepared pace at cebbb5d doesn't place it under C6 (Desmond-2579, J57762, #303254)"
   },
   {
     "id": "kvs-KS18b",
@@ -1635,7 +1643,7 @@
       "C6"
     ],
     "flags": [],
-    "note": "unplaced at 322d30e (Desmond-2579, #302111): not checked; to be placed where its premise lives (Oscar-1005, #302165)"
+    "note": "unplaced at 322d30e (Desmond-2579, #302111): not checked; to be placed where its premise lives (Oscar-1005, #302165); on W11 at cebbb5d it doesn't flag under C6, C7 or either H1 (Desmond-2579, J57792, #303254); why not checked"
   },
   {
     "id": "kvs-KS24b",
@@ -1655,8 +1663,9 @@
     "configs": [
       "C6"
     ],
-    "flags": [],
-    "note": "unplaced at 322d30e (Desmond-2579, #302111): not checked; to be placed where its premise lives (Oscar-1005, #302165)"
+    "flags": [
+      "C6/W11"
+    ]
   },
   {
     "id": "kvs-KS26",
@@ -1672,7 +1681,10 @@
       "C6"
     ],
     "flags": [],
-    "note": "unplaced at 322d30e (Desmond-2579, #302111): not checked; to be placed where its premise lives (Oscar-1005, #302165)"
+    "gap": {
+      "kind": "equivalent",
+      "why": "through the public surface: the solve's emitted requests differ only in what the compression queue's dedup drops before anything reaches the summariser, so no request or record differs [read; Desmond-2579 #303254, Oscar-1005 #303261]; and no compile escalates at 0.35 under C6, so the premise isn't reached (Oscar-1005, #303374)"
+    }
   },
   {
     "id": "kvs-KC4",
@@ -1688,7 +1700,7 @@
       "C6"
     ],
     "flags": [],
-    "note": "unplaced at 322d30e (Desmond-2579, #302111): not checked; to be placed where its premise lives (Oscar-1005, #302165)"
+    "note": "unplaced at 322d30e (Desmond-2579, #302111): not checked; to be placed where its premise lives (Oscar-1005, #302165); W9's step-8 prepared pace at cebbb5d doesn't place it under C6 (Desmond-2579, J57762, #303254)"
   },
   {
     "id": "kvs-KC8a",
@@ -1704,7 +1716,7 @@
       "C6"
     ],
     "flags": [],
-    "note": "unplaced at 322d30e (Desmond-2579, #302111): not checked; to be placed where its premise lives (Oscar-1005, #302165)"
+    "note": "unplaced at 322d30e (Desmond-2579, #302111): not checked; to be placed where its premise lives (Oscar-1005, #302165); W9's step-8 prepared pace at cebbb5d doesn't place it under C6 (Desmond-2579, J57762, #303254)"
   },
   {
     "id": "kvs-KC14",
@@ -1720,7 +1732,7 @@
       "C6"
     ],
     "flags": [],
-    "note": "unplaced at 322d30e (Desmond-2579, #302111): not checked; to be placed where its premise lives (Oscar-1005, #302165)"
+    "note": "unplaced at 322d30e (Desmond-2579, #302111): not checked; to be placed where its premise lives (Oscar-1005, #302165); W9's step-8 prepared pace at cebbb5d doesn't place it under C6 (Desmond-2579, J57762, #303254)"
   },
   {
     "id": "kvs-KC22a",
@@ -1752,7 +1764,7 @@
       "C6"
     ],
     "flags": [],
-    "note": "unplaced at 322d30e (Desmond-2579, #302111): not checked; to be placed where its premise lives (Oscar-1005, #302165)"
+    "note": "unplaced at 322d30e (Desmond-2579, #302111): not checked; to be placed where its premise lives (Oscar-1005, #302165); on W11 at cebbb5d it doesn't flag under C6, C7 or either H1 (Desmond-2579, J57792, #303254); why not checked"
   },
   {
     "id": "kvs-KC27",
@@ -1768,7 +1780,7 @@
       "C6"
     ],
     "flags": [],
-    "note": "unplaced at 322d30e (Desmond-2579, #302111): not checked; to be placed where its premise lives (Oscar-1005, #302165)"
+    "note": "unplaced at 322d30e (Desmond-2579, #302111): not checked; to be placed where its premise lives (Oscar-1005, #302165); on W11 at cebbb5d it doesn't flag under C6, C7 or either H1 (Desmond-2579, J57792, #303254); why not checked"
   },
   {
     "id": "kvs-KC28",
@@ -1784,7 +1796,10 @@
       "C6"
     ],
     "flags": [],
-    "note": "unplaced at 322d30e (Desmond-2579, #302111): not checked; to be placed where its premise lives (Oscar-1005, #302165)"
+    "gap": {
+      "kind": "equivalent",
+      "why": "it changes only the plan's own ledger, which only a per-compile plan line could show, and that line doesn't pay (Oscar-1005, #302924, #303261) [read]"
+    }
   },
   {
     "id": "cal-C4",
@@ -1801,7 +1816,7 @@
       "H2"
     ],
     "flags": [],
-    "note": "unplaced at 322d30e (Desmond-2579, #302111): needs a report that isn't finite and positive, a fault the stand-in never makes [read]; a fault workload is to be priced (#302165)"
+    "note": "unplaced at 322d30e (Desmond-2579, #302111): needs a report that isn't finite and positive, a fault the stand-in never makes [read]; a fault workload is to be priced (#302165); on W11 at cebbb5d it doesn't flag under C6, C7 or either H1 (Desmond-2579, J57792, #303254); why not checked"
   },
   {
     "id": "cal-C5b",
@@ -1908,8 +1923,10 @@
       "H1",
       "H2"
     ],
-    "flags": [],
-    "note": "unplaced at 322d30e (Desmond-2579, #302111): needs a state write that throws, a fault the stand-in never makes [read]; a fault workload is to be priced (#302165)"
+    "flags": [
+      "H1.claude-opus-4-6/W11/state-write-fails",
+      "H1.claude-sonnet-4-5-20250929/W11/state-write-fails"
+    ]
   },
   {
     "id": "cal-V4a",
