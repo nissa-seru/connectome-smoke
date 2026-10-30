@@ -8,7 +8,7 @@ import { diffRecords } from '../lib/cm-fixture/record-diff.mjs';
 
 // A small trace, as readTrace returns one: a run that adds two turns and compiles each, the second with a summary
 // sent as a recall pair whose question is the library's own words.
-function trace({ commit = 'aaaa111', label = 'What do you remember from earlier?', refuse = false, violation = null, marker = false, membrane = '0.9.0', cause = null, system = undefined } = {}) {
+function trace({ commit = 'aaaa111', label = 'What do you remember from earlier?', refuse = false, refusal = 'over', violation = null, marker = false, membrane = '0.9.0', cause = null, system = undefined, receipt = null, endError = null } = {}) {
   const blobs = new Map();
   const blob = (v) => { const id = digest(v); blobs.set(id, v); return id; };
   const user = (n) => [{ type: 'text', text: `m1_${n}ux Continue with part ${n}, please.` }];
@@ -26,15 +26,16 @@ function trace({ commit = 'aaaa111', label = 'What do you remember from earlier?
   events.push({ kind: 'step', step: 1, written: [{ id: 'L1-0', level: 1, sources: ['a1.0', 'a1.1'], content: blob('Summary of part one, in the stand-in\'s words.') }], removed: [], waiting: null, pending: null, ready: true, logs: { 'plan-vs-actual': 1 }, lines: [], violations: [] });
   add(2, 0, 'User', user(2));
   events.push(refuse
-    ? { kind: 'compile', step: 2, n: 0, budget: { maxTokens: 1000, reserveForResponse: 100 }, outcome: 'refused', error: { class: 'OverBudgetError', message: blob('over') }, violations: [] }
+    ? { kind: 'compile', step: 2, n: 0, budget: { maxTokens: 1000, reserveForResponse: 100 }, outcome: 'refused', error: { class: 'OverBudgetError', message: blob(refusal) }, violations: [] }
     : { kind: 'compile', step: 2, n: 0, budget: { maxTokens: 1000, reserveForResponse: 100 }, outcome: 'compiled', messages: [
       { sources: ['s:L1-0@1'], content: blob({ participant: 'Context Manager', content: [{ type: 'text', text: label }] }) },
       { sources: ['s:L1-0@1'], content: blob({ participant: 'Junga', content: [{ type: 'text', text: 'Summary of part one, in the stand-in\'s words.' }] }) },
       { sources: ['r:a2.0'], content: blob({ participant: 'User', content: user(2) }) },
-    ], ...(cause ? { layout: { cause, memberIds: [] } } : {}), violations: violation ? [violation] : [] });
+    ], ...(cause ? { layout: { cause, memberIds: [] } } : {}), ...(receipt ? { receipt } : {}), violations: violation ? [violation] : [] });
   events.push({ kind: 'step', step: 2, written: [], removed: [], waiting: null, pending: null, ready: true, logs: {}, lines: [], violations: [] });
   const header = { kind: 'run', schema: SCHEMA, run: 'C3/W1', config: 'C3', workload: 'W1', variant: null, arm: 'candidate', seed: 7, scale: 15, from: null, library: { commit, version: '0.24.2' }, membrane: { version: membrane }, fixture: { version: 'f', standin: 's1', clock: { epoch: '2026-01-05T09:00:00.000Z', stepMs: 240000 } } };
-  return { header, events, blobs, end: { kind: 'end', ok: true, wallMs: 3 } };
+  const end = endError ? { kind: 'end', ok: false, wallMs: 3, error: { class: endError.class, message: blob(endError.message), where: 'library' } } : { kind: 'end', ok: true, wallMs: 3 };
+  return { header, events, blobs, end };
 }
 
 test('a run recorded at another commit, with nothing else changed, matches its record', () => {
@@ -85,6 +86,33 @@ test('a compile the record has that now refuses blocks, and so does an invariant
   assert.match(broken.blocking[0].actual, /INVARIANT shape/);
   // Back the other way, a compile that now compiles, or an invariant that now holds, is a change but blocks nothing.
   assert.deepEqual(diffRecords(renderRecord(trace({ refuse: true })), base).blocking, []);
+});
+
+test("a refusal's words are a template under its class, so a change of wording is one change in the table and blocks nothing", () => {
+  const one = renderRecord(trace({ refuse: true, refusal: 'over budget by 12 tokens' }));
+  assert.match(one, /compile refused OverBudgetError \[T:error-overbudgeterror\]/);
+  assert.match(one, /T:error-overbudgeterror = over budget by # tokens/);
+  assert.equal(renderRecord(trace({ refuse: true, refusal: 'over budget by 13 tokens' })), one, 'a count the refusal names is not its words');
+  const d = diffRecords(one, renderRecord(trace({ refuse: true, refusal: 'refused: over budget by 12 tokens' })));
+  assert.deepEqual(d.blocking, []);
+  assert.deepEqual(d.groups.map((g) => g.kind), ['words']);
+});
+
+test("a run the library ended shows the error's words as a template, with an absolute path masked", () => {
+  const ended = renderRecord(trace({ endError: { class: 'StoreTopologyError', message: 'store topology rejected at /home/work/ws/x-1/store: L2-11 holds holes' } }));
+  assert.match(ended, /^end library StoreTopologyError \[T:error-storetopologyerror\]$/m);
+  assert.match(ended, /T:error-storetopologyerror = store topology rejected at \{\{path\}\}: L#-# holds holes/);
+  const elsewhere = renderRecord(trace({ endError: { class: 'StoreTopologyError', message: 'store topology rejected at /tmp/other/run-7/store: L2-11 holds holes' } }));
+  assert.equal(elsewhere, ended, 'where the store lives changes nothing');
+});
+
+test("an H1 send's receipt shows the chain's head, a failure after sending, and whether a cache reference remains", () => {
+  const head = { sequence: 4, hash: 'abcdef0123456789', changes: 2, digest: '0123456789abcdef' };
+  assert.match(renderRecord(trace({ receipt: { accepted: true, withReference: true, head } })), /compile .* receipt\+ref #4 abcdef01 changes 2 01234567$/m);
+  assert.match(renderRecord(trace({ receipt: { accepted: false, failed: true, withReference: false } })), /compile .* receipt failed$/m);
+  assert.match(renderRecord(trace({ receipt: { accepted: false, withReference: true } })), /compile .* receipt none\+ref$/m);
+  const moved = diffRecords(renderRecord(trace({ receipt: { accepted: true, withReference: true, head } })), renderRecord(trace({ receipt: { accepted: true, withReference: true, head: { ...head, hash: 'ffffff0123456789' } } })));
+  assert.ok(moved.groups.length > 0, 'a receipt hash that moves is a change');
 });
 
 test("a summariser request's system prompt, where a host's setSystemPrompt goes, is part of its template", () => {

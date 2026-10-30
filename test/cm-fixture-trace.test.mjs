@@ -6,7 +6,7 @@ import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { checkCompile, openRecorder } from '../lib/cm-fixture/trace.mjs';
-import { readTrace, SCHEMA } from '../lib/cm-fixture/events.mjs';
+import { digest, readTrace, SCHEMA } from '../lib/cm-fixture/events.mjs';
 
 // A store of four messages: a user turn, a call with its thinking, its result, and a reply; L1-0 summarises 1-2.
 function manager({ pins = [], tokens = 500, config = {}, idBase = 0 } = {}) {
@@ -255,6 +255,30 @@ test('the recorder writes a trace that reads back, counts the step\'s log lines 
     assert.deepEqual(cp.branches, [{ id: '1', name: 'main', head: 9 }, { id: '2', name: 'side', head: 4 }, { id: '10', name: 'fork', head: 12 }]);
   } finally {
     console.warn = warn;
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("a receipt records the chain's head with its leaves named as messages are, a failure after sending, and an unreadable reference as unreadable", async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'cmfx-receipt-'));
+  try {
+    const file = join(dir, 't.jsonl');
+    const header = { run: 'H1.claude-opus-4-6/W11', config: 'H1.claude-opus-4-6', workload: 'W11', variant: null, arm: 'base', seed: 1, scale: 15, from: null, library: { commit: 'c', version: 'v' }, membrane: { version: 'm' }, fixture: { version: 'f' } };
+    const rec = await openRecorder({ file, header });
+    const m = manager();
+    rec.step(1);
+    m.messages.forEach((x) => rec.added(x.participant, x.content, x.id));
+    rec.compiled(m, budget, compiled(...m.messages.map((x, i) => [sent(x), raw(i + 1)])));
+    const changes = [{ leafId: '2', value: { repHash: 'r2', level: 1, lastChangedSeq: 3 } }, { leafId: '4', value: null }];
+    rec.receipt({ accepted: true, withReference: true, head: { sequence: 3, receiptHash: 'f'.repeat(64), changes } }, m);
+    rec.compiled(m, budget, compiled(...m.messages.map((x, i) => [sent(x), raw(i + 1)])));
+    rec.receipt({ accepted: false, failed: true, withReference: { unreadable: 'no kvUnifiedReceipts.cache' } }, m);
+    await rec.endStep(m);
+    await rec.end(null);
+    const [first, second] = readTrace(readFileSync(file, 'utf8')).events.filter((e) => e.kind === 'compile');
+    assert.deepEqual(first.receipt, { accepted: true, withReference: true, head: { sequence: 3, hash: 'f'.repeat(16), changes: 2, digest: digest([['a1.1', ['r2', 1, 3]], ['a1.3', null]]) } });
+    assert.deepEqual(second.receipt, { accepted: false, failed: true, withReference: { unreadable: 'no kvUnifiedReceipts.cache' } });
+  } finally {
     rmSync(dir, { recursive: true, force: true });
   }
 });

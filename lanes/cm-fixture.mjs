@@ -216,7 +216,7 @@ function unexpectedInvariants(id, text, expected) {
   const entries = expected.filter((f) => f.run === id);
   const named = (name, detail) => entries.some((f) => f.invariant === name && (f.match === null || f.match.test(detail)));
   return text.split('\n').filter((l) => {
-    if (/^end library /.test(l)) return !named('end', l.slice('end '.length).split(' logs ')[0]);
+    if (/^end library /.test(l)) return !named('end', l.slice('end '.length).split(' logs ')[0].replace(/ \[T:[^\]]+\]$/, ''));
     if (!/^\s*INVARIANT /.test(l)) return false;
     const line = l.trim().slice('INVARIANT '.length);
     const name = line.split(':')[0];
