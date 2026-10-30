@@ -5938,7 +5938,10 @@
       }
     ],
     "flags": [],
-    "note": "unplaced: from Esther-2584's compression-lifecycle mapping (~/.local/state/esther-2584/cm-rules/map/gaps-fixture-mutants.json, sha256 d5dfde3c6eabe28f...); reached under C3/W7/rejects (the step-3 chunk rejected from step 10), but the mutant changes no call; why the recall-variant plan is empty there is Esther-2584's read (#305309); masked until the fixture scales the 16,000 output reserve (no recall variant or hoist is admitted at scale 15; Esther-2584 #305326); Desmond-2579's compressionContextBudgetTokens fix (#305347) comes first, then a placement; after the reserve fix, at 6357a13 it changes no record of C3/W7/rejects or either H1's W7/rejects (J58231), where the base's canonical is rejected at step 10 and resent once"
+    "gap": {
+      "kind": "unreachable",
+      "why": "masked: after a rejection, variants are priced at their deterministic bound; none is admitted at W7's request size (J58300: all 90 expand: attempts admission_rejected, 37,035-64,316 against 28,267). The guard changes what's sent only for a rejected request whose variants' bound fits, about 33,000 estimated tokens or fewer at host size, with L2 or higher parents; what the mutant adds there is wasted calls after a rejection, a rare low-cost path no workload is built for (Esther-2584 #305902; Oscar-1005 #305906) [run]"
+    }
   },
   {
     "id": "lifecycle-f10a",
