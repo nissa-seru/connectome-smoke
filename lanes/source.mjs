@@ -36,6 +36,11 @@
  *      judges the run. In change mode, when it fails something, the same run
  *      under each changed repository's `main` says whether `main` fails it too.
  *
+ * Lanes (--lane I/N): lane I of a check split into N lanes runs every prep
+ * step and only its own units of the plan, unit k in lane k mod N; a lane
+ * with no units stops after its clones. lib/lanes.mjs states the contract a
+ * fold of the lanes' reports rests on. No --lane is 0/1, the whole check.
+ *
  * Output, in --out (default: the workdir): report.json, summary.md, and
  * logs/<step id>.log for every step. report.json is rewritten after every
  * step, so a run killed from outside leaves a partial report with no
@@ -53,11 +58,12 @@ import { createHash } from 'node:crypto';
 import { makeReport, bootTwice, parseArgs, spawnToFiles } from '../lib/common.mjs';
 import { checkStores, listFixtures } from '../lib/stores.mjs';
 import { fileURLToPath as pathOfUrl } from 'node:url';
-import { parseChange, satisfies, buildGraph, dependentsOf, topoOrder, classifyInstallFailure, testFailureFields, diskFull } from '../lib/stack.mjs';
+import { parseChange, satisfies, buildGraph, topoOrder, classifyInstallFailure, testFailureFields, diskFull, checkScope, typecheckCommand, testCommand, mergeCommand } from '../lib/stack.mjs';
+import { parseLane, planUnits, laneUnits, outcomeOf } from '../lib/lanes.mjs';
 import { check as strategiesCheck, cacheRoot as strategiesCacheRoot } from '../lib/strategies/lane.mjs';
 import { configurations as strategyConfigurations } from '../lib/strategies/script.mjs';
 
-const { opt, opts } = parseArgs(process.argv.slice(2));
+const { opt, opts, flag } = parseArgs(process.argv.slice(2));
 // The real path, so paths read back through realpath (links, resolutions) compare with it.
 const WORK = (() => {
   const w = opt('workdir') ? resolve(opt('workdir')) : mkdtempSync(join(tmpdir(), 'connectome-smoke-source-'));
@@ -77,6 +83,8 @@ const HOST = 'connectome-host';
  * before the package that links it. `pkgDirs`: a monorepo's packages, in
  * build order. `build`: the build command when it isn't `npm run build`.
  * `typecheck`: the fallback when the package has no `typecheck` script.
+ * `testScript`: the script the repository's CI runs its tests with, run in
+ * place of `npm test` where the checkout has it.
  * `onlyWhenChanged`: cloned only when it's the change (chronicle is Rust;
  * otherwise the host's npm copy is linked).
  */
@@ -86,8 +94,8 @@ const REPOS = [
   { repo: 'chronicle',       dir: 'chronicle', onlyWhenChanged: true },
   { repo: 'membrane',        dir: 'membrane', owner: 'antra-tess' },   // canonical home per the npm repository field
   { repo: 'context-manager', dir: 'context-manager' },
-  { repo: 'agent-framework', dir: 'agent-framework' },
-  { repo: HOST,              dir: HOST, build: 'npm run build:web:ci', typecheck: 'npx tsc --noEmit -p tsconfig.json' },
+  { repo: 'agent-framework', dir: 'agent-framework', testScript: 'scripts/test-as-ci.mjs' },
+  { repo: HOST,              dir: HOST, build: 'npm run build:web:ci', typecheck: 'npx tsc --noEmit -p tsconfig.json', testScript: 'scripts/test-on-tmpfs.sh' },
   { repo: 'mcpl-harness',    dir: 'mcpl-harness' },   // heartbeat-mcpl's reminders harness loads ../mcpl-harness/src/session.ts
   { repo: 'heartbeat-mcpl',  dir: 'heartbeat-mcpl' },
   { repo: 'discord-mcpl',    dir: 'discord-mcpl' },
@@ -105,7 +113,7 @@ mkdirSync(LOGS, { recursive: true });
 mkdirSync(SRC, { recursive: true });
 
 const { report, step, skip, log, t0 } = makeReport('source', {
-  mode: null, workdir: WORK, out: OUT, toolchain: toolchain(), change: [], repos: {}, packages: {},
+  mode: null, lanes: null, workdir: WORK, out: OUT, toolchain: toolchain(), change: [], repos: {}, packages: {},
   dependents: null, links: [], resolution: [], compose: null, limits: LIMITS, outcome: null, exitCode: null,
 });
 const flush = () => { try { writeFileSync(REPORT, JSON.stringify(report, null, 2)); } catch { /* best effort */ } };
@@ -214,8 +222,13 @@ let CHANGES = [];
 let PKGS = [];
 let EDGES = [];
 const MAINS = new Map();   // --main <repo>=<commit>: a repository's main pinned to that commit
+let LANE = { index: 0, of: 1 };
+let MY_UNITS = new Set();
 
 (async () => {
+  try { LANE = parseLane(flag('lane') ? opt('lane') ?? '' : undefined); }
+  catch (e) { return fatal(e.message); }
+  report.lanes = { ...LANE, plan: null, units: null };
   try { CHANGES = opts('change').map(parseChange); }
   catch (e) { return fatal(e.message); }
   for (const a of opts('main')) {
@@ -264,19 +277,22 @@ const MAINS = new Map();   // --main <repo>=<commit>: a repository's main pinned
   EDGES = buildGraph(PKGS);
   const hasStackDeps = new Set(EDGES.map((e) => e.dependent));
   const changedKeys = PKGS.filter((p) => changedRepos.has(p.repo)).map((p) => p.key);
-  const deps = report.mode === 'main' ? [] : dependentsOf(changedKeys, EDGES);
+  const { dependents: deps, ownSet, combinedSet, reachesHost } = checkScope({ keys: PKGS.map((p) => p.key), changedKeys, edges: EDGES, mode: report.mode, host: HOST });
   report.dependents = deps;
-  const ownSet = new Set(report.mode === 'main' ? PKGS.map((p) => p.key) : changedKeys);
-  const combinedSet = new Set(report.mode === 'main' ? PKGS.map((p) => p.key) : [...changedKeys, ...deps.map((d) => d.pkg), HOST]);
-  const reachesHost = report.mode === 'main' || changedKeys.includes(HOST) || deps.some((d) => d.pkg === HOST);
   // `changed`: whether the package's repository is a change. In change mode
   // an unchanged package's own install and build take nothing from the
   // change, so their failure is main's or the machine's, not the change's.
   const pkgMeta = (p, tree, stage) => ({ repo: p.repo, pkg: p.key, tree, stage, changed: changedRepos.has(p.repo) });
   const script = (p, name) => p.pj.scripts?.[name];
-  const typecheckCmd = (p) => (script(p, 'typecheck') ? 'npm run typecheck' : p.R.typecheck ?? null);
-  const testCmd = (p) => (script(p, 'test') ? 'npm test' : null);
+  const testCmd = (p) => testCommand(p, (file) => existsSync(join(p.dir, file)));
+  const order = topoOrder(PKGS.map((p) => p.key), EDGES);
+  const plan = planUnits({ pkgs: PKGS, order, edges: EDGES, ownSet, combinedSet, host: HOST, checks: (p) => !!(typecheckCommand(p) || testCmd(p)) });
+  const units = laneUnits(plan, LANE);
+  MY_UNITS = new Set(units);
+  report.lanes = { ...LANE, plan, units };
+  const workMeta = (p, tree, stage, unit) => ({ ...pkgMeta(p, tree, stage), unit });
   flush();
+  if (!units.length) { log(`lane ${LANE.index}/${LANE.of}: no units of the plan's ${plan.length}, so nothing past the clones`); return done(); }
 
   // -- 2. own tree: install and build everything, check what changed --
   const installed = new Set();
@@ -311,17 +327,18 @@ const MAINS = new Map();   // --main <repo>=<commit>: a repository's main pinned
     await cmdStep(id, pkgMeta(p, 'own', 'build'), p.dir, cmd);
   }
 
-  for (const p of PKGS.filter((x) => ownSet.has(x.key))) {
-    for (const [stage, cmd, timeout] of [['typecheck', typecheckCmd(p), 600_000], ['test', testCmd(p), 1_200_000]]) {
+  for (const p of PKGS.filter((x) => ownSet.has(x.key) && MY_UNITS.has(`${x.key}:own`))) {
+    const unit = `${p.key}:own`;
+    for (const [stage, cmd, timeout] of [['typecheck', typecheckCommand(p), 600_000], ['test', testCmd(p), 1_200_000]]) {
       if (!cmd) continue;
       const id = `${p.key}:own:${stage}`;
-      if (!installed.has(p.key)) { skip(`${id}: ${cmd}`, 'its install failed', { id, ...pkgMeta(p, 'own', stage) }); continue; }
-      await cmdStep(id, pkgMeta(p, 'own', stage), p.dir, cmd, { timeout, summarize: stage === 'test' ? testSummary : undefined });
+      if (!installed.has(p.key)) { skip(`${id}: ${cmd}`, 'its install failed', { id, ...workMeta(p, 'own', stage, unit) }); continue; }
+      await cmdStep(id, workMeta(p, 'own', stage, unit), p.dir, cmd, { timeout, summarize: stage === 'test' ? testSummary : undefined });
     }
   }
   const hostPkg = PKGS.find((p) => p.key === HOST);
   const heartbeatEntry = join(SRC, 'heartbeat-mcpl', 'dist', 'src', 'index.js');
-  if (ownSet.has(HOST)) await boots(hostPkg, 'own', installed, heartbeatEntry);
+  if (ownSet.has(HOST) && MY_UNITS.has(`${HOST}:own`)) await boots(hostPkg, 'own', installed, heartbeatEntry, false, `${HOST}:own`);
 
   // -- 3. compose one tree --
   const composed = await step('compose: link every stack package under one @animalabs root', () => compose(),
@@ -334,22 +351,23 @@ const MAINS = new Map();   // --main <repo>=<commit>: a repository's main pinned
   if (!resolved) return done();
 
   // -- 4. combined tree: the changed packages and their dependents, in dependency order --
-  for (const key of topoOrder(PKGS.map((p) => p.key), EDGES)) {
+  for (const key of order) {
     const p = PKGS.find((x) => x.key === key);
     if (!combinedSet.has(key) || !hasStackDeps.has(key)) continue;
+    const unit = `${key}:combined`;
     const stages = [
       ['build', script(p, 'build') ? 'npm run build' : null, 900_000],
-      ['typecheck', typecheckCmd(p), 600_000],
-      ['test', testCmd(p), 1_200_000],
+      ...(MY_UNITS.has(unit) ? [['typecheck', typecheckCommand(p), 600_000], ['test', testCmd(p), 1_200_000]] : []),
     ];
     for (const [stage, cmd, timeout] of stages) {
       if (!cmd) continue;
       const id = `${key}:combined:${stage}`;
-      if (!installed.has(key)) { skip(`${id}: ${cmd}`, 'its install failed', { id, ...pkgMeta(p, 'combined', stage) }); continue; }
-      await cmdStep(id, pkgMeta(p, 'combined', stage), p.dir, cmd, { timeout, summarize: stage === 'test' ? testSummary : undefined });
+      const meta = stage === 'build' ? pkgMeta(p, 'combined', stage) : workMeta(p, 'combined', stage, unit);
+      if (!installed.has(key)) { skip(`${id}: ${cmd}`, 'its install failed', { id, ...meta }); continue; }
+      await cmdStep(id, meta, p.dir, cmd, { timeout, summarize: stage === 'test' ? testSummary : undefined });
     }
   }
-  await boots(hostPkg, 'combined', installed, heartbeatEntry, reachesHost);
+  if (MY_UNITS.has(`${HOST}:starts`)) await boots(hostPkg, 'combined', installed, heartbeatEntry, reachesHost, `${HOST}:starts`);
   done();
 })().catch((e) => { log(`FATAL ${e?.stack || e}`); report.fatal = String(e?.stack || e); done(); });
 
@@ -402,7 +420,8 @@ function cloneRepo(R, changes, id) {
     const mb = runCmd(id, dst, ['git', 'merge-base', 'HEAD', c.headSha]);
     if (mb.status !== 0) throw smokeError(`no merge base between ${merged.length ? 'main + ' + merged.join(' + ') : 'main'} and ${c.spec} (${c.headSha.slice(0, 12)})`, { cause: 'merge-base', infra: true });
     c.mergeBase = mb.stdout.trim();
-    const m = runCmd(id, dst, ['git', '-c', 'user.name=connectome-smoke', '-c', 'user.email=smoke@localhost', 'merge', '--no-ff', '--no-edit', '-m', `smoke: merge ${c.spec}`, c.headSha]);
+    const merge = mergeCommand(c.spec, c.headSha, git(['log', '-1', '--format=%cI', c.headSha]));
+    const m = runCmd(id, dst, merge.argv, { env: merge.env });
     if (m.status !== 0) {
       const files = runCmd(id, dst, ['git', 'diff', '--name-only', '--diff-filter=U']).stdout.trim().split('\n').filter(Boolean);
       runCmd(id, dst, ['git', 'merge', '--abort']);
@@ -533,14 +552,14 @@ function resolutionProof() {
 // Stores that earlier host releases wrote: checked on the combined tree's host, the tree every change is in.
 const STORE_FIXTURES = pathOfUrl(new URL('../fixtures/stores', import.meta.url));
 
-async function boots(hostPkg, tree, installed, heartbeatEntry, strategies = false) {
-  const meta = { idPrefix: `${HOST}:${tree}`, repo: HOST, pkg: HOST, tree };
+async function boots(hostPkg, tree, installed, heartbeatEntry, strategies, unit) {
+  const meta = { idPrefix: `${HOST}:${tree}`, repo: HOST, pkg: HOST, tree, unit };
   const label = `${HOST}-${tree}-boot-`;
   const fixtures = tree === 'combined' ? listFixtures(STORE_FIXTURES) : [];
   const skipStores = (why) => {
     for (const f of fixtures) skip(`stores:${f.version}`, why, { ...meta, id: `${meta.idPrefix}:stores:${f.version}`, stage: `stores:${f.version}` });
   };
-  const strategiesMeta = { repo: HOST, pkg: HOST, tree, id: `${meta.idPrefix}:strategies:${STRATEGIES}`, stage: `strategies:${STRATEGIES}` };
+  const strategiesMeta = { repo: HOST, pkg: HOST, tree, unit, id: `${meta.idPrefix}:strategies:${STRATEGIES}`, stage: `strategies:${STRATEGIES}` };
   const skipStrategies = (why) => { if (strategies) skip(`${HOST} ${tree} strategy fixture`, why, strategiesMeta); };
   if (!hostPkg || !installed.has(HOST) || !existsSync(heartbeatEntry)) {
     const why = !hostPkg ? 'no host checkout' : !installed.has(HOST) ? 'the host\'s install failed' : `heartbeat-mcpl's ${rel(heartbeatEntry)} is missing (its build failed)`;
@@ -682,17 +701,9 @@ function fatal(message) {
 }
 
 function outcome() {
-  if (report.steps.some((s) => s.cause === 'conflict')) return 'conflict';
-  if (report.fatal || report.steps.some((s) => s.status === 'fail' && s.infra)) return 'error';
-  // In change mode, an unchanged package failing in its own tree is main's
-  // failure (or the network's), and leaves the combined tree untrustworthy:
-  // the change can't be judged. Main mode reports such a failure as a break.
-  if (report.mode === 'change') {
-    const mainSide = report.steps.filter((s) => s.status === 'fail' && s.tree === 'own' && s.changed === false);
-    if (mainSide.length) { report.unjudged = mainSide.map((s) => s.id); return 'error'; }
-  }
-  if (report.steps.some((s) => s.status === 'fail')) return 'break';
-  return 'pass';
+  const { outcome: o, unjudged } = outcomeOf({ mode: report.mode, fatal: report.fatal, steps: report.steps });
+  if (unjudged) report.unjudged = unjudged;
+  return o;
 }
 
 function done() {
@@ -713,6 +724,7 @@ function done() {
         + (report.dependents ? ` · dependents: ${report.dependents.map((d) => d.pkg).join(', ') || 'none'}` : '')
       : `main: host ${short(HOST)} · af ${short('agent-framework')} · cm ${short('context-manager')} · membrane ${short('membrane')} · mcpl-core ${short('mcpl-core-ts')} · heartbeat ${short('heartbeat-mcpl')} · discord-mcpl ${short('discord-mcpl')} · portal ${short('portal')} · voice-kit ${short('voice-kit')}`,
   ];
+  if (report.lanes?.plan) lines.push(`lane ${report.lanes.index}/${report.lanes.of}: ${report.lanes.units.length ? report.lanes.units.join(', ') : 'no units'} (the plan has ${report.lanes.plan.length})`);
   if (report.fatal) lines.push(`fatal: ${report.fatal.split('\n')[0]}`);
   if (report.unjudged) lines.push(`the change couldn't be judged: unchanged packages failed in their own install or build, which take nothing from the change: ${report.unjudged.join(', ')}`);
   if (report.conflict) lines.push(`✗ conflict: ${report.conflict.change} onto ${report.conflict.against}: ${report.conflict.files.join(', ') || '(no file list)'}`);

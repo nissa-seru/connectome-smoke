@@ -1,6 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseChange, satisfies, buildGraph, dependentsOf, topoOrder, classifyInstallFailure, parseTestFailures, runnerSummary, nodeFailingTests, testFailureFields, filesystemFull, diskFull } from '../lib/stack.mjs';
+import { spawnSync } from 'node:child_process';
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { parseChange, satisfies, buildGraph, dependentsOf, topoOrder, classifyInstallFailure, parseTestFailures, runnerSummary, nodeFailingTests, testFailureFields, filesystemFull, diskFull, testCommand, mergeCommand } from '../lib/stack.mjs';
 
 test('parseTestFailures names failing tests as bun, node, TAP and vitest print them', () => {
   const bun = [
@@ -259,4 +263,76 @@ test("diskFull takes ENOSPC in a step's output as a full disk only when a filesy
   assert.equal(diskFull(printed, ['/w', '/t'], statfs({})), false);
   assert.equal(diskFull(printed, ['/w', '/t'], statfs({ '/t': roomy })), false);
   assert.equal(diskFull(printed, ['/w', '/t'], statfs({ '/t': full })), true);
+});
+
+test("connectome-host's suite runs as its CI runs it, by `bun test --parallel`, and its failures are read whole", () => {
+  const out = [
+    "bun's tmpdir(): /dev/shm/t.hfgu6Z",
+    'Filesystem     Type   Size  Used Avail Use% Mounted on',
+    'tmpfs          tmpfs   16G  2.2M   16G   1% /dev/shm',
+    '', '> test', '> bun test --parallel=4', '',
+    'bun test v1.4.4 (38afee6c8) 4x PARALLEL', '',
+    'test/a.test.ts:', '(pass) a case 1 [0.02ms]', '(pass) a case 2',
+    '(pass) b case 30',
+    '(fail) b breaks on purpose [0.24ms]',
+    "32 | test('b breaks on purpose', () => { expect(1).toBe(2); });",
+    '                                                   ^',
+    'error: expect(received).toBe(expected)', '', 'Expected: 2', 'Received: 1', '',
+    '      at <anonymous> (/home/nissa/suite/test/b.test.ts:32:47)', '',
+    'test/d.test.ts:', '(pass) d case 30',
+    "32 | test('d breaks too', () => { throw new Error('x'); });",
+    'error: x',
+    '      at <anonymous> (/home/nissa/suite/test/d.test.ts:32:49)',
+    '(fail) d breaks too [0.16ms]', '',
+    '2 tests failed:', '(fail) b breaks on purpose [0.24ms]', '(fail) d breaks too [0.16ms]', '',
+    ' 120 pass', ' 2 fail', ' 121 expect() calls', 'Ran 122 tests across 4 files. [110.00ms]',
+    'Filesystem      Size  Used Avail Use% Mounted on',
+    'tmpfs            16G  2.7M   16G   1% /dev/shm',
+  ].join('\n');
+  assert.deepEqual(testFailureFields(out), { failures: ['b breaks on purpose', 'd breaks too'], failureCount: 2, failuresParsed: true });
+});
+
+test("a package's tests run by the script its repository's CI runs where the checkout has it, else by `npm test`", () => {
+  const host = { R: { testScript: 'scripts/test-on-tmpfs.sh' }, pj: { scripts: { test: 'bun test' } } };
+  const af = { R: { testScript: 'scripts/test-as-ci.mjs' }, pj: { scripts: { test: 'node --test' } } };
+  assert.equal(testCommand(host, (f) => f === 'scripts/test-on-tmpfs.sh'), 'bash scripts/test-on-tmpfs.sh');
+  assert.equal(testCommand(af, (f) => f === 'scripts/test-as-ci.mjs'), 'node scripts/test-as-ci.mjs');
+  assert.equal(testCommand(host, () => false), 'npm test');
+  assert.equal(testCommand({ R: {}, pj: { scripts: { test: 'x' } } }, () => true), 'npm test');
+  assert.equal(testCommand({ R: {}, pj: { scripts: {} } }, () => true), null);
+});
+
+test('the same changes merged onto the same main at two clock times make the same merge commit, chained changes included', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'smoke-merge-'));
+  const git = (args, env = {}) => {
+    const r = spawnSync('git', args, { cwd: dir, encoding: 'utf-8', env: { ...process.env, ...env } });
+    assert.equal(r.status, 0, `git ${args.join(' ')}: ${r.stderr}`);
+    return r.stdout.trim();
+  };
+  const commit = (msg) => git(['-c', 'user.name=t', '-c', 'user.email=t@x', 'commit', '-q', '--allow-empty', '-m', msg]);
+  try {
+    git(['init', '-q', '-b', 'main']);
+    commit('base');
+    git(['checkout', '-q', '-b', 'one']); commit('one');
+    const one = git(['rev-parse', 'HEAD']);
+    git(['checkout', '-q', 'main']); git(['checkout', '-q', '-b', 'two']); commit('two');
+    const two = git(['rev-parse', 'HEAD']);
+    git(['checkout', '-q', 'main']); commit('main moves on');
+    const main = git(['rev-parse', 'HEAD']);
+    const mergeAll = () => {
+      git(['checkout', '-q', '--detach', main]);
+      for (const [spec, head] of [['pull/1', one], ['pull/2', two]]) {
+        const m = mergeCommand(spec, head, git(['log', '-1', '--format=%cI', head]));
+        const r = spawnSync(m.argv[0], m.argv.slice(1), { cwd: dir, encoding: 'utf-8', env: { ...process.env, ...m.env } });
+        assert.equal(r.status, 0, r.stderr);
+      }
+      return git(['rev-parse', 'HEAD']);
+    };
+    const first = mergeAll();
+    const second = Math.floor(Date.now() / 1000);
+    while (Math.floor(Date.now() / 1000) === second) await new Promise((r) => setTimeout(r, 20));
+    assert.equal(mergeAll(), first);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 });
