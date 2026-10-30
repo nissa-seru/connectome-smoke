@@ -2323,7 +2323,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); tried by --place on C7 and H1 opus at ef15b2e's workloads, where W11 under kv-unified refused every compile from step 5 (since released, 6f48e21): changes none of its 9 runs' records (J57892); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604)"
+    "gap": {
+      "kind": "equivalent",
+      "why": "through ContextManager: every head and tail chunk the strategy builds is pinned: true (ab:13798, :13811), so !chunk.pinned still leaves it out of demandMissingL1 (Alfred-2570's looks-2.md 3d5a22b2, by reading at fb4cf1046 and da4297c; Oscar-1005 #305029)"
+    }
   },
   {
     "id": "kvu-KU12f",
@@ -2340,7 +2343,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604)"
+    "gap": {
+      "kind": "equivalent",
+      "why": "through ContextManager: every head and tail chunk the strategy builds is pinned: true (ab:13798, :13811), so !chunk.pinned still leaves it out of demandMissingL1 (Alfred-2570's looks-2.md 3d5a22b2, by reading at fb4cf1046 and da4297c; Oscar-1005 #305029)"
+    }
   },
   {
     "id": "kvu-KU13a",
@@ -2414,7 +2420,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604)"
+    "gap": {
+      "kind": "equivalent",
+      "why": "through ContextManager: picker chunks cover each listing position once with sequence i, so the forest's sequences are dense and the density check never changes an answer (Alfred-2570's looks-2.md 3d5a22b2, by reading at fb4cf1046 and da4297c; Oscar-1005 #305029)"
+    }
   },
   {
     "id": "kvu-KU19a",
@@ -2590,7 +2599,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "per-candidate latent demand (rankIndividualLatentDemand), reached only with a latentDemandMode other than joint or after a joint ceiling stop, which no house configuration sets or nears (Alfred-2570's looks-2.md 3d5a22b2, by reading at fb4cf1046 and da4297c; Oscar-1005 #305029)"
+    }
   },
   {
     "id": "kvu-KU26a",
@@ -2607,7 +2619,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "per-candidate latent demand (rankIndividualLatentDemand), reached only with a latentDemandMode other than joint or after a joint ceiling stop, which no house configuration sets or nears (Alfred-2570's looks-2.md 3d5a22b2, by reading at fb4cf1046 and da4297c; Oscar-1005 #305029)"
+    }
   },
   {
     "id": "kvu-KU26b",
@@ -2624,7 +2639,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "per-candidate latent demand (rankIndividualLatentDemand), reached only with a latentDemandMode other than joint or after a joint ceiling stop, which no house configuration sets or nears (Alfred-2570's looks-2.md 3d5a22b2, by reading at fb4cf1046 and da4297c; Oscar-1005 #305029)"
+    }
   },
   {
     "id": "kvu-KU27d",
@@ -2641,7 +2659,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "per-candidate latent demand (rankIndividualLatentDemand), reached only with a latentDemandMode other than joint or after a joint ceiling stop, which no house configuration sets or nears (Alfred-2570's looks-2.md 3d5a22b2, by reading at fb4cf1046 and da4297c; Oscar-1005 #305029)"
+    }
   },
   {
     "id": "kvu-KU29d",
@@ -2658,7 +2679,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "per-candidate latent demand (rankIndividualLatentDemand), reached only with a latentDemandMode other than joint or after a joint ceiling stop, which no house configuration sets or nears (Alfred-2570's looks-2.md 3d5a22b2, by reading at fb4cf1046 and da4297c; Oscar-1005 #305029)"
+    }
   },
   {
     "id": "kvu-KU30b",
@@ -2675,7 +2699,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "per-candidate latent demand (rankIndividualLatentDemand), reached only with a latentDemandMode other than joint or after a joint ceiling stop, which no house configuration sets or nears (Alfred-2570's looks-2.md 3d5a22b2, by reading at fb4cf1046 and da4297c; Oscar-1005 #305029)"
+    }
   },
   {
     "id": "kvu-KU31a",
@@ -2692,7 +2719,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "per-candidate latent demand (rankIndividualLatentDemand), reached only with a latentDemandMode other than joint or after a joint ceiling stop, which no house configuration sets or nears (Alfred-2570's looks-2.md 3d5a22b2, by reading at fb4cf1046 and da4297c; Oscar-1005 #305029)"
+    }
   },
   {
     "id": "kvu-KU34b",
@@ -2709,7 +2739,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604)"
+    "gap": {
+      "kind": "equivalent",
+      "why": "through ContextManager: latent demand runs only after a feasible base solve, and the joint what-if forest keeps every cut of the base forest, so initial is never infeasible (Alfred-2570's looks-2.md 3d5a22b2, by reading at fb4cf1046 and da4297c; Oscar-1005 #305029)"
+    }
   },
   {
     "id": "kvu-KU35a",
@@ -2794,7 +2827,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "the ceiling memo's digest is read only for a what-if the ceiling stopped, which no house configuration nears (as KU10, #304475, #304746) (Alfred-2570's looks-2.md 3d5a22b2, by reading at fb4cf1046 and da4297c; Oscar-1005 #305029)"
+    }
   },
   {
     "id": "kvu-KU40j",
@@ -2811,7 +2847,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); tried by --place on C7 and H1 opus at ef15b2e's workloads, where W11 under kv-unified refused every compile from step 5 (since released, 6f48e21): changes none of its 9 runs' records (J57892); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "the ceiling memo's digest is read only for a what-if the ceiling stopped, which no house configuration nears (as KU10, #304475, #304746) (Alfred-2570's looks-2.md 3d5a22b2, by reading at fb4cf1046 and da4297c; Oscar-1005 #305029)"
+    }
   },
   {
     "id": "kvu-KF1a",
@@ -2948,7 +2987,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "through ContextManager: in decisionDag(), which nothing in src calls (a test does) (Alfred-2570's looks-2.md 3d5a22b2, by reading at fb4cf1046 and da4297c; Oscar-1005 #305029)"
+    }
   },
   {
     "id": "kvu-KF7e",
@@ -2965,7 +3007,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); tried by --place on C7 and H1 opus at ef15b2e's workloads, where W11 under kv-unified refused every compile from step 5 (since released, 6f48e21): changes none of its 9 runs' records (J57892); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604)"
+    "gap": {
+      "kind": "equivalent",
+      "why": "through ContextManager: with dense sequences a leaf's index is its sequence, so a changed sequence at an index is a changed id there (Alfred-2570's looks-2.md 3d5a22b2, by reading at fb4cf1046 and da4297c; Oscar-1005 #305029)"
+    }
   },
   {
     "id": "kvu-KF7g",
@@ -2982,7 +3027,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604)"
+    "gap": {
+      "kind": "equivalent",
+      "why": "through ContextManager: with dense sequences an appended chunk's sequence always exceeds the last (Alfred-2570's looks-2.md 3d5a22b2, by reading at fb4cf1046 and da4297c; Oscar-1005 #305029)"
+    }
   },
   {
     "id": "kvu-KF7j",
@@ -2999,7 +3047,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604)"
+    "gap": {
+      "kind": "equivalent",
+      "why": "through ContextManager: carriedLevel is read by nothing in src but sameLeafInputs itself (Alfred-2570's looks-2.md 3d5a22b2, by reading at fb4cf1046 and da4297c; Oscar-1005 #305029)"
+    }
   },
   {
     "id": "kvu-KF7k",
@@ -3056,7 +3107,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604)"
+    "gap": {
+      "kind": "equivalent",
+      "why": "through ContextManager: head chunks never carry a pinLevel (ab:13789-13800), so the added condition always holds (Alfred-2570's looks-2.md 3d5a22b2, by reading at fb4cf1046 and da4297c; Oscar-1005 #305029)"
+    }
   },
   {
     "id": "kvu-KF15b",
@@ -3093,7 +3147,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "in the fixture's workloads: a floor exactly one token over the wall, which no workload can aim at (Alfred-2570's looks-2.md 3d5a22b2, by reading at fb4cf1046 and da4297c; Oscar-1005 #305029)"
+    }
   },
   {
     "id": "kvu-KF17a",
@@ -3110,7 +3167,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "in the fixture's workloads: the refusal names several leaves only where two protections conflict, and W11 builds one; no house host's path is known to build two conflicting locks inside one level pin (Oscar-1005, #305029) (Alfred-2570's looks-2.md 3d5a22b2, by reading at fb4cf1046 and da4297c; Oscar-1005 #305029)"
+    }
   },
   {
     "id": "kvu-KF17b",
@@ -3127,7 +3187,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604)"
+    "gap": {
+      "kind": "equivalent",
+      "why": "through ContextManager: the certificate's protectedTokens is read by nothing in src; only bindingLeaves and suggestion reach the refusal (Alfred-2570's looks-2.md 3d5a22b2, by reading at fb4cf1046 and da4297c; Oscar-1005 #305029)"
+    }
   },
   {
     "id": "kvu-KF17d",
@@ -3144,7 +3207,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604)"
+    "gap": {
+      "kind": "equivalent",
+      "why": "through ContextManager: requiredAdditionalTokens appears only in the over-budget suggestion, where the floor exceeds the wall, so it's never negative there (Alfred-2570's looks-2.md 3d5a22b2, by reading at fb4cf1046 and da4297c; Oscar-1005 #305029)"
+    }
   },
   {
     "id": "kvu-KF17e",
@@ -3161,7 +3227,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "through ContextManager: a compile's wall is the budget, which is finite (Alfred-2570's looks-2.md 3d5a22b2, by reading at fb4cf1046 and da4297c; Oscar-1005 #305029)"
+    }
   },
   {
     "id": "kvu-KF18a",
@@ -3178,7 +3247,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "through ContextManager: in decisionDag(), which nothing in src calls (a test does) (Alfred-2570's looks-2.md 3d5a22b2, by reading at fb4cf1046 and da4297c; Oscar-1005 #305029)"
+    }
   },
   {
     "id": "kvu-KF18b",
@@ -3195,7 +3267,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "through ContextManager: in decisionDag(), which nothing in src calls (a test does) (Alfred-2570's looks-2.md 3d5a22b2, by reading at fb4cf1046 and da4297c; Oscar-1005 #305029)"
+    }
   },
   {
     "id": "kvu-KF19a",
@@ -3369,7 +3444,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "through ContextManager: the strategy passes normalizeContinuityMultiplier only 1 or a relaxation multiplier it has checked to lie in [0, 1] (Alfred-2570's looks-2.md 3d5a22b2, by reading at fb4cf1046 and da4297c; Oscar-1005 #305029)"
+    }
   },
   {
     "id": "kvu-KP3c",
@@ -3386,7 +3464,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "the multiplier is 1 unless kvUnifiedContinuityRelaxation is passed, which no host does (as KA4a/b/f) (Alfred-2570's looks-2.md 3d5a22b2, by reading at fb4cf1046 and da4297c; Oscar-1005 #305029)"
+    }
   },
   {
     "id": "kvu-KP3d",
@@ -3403,7 +3484,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); tried by --place on C7 and H1 opus at ef15b2e's workloads, where W11 under kv-unified refused every compile from step 5 (since released, 6f48e21): changes none of its 9 runs' records (J57892); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "through ContextManager: the strategy passes normalizeContinuityMultiplier only 1 or a relaxation multiplier it has checked to lie in [0, 1] (Alfred-2570's looks-2.md 3d5a22b2, by reading at fb4cf1046 and da4297c; Oscar-1005 #305029)"
+    }
   },
   {
     "id": "kvu-KP4a",
@@ -3420,7 +3504,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "through ContextManager: salience comes from computeStaticSalience, max(0.2, 1 - 0.8 x externalized), finite and in [0.2, 1] (Alfred-2570's looks-2.md 3d5a22b2, by reading at fb4cf1046 and da4297c; Oscar-1005 #305029)"
+    }
   },
   {
     "id": "kvu-KP4b",
@@ -3437,7 +3524,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "through ContextManager: salience comes from computeStaticSalience, max(0.2, 1 - 0.8 x externalized), finite and in [0.2, 1] (Alfred-2570's looks-2.md 3d5a22b2, by reading at fb4cf1046 and da4297c; Oscar-1005 #305029)"
+    }
   },
   {
     "id": "kvu-KP4e",
@@ -3454,7 +3544,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "the leaf engine's and the ceiling fallback's scorer: the default path's candidates come from TerminalPolicyEvaluator, which sets its own values, and no house configuration selects the leaf engine or nears the ceiling (Alfred-2570's looks-2.md 3d5a22b2, by reading at fb4cf1046 and da4297c; Oscar-1005 #305029)"
+    }
   },
   {
     "id": "kvu-KP5a",
@@ -3488,7 +3581,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "the leaf engine's and the ceiling fallback's scorer: the default path's candidates come from TerminalPolicyEvaluator, which sets its own values, and no house configuration selects the leaf engine or nears the ceiling (Alfred-2570's looks-2.md 3d5a22b2, by reading at fb4cf1046 and da4297c; Oscar-1005 #305029)"
+    }
   },
   {
     "id": "kvu-KP6c",
@@ -3543,7 +3639,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "in the fixture's workloads: an age exactly on a band edge (2^(k/steps)), which a half-integer age over a power of two never equals unless calibration lands it there (Alfred-2570's looks-2.md 3d5a22b2, by reading at fb4cf1046 and da4297c; Oscar-1005 #305029)"
+    }
   },
   {
     "id": "kvu-KP8e",
@@ -3560,7 +3659,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "the leaf engine's and the ceiling fallback's scorer: the default path's candidates come from TerminalPolicyEvaluator, which sets its own values, and no house configuration selects the leaf engine or nears the ceiling (Alfred-2570's looks-2.md 3d5a22b2, by reading at fb4cf1046 and da4297c; Oscar-1005 #305029)"
+    }
   },
   {
     "id": "kvu-KP11c",
@@ -3577,7 +3679,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "in the fixture's workloads: an exact score tie between cuts of different sizes, which no workload can aim at (Alfred-2570's looks-2.md 3d5a22b2, by reading at fb4cf1046 and da4297c; Oscar-1005 #305029)"
+    }
   },
   {
     "id": "kvu-KP11e",
@@ -3594,7 +3699,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "the leaf engine's and the ceiling fallback's scorer: the default path's candidates come from TerminalPolicyEvaluator, which sets its own values, and no house configuration selects the leaf engine or nears the ceiling (Alfred-2570's looks-2.md 3d5a22b2, by reading at fb4cf1046 and da4297c; Oscar-1005 #305029)"
+    }
   },
   {
     "id": "kvu-KP11g",
@@ -3611,7 +3719,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "the leaf engine's and the ceiling fallback's scorer: the default path's candidates come from TerminalPolicyEvaluator, which sets its own values, and no house configuration selects the leaf engine or nears the ceiling (Alfred-2570's looks-2.md 3d5a22b2, by reading at fb4cf1046 and da4297c; Oscar-1005 #305029)"
+    }
   },
   {
     "id": "kvu-KP13",
@@ -3705,7 +3816,7 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604); at b59e5cf under C7 and H1 opus on W11 (both), W8 (both) and opus W1 it changes no record (J58092)"
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604); at b59e5cf under C7 and H1 opus on W11 (both), W8 (both) and opus W1 it changes no record (J58092); on W10 (both) and W2 under C7 and H1 opus at 8b6990e it changes no record (J58132)"
   },
   {
     "id": "kvu-KX3b",
@@ -3722,7 +3833,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604); at b59e5cf under C7 and H1 opus on W11 (both), W8 (both) and opus W1 it changes no record (J58092)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "in the fixture's workloads: it differs only where two candidates' continuity losses are within rounding of each other, and no workload builds such a tie (Duncan-2410's second look, #304830; Oscar-1005 #304834) [read]"
+    }
   },
   {
     "id": "kvu-KX3g",
@@ -3739,7 +3853,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604); at b59e5cf under C7 and H1 opus on W11 (both), W8 (both) and opus W1 it changes no record (J58092)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "in the fixture's workloads: it needs several presentation-matching candidates within the adoption epsilon, which no workload builds; not flagged on W10 (both) and W2 under C7 and H1 opus (J58132) (Duncan-2410 #304830; Oscar-1005 #304834)"
+    }
   },
   {
     "id": "kvu-KX5a",
@@ -3756,7 +3873,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604); at b59e5cf under C7 and H1 opus on W11 (both), W8 (both) and opus W1 it changes no record (J58092)"
+    "gap": {
+      "kind": "equivalent",
+      "why": "through the solvers: both callers of scoreBoundedCandidates push the feasibility floor's frontier when no terminal candidate matches it (kv-unified-packed.ts:447-456, kv-unified-subtree.ts:427-437), so the source.length === 0 throw (kv-unified-selective.ts:49) is a guard no solve reaches (Duncan-2410's second look, #304830; Oscar-1005 #304834) [read]"
+    }
   },
   {
     "id": "kvu-KR10l",
@@ -3813,7 +3933,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604); at b59e5cf under C7 and H1 opus on W11 (both), W8 (both) and opus W1 it changes no record (J58092)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "in the fixture's workloads: it needs a shown leaf's summary replaced at its level (at L0 the hash is raw:<chunk id>, which never changes; edits don't reach summaries), which no public path found does; not ruled out in code (Duncan-2410's second look, #304830; Oscar-1005 #304834) [read]"
+    }
   },
   {
     "id": "kvu-KR6g",
@@ -3983,7 +4106,7 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604); at b59e5cf under C7 and H1 opus on W11 (both), W8 (both) and opus W1 it changes no record (J58092)"
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604); at b59e5cf under C7 and H1 opus on W11 (both), W8 (both) and opus W1 it changes no record (J58092); on W10 (both) and W2 under C7 and H1 opus at 8b6990e it changes no record (J58132)"
   },
   {
     "id": "kvu-KA2d",
@@ -4000,7 +4123,7 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604); at b59e5cf under C7 and H1 opus on W11 (both), W8 (both) and opus W1 it changes no record (J58092)"
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604); at b59e5cf under C7 and H1 opus on W11 (both), W8 (both) and opus W1 it changes no record (J58092); on W10 (both) and W2 under C7 and H1 opus at 8b6990e it changes no record (J58132)"
   },
   {
     "id": "kvu-KA2e",
@@ -4017,7 +4140,7 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604); at b59e5cf under C7 and H1 opus on W11 (both), W8 (both) and opus W1 it changes no record (J58092)"
+    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604); at b59e5cf under C7 and H1 opus on W11 (both), W8 (both) and opus W1 it changes no record (J58092); on W10 (both) and W2 under C7 and H1 opus at 8b6990e it changes no record (J58132)"
   },
   {
     "id": "kvu-KA3a",
@@ -4149,7 +4272,10 @@
       "H1"
     ],
     "flags": [],
-    "note": "unplaced: from Alfred-2570's and Duncan-2410's kv-unified mapping (~/.local/state/alfred-2570/kvu-map/fixture-survivors.json, sha256 f241545f15555125...); on W11 at da4297c under C7, H1 opus and H1 opus state-write-fails it changes no record (Desmond-2579, J58007, #304604); at b59e5cf under C7 and H1 opus on W11 (both), W8 (both) and opus W1 it changes no record (J58092)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "in the fixture's workloads: it needs a shown leaf's summary replaced at its level (at L0 the hash is raw:<chunk id>, which never changes; edits don't reach summaries), which no public path found does; not ruled out in code (Duncan-2410's second look, #304830; Oscar-1005 #304834) [read]"
+    }
   },
   {
     "id": "kvu-KA7a2",
@@ -5412,7 +5538,10 @@
       }
     ],
     "flags": [],
-    "note": "unplaced: from Esther-2584's compression-lifecycle mapping (~/.local/state/esther-2584/cm-rules/map/gaps-fixture-mutants.json, sha256 d5dfde3c6eabe28f...)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "needs a split-stitch rung waiting for its ten-minute call window, which needs compressionSplitFallback and a window filled by earlier split calls; no house configuration sets compressionSplitFallback or the split caps (connectome-host passes them through; none of its 10 recipes sets them) [read]"
+    }
   },
   {
     "id": "lifecycle-a5a",
@@ -5425,7 +5554,10 @@
       }
     ],
     "flags": [],
-    "note": "unplaced: from Esther-2584's compression-lifecycle mapping (~/.local/state/esther-2584/cm-rules/map/gaps-fixture-mutants.json, sha256 d5dfde3c6eabe28f...)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "needs a strategy ticking without a membrane; every house host and every fixture run gives one [read]"
+    }
   },
   {
     "id": "lifecycle-a5b",
@@ -5438,7 +5570,10 @@
       }
     ],
     "flags": [],
-    "note": "unplaced: from Esther-2584's compression-lifecycle mapping (~/.local/state/esther-2584/cm-rules/map/gaps-fixture-mutants.json, sha256 d5dfde3c6eabe28f...)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "needs a strategy ticking without a membrane; every house host and every fixture run gives one [read]"
+    }
   },
   {
     "id": "lifecycle-a9",
@@ -5451,7 +5586,7 @@
       }
     ],
     "flags": [],
-    "note": "unplaced: from Esther-2584's compression-lifecycle mapping (~/.local/state/esther-2584/cm-rules/map/gaps-fixture-mutants.json, sha256 d5dfde3c6eabe28f...)"
+    "note": "unplaced: from Esther-2584's compression-lifecycle mapping (~/.local/state/esther-2584/cm-rules/map/gaps-fixture-mutants.json, sha256 d5dfde3c6eabe28f...); at 8b6990e it changes no record of the runs Esther-2584's look named (C3 and H1 opus W7/modes, C3/W7/merges-refused, C3 and C7 W7/split, C3 and H1 opus W9, C3 and H1 opus W10/uncapped, H1 opus W10/capped; J58114)"
   },
   {
     "id": "lifecycle-b1c",
@@ -5469,7 +5604,7 @@
       }
     ],
     "flags": [],
-    "note": "unplaced: from Esther-2584's compression-lifecycle mapping (~/.local/state/esther-2584/cm-rules/map/gaps-fixture-mutants.json, sha256 d5dfde3c6eabe28f...)"
+    "note": "unplaced: from Esther-2584's compression-lifecycle mapping (~/.local/state/esther-2584/cm-rules/map/gaps-fixture-mutants.json, sha256 d5dfde3c6eabe28f...); at 8b6990e it changes no record of the runs Esther-2584's look named (C3 and H1 opus W7/modes, C3/W7/merges-refused, C3 and C7 W7/split, C3 and H1 opus W9, C3 and H1 opus W10/uncapped, H1 opus W10/capped; J58114)"
   },
   {
     "id": "lifecycle-b3",
@@ -5482,7 +5617,7 @@
       }
     ],
     "flags": [],
-    "note": "unplaced: from Esther-2584's compression-lifecycle mapping (~/.local/state/esther-2584/cm-rules/map/gaps-fixture-mutants.json, sha256 d5dfde3c6eabe28f...)"
+    "note": "unplaced: from Esther-2584's compression-lifecycle mapping (~/.local/state/esther-2584/cm-rules/map/gaps-fixture-mutants.json, sha256 d5dfde3c6eabe28f...); at 8b6990e it changes no record of the runs Esther-2584's look named (C3 and H1 opus W7/modes, C3/W7/merges-refused, C3 and C7 W7/split, C3 and H1 opus W9, C3 and H1 opus W10/uncapped, H1 opus W10/capped; J58114)"
   },
   {
     "id": "lifecycle-b4c",
@@ -5495,7 +5630,7 @@
       }
     ],
     "flags": [],
-    "note": "unplaced: from Esther-2584's compression-lifecycle mapping (~/.local/state/esther-2584/cm-rules/map/gaps-fixture-mutants.json, sha256 d5dfde3c6eabe28f...)"
+    "note": "unplaced: from Esther-2584's compression-lifecycle mapping (~/.local/state/esther-2584/cm-rules/map/gaps-fixture-mutants.json, sha256 d5dfde3c6eabe28f...); at 8b6990e it changes no record of the runs Esther-2584's look named (C3 and H1 opus W7/modes, C3/W7/merges-refused, C3 and C7 W7/split, C3 and H1 opus W9, C3 and H1 opus W10/uncapped, H1 opus W10/capped; J58114)"
   },
   {
     "id": "lifecycle-b5b",
@@ -5508,7 +5643,7 @@
       }
     ],
     "flags": [],
-    "note": "unplaced: from Esther-2584's compression-lifecycle mapping (~/.local/state/esther-2584/cm-rules/map/gaps-fixture-mutants.json, sha256 d5dfde3c6eabe28f...)"
+    "note": "unplaced: from Esther-2584's compression-lifecycle mapping (~/.local/state/esther-2584/cm-rules/map/gaps-fixture-mutants.json, sha256 d5dfde3c6eabe28f...); at 8b6990e it changes no record of the runs Esther-2584's look named (C3 and H1 opus W7/modes, C3/W7/merges-refused, C3 and C7 W7/split, C3 and H1 opus W9, C3 and H1 opus W10/uncapped, H1 opus W10/capped; J58114)"
   },
   {
     "id": "lifecycle-b10b",
@@ -5534,7 +5669,7 @@
       }
     ],
     "flags": [],
-    "note": "unplaced: from Esther-2584's compression-lifecycle mapping (~/.local/state/esther-2584/cm-rules/map/gaps-fixture-mutants.json, sha256 d5dfde3c6eabe28f...)"
+    "note": "unplaced: from Esther-2584's compression-lifecycle mapping (~/.local/state/esther-2584/cm-rules/map/gaps-fixture-mutants.json, sha256 d5dfde3c6eabe28f...); at 8b6990e it changes no record of the runs Esther-2584's look named (C3 and H1 opus W7/modes, C3/W7/merges-refused, C3 and C7 W7/split, C3 and H1 opus W9, C3 and H1 opus W10/uncapped, H1 opus W10/capped; J58114)"
   },
   {
     "id": "lifecycle-b12a",
@@ -5547,7 +5682,10 @@
       }
     ],
     "flags": [],
-    "note": "unplaced: from Esther-2584's compression-lifecycle mapping (~/.local/state/esther-2584/cm-rules/map/gaps-fixture-mutants.json, sha256 d5dfde3c6eabe28f...)"
+    "gap": {
+      "kind": "equivalent",
+      "why": "the default preflight returns true and no library class overrides it (Esther-2584's look, cm-rules/map/step2-looks.md fc12de91; #304799) [read]"
+    }
   },
   {
     "id": "lifecycle-c9a",
@@ -5573,7 +5711,10 @@
       }
     ],
     "flags": [],
-    "note": "unplaced: from Esther-2584's compression-lifecycle mapping (~/.local/state/esther-2584/cm-rules/map/gaps-fixture-mutants.json, sha256 d5dfde3c6eabe28f...)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "it needs renumbered message identity, which no public call makes (Esther-2584's look, cm-rules/map/step2-looks.md fc12de91; #304799) [read]"
+    }
   },
   {
     "id": "lifecycle-c12c",
@@ -5586,7 +5727,10 @@
       }
     ],
     "flags": [],
-    "note": "unplaced: from Esther-2584's compression-lifecycle mapping (~/.local/state/esther-2584/cm-rules/map/gaps-fixture-mutants.json, sha256 d5dfde3c6eabe28f...)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "it needs renumbered message identity, which no public call makes (Esther-2584's look, cm-rules/map/step2-looks.md fc12de91; #304799) [read]"
+    }
   },
   {
     "id": "lifecycle-c12d",
@@ -5599,7 +5743,10 @@
       }
     ],
     "flags": [],
-    "note": "unplaced: from Esther-2584's compression-lifecycle mapping (~/.local/state/esther-2584/cm-rules/map/gaps-fixture-mutants.json, sha256 d5dfde3c6eabe28f...)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "it needs renumbered message identity, which no public call makes (Esther-2584's look, cm-rules/map/step2-looks.md fc12de91; #304799) [read]"
+    }
   },
   {
     "id": "lifecycle-d7",
@@ -5625,7 +5772,10 @@
       }
     ],
     "flags": [],
-    "note": "unplaced: from Esther-2584's compression-lifecycle mapping (~/.local/state/esther-2584/cm-rules/map/gaps-fixture-mutants.json, sha256 d5dfde3c6eabe28f...)"
+    "gap": {
+      "kind": "equivalent",
+      "why": "max(16000, x x 1.5) is 16,000 under both formulas at every size the fixture runs; D40 stands as a doc/code conflict (Esther-2584's look, cm-rules/map/step2-looks.md fc12de91; #304799) [read]"
+    }
   },
   {
     "id": "lifecycle-e4c",
@@ -5638,20 +5788,28 @@
       }
     ],
     "flags": [],
-    "note": "unplaced: from Esther-2584's compression-lifecycle mapping (~/.local/state/esther-2584/cm-rules/map/gaps-fixture-mutants.json, sha256 d5dfde3c6eabe28f...)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "needs compressionMaxTokens, which no house configuration sets: connectome-host passes it through from a recipe and none of its 10 recipes sets it; agent-framework and house.json don't [read: connectome-host 2c3966228, agent-framework a64cfc010f]"
+    }
   },
   {
     "id": "lifecycle-e5a",
-    "why": "E5: `compressionRecallBudgetTokens` (100,000) caps the recall-pair content in each L1 and merge request; the cap walks newest-first and the kept set is re-sorted chronologically; each summary costs its content tokens + 50, plus its envelope … Mutant: the L1 recall budget's default is 50,000. Compression-lifecycle rule list (cm-rules/compression-lifecycle-rules.md f960968f, Esther-2584); survived every test file reach.py names for its lines and the 11 that read src as text, at fb4cf1046 (J57342, batch E). No run known to reach it yet.",
+    "why": "E5: `compressionRecallBudgetTokens` (100,000) caps the recall-pair content in each L1 and merge request; the cap walks newest-first and the kept set is re-sorted chronologically; each summary costs its content tokens + 50, plus its envelope … Mutant: the recall budget's default is 50,000, at both sites that default it (L1 ab:9844 and merge ab:12468), since the fixture's inCodeSizes refuses a size defaulted to two numbers (Oscar-1005 #304811). Compression-lifecycle rule list (cm-rules/compression-lifecycle-rules.md f960968f, Esther-2584); survived every test file reach.py names for its lines and the 11 that read src as text, at fb4cf1046 (J57342 changed the L1 site alone; J58124 changed both sites and survived all 82 files run: the 81 reach.py names for both lines and 1 more that read src as text). No run known to reach it yet.",
     "edits": [
       {
         "file": "strategies/autobiographical.ts",
         "find": "    const recallBudget = sourceOnly ? 0 : (this.config.compressionRecallBudgetTokens ?? 100_000);",
         "replace": "    const recallBudget = sourceOnly ? 0 : (this.config.compressionRecallBudgetTokens ?? 50_000);"
+      },
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "    const configuredRecallBudget = mergeSourceOnly ? 0 : (this.config.compressionRecallBudgetTokens ?? 100_000);",
+        "replace": "    const configuredRecallBudget = mergeSourceOnly ? 0 : (this.config.compressionRecallBudgetTokens ?? 50_000);"
       }
     ],
     "flags": [],
-    "note": "unplaced: from Esther-2584's compression-lifecycle mapping (~/.local/state/esther-2584/cm-rules/map/gaps-fixture-mutants.json, sha256 d5dfde3c6eabe28f...)"
+    "note": "unplaced: Esther-2584's two-site remake (lifecycle-e5a-v2.json, sha256 370c405a...), which J58124 found a gap against its reach"
   },
   {
     "id": "lifecycle-e9b",
@@ -5664,7 +5822,10 @@
       }
     ],
     "flags": [],
-    "note": "unplaced: from Esther-2584's compression-lifecycle mapping (~/.local/state/esther-2584/cm-rules/map/gaps-fixture-mutants.json, sha256 d5dfde3c6eabe28f...)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "needs compressionSourceOnly: true, which no house configuration sets: connectome-host passes it through from a recipe and none of its 10 recipes sets it; agent-framework names it only in a test; house.json doesn't [read]"
+    }
   },
   {
     "id": "lifecycle-e11a",
@@ -5677,7 +5838,10 @@
       }
     ],
     "flags": [],
-    "note": "unplaced: from Esther-2584's compression-lifecycle mapping (~/.local/state/esther-2584/cm-rules/map/gaps-fixture-mutants.json, sha256 d5dfde3c6eabe28f...)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "needs recoverLiteralThinkingWrappedCompression, which no house configuration sets: connectome-host passes it through and only its tests set it; agent-framework and house.json don't [read; deployed residents' own recipes unread]"
+    }
   },
   {
     "id": "lifecycle-f2a",
@@ -5690,7 +5854,7 @@
       }
     ],
     "flags": [],
-    "note": "unplaced: from Esther-2584's compression-lifecycle mapping (~/.local/state/esther-2584/cm-rules/map/gaps-fixture-mutants.json, sha256 d5dfde3c6eabe28f...)"
+    "note": "unplaced: from Esther-2584's compression-lifecycle mapping (~/.local/state/esther-2584/cm-rules/map/gaps-fixture-mutants.json, sha256 d5dfde3c6eabe28f...); at 8b6990e it changes no record of the runs Esther-2584's look named (C3 and H1 opus W7/modes, C3/W7/merges-refused, C3 and C7 W7/split, C3 and H1 opus W9, C3 and H1 opus W10/uncapped, H1 opus W10/capped; J58114)"
   },
   {
     "id": "lifecycle-f5",
@@ -5716,7 +5880,7 @@
       }
     ],
     "flags": [],
-    "note": "unplaced: from Esther-2584's compression-lifecycle mapping (~/.local/state/esther-2584/cm-rules/map/gaps-fixture-mutants.json, sha256 d5dfde3c6eabe28f...)"
+    "note": "unplaced: from Esther-2584's compression-lifecycle mapping (~/.local/state/esther-2584/cm-rules/map/gaps-fixture-mutants.json, sha256 d5dfde3c6eabe28f...); at 8b6990e it changes no record of the runs Esther-2584's look named (C3 and H1 opus W7/modes, C3/W7/merges-refused, C3 and C7 W7/split, C3 and H1 opus W9, C3 and H1 opus W10/uncapped, H1 opus W10/capped; J58114)"
   },
   {
     "id": "lifecycle-f10b",
@@ -5729,7 +5893,10 @@
       }
     ],
     "flags": [],
-    "note": "unplaced: from Esther-2584's compression-lifecycle mapping (~/.local/state/esther-2584/cm-rules/map/gaps-fixture-mutants.json, sha256 d5dfde3c6eabe28f...)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "needs 80 split calls within ten minutes under compressionSplitFallback, which no house configuration sets (connectome-host passes it through; none of its 10 recipes sets it) [read]"
+    }
   },
   {
     "id": "lifecycle-f19a",
@@ -5742,7 +5909,10 @@
       }
     ],
     "flags": [],
-    "note": "unplaced: from Esther-2584's compression-lifecycle mapping (~/.local/state/esther-2584/cm-rules/map/gaps-fixture-mutants.json, sha256 d5dfde3c6eabe28f...)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "needs a quarantine record standing beside its compressed chunk record: the current code clears a chunk's records at every landing (clearQuarantineForCompressedChunk, ab:5733), so only a store kept from before that hook, or a clear write that failed, has one; no house configuration meets either [read]"
+    }
   },
   {
     "id": "lifecycle-g10",
@@ -5755,7 +5925,10 @@
       }
     ],
     "flags": [],
-    "note": "unplaced: from Esther-2584's compression-lifecycle mapping (~/.local/state/esther-2584/cm-rules/map/gaps-fixture-mutants.json, sha256 d5dfde3c6eabe28f...)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "needs maxSpeculativeL1s with a hold placed late on a message an L1 already covers; no recipe sets maxSpeculativeL1s (connectome-host's web settings list it as restart-only), and agent-framework's one holdCompression is at the add (tool-result-guard.ts:395), not late [read]"
+    }
   },
   {
     "id": "lifecycle-g16c",
@@ -5768,7 +5941,10 @@
       }
     ],
     "flags": [],
-    "note": "unplaced: from Esther-2584's compression-lifecycle mapping (~/.local/state/esther-2584/cm-rules/map/gaps-fixture-mutants.json, sha256 d5dfde3c6eabe28f...)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "it needs a topology refusal later re-queued, and no public path to one is known (Esther-2584's look, cm-rules/map/step2-looks.md fc12de91; #304799) [read]"
+    }
   },
   {
     "id": "lifecycle-g17b",
@@ -5781,7 +5957,10 @@
       }
     ],
     "flags": [],
-    "note": "unplaced: from Esther-2584's compression-lifecycle mapping (~/.local/state/esther-2584/cm-rules/map/gaps-fixture-mutants.json, sha256 d5dfde3c6eabe28f...)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "it needs auditOnly over a persisted merge the grammar refuses (Esther-2584's look, cm-rules/map/step2-looks.md fc12de91; #304799) [read]"
+    }
   },
   {
     "id": "lifecycle-h4a",
@@ -5819,8 +5998,9 @@
         "replace": "    const interval = this.config.quarantineAlarmIntervalMs ?? 30 * 60_000;\n    if (interval <= 0) return;\n    const now = Date.now();\n    if (!this.mergeQuarantineAlarmActive"
       }
     ],
-    "flags": [],
-    "note": "unplaced: from Esther-2584's compression-lifecycle mapping (~/.local/state/esther-2584/cm-rules/map/gaps-fixture-mutants.json, sha256 d5dfde3c6eabe28f...)"
+    "flags": [
+      "C3/W7/merges-refused"
+    ]
   },
   {
     "id": "lifecycle-h13b",
@@ -5833,7 +6013,10 @@
       }
     ],
     "flags": [],
-    "note": "unplaced: from Esther-2584's compression-lifecycle mapping (~/.local/state/esther-2584/cm-rules/map/gaps-fixture-mutants.json, sha256 d5dfde3c6eabe28f...)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "needs quarantineAlarmIntervalMs: 0, which no house configuration sets: no connectome-host recipe or code passes it, nor agent-framework, nor house.json [read: connectome-host 2c3966228, agent-framework a64cfc010f]"
+    }
   },
   {
     "id": "lifecycle-i6",
@@ -5845,8 +6028,9 @@
         "replace": "    const cap = this.config.maxSpeculativeL1s ?? 8;\n    if (cap === undefined || cap < 0) return false;"
       }
     ],
-    "flags": [],
-    "note": "unplaced: from Esther-2584's compression-lifecycle mapping (~/.local/state/esther-2584/cm-rules/map/gaps-fixture-mutants.json, sha256 d5dfde3c6eabe28f...)"
+    "flags": [
+      "H1.claude-opus-4-6/W9"
+    ]
   },
   {
     "id": "lifecycle-j4a",
@@ -5859,7 +6043,10 @@
       }
     ],
     "flags": [],
-    "note": "unplaced: from Esther-2584's compression-lifecycle mapping (~/.local/state/esther-2584/cm-rules/map/gaps-fixture-mutants.json, sha256 d5dfde3c6eabe28f...)"
+    "gap": {
+      "kind": "equivalent",
+      "why": "compression:lane-paused goes only to CONTEXT_MANAGER_COMPRESSION_LOG's file, which no record reads (Esther-2584's look, cm-rules/map/step2-looks.md fc12de91; #304799) [read]"
+    }
   },
   {
     "id": "lifecycle-j9b",
@@ -5872,7 +6059,10 @@
       }
     ],
     "flags": [],
-    "note": "unplaced: from Esther-2584's compression-lifecycle mapping (~/.local/state/esther-2584/cm-rules/map/gaps-fixture-mutants.json, sha256 d5dfde3c6eabe28f...)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "needs transient failures on two chunks both queued when the pause ends; the stand-in's fx:throw fires once per marker and no workload throws on two chunks within one backoff [read]"
+    }
   },
   {
     "id": "lifecycle-j10",
@@ -5885,7 +6075,10 @@
       }
     ],
     "flags": [],
-    "note": "unplaced: from Esther-2584's compression-lifecycle mapping (~/.local/state/esther-2584/cm-rules/map/gaps-fixture-mutants.json, sha256 d5dfde3c6eabe28f...)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "it needs a pause, then a no-call L1 landing before any answer (Esther-2584's look, cm-rules/map/step2-looks.md fc12de91; #304799) [read]"
+    }
   },
   {
     "id": "lifecycle-j11",
@@ -5910,8 +6103,9 @@
         "replace": "    const interval = this.config.quarantineAlarmIntervalMs ?? 30 * 60_000;\n    if (interval <= 0) return;\n    const now = Date.now();\n    // Idle path"
       }
     ],
-    "flags": [],
-    "note": "unplaced: from Esther-2584's compression-lifecycle mapping (~/.local/state/esther-2584/cm-rules/map/gaps-fixture-mutants.json, sha256 d5dfde3c6eabe28f...)"
+    "flags": [
+      "C3/W7/modes"
+    ]
   },
   {
     "id": "lifecycle-k1c",
@@ -5924,7 +6118,10 @@
       }
     ],
     "flags": [],
-    "note": "unplaced: from Esther-2584's compression-lifecycle mapping (~/.local/state/esther-2584/cm-rules/map/gaps-fixture-mutants.json, sha256 d5dfde3c6eabe28f...)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "needs quarantineAlarmIntervalMs: 0, which no house configuration sets: no connectome-host recipe or code passes it, nor agent-framework, nor house.json [read: connectome-host 2c3966228, agent-framework a64cfc010f]"
+    }
   },
   {
     "id": "lifecycle-l10",
@@ -5963,6 +6160,6 @@
       }
     ],
     "flags": [],
-    "note": "unplaced: from Esther-2584's compression-lifecycle mapping (~/.local/state/esther-2584/cm-rules/map/gaps-fixture-mutants.json, sha256 d5dfde3c6eabe28f...)"
+    "note": "unplaced: from Esther-2584's compression-lifecycle mapping (~/.local/state/esther-2584/cm-rules/map/gaps-fixture-mutants.json, sha256 d5dfde3c6eabe28f...); at 8b6990e it changes no record of the runs Esther-2584's look named (C3 and H1 opus W7/modes, C3/W7/merges-refused, C3 and C7 W7/split, C3 and H1 opus W9, C3 and H1 opus W10/uncapped, H1 opus W10/capped; J58114)"
   }
 ]
