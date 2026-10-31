@@ -3028,8 +3028,8 @@
       "kind": "unreachable",
       "why": "masked: latent demand has candidates only on W10 and asks for merges on three of its jobs (J58185); no compile's plan differs there (J58454; control KP6c: 12 of 59 differ on H1 sonnet W10/uncapped, 45 on capped); not checked whether it changes the demanded requests themselves (Alfred-2570, #306731; Oscar-1005 #307601) [run]",
       "close": {
-        "by": "test",
-        "why": "the gain's frame: visible where a pool's cache or continuity floor differs from the base's (KU35a/b) or a scored pool holds two or more cuts of different scores (KP15d, bestUnder on a certified or fully evaluated pool), and the gain sits near the gate. latent demand has candidates only where same-level roots wait for merges (W10 in the fixture, J58185); a test builds such a store with a mock summarizer that holds merges, and reads which merges are asked for (the summarizer's calls), under receipts so a cache floor exists; no plan differed on W10's three demand jobs (J58454) [read] (alfred-2570's sort, sha256 6f2a912e45a77d59; Oscar-1005 #307680)"
+        "by": "stays",
+        "why": "reached with no visible change: a pool's floors are the lowest churn and continuity among its candidates (kv-unified-policy.ts:336-340); a certified pool exists only where every candidate's churn is 0 and the carried layout's continuity is 0 (kv-unified-certificate.ts:623-624), and an uncertified pool still holding the carried layout has floors 0 too, so replacing the frame's floors instead of lowering them could raise the frame only where pruning drops that layout (Oscar-1005's reading at fb4cf1046); of 11 widenings in 96 joint rankings over the six W10 jobs, none sat above the running frame (J58973, J58976: W10 at bb09489, before the λs were scaled, since fec0603 has no W10; Alfred-2570 #309295; Oscar-1005 #309301)"
       }
     }
   },
@@ -3052,8 +3052,8 @@
       "kind": "unreachable",
       "why": "masked: latent demand has candidates only on W10 and asks for merges on three of its jobs (J58185); no compile's plan differs there (J58454; control KP6c: 12 of 59 differ on H1 sonnet W10/uncapped, 45 on capped); not checked whether it changes the demanded requests themselves (Alfred-2570, #306731; Oscar-1005 #307601) [run]",
       "close": {
-        "by": "test",
-        "why": "visible where the hysteresis selection differs from the best cut in the shared frame (a carried layout within adoptEpsilon of the best) and only the best uses a candidate. latent demand has candidates only where same-level roots wait for merges (W10 in the fixture, J58185); a test builds such a store with a mock summarizer that holds merges, and reads which merges are asked for (the summarizer's calls), with a presentation [read] (alfred-2570's sort, sha256 6f2a912e45a77d59; Oscar-1005 #307680)"
+        "by": "stays",
+        "why": "reached with no visible change: the carried layout replaces the pool's best only within adoptEpsilon of it, in the pool's own frame (kv-unified-policy.ts:364-373), and demand needs gain > epsilon (kv-unified.ts:681) (Oscar-1005's reading at fb4cf1046); over the six W10 jobs (C7, H1 opus and sonnet, capped and uncapped, house options), the joint pool's own floors and the shared frame differed in 0 of 96 joint rankings, and in the 5 where the used sets differed gain <= epsilon, so nothing was demanded and only lastDemandEvaluations differs (J58973, J58976: W10 at bb09489, before the λs were scaled, since fec0603 has no W10; Alfred-2570 #309295; Oscar-1005 #309301)"
       }
     }
   },
@@ -4298,7 +4298,7 @@
       "why": "no fixture run reaches it, by its sort: see close",
       "close": {
         "by": "test",
-        "why": "No workload changes a record (W1, W2, W7, W8, W9, W10, W11; J58007, J58092, J58132, J58146): the premise is a what-if that hits the label ceiling at one recall cost while the same compile's other what-if for that candidate uses another (ku:537-542), and house sizes don't reach labelCeiling 100000. A test through the kv-unified strategy with a low labelCeiling (a value of an option the house sets) and one latent candidate whose conservative-cost what-if hits it, asserting the expected-cost what-if still solves (demandSolves, lastTimings.ceiling). (duncan-2410's sort, sha256 0fd12fd69ff54bcf; Oscar-1005 #307663)"
+        "why": "No workload changes a record (W1, W2, W7, W8, W9, W10, W11; J58007, J58092, J58132, J58146): the premise is a what-if that hits the label ceiling at one recall cost while the same compile's other what-if for that candidate uses another (ku:537-542), and house sizes don't reach labelCeiling 100000. A test through the kv-unified strategy with a low labelCeiling (a value of an option the house sets) and one latent candidate whose conservative-cost what-if hits it, asserting the expected-cost what-if still solves (demandSolves, lastTimings.ceiling). (duncan-2410's sort, sha256 0fd12fd69ff54bcf; Oscar-1005 #307663) Closed by Duncan-2410's \"a what-if the ceiling stopped at one recall cost doesn't stop the same candidate's what-if at another\" in test/adaptive/kv-unified-ceiling.test.ts, duncan/kvu-krkxka-tests fb0e61f78: red under this mutant at a clean checkout (runI), green at base. (#309248, #309250)"
       }
     }
   },
@@ -4322,7 +4322,7 @@
       "why": "in the fixture's workloads: it differs only where two candidates' continuity losses are within rounding of each other, and no workload builds such a tie (Duncan-2410's second look, #304830; Oscar-1005 #304834) [read]",
       "close": {
         "by": "test",
-        "why": "An exact tie: two bounded candidates whose continuity losses are within rounding of each other, built directly in test/adaptive/kv-unified-selective.test.ts as that file already builds candidates for scoreBoundedCandidates, asserting the continuity floor is the lower exact loss. (duncan-2410's sort, sha256 0fd12fd69ff54bcf; Oscar-1005 #307663)"
+        "why": "An exact tie: two bounded candidates whose continuity losses are within rounding of each other, built directly in test/adaptive/kv-unified-selective.test.ts as that file already builds candidates for scoreBoundedCandidates, asserting the continuity floor is the lower exact loss. (duncan-2410's sort, sha256 0fd12fd69ff54bcf; Oscar-1005 #307663) Closed by Duncan-2410's \"the continuity floor is the least exact loss, though the candidate with the lowest upper bound has more\" in test/adaptive/kv-unified-selective.test.ts, duncan/kvu-krkxka-tests fb0e61f78: red under this mutant at a clean checkout (runI), green at base. (#309248, #309250)"
       }
     }
   },
@@ -4346,7 +4346,7 @@
       "why": "in the fixture's workloads: it needs several presentation-matching candidates within the adoption epsilon, which no workload builds; not flagged on W10 (both) and W2 under C7 and H1 opus (J58132) (Duncan-2410 #304830; Oscar-1005 #304834)",
       "close": {
         "by": "test",
-        "why": "Several presentation-matching candidates within adoptEpsilon (the house sets adoptEpsilon 3000), built in kv-unified-selective.test.ts, asserting the carried candidate is the best matching one, not the first scored. Not flagged on W10 or W2 (J58132). (duncan-2410's sort, sha256 0fd12fd69ff54bcf; Oscar-1005 #307663)"
+        "why": "Several presentation-matching candidates within adoptEpsilon (the house sets adoptEpsilon 3000), built in kv-unified-selective.test.ts, asserting the carried candidate is the best matching one, not the first scored. Not flagged on W10 or W2 (J58132). (duncan-2410's sort, sha256 0fd12fd69ff54bcf; Oscar-1005 #307663) Closed by Duncan-2410's \"the carried presentation is the best matching candidate, not the first one scored\" in test/adaptive/kv-unified-selective.test.ts, duncan/kvu-krkxka-tests fb0e61f78: red under this mutant at a clean checkout (runI), green at base. (#309248, #309250)"
       }
     }
   },
@@ -4394,7 +4394,7 @@
       "why": "it needs a malformed persisted receipt state, which no public call writes (Duncan-2410 #304455; Oscar-1005 #304465) [read]",
       "close": {
         "by": "test",
-        "why": "An injected store fault: write a receipt state whose head's layoutHash isn't a string into the store under the receipt state id, reopen under kv-unified, and assert the load refuses (kv-unified-receipts.ts:513). (duncan-2410's sort, sha256 0fd12fd69ff54bcf; Oscar-1005 #307663)"
+        "why": "An injected store fault: write a receipt state whose head's layoutHash isn't a string into the store under the receipt state id, reopen under kv-unified, and assert the load refuses (kv-unified-receipts.ts:513). (duncan-2410's sort, sha256 0fd12fd69ff54bcf; Oscar-1005 #307663) Closed by Duncan-2410's \"a persisted receipt whose head has no string layout hash is refused when the store opens\" in test/kv-unified-strategy-integration.test.ts, duncan/kvu-krkxka-tests fb0e61f78: red under this mutant at a clean checkout (runI), green at base. (#309248, #309250)"
       }
     }
   },
@@ -4418,7 +4418,7 @@
       "why": "no host makes this call: the driver and agent-framework begin a submission only from membrane's wire receipt after a compile, with a non-empty id, and pass a prefix hash under kv-unified; a test gap for the tests-only pull request (Duncan-2410 #304455; Oscar-1005 #304465) [read]",
       "close": {
         "by": "test",
-        "why": "A guard tripped through a public seam: beginKvUnifiedSubmission with submissionId '' after a compile, or KvUnifiedReceiptChain.begin in kv-unified-receipts.test.ts, asserting 'kv-unified submissionId must be non-empty'. No house host makes the call. (duncan-2410's sort, sha256 0fd12fd69ff54bcf; Oscar-1005 #307663)"
+        "why": "A guard tripped through a public seam: beginKvUnifiedSubmission with submissionId '' after a compile, or KvUnifiedReceiptChain.begin in kv-unified-receipts.test.ts, asserting 'kv-unified submissionId must be non-empty'. No house host makes the call. (duncan-2410's sort, sha256 0fd12fd69ff54bcf; Oscar-1005 #307663) Closed by Duncan-2410's \"a submission with an empty id is refused\" in test/kv-unified-strategy-integration.test.ts, duncan/kvu-krkxka-tests fb0e61f78: red under this mutant at a clean checkout (runI), green at base. (#309248, #309250)"
       }
     }
   },
@@ -4526,7 +4526,7 @@
       "why": "no host makes this call: the driver and agent-framework begin a submission only from membrane's wire receipt after a compile, with a non-empty id, and pass a prefix hash under kv-unified; a test gap for the tests-only pull request (Duncan-2410 #304455; Oscar-1005 #304465) [read]",
       "close": {
         "by": "test",
-        "why": "A guard through a public seam: compile under kv-unified (a draft exists), reinitialize (a branch switch or a reopen), then beginKvUnifiedSubmission before the next compile, asserting it refuses for want of a draft. (duncan-2410's sort, sha256 0fd12fd69ff54bcf; Oscar-1005 #307663)"
+        "why": "A guard through a public seam: compile under kv-unified (a draft exists), reinitialize (a branch switch or a reopen), then beginKvUnifiedSubmission before the next compile, asserting it refuses for want of a draft. (duncan-2410's sort, sha256 0fd12fd69ff54bcf; Oscar-1005 #307663) Closed by Duncan-2410's \"a draft compiled on one branch can't be submitted after the strategy is initialized for another\" in test/kv-unified-strategy-integration.test.ts, duncan/kvu-krkxka-tests fb0e61f78: red under this mutant at a clean checkout (runI), green at base. (#309248, #309250)"
       }
     }
   },
@@ -4568,7 +4568,7 @@
       "why": "it needs a malformed persisted receipt state, which no public call writes (Duncan-2410 #304455; Oscar-1005 #304465) [read]",
       "close": {
         "by": "test",
-        "why": "An injected store fault: a persisted receipt state that's a string or a number, reopened under kv-unified, asserting an empty chain rather than a throw at load (autobiographical.ts:3670). (duncan-2410's sort, sha256 0fd12fd69ff54bcf; Oscar-1005 #307663)"
+        "why": "An injected store fault: a persisted receipt state that's a string or a number, reopened under kv-unified, asserting an empty chain rather than a throw at load (autobiographical.ts:3670). (duncan-2410's sort, sha256 0fd12fd69ff54bcf; Oscar-1005 #307663) Closed by Duncan-2410's \"a persisted receipt state that is not an object opens as an empty chain\" in test/kv-unified-strategy-integration.test.ts, duncan/kvu-krkxka-tests fb0e61f78: red under this mutant at a clean checkout (runI), green at base. (#309248, #309250)"
       }
     }
   },
@@ -4616,7 +4616,7 @@
       "why": "every kv-unified configuration takes the host's kvUnified block (configs.mjs) (Duncan-2410 #304455; Oscar-1005 #304465) [read]",
       "close": {
         "by": "test",
-        "why": "A malformed configuration's refusal: foldingStrategy 'kv-unified' with no kvUnified block, asserting the named error ('... live defaults are forbidden'), not a TypeError. (duncan-2410's sort, sha256 0fd12fd69ff54bcf; Oscar-1005 #307663)"
+        "why": "A malformed configuration's refusal: foldingStrategy 'kv-unified' with no kvUnified block, asserting the named error ('... live defaults are forbidden'), not a TypeError. (duncan-2410's sort, sha256 0fd12fd69ff54bcf; Oscar-1005 #307663) Closed by Duncan-2410's \"kv-unified with no kvUnified configuration is refused by name\" in test/kv-unified-strategy-integration.test.ts, duncan/kvu-krkxka-tests fb0e61f78: red under this mutant at a clean checkout (runI), green at base. (#309248, #309250)"
       }
     }
   },
@@ -4640,7 +4640,7 @@
       "why": "no fixture run reaches it, by its sort: see close",
       "close": {
         "by": "test",
-        "why": "No workload changes a record (as KX2b's runs): latent demand only asks for merges, which the ordinary merge policy queues too in every workload, so its requests change nothing seen. The house sets no mergeThreshold, so the default is what runs. A test: an AutobiographicalStrategy under kv-unified with no mergeThreshold, a store with a latent higher-level candidate, asserting the demanded merge's range groups by 6 (autobiographical.ts:16188). (duncan-2410's sort, sha256 0fd12fd69ff54bcf; Oscar-1005 #307663) Its premise needs hierarchical: false: with hierarchical on, the constructor fills mergeThreshold 6 itself (autobiographical.ts:2000), so latent demand's ?? 6 never runs, and no house host sets hierarchical: false (Duncan-2410 #308977).",
+        "why": "No workload changes a record (as KX2b's runs): latent demand only asks for merges, which the ordinary merge policy queues too in every workload, so its requests change nothing seen. The house sets no mergeThreshold, so the default is what runs. A test: an AutobiographicalStrategy under kv-unified with no mergeThreshold, a store with a latent higher-level candidate, asserting the demanded merge's range groups by 6 (autobiographical.ts:16188). (duncan-2410's sort, sha256 0fd12fd69ff54bcf; Oscar-1005 #307663) Its premise needs hierarchical: false: with hierarchical on, the constructor fills mergeThreshold 6 itself (autobiographical.ts:2000), so latent demand's ?? 6 never runs, and no house host sets hierarchical: false (Duncan-2410 #308977). Closed by Duncan-2410's \"latent demand's settings the recipe leaves unset: merge threshold 6, fallback recall cost the summary target plus 20, and 16 candidates\" in test/kv-unified-strategy-integration.test.ts, duncan/kvu-krkxka-tests fb0e61f78: red under this mutant at a clean checkout (runI), green at base. Its case is the test's hierarchical: false compile. (#309248, #309250)",
         "option": true
       }
     }
@@ -4665,7 +4665,7 @@
       "why": "no fixture run reaches it, by its sort: see close",
       "close": {
         "by": "test",
-        "why": "As KA2c: a latent candidate with no recall cost of its own, ranked at the fallback cost summaryTargetTokens + 20 (autobiographical.ts:16189), where the house sets no summaryTargetTokens; a test whose welfare margin sits within those 20 tokens, asserting which candidate is demanded. (duncan-2410's sort, sha256 0fd12fd69ff54bcf; Oscar-1005 #307663)"
+        "why": "As KA2c: a latent candidate with no recall cost of its own, ranked at the fallback cost summaryTargetTokens + 20 (autobiographical.ts:16189), where the house sets no summaryTargetTokens; a test whose welfare margin sits within those 20 tokens, asserting which candidate is demanded. (duncan-2410's sort, sha256 0fd12fd69ff54bcf; Oscar-1005 #307663) Closed by Duncan-2410's \"latent demand's settings the recipe leaves unset: merge threshold 6, fallback recall cost the summary target plus 20, and 16 candidates\" in test/kv-unified-strategy-integration.test.ts, duncan/kvu-krkxka-tests fb0e61f78: red under this mutant at a clean checkout (runI), green at base. (#309248, #309250)"
       }
     }
   },
@@ -4689,7 +4689,7 @@
       "why": "no fixture run reaches it, by its sort: see close",
       "close": {
         "by": "test",
-        "why": "As KA2c: maxCandidates 16 (autobiographical.ts:16190) shows only with more than 8 latent candidates in one compile, which no workload builds; a test with 9 or more, whose best by welfare is past the 8th by token reduction, asserting it's demanded. (duncan-2410's sort, sha256 0fd12fd69ff54bcf; Oscar-1005 #307663)"
+        "why": "As KA2c: maxCandidates 16 (autobiographical.ts:16190) shows only with more than 8 latent candidates in one compile, which no workload builds; a test with 9 or more, whose best by welfare is past the 8th by token reduction, asserting it's demanded. (duncan-2410's sort, sha256 0fd12fd69ff54bcf; Oscar-1005 #307663) Closed by Duncan-2410's \"latent demand's settings the recipe leaves unset: merge threshold 6, fallback recall cost the summary target plus 20, and 16 candidates\" in test/kv-unified-strategy-integration.test.ts, duncan/kvu-krkxka-tests fb0e61f78: red under this mutant at a clean checkout (runI), green at base. (#309248, #309250)"
       }
     }
   },
@@ -4732,7 +4732,7 @@
       "close": {
         "by": "test",
         "option": true,
-        "why": "kvUnifiedContinuityRelaxation, which no house host passes: a compile with a relaxation whose reason is none of the three, asserting the invalid-input warning and a continuity multiplier of 1 (autobiographical.ts:16241-16262). (duncan-2410's sort, sha256 0fd12fd69ff54bcf; Oscar-1005 #307663)"
+        "why": "kvUnifiedContinuityRelaxation, which no house host passes: a compile with a relaxation whose reason is none of the three, asserting the invalid-input warning and a continuity multiplier of 1 (autobiographical.ts:16241-16262). (duncan-2410's sort, sha256 0fd12fd69ff54bcf; Oscar-1005 #307663) Closed by Duncan-2410's \"kv-unified continuity relaxation is audited, expiring, and fail-closed\" in test/kv-unified-strategy-integration.test.ts (an assertion added to the existing test), duncan/kvu-krkxka-tests fb0e61f78: red under this mutant at a clean checkout (runI), green at base. (#309248, #309250)"
       }
     }
   },
@@ -4757,7 +4757,7 @@
       "close": {
         "by": "test",
         "option": true,
-        "why": "kvUnifiedContinuityRelaxation, which no house host passes: a relaxation with multiplier above 1, asserting it's refused as invalid and the multiplier stays 1. (duncan-2410's sort, sha256 0fd12fd69ff54bcf; Oscar-1005 #307663)"
+        "why": "kvUnifiedContinuityRelaxation, which no house host passes: a relaxation with multiplier above 1, asserting it's refused as invalid and the multiplier stays 1. (duncan-2410's sort, sha256 0fd12fd69ff54bcf; Oscar-1005 #307663) Closed by Duncan-2410's \"kv-unified continuity relaxation is audited, expiring, and fail-closed\" in test/kv-unified-strategy-integration.test.ts (an assertion added to the existing test), duncan/kvu-krkxka-tests fb0e61f78: red under this mutant at a clean checkout (runI), green at base. (#309248, #309250)"
       }
     }
   },
@@ -4782,7 +4782,7 @@
       "close": {
         "by": "test",
         "option": true,
-        "why": "kvUnifiedContinuityRelaxation, which no house host passes: a relaxation with multiplier below 1 and expiresAt Infinity, asserting it's refused as invalid. (duncan-2410's sort, sha256 0fd12fd69ff54bcf; Oscar-1005 #307663)"
+        "why": "kvUnifiedContinuityRelaxation, which no house host passes: a relaxation with multiplier below 1 and expiresAt Infinity, asserting it's refused as invalid. (duncan-2410's sort, sha256 0fd12fd69ff54bcf; Oscar-1005 #307663) Closed by Duncan-2410's \"kv-unified continuity relaxation is audited, expiring, and fail-closed\" in test/kv-unified-strategy-integration.test.ts (an assertion added to the existing test), duncan/kvu-krkxka-tests fb0e61f78: red under this mutant at a clean checkout (runI), green at base. (#309248, #309250)"
       }
     }
   },
@@ -4891,7 +4891,7 @@
       "why": "no host makes this call: the driver and agent-framework begin a submission only from membrane's wire receipt after a compile, with a non-empty id, and pass a prefix hash under kv-unified; a test gap for the tests-only pull request (Duncan-2410 #304455; Oscar-1005 #304465) [read]",
       "close": {
         "by": "test",
-        "why": "A guard through a public seam: beginKvUnifiedSubmission before any compile under kv-unified (no draft), asserting the named error, not a TypeError; and under another folding strategy after a compile, asserting it refuses. (duncan-2410's sort, sha256 0fd12fd69ff54bcf; Oscar-1005 #307663)"
+        "why": "A guard through a public seam: beginKvUnifiedSubmission before any compile under kv-unified (no draft), asserting the named error, not a TypeError; and under another folding strategy after a compile, asserting it refuses. (duncan-2410's sort, sha256 0fd12fd69ff54bcf; Oscar-1005 #307663) Closed by Duncan-2410's \"a draft compiled on one branch can't be submitted after the strategy is initialized for another\" in test/kv-unified-strategy-integration.test.ts, duncan/kvu-krkxka-tests fb0e61f78: red under this mutant at a clean checkout (runI), green at base. KA7a2 has no test of its own: KA10d's test is the one it fails. (#309248, #309250)"
       }
     }
   },
@@ -4920,7 +4920,7 @@
       "why": "no host makes this call: the driver and agent-framework begin a submission only from membrane's wire receipt after a compile, with a non-empty id, and pass a prefix hash under kv-unified; a test gap for the tests-only pull request (Duncan-2410 #304455; Oscar-1005 #304465) [read]",
       "close": {
         "by": "test",
-        "why": "A compile without kvUnifiedImmutablePrefixHash (agent-framework always passes one under kv-unified, agent.ts:1915-1927 at a64cfc010f), then begin and accept with its wire receipt, asserting the chain keeps no cache reference. (duncan-2410's sort, sha256 0fd12fd69ff54bcf; Oscar-1005 #307663)"
+        "why": "A compile without kvUnifiedImmutablePrefixHash (agent-framework always passes one under kv-unified, agent.ts:1915-1927 at a64cfc010f), then begin and accept with its wire receipt, asserting the chain keeps no cache reference. (duncan-2410's sort, sha256 0fd12fd69ff54bcf; Oscar-1005 #307663) Closed by Duncan-2410's \"a presentation compiled with no immutable prefix hash keeps no cache reference when accepted\" in test/kv-unified-strategy-integration.test.ts, duncan/kvu-krkxka-tests fb0e61f78: red under this mutant at a clean checkout (runI), green at base. (#309248, #309250)"
       }
     }
   },
@@ -8269,5 +8269,128 @@
         "why": "Ezra-2423's level-budget defaults test, its { hierarchical: false } case, in test/select-path-rules.test.ts, ezra/select-tests 750601d90: red under this mutant and only that case fails, green at fb4cf1046 (J58956; #309231)"
       }
     }
+  },
+  {
+    "id": "kvu-kw6-tau",
+    "why": "KW-6: as tau rises a designed hold is released (the stability term decays with the leaves' age in presentations). Duncan-2410's mutants; KW-6 has no test of its own: existing tests pin the decay and the engines' use of the sequence, and the KW-7 test pins the strategy handing the sequence over (#309248; Oscar-1005 #309261). This one: the decay 2^(-tau/halfLife) raised by 1 and capped at 1, so a hold never decays; the two banding tests fail under it (J58921, J58957).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified-policy.ts",
+        "find": "      2 ** (-tau / stableHalfLife);",
+        "replace": "      Math.min(1, 2 ** (-tau / stableHalfLife) + 1);"
+      }
+    ],
+    "flags": [
+      "H1.claude-opus-4-6/W2"
+    ]
+  },
+  {
+    "id": "kvu-kw6-seq",
+    "why": "KW-6: as tau rises a designed hold is released (the stability term decays with the leaves' age in presentations). Duncan-2410's mutants; KW-6 has no test of its own: existing tests pin the decay and the engines' use of the sequence, and the KW-7 test pins the strategy handing the sequence over (#309248; Oscar-1005 #309261). This one: all three engines read the current sequence as 0; #105, packed/full-selective agreement, prepared terminal metrics and DAG nested holes fail under it (J58921, J58957).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified-subtree.ts",
+        "find": "    const currentSeq = presentation?.currentSeq ?? 0;",
+        "replace": "    const currentSeq = 0 * (presentation?.currentSeq ?? 0);"
+      },
+      {
+        "file": "adaptive/kv-unified-terminal.ts",
+        "find": "    const currentSeq = presentation?.currentSeq ?? 0;",
+        "replace": "    const currentSeq = 0 * (presentation?.currentSeq ?? 0);"
+      },
+      {
+        "file": "adaptive/kv-unified-packed.ts",
+        "find": "    const currentSeq = presentation?.currentSeq ?? 0;",
+        "replace": "    const currentSeq = 0 * (presentation?.currentSeq ?? 0);"
+      }
+    ],
+    "flags": [
+      "H1.claude-opus-4-6/W2"
+    ]
+  },
+  {
+    "id": "kvu-kw6-seq-terminal",
+    "why": "KW-6: as tau rises a designed hold is released (the stability term decays with the leaves' age in presentations). Duncan-2410's mutants; KW-6 has no test of its own: existing tests pin the decay and the engines' use of the sequence, and the KW-7 test pins the strategy handing the sequence over (#309248; Oscar-1005 #309261). This one: the terminal engine reads the current sequence as 0.",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified-terminal.ts",
+        "find": "    const currentSeq = presentation?.currentSeq ?? 0;",
+        "replace": "    const currentSeq = 0 * (presentation?.currentSeq ?? 0);"
+      }
+    ],
+    "flags": [],
+    "gap": {
+      "kind": "unreachable",
+      "why": "no cut run's record changes: J58979 over the nine kv-unified runs",
+      "close": {
+        "by": "test",
+        "why": "pinned by existing tests: #105, prepared terminal metrics and DAG nested holes fail under it (J58921, J58957; Duncan-2410 #309248)"
+      }
+    }
+  },
+  {
+    "id": "kvu-kw6-seq-packed",
+    "why": "KW-6: as tau rises a designed hold is released (the stability term decays with the leaves' age in presentations). Duncan-2410's mutants; KW-6 has no test of its own: existing tests pin the decay and the engines' use of the sequence, and the KW-7 test pins the strategy handing the sequence over (#309248; Oscar-1005 #309261). This one: the packed engine reads the current sequence as 0.",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified-packed.ts",
+        "find": "    const currentSeq = presentation?.currentSeq ?? 0;",
+        "replace": "    const currentSeq = 0 * (presentation?.currentSeq ?? 0);"
+      }
+    ],
+    "flags": [],
+    "gap": {
+      "kind": "unreachable",
+      "why": "the packed engine runs only past the label ceiling (kv-unified-pareto.ts:177-193), which no cut run reaches; no cut run's record changes (J58979 over the nine kv-unified runs)",
+      "close": {
+        "by": "test",
+        "why": "pinned by the existing packed/full-selective agreement test, which fails under it (J58921, J58957; Duncan-2410 #309248)"
+      }
+    }
+  },
+  {
+    "id": "kvu-kw7-runs",
+    "why": "KW-7: tau survives replay and restart: each leaf's presentation count since it last changed survives the receipt being written and read back. Duncan-2410's mutants, closed also by his \"each leaf's presentation count since it last changed survives the receipt being written and read back\" in test/kv-unified-strategy-integration.test.ts, duncan/kvu-krkxka-tests fb0e61f78 (runI; #309248, #309250). This one: raw runs joined across lastChangedSeq.",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified-receipts.ts",
+        "find": "return isRawRun(a) && isRawRun(b) && a.level === b.level && a.lastChangedSeq === b.lastChangedSeq;",
+        "replace": "return isRawRun(a) && isRawRun(b) && a.level === b.level;"
+      }
+    ],
+    "flags": [
+      "H1.claude-opus-4-6/W9"
+    ]
+  },
+  {
+    "id": "kvu-kw7-seq",
+    "why": "KW-7: tau survives replay and restart: each leaf's presentation count since it last changed survives the receipt being written and read back. Duncan-2410's mutants, closed also by his \"each leaf's presentation count since it last changed survives the receipt being written and read back\" in test/kv-unified-strategy-integration.test.ts, duncan/kvu-krkxka-tests fb0e61f78 (runI; #309248, #309250). This one: the strategy hands the engines currentSeq 0 in place of the receipt chain's head sequence.",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "                currentSeq: this.kvUnifiedReceipts.head.sequence,",
+        "replace": "                currentSeq: 0,"
+      }
+    ],
+    "flags": [
+      "H1.claude-opus-4-6/W2"
+    ]
+  },
+  {
+    "id": "kvu-kw6-seq-subtree",
+    "why": "KW-6's subtree engine: the default engine with no engine set (SubtreeMemoSolver; the packed engine runs only past the label ceiling, kv-unified-pareto.ts:177-193), and connectome-host's standardKvUnifiedConfig sets none. This mutant: the subtree engine reads the current sequence as 0 (kv-unified-subtree.ts:276). It fails none of the 1,328 tests in the 39 files that run its line at fb4cf1046, nor the KW-6 test (Duncan-2410 #309248); the fixture places it (Oscar-1005 #309261).",
+    "edits": [
+      {
+        "file": "adaptive/kv-unified-subtree.ts",
+        "find": "    const currentSeq = presentation?.currentSeq ?? 0;",
+        "replace": "    const currentSeq = 0 * (presentation?.currentSeq ?? 0);"
+      }
+    ],
+    "flags": [
+      "H1.claude-opus-4-6/W2",
+      "H1.claude-opus-4-6/W7/merges-refused",
+      "H1.claude-opus-4-6/W9",
+      "H1.claude-opus-4-6/W11/state-write-fails"
+    ]
   }
 ]
