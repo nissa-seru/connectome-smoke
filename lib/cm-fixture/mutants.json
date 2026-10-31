@@ -2245,15 +2245,11 @@
       "H1",
       "H2"
     ],
-    "flags": [],
-    "gap": {
-      "kind": "unreachable",
-      "why": "no fixture run reaches it, by its sort: see close",
-      "close": {
-        "by": "fixture",
-        "why": "A house host meets it in ordinary use. agent-framework opens every resident's manager with a viewFilter (framework.ts:15976 at a51f062b35, the residents' `sees`; reopen at :11354 and :11370, the subconscious at :16062). So every H1 and H2 resident's strategy reads its multiplier through filterMessageStoreView (message-view.ts:71-73), the code the mutant changes. The fixture's driver opens no manager with a viewFilter (no viewFilter or auxiliaryMessageViews in lib/cm-fixture at 61eb4aa), which is why no workload reaches it. The change: the driver opens the H configurations' managers with a viewFilter as agent-framework does. A keep-everything predicate is enough, since the fixture's messages carry no tune-out stamp and no other agent's stored injection, which are all `sees` leaves out. Then W1 and W2 under the H1s, where the multiplier moves (cal-S12a flags there), reach it. By reading, the strategy keys memos on the view's multiplier (_recordChunks :17851, :18589, :18624, recallAnswerCost :16452) and prices rule 3 of the pricing epochs with it (:15063). A view reporting 1 leaves those memos standing across a multiplier step. Not run. A test through the exported filterMessageStoreView would catch the mutant in CI as well. The driver change is also wider than this row: it makes every H1/H2 run read through the view a resident's strategy actually reads through. (beth-2709's sort, sha256 0534c73724990c21; Oscar-1005 #307705)"
-      }
-    }
+    "flags": [
+      "H1.claude-opus-4-6/W2",
+      "H1.claude-sonnet-4-5-20250929/W2",
+      "H1.claude-sonnet-4-5-20250929/W1"
+    ]
   },
   {
     "id": "cal-V7a",
