@@ -5112,8 +5112,8 @@
       "kind": "unreachable",
       "why": "its premise holds in no fixture job: the statement runs, and the original and the mutant compute the same there in every C7 and H1 job (Ambrose-2449's look, kvu-rules/step2-looks.md 562d747a; reach J58030, infection J58069; Oscar-1005 #304746)",
       "close": {
-        "by": "test",
-        "why": "G13: needs a head or tail chunk owned by a summary, which no fixture compile has (D35's run, J57654; J58069). A constructed store with tail chunk ids under a summary reaches it, as the G21a probe J57374 built one. Untagged because no configuration value is known to be needed; whether a store under the house's configuration ever gets there is unshown. (ambrose-2449's sort, sha256 5dd7e6271872208a; Oscar-1005 #307685)"
+        "by": "stays",
+        "why": "reached with no visible change: external leaves are head or tail chunks (kv-unified.ts:1019-1020), which always carry a raw constraint (constraintsFor), so under the mutant they can only be holes (kv-unified-subtree.ts:705), never participants, and the children pass skips them in raw runs (:757); what's left is an extra children pass (:727), whose flushes stop at the guarded limit (:745) and match pending emissions in the order a later flush would; candidates carry only trace and tokens (:422), so nothing reaches a result (George-2477 #309387, by reading at fb4cf1046; Oscar-1005 #309390)"
       }
     }
   },
@@ -5805,8 +5805,8 @@
       "kind": "unreachable",
       "why": "masked in the fixture's workloads: infected at its site on H1 opus W1, W2 and W2/real, and H1 sonnet W1/real (J58069), but no compile's plan differs there (J58120; the control J58139 sees kvu-s-e12a and kvu-s15a differ on H1 opus W9) (Ambrose-2449, #305052)",
       "close": {
-        "by": "test",
-        "why": "S13: infected in 31 H1 jobs but masked (J58120). The intact entry's start unit is what identity guards: a receipt that gains a unit before the span keeps the slice but moves its start. (ambrose-2449's sort, sha256 5dd7e6271872208a; Oscar-1005 #307685)"
+        "by": "stays",
+        "why": "no condition found, not equivalent: the mutant reuses an intact entry made at another entry unit when the slice matches, and the reused delta's marker carries that first unit's absolute cachedUnits (toDelta kv-unified-subtree.ts:971-973, compose :994), stale by the shift; it reaches only the broken-label prune key (:875). A result would change only if a stale key merged or split a prune group so the eventual winner were lost, which nothing found rules out; 904 warm solves showed no such case (J58892; George-2477 #309387; Oscar-1005 #309390)"
       }
     }
   },
@@ -5875,11 +5875,11 @@
     ],
     "flags": [],
     "gap": {
-      "kind": "unreachable",
+      "kind": "equivalent",
       "why": "masked in the fixture's workloads: infected at its site on all four H1 W11 jobs (J58069), but no compile's plan differs there (J58120; the control J58139 sees kvu-s-e12a and kvu-s15a differ on H1 opus W9) (Ambrose-2449, #305052)",
       "close": {
-        "by": "test",
-        "why": "C5: infected on every H1 W11 job but masked (J58120). A store with conflicting pins and locks under the certificate: at base it declines to the full solver; under the mutant it can certify the carried layout. A test needs a conflict where that layout isn't the full solver's plan; if none can be built, it stays. (ambrose-2449's sort, sha256 5dd7e6271872208a; Oscar-1005 #307685)"
+        "by": "stays",
+        "why": "equivalent: the guard at kv-unified-certificate.ts:406 returns null where every conflicted leaf would return null anyway, declined at :446 (presented) or :451 (unpresented); the identity branch (:437) only reuses a dag.fixed that every leaf passed, since dag.fixed (:462) is written only after every leaf passes; a conflict is a leaf whose allowed levels are empty, fresh (kv-unified.ts:1028) or reused by derive (:919-930); the mutant's one extra effect, a scope memo of the presentation read (kv-unified-terminal.ts:84), returns what a fresh read gives (:72-80) (George-2477 #309387, by reading at fb4cf1046; Oscar-1005 #309390, read himself)"
       }
     }
   },
@@ -6452,7 +6452,7 @@
       "why": "reached; no recorded change: reached on C3/W9; none of 38 C3 and H1 opus runs changes (Esther-2584's look 2 by reach probes and readiness, J58304, J58318, J58336, J58339, J58343, J58346 at 4ac3a86, #306339; Oscar-1005 #306340) [run]",
       "close": {
         "by": "test",
-        "why": "holdCompression on a message in an earlier chunk with a later unheld chunk queued, one tick(): base compresses nothing, the mutant compresses the later chunk. Reached on C3/W9 with no recorded change, since there no chunk is queued behind the held one (by reading, unchecked) [read] (esther-2584's sort, sha256 679df26e5c171bb3; Oscar-1005 #307691)"
+        "why": "holdCompression on a message in an earlier chunk with a later unheld chunk queued, one tick(): base compresses nothing, the mutant compresses the later chunk. Reached on C3/W9 with no recorded change, since there no chunk is queued behind the held one (by reading, unchecked) [read] (esther-2584's sort, sha256 679df26e5c171bb3; Oscar-1005 #307691) The test's construction differs from that input, and has to: holdBlockedIds (ab:19206) blocks every id from the hold boundary on, so an earlier chunk held with a later chunk unheld can't arise in message order, and base and mutant behave alike there. Only a failure's requeue to the back puts an unheld chunk behind a held head, which is what Esther-2584's test builds (Gideon-2613 #309377; Esther-2584 #309116; Oscar-1005 #309378)."
       }
     }
   },
@@ -6890,18 +6890,18 @@
   },
   {
     "id": "lifecycle-f19a",
-    "why": "F19: Quarantine records whose debt is paid are swept: a matching persisted chunk record that's compressed is cleared, a raw one kept, and a record matching no chunk record is cleared as orphaned. Mutant: the sweep keeps a record whose chunk is compressed. Compression-lifecycle rule list (cm-rules/compression-lifecycle-rules.md f960968f, Esther-2584); survived every test file reach.py names for its lines and the 11 that read src as text, at fb4cf1046 (J57342, batch F). No run known to reach it yet. Its build has one TS error (TS2339 at autobiographical.ts:5633: the mutated guard narrows a type to never); tsc emits anyway and the built file changes.",
+    "why": "F19: Quarantine records whose debt is paid are swept: a matching persisted chunk record that's compressed is cleared, a raw one kept, and a record matching no chunk record is cleared as orphaned. Mutant: the sweep keeps a record whose chunk is compressed. Compression-lifecycle rule list (cm-rules/compression-lifecycle-rules.md f960968f, Esther-2584); survived every test file reach.py names for its lines and the 11 that read src as text, at fb4cf1046 (J57342, batch F). No run known to reach it yet. Its build has one TS error (TS2339 at autobiographical.ts:5633: the mutated guard narrows a type to never); tsc emits anyway and the built file changes. Its edit is Gideon-2613's compile-clean form (tsc 0; the paid-off sweep test alone fails, J58998), in place of `if (match) continue; // live debt — keep, klaxon`, which gave a TS2339 (Oscar-1005 #309378).",
     "edits": [
       {
         "file": "strategies/autobiographical.ts",
         "find": "        if (match && !match.compressed) continue; // live debt — keep, klaxon",
-        "replace": "        if (match) continue; // live debt — keep, klaxon"
+        "replace": "        if (match && typeof match.compressed === 'boolean') continue; // live debt — keep, klaxon"
       }
     ],
     "flags": [],
     "gap": {
       "kind": "unreachable",
-      "why": "needs a quarantine record standing beside its compressed chunk record: the current code clears a chunk's records at every landing (clearQuarantineForCompressedChunk, ab:5733), so only a store kept from before that hook, or a clear write that failed, has one; no house configuration meets either [read]",
+      "why": "needs a quarantine record standing beside its compressed chunk record: the current code clears a chunk's records at every landing (clearQuarantineForCompressedChunk, ab:5733), so only a store kept from before that hook, or a clear write that failed, has one; no house configuration meets either [read]; its compile-clean form changes none of the 33 cut runs' records (J59007)",
       "close": {
         "by": "test",
         "why": "a quarantine record standing beside its compressed chunk record, by an injected failure of the clear write or by seeded state (seed the persisted state through the store's state API, as chunk-persistence.test.ts:247 seeds orphaned chunk records): the sweep clears it at base and keeps it under the mutant, which the alarm or getCompressionQuarantineStatus() shows [read] (esther-2584's sort, sha256 679df26e5c171bb3; Oscar-1005 #307691)"
@@ -8392,5 +8392,65 @@
       "H1.claude-opus-4-6/W9",
       "H1.claude-opus-4-6/W11/state-write-fails"
     ]
+  },
+  {
+    "id": "lifecycle-n2",
+    "why": "N2, eventual coverage: every closed chunk is eventually compressed. Mutant (Esther-2584's): a failed chunk is never requeued. N2 has no test of its own: the mutant also fails the a9, b10b and j10 tests on esther/lifecycle-tests (J58977; Gideon-2613 #309377), so its test came off as S13's did (Oscar-1005 #309378).",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "          this.requeuePendingChunk(\n            key,\n            kind === 'transient' && !isNoCallDeferral(error) ? 'back' : 'head',\n            this.compressionQueueGeneration !== queueGeneration,\n          );\n",
+        "replace": "          void queueGeneration;\n"
+      }
+    ],
+    "flags": [
+      "C3/W7/throws"
+    ]
+  },
+  {
+    "id": "lifecycle-f10c",
+    "why": "F10's cap comparison: a rung may make 40 calls for one chunk by default, and no more. Mutant (Esther-2584's): the cap's `calls >= MAX_SPLIT_CALLS` as `calls > MAX_SPLIT_CALLS` (autobiographical.ts:11348), so a rung makes 41.",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "            if (calls >= MAX_SPLIT_CALLS) { abortReason = 'chunk-call-cap'; return false; }",
+        "replace": "            if (calls > MAX_SPLIT_CALLS) { abortReason = 'chunk-call-cap'; return false; }"
+      }
+    ],
+    "flags": [],
+    "gap": {
+      "kind": "unreachable",
+      "why": "it needs compressionSplitFallback, which no house host sets, as f10a: no cut run's record changes (J59008 over all 33 runs)",
+      "close": {
+        "by": "test",
+        "option": true,
+        "why": "Esther-2584's \"a rung may make 40 calls for one chunk by default, and no more\" in test/compression-ladder-options.test.ts, esther/lifecycle-tests 150766e8e: its 22-message case makes 41 split calls under the mutant and fails, while the window test and the file's other ten tests pass (J59006; #309385; Oscar-1005 #309378, #309386)"
+      }
+    }
+  },
+  {
+    "id": "lifecycle-h7-streak",
+    "why": "H7, a provider admission deferral is no failure: a deferred merge keeps its place and its streak. Mutant (Esther-2584's, from wf-7914's I12): a deferral counts in the merge's streak, but the merge is neither moved behind nor ordered as failed. At 8 counted failures the streak is decided as a request rejection, one attempt on the merge (recordMergeRejection), so only eight landings each followed by a deferral show it (Esther-2584 #309385, #309391).",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "          if (!isAdmissionDeferral(error) && this.isCompressionBranchCurrent(sourceBranch)) {",
+        "replace": "          if (this.isCompressionBranchCurrent(sourceBranch)) {"
+      },
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "            this.mergeFailureOrder.set(mergeFailureKey(merge), ++this.compressionFailureSequence);\n            if (this.mergeQueue[0] === merge && this.mergeQueue.length > 1) {",
+        "replace": "            if (!isAdmissionDeferral(error)) this.mergeFailureOrder.set(mergeFailureKey(merge), ++this.compressionFailureSequence);\n            if (!isAdmissionDeferral(error) && this.mergeQueue[0] === merge && this.mergeQueue.length > 1) {"
+      }
+    ],
+    "flags": [],
+    "gap": {
+      "kind": "unreachable",
+      "why": "as lifecycle-h7: in the fixture's workloads no admission deferral defers a merge; no cut run's record changes (J59015 over all 33 runs)",
+      "close": {
+        "by": "test",
+        "why": "Esther-2584's h7 test with its eight-step loop, \"admission defers keeps its place\" in test/compression-ladder-options.test.ts on esther/lifecycle-tests: red under this mutant on the loop's seventh pass, the only failure of the file's 12 tests; it passes under the shorter mergeAttemptLimit: 1 form, which is why the loop stays (J59009; #309391; Oscar-1005 #309386, #309392)"
+      }
+    }
   }
 ]
