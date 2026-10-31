@@ -8171,5 +8171,103 @@
         "why": "Gordon-2414's \"a from-scratch solve folds lower salience first, then oldest first\" in test/kv-control-plan-rules, gordon/kvs-tests d72a2dfcd: red under this mutant, green at fb4cf1046 (J58823; #308991)"
       }
     }
+  },
+  {
+    "id": "cal-S13a",
+    "why": "S13: under steady samples the multiplier converges within the 2% dead band. Mutant (Beth-2709's cal-S13a, its edit as her note gives it, 0.02 -> 0.1): the dead band widened to 10%. Also pinned by existing tests, since S13 follows from S2, S9 and S11: it fails 12 of them in calibration-band and calibration-overhead (J58911), so S13 has no test of its own (Oscar-1005 #309169).",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "    if (Math.abs(clamped - current) / current <= 0.02) {",
+        "replace": "    if (Math.abs(clamped - current) / current <= 0.1) {"
+      }
+    ],
+    "flags": [
+      "H1.claude-opus-4-6/W2"
+    ]
+  },
+  {
+    "id": "extra-cfg-cap",
+    "why": "K35's option: a configured synthesisL1BudgetCap replaces the 0.7 default. Mutant (Daniel-2612's): the configured value ignored, (this.knowledgeConfig.synthesisL1BudgetCap ?? 0.7) becomes (0.7). Kept with its test because it pins an option's stated behaviour that nothing else kills (Cedric-2315 #309185; Oscar-1005 #309186).",
+    "edits": [
+      {
+        "file": "strategies/knowledge.ts",
+        "find": "(this.knowledgeConfig.synthesisL1BudgetCap ?? 0.7)",
+        "replace": "(0.7)"
+      }
+    ],
+    "flags": [],
+    "gap": {
+      "kind": "unreachable",
+      "why": "it changes what runs only when a caller sets synthesisL1BudgetCap, and no fixture configuration sets it (grep of lib/cm-fixture at 55cda99): with the key unset, the mutant computes the same 0.7",
+      "close": {
+        "by": "test",
+        "option": true,
+        "why": "Daniel-2612's \"a configured synthesis floor and cap replace the defaults\" in the Knowledge tests, daniel/knowledge-gm-tests bf45429ad: red under this mutant (it fails 1 of 27), green at fb4cf1046 (J58913; Cedric-2315 #309185; Oscar-1005 #309186)"
+      }
+    }
+  },
+  {
+    "id": "extra-cfg-floor",
+    "why": "K35's option: a configured synthesisL1BudgetFloor replaces the 0.4 default. Mutant (Daniel-2612's): the configured value ignored, (this.knowledgeConfig.synthesisL1BudgetFloor ?? 0.4) becomes (0.4). Kept with its test because it pins an option's stated behaviour that nothing else kills (Cedric-2315 #309185; Oscar-1005 #309186).",
+    "edits": [
+      {
+        "file": "strategies/knowledge.ts",
+        "find": "(this.knowledgeConfig.synthesisL1BudgetFloor ?? 0.4)",
+        "replace": "(0.4)"
+      }
+    ],
+    "flags": [],
+    "gap": {
+      "kind": "unreachable",
+      "why": "it changes what runs only when a caller sets synthesisL1BudgetFloor, and no fixture configuration sets it (grep of lib/cm-fixture at 55cda99): with the key unset, the mutant computes the same 0.4",
+      "close": {
+        "by": "test",
+        "option": true,
+        "why": "Daniel-2612's \"a configured synthesis floor and cap replace the defaults\" in the Knowledge tests, daniel/knowledge-gm-tests bf45429ad: red under this mutant (it fails 1 of 27), green at fb4cf1046 (J58913; Cedric-2315 #309185; Oscar-1005 #309186)"
+      }
+    }
+  },
+  {
+    "id": "select-fb-l3",
+    "why": "select's L3 budget falls back to 30,000 when the config has none. Mutant (Ezra-2423's): the fallback at 60,000. Ezra-2423's select tests (Oscar-1005 #309207).",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "    const l3Budget = this.config.l3BudgetTokens ?? 30000;",
+        "replace": "    const l3Budget = this.config.l3BudgetTokens ?? 60000;"
+      }
+    ],
+    "flags": [],
+    "gap": {
+      "kind": "unreachable",
+      "why": "selectHierarchical's fallback (:16890-16891) is reached only with hierarchical off: with it on, conditionalLibraryDefaults sets the level budgets (:1999-2004) and defaultsForKeysLeftNullish fills an explicit undefined or null too (:2024-2036; Fern-2426 J58941); connectome-host's framework-strategy.ts (5efa3d0f) never names hierarchical, so the house runs it on (Oscar-1005 #309207)",
+      "close": {
+        "by": "test",
+        "option": true,
+        "why": "Ezra-2423's level-budget defaults test, its { hierarchical: false } case, in test/select-path-rules.test.ts, ezra/select-tests 750601d90: red under this mutant and only that case fails, green at fb4cf1046 (J58956; #309231)"
+      }
+    }
+  },
+  {
+    "id": "select-fb-l2",
+    "why": "select's L2 budget falls back to 30,000 when the config has none. Mutant (Ezra-2423's): the fallback at 60,000. Ezra-2423's select tests (Oscar-1005 #309207).",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "    const l2Budget = this.config.l2BudgetTokens ?? 30000;",
+        "replace": "    const l2Budget = this.config.l2BudgetTokens ?? 60000;"
+      }
+    ],
+    "flags": [],
+    "gap": {
+      "kind": "unreachable",
+      "why": "selectHierarchical's fallback (:16890-16891) is reached only with hierarchical off: with it on, conditionalLibraryDefaults sets the level budgets (:1999-2004) and defaultsForKeysLeftNullish fills an explicit undefined or null too (:2024-2036; Fern-2426 J58941); connectome-host's framework-strategy.ts (5efa3d0f) never names hierarchical, so the house runs it on (Oscar-1005 #309207)",
+      "close": {
+        "by": "test",
+        "option": true,
+        "why": "Ezra-2423's level-budget defaults test, its { hierarchical: false } case, in test/select-path-rules.test.ts, ezra/select-tests 750601d90: red under this mutant and only that case fails, green at fb4cf1046 (J58956; #309231)"
+      }
+    }
   }
 ]
