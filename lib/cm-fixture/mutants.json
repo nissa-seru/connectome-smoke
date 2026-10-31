@@ -7069,15 +7069,9 @@
         "replace": "      .sort((a, b) => failedAt.get(b)! - failedAt.get(a)!);"
       }
     ],
-    "flags": [],
-    "gap": {
-      "kind": "unreachable",
-      "why": "needs transient failures on two chunks both queued when the pause ends; the stand-in's fx:throw fires once per marker and no workload throws on two chunks within one backoff [read]",
-      "close": {
-        "by": "fixture",
-        "why": "a house host meets it whenever a provider outage fails several chunks in one backoff. Workload change: a W7 variant with fx:throw markers on two chunks closed in the same step, so both fail before the pause ends; the record shows their retry order. A test also closes it (two scripted transient failures on two chunks); Desmond's price decides [read] (esther-2584's sort, sha256 679df26e5c171bb3; Oscar-1005 #307691)"
-      }
-    }
+    "flags": [
+      "C3/W7/throws"
+    ]
   },
   {
     "id": "lifecycle-j10",

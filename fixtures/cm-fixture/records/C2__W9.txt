@@ -1,6 +1,6 @@
 # cm-fixture record C2/W9
 # recorded at context-manager fb4cf1046 (0.24.2)
-# membrane 0.9.0 · stand-in 22420e3d6d0e22ed · scale 15 · clock 2026-01-05T09:00:00.000Z+240000ms · seed 321801 · from C2/W1@70
+# membrane 0.9.0 · stand-in efd0aa6d5c1dc598 · scale 15 · clock 2026-01-05T09:00:00.000Z+240000ms · seed 321801 · from C2/W1@70
 step 0
   action open {"from":"C2/W1@70","namespace":"agents/junga"}
   action tools {"tools":["read_file","mcpl:read","mcpl:search","zulip:search","zulip:read","subagent:spawn","subagent:status","lessons:create","lessons:update","lessons:create-draft"]}
