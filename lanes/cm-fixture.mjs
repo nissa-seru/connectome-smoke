@@ -28,7 +28,9 @@
 // changes, trying its runs a batch of --workers at a time (W11, W9 and W8 first) and stopping at the first batch that
 // flags; without it, it lists it untried. A mutant with a `gap` ({ kind: unreachable or equivalent, why }) is one the
 // fixture can't see, by that reason: readiness lists it, and with --gaps tries it as it tries an unplaced one, failing
-// if it now changes a record. --runs and --workloads replace W1 and W2 with the runs they name, for the no-op and the
+// if it now changes a record. A gap's `close` ({ by: fixture, test or stays, option, why }) says what would close it:
+// a workload the fixture should build, a test in context-manager's own suite, or nothing; `option: true` marks a
+// fixture or test close that needs an option no house host sets. --runs and --workloads replace W1 and W2 with the runs they name, for the no-op and the
 // mutants it tries alike, which then try only those; the run a placed mutant is checked in always runs. --mutants reads
 // another file of mutants in the same form, such as a rule list's survivors before they're placed. --plan prints the
 // runs it would make, and makes none.
@@ -124,6 +126,12 @@ async function readiness(o, house, work) {
   for (const m of mutants) {
     if (m.gap && !['unreachable', 'equivalent'].includes(m.gap.kind)) throw new Error(`${m.id}: a gap's kind is unreachable or equivalent`);
     if (m.gap && !unplaced(m)) throw new Error(`${m.id}: a gap has no flags`);
+    const close = m.gap?.close;
+    if (close !== undefined) {
+      if (!['fixture', 'test', 'stays'].includes(close.by)) throw new Error(`${m.id}: a gap closes by fixture, test or stays, not ${close.by}`);
+      if (close.option !== undefined && (close.option !== true || close.by === 'stays')) throw new Error(`${m.id}: option is true on a fixture or test close, or absent`);
+      if (typeof close.why !== 'string' || close.why === '') throw new Error(`${m.id}: a close says why`);
+    }
     for (const f of m.flags ?? []) {
       if (!all.some((j) => counts(m, j) && (f === j.id || f === j.workload || f === `${j.config}/${j.workload}`))) throw new Error(`${m.id}: its flag ${f} names no run its configs (${(m.configs ?? []).join(', ')}) allow`);
     }
