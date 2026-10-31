@@ -8,3 +8,5 @@ evidence/
 # Stored fixtures keep every file a host release wrote, logs included: a Chronicle
 # store is records.log, and the stores lane reads the store whole.
 !fixtures/stores/**
+# The characterization fixture's checkpoints are such stores too, written by a released context-manager.
+!fixtures/cm-fixture/checkpoints/**
