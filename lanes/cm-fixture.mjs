@@ -5,6 +5,7 @@
 //   node lanes/cm-fixture.mjs check --cm DIR [--commit SHA] [--workers N] [--runs ID,ID] [--workloads W1,W2] [--keep DIR]
 //   node lanes/cm-fixture.mjs regenerate --cm DIR [--commit SHA] [--workers N] [--runs ID,ID] [--workloads W1,W2]
 //   node lanes/cm-fixture.mjs checkpoints --release VERSION [--workers N]
+//   node lanes/cm-fixture.mjs compare --base DIR [--base-commit SHA] --cm DIR [--commit SHA] [--workers N] [--runs ID,ID] [--workloads W1,W2] [--out DIR]
 //   node lanes/cm-fixture.mjs readiness --cm DIR [--workers N] [--mutants FILE] [--runs ID,ID] [--workloads W1,W2]
 //
 // check: runs the matrix once and compares each run's record with fixtures/cm-fixture/records. Exit 0 when every
@@ -19,6 +20,15 @@
 // Otherwise it writes the records, removes those of runs the matrix no longer has, and prints what changed.
 // checkpoints: replaces fixtures/cm-fixture/checkpoints with the stores the continuations start from, written by the
 // context-manager release named, installed from npm (checkpoints.mjs).
+// compare: a change's before and after, as a pull request to context-manager would show it. It writes the
+// checkpoints from the base tree (--base, the change's first parent), runs the matrix in the base and in the changed
+// tree (--cm) from those same stores, each through the base's membrane, so both arms start from what the base wrote
+// and every difference is the change's own, and compares each run's two records. For each run that differs it prints
+// what changed, and writes into --out (else $ON_VPS_EVIDENCE_DIR/cm-fixture-compare, else a new temporary directory)
+// the two records, base/ and head/, and the two traces, which hold the words a record writes only as a hash, length
+// and ends; likewise for a run that failed in either arm. It names nothing and refuses nothing: an invariant line is
+// a difference like any other. Exit 0 when every run's records are the same, 1 when any differs or a run failed, and
+// 2 when it couldn't run.
 // readiness: whether the fixture sees what it's for, in copies of the tree: a no-op change (a comment) must leave every
 // record the same, and each mutant in lib/cm-fixture/mutants.json ({ id, why, edits: [{ file, find, replace }], flags:
 // runs, CONFIG/WORKLOAD pairs or workloads }), applied, must change a record of a run it names. Its flags list every
@@ -60,9 +70,9 @@ function args(argv) {
   const o = { command, workers: 10, runs: null, workloads: null, place: false, gaps: false, allFlags: false, plan: false, keep: null };
   for (let i = 0; i < rest.length; i++) {
     const k = rest[i], v = rest[i + 1];
-    if (k === '--cm') { o.cm = resolve(v); i++; } else if (k === '--mutants') { o.mutants = resolve(v); i++; } else if (k === '--release') { o.release = v; i++; } else if (k === '--commit') { o.commit = v; i++; } else if (k === '--workers') { o.workers = Number(v); i++; } else if (k === '--runs') { o.runs = new Set(v.split(',')); i++; } else if (k === '--workloads') { o.workloads = new Set(v.split(',')); i++; } else if (k === '--place') o.place = true; else if (k === '--gaps') o.gaps = true; else if (k === '--all-flags') o.allFlags = true; else if (k === '--plan') o.plan = true; else if (k === '--keep') { o.keep = resolve(v); i++; } else throw new Error(`unknown argument ${k}`);
+    if (k === '--cm') { o.cm = resolve(v); i++; } else if (k === '--base') { o.base = resolve(v); i++; } else if (k === '--base-commit') { o.baseCommit = v; i++; } else if (k === '--out') { o.out = resolve(v); i++; } else if (k === '--mutants') { o.mutants = resolve(v); i++; } else if (k === '--release') { o.release = v; i++; } else if (k === '--commit') { o.commit = v; i++; } else if (k === '--workers') { o.workers = Number(v); i++; } else if (k === '--runs') { o.runs = new Set(v.split(',')); i++; } else if (k === '--workloads') { o.workloads = new Set(v.split(',')); i++; } else if (k === '--place') o.place = true; else if (k === '--gaps') o.gaps = true; else if (k === '--all-flags') o.allFlags = true; else if (k === '--plan') o.plan = true; else if (k === '--keep') { o.keep = resolve(v); i++; } else throw new Error(`unknown argument ${k}`);
   }
-  if (!['check', 'regenerate', 'checkpoints', 'readiness'].includes(command)) throw new Error('the command is check, regenerate, checkpoints or readiness');
+  if (!['check', 'regenerate', 'checkpoints', 'readiness', 'compare'].includes(command)) throw new Error('the command is check, regenerate, checkpoints, readiness or compare');
   if (!Number.isInteger(o.workers) || o.workers < 1) throw new Error('--workers is a whole number from 1');
   if (command === 'checkpoints') {
     if (!/^\d+\.\d+\.\d+$/.test(o.release ?? '')) throw new Error('--release names a context-manager version on npm, such as 0.24.2');
@@ -70,6 +80,10 @@ function args(argv) {
   }
   if (!o.cm || !existsSync(join(o.cm, 'src', 'index.ts'))) throw new Error('--cm names a context-manager tree (one with src/index.ts)');
   o.commit ??= execFileSync('git', ['-C', o.cm, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
+  if (command === 'compare') {
+    if (!o.base || !existsSync(join(o.base, 'src', 'index.ts'))) throw new Error('--base names the context-manager tree the change starts from (one with src/index.ts)');
+    o.baseCommit ??= execFileSync('git', ['-C', o.base, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
+  }
   return o;
 }
 
@@ -79,7 +93,7 @@ async function runOnce(o, jobs, work) {
   const timing = { called: performance.now() };
   const results = await runArm({
     arm: { name: 'candidate', cmDir: o.cm, membraneDir: o.membraneDir ?? o.cm, commit: o.commit },
-    jobs, workers: o.workers, traceDir: join(work, 'traces'), checkpointDir: CHECKPOINTS, workDir: join(work, 'runs'),
+    jobs, workers: o.workers, traceDir: join(work, 'traces'), checkpointDir: o.checkpointDir ?? CHECKPOINTS, workDir: join(work, 'runs'),
     recorder: join(LIB, 'trace.mjs'), house: join(LIB, 'house.json'), recordDir, timing,
   });
   timing.renderMs = results.reduce((a, r) => a + (r.renderMs ?? 0), 0);
@@ -254,6 +268,49 @@ function summary(id, d) {
   return out.join('\n');
 }
 
+/** The compare command (see the head of this file): returns the exit code. */
+async function compare(o, jobs, work) {
+  const started = performance.now();
+  const checkpointDir = join(work, 'checkpoints');
+  const configs = [...new Set(jobs.filter((j) => j.from).map((j) => j.config))];
+  const written = configs.length
+    ? await writeCheckpoints({ cmDir: o.base, commit: o.baseCommit, outDir: checkpointDir, house: join(LIB, 'house.json'), recorder: join(LIB, 'trace.mjs'), workDir: join(work, 'checkpoint'), workers: o.workers, configs })
+    : { stores: [], failed: [] };
+  for (const f of written.failed) process.stdout.write(`checkpoint ${f.id}: FAILED in the base ${f.error}\n`);
+  const arms = {};
+  for (const [name, cm, commit] of [['base', o.base, o.baseCommit], ['head', o.cm, o.commit]]) {
+    arms[name] = await runOnce({ ...o, cm, commit, membraneDir: o.base, checkpointDir }, jobs, join(work, name));
+  }
+  const out = o.out ?? (process.env.ON_VPS_EVIDENCE_DIR ? join(process.env.ON_VPS_EVIDENCE_DIR, 'cm-fixture-compare') : mkdtempSync(join(tmpdir(), 'cm-fixture-compare-')));
+  const kept = new Set();
+  const failedIn = { base: new Set(), head: new Set() };
+  for (const name of ['base', 'head']) for (const f of arms[name].failed) {
+    failedIn[name].add(f.id);
+    kept.add(f.id);
+    process.stdout.write(`${f.id}: FAILED in the ${name}: ${f.why}\n`);
+  }
+  let differ = 0;
+  for (const j of jobs) {
+    const before = arms.base.records.get(j.id), after = arms.head.records.get(j.id);
+    if (before === undefined || after === undefined) { kept.add(j.id); if (before !== after) process.stdout.write(`${j.id}: a record in the ${before === undefined ? 'head' : 'base'} only\n`); continue; }
+    const d = diffRecords(before, after);
+    if (d.same) continue;
+    differ++;
+    kept.add(j.id);
+    process.stdout.write(`${summary(j.id, d)}\n`);
+  }
+  for (const id of kept) for (const name of ['base', 'head']) {
+    mkdirSync(join(out, name), { recursive: true });
+    const text = arms[name].records.get(id);
+    if (text !== undefined) writeFileSync(join(out, name, recordFileName(id)), text);
+    const trace = join(work, name, 'traces', traceFileName(id));
+    if (existsSync(trace)) cpSync(trace, join(out, name, traceFileName(id)));
+  }
+  const failures = failedIn.base.size + failedIn.head.size;
+  process.stdout.write(`cm-fixture compare: ${jobs.length} runs, ${o.baseCommit.slice(0, 12)} -> ${o.commit.slice(0, 12)}, from ${written.stores.length} checkpoints the base wrote: ${jobs.length - kept.size} the same, ${differ} differing, ${failedIn.base.size} failed in the base and ${failedIn.head.size} in the head; ${kept.size ? `their records and traces are in ${out}` : 'nothing written'}, in ${((performance.now() - started) / 1000).toFixed(1)} s\n`);
+  return differ || failures || kept.size ? 1 : 0;
+}
+
 async function main() {
   let o;
   try { o = args(process.argv.slice(2)); } catch (err) { process.stderr.write(`cm-fixture: ${err.message}\n`); return 2; }
@@ -274,6 +331,7 @@ async function main() {
   const work = mkdtempSync(join(tmpdir(), 'cm-fixture-'));
   try {
     const started = performance.now();
+    if (o.command === 'compare') return await compare(o, jobs, work);
     if (o.command === 'readiness') {
       const r = await readiness(o, house, work);
       for (const l of r.lines) process.stdout.write(`${l}\n`);
