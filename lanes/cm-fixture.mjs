@@ -2,13 +2,16 @@
 // The context-manager characterization fixture's lane: each strategy configuration through each workload, in-process
 // against a context-manager tree, each run's record compared with the record committed for it.
 //
-//   node lanes/cm-fixture.mjs check --cm DIR [--commit SHA] [--workers N] [--runs ID,ID] [--workloads W1,W2]
+//   node lanes/cm-fixture.mjs check --cm DIR [--commit SHA] [--workers N] [--runs ID,ID] [--workloads W1,W2] [--keep DIR]
 //   node lanes/cm-fixture.mjs regenerate --cm DIR [--commit SHA] [--workers N] [--runs ID,ID] [--workloads W1,W2]
 //   node lanes/cm-fixture.mjs checkpoints --release VERSION [--workers N]
 //   node lanes/cm-fixture.mjs readiness --cm DIR [--workers N] [--mutants FILE] [--runs ID,ID] [--workloads W1,W2]
 //
 // check: runs the matrix once and compares each run's record with fixtures/cm-fixture/records. Exit 0 when every
-// record matches, 1 when any differs, a run has no record, or a run failed, and 2 when the check couldn't run.
+// record matches, 1 when any differs, a run has no record, or a run failed, and 2 when the check couldn't run. The
+// trace of each such run is kept, since it holds the words a record writes only as a hash, length and ends: in
+// --keep DIR, or else in $ON_VPS_EVIDENCE_DIR/cm-fixture-traces when on-vps sets it, or else in a new directory under
+// the system's temporary one. The check prints where.
 // regenerate: runs the matrix twice, refuses unless both runs render every record the same, and refuses a record
 // holding an INVARIANT line, or an end line where the library ended the run, that
 // fixtures/cm-fixture/expected-failures.json doesn't name with its issue (an entry names a run's lines of one invariant,
@@ -40,7 +43,7 @@ import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, 
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { recordFileName } from '../lib/cm-fixture/events.mjs';
+import { recordFileName, traceFileName } from '../lib/cm-fixture/events.mjs';
 import { diffRecords } from '../lib/cm-fixture/record-diff.mjs';
 import { runArm } from '../lib/cm-fixture/pool.mjs';
 import { matrix } from '../lib/cm-fixture/workloads.mjs';
@@ -54,10 +57,10 @@ const EXPECTED_FAILURES = join(ROOT, 'fixtures', 'cm-fixture', 'expected-failure
 
 function args(argv) {
   const [command, ...rest] = argv;
-  const o = { command, workers: 10, runs: null, workloads: null, place: false, gaps: false, allFlags: false, plan: false };
+  const o = { command, workers: 10, runs: null, workloads: null, place: false, gaps: false, allFlags: false, plan: false, keep: null };
   for (let i = 0; i < rest.length; i++) {
     const k = rest[i], v = rest[i + 1];
-    if (k === '--cm') { o.cm = resolve(v); i++; } else if (k === '--mutants') { o.mutants = resolve(v); i++; } else if (k === '--release') { o.release = v; i++; } else if (k === '--commit') { o.commit = v; i++; } else if (k === '--workers') { o.workers = Number(v); i++; } else if (k === '--runs') { o.runs = new Set(v.split(',')); i++; } else if (k === '--workloads') { o.workloads = new Set(v.split(',')); i++; } else if (k === '--place') o.place = true; else if (k === '--gaps') o.gaps = true; else if (k === '--all-flags') o.allFlags = true; else if (k === '--plan') o.plan = true; else throw new Error(`unknown argument ${k}`);
+    if (k === '--cm') { o.cm = resolve(v); i++; } else if (k === '--mutants') { o.mutants = resolve(v); i++; } else if (k === '--release') { o.release = v; i++; } else if (k === '--commit') { o.commit = v; i++; } else if (k === '--workers') { o.workers = Number(v); i++; } else if (k === '--runs') { o.runs = new Set(v.split(',')); i++; } else if (k === '--workloads') { o.workloads = new Set(v.split(',')); i++; } else if (k === '--place') o.place = true; else if (k === '--gaps') o.gaps = true; else if (k === '--all-flags') o.allFlags = true; else if (k === '--plan') o.plan = true; else if (k === '--keep') { o.keep = resolve(v); i++; } else throw new Error(`unknown argument ${k}`);
   }
   if (!['check', 'regenerate', 'checkpoints', 'readiness'].includes(command)) throw new Error('the command is check, regenerate, checkpoints or readiness');
   if (!Number.isInteger(o.workers) || o.workers < 1) throw new Error('--workers is a whole number from 1');
@@ -278,14 +281,25 @@ async function main() {
     const first = await runOnce(o, jobs, join(work, 'a'));
     const seconds = ((performance.now() - started) / 1000).toFixed(1);
     if (o.command === 'check') {
-      let bad = first.failed.length;
+      const kept = new Set(first.failed.map((f) => f.id));
       for (const f of first.failed) process.stdout.write(`${f.id}: FAILED ${f.why}\n`);
       for (const [id, text] of first.records) {
         const committed = join(RECORDS, recordFileName(id));
-        if (!existsSync(committed)) { bad++; process.stdout.write(`${id}: no committed record; a run the matrix gained needs one, written by regenerate\n`); continue; }
+        if (!existsSync(committed)) { kept.add(id); process.stdout.write(`${id}: no committed record; a run the matrix gained needs one, written by regenerate\n`); continue; }
         const d = diffRecords(readFileSync(committed, 'utf8'), text);
-        if (!d.same) { bad++; process.stdout.write(`${summary(id, d)}\n`); }
+        if (!d.same) { kept.add(id); process.stdout.write(`${summary(id, d)}\n`); }
       }
+      if (kept.size) {
+        const dir = o.keep ?? (process.env.ON_VPS_EVIDENCE_DIR ? join(process.env.ON_VPS_EVIDENCE_DIR, 'cm-fixture-traces') : mkdtempSync(join(tmpdir(), 'cm-fixture-traces-')));
+        mkdirSync(dir, { recursive: true });
+        let n = 0;
+        for (const id of kept) {
+          const trace = join(work, 'a', 'traces', traceFileName(id));
+          if (existsSync(trace)) { cpSync(trace, join(dir, traceFileName(id))); n++; }
+        }
+        process.stdout.write(`cm-fixture check: the traces of ${n} of the ${kept.size} runs that differ, lack a record or failed are kept in ${dir}\n`);
+      }
+      const bad = kept.size;
       process.stdout.write(`cm-fixture check: ${jobs.length} runs at ${o.commit.slice(0, 12)}, ${jobs.length - bad} matching their records, in ${seconds} s\n`);
       return bad === 0 ? 0 : 1;
     }

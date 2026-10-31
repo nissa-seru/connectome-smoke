@@ -56,6 +56,29 @@ test('consecutive messages the run added read as a range, the summary as its rec
   assert.match(renderRecord(trace({ marker: true })), /^ {2}compile a1\.0\^ a1\.1$/m);
 });
 
+test('a library text longer than 2 KB is written as its hash, length and ends, and a change in its middle still shows', () => {
+  const long = (middle) => `What do you remember? ${'a'.repeat(1500)}${middle}${'z'.repeat(1500)} That is all.`;
+  const r = renderRecord(trace({ label: long('m') }));
+  const line = r.split('\n').find((l) => l.startsWith('T:context-manager-L1 = '));
+  const text = JSON.parse(line.slice('T:context-manager-L1 = '.length)).content[0].text;
+  assert.equal(text.bytes, Buffer.byteLength(long('m')));
+  assert.match(text.sha256, /^[0-9a-f]{16}$/);
+  assert.equal(text.head, long('m').slice(0, 80));
+  assert.equal(text.tail, long('m').slice(-80));
+  assert.doesNotMatch(r, /a{100}/);
+  const d = diffRecords(r, renderRecord(trace({ label: long('n') })));
+  assert.equal(d.same, false);
+  assert.deepEqual(d.groups.map((g) => g.kind), ['words']);
+});
+
+test('a library text of exactly 2 KB is written whole, and one byte more is not', () => {
+  const sized = (bytes) => `What do you remember? ${'é'.repeat(Math.floor((bytes - 22) / 2))}${(bytes - 22) % 2 ? 'x' : ''}`;
+  assert.equal(Buffer.byteLength(sized(2048)), 2048);
+  assert.equal(Buffer.byteLength(sized(2049)), 2049);
+  assert.match(renderRecord(trace({ label: sized(2048) })), /é{100}/);
+  assert.doesNotMatch(renderRecord(trace({ label: sized(2049) })), /é{100}/);
+});
+
 test('a compile whose layout names why the selection moved shows that cause on its line, and a change of it is a change', () => {
   const without = renderRecord(trace()), withCause = renderRecord(trace({ cause: 'window' }));
   assert.match(withCause, /^ {2}compile L1-0@1\[T:context-manager-L1,T:junga-L1\] a2\.0 cause window$/m);
