@@ -1,0 +1,308 @@
+# cm-fixture record H4/W1
+# recorded at context-manager fb4cf1046 (0.24.2)
+# membrane 0.9.0 · stand-in 22420e3d6d0e22ed · scale 15 · clock 2026-01-05T09:00:00.000Z+240000ms · seed 412126 · from (empty)
+step 0
+  action open {"from":null,"namespace":"agents/junga"}
+  action tools {"tools":["read_file","mcpl:read","mcpl:search","zulip:search","zulip:read","subagent:spawn","subagent:status","lessons:create","lessons:update","lessons:create-draft"]}
+step 1
+  compile a1.0^
+  compile a1.0^ a1.1-a1.2^
+  compile a1.0-a1.2^ a1.3-a1.4^
+  compile a1.0-a1.4^ a1.5-a1.6^
+step 2
+  compile a1.0-a1.6^ a1.7-a2.0^
+  compile a1.0-a2.0^ a2.1-a2.2^
+  compile a1.0-a2.2^ a2.3-a2.4^
+  compile a1.0-a2.4^ a2.5-a2.6^
+step 3
+  compile a1.0-a2.6^ a2.7-a3.0^
+  compile a1.0-a3.0^ a3.1-a3.2^
+  compile a1.0-a3.2^ a3.3-a3.4^
+  compile a1.0-a3.4^ a3.5-a3.6^
+step 4
+  compile a1.0-a3.6^ a3.7-a4.0^
+step 5
+  compile a1.0-a4.0^ a4.1-a5.0^
+step 6
+  compile a1.0-a5.0^ a5.1-a6.0^
+step 7
+  compile a1.0-a6.0^ a6.1-a7.0^
+  compile a1.0-a7.0^ a7.1-a7.2^
+  compile a1.0-a7.2^ a7.3-a7.4^
+  compile a1.0-a7.4^ a7.5-a7.6^
+step 8
+  compile a1.0-a7.6^ a7.7-a8.0^
+  compile a1.0-a8.0^ a8.1-a8.2^
+  compile a1.0-a8.2^ a8.3-a8.4^
+  compile a1.0-a8.4^ a8.5-a8.6^
+step 9
+  compile a1.0-a8.6^ a8.7-a9.0^
+  compile a1.0-a9.0^ a9.1-a9.2^
+  compile a1.0-a9.2^ a9.3-a9.4^
+step 10
+  compile a1.0-a9.4^ a9.5-a10.0^
+  compile a1.0-a10.0^ a10.1-a10.2^
+  compile a1.0-a10.2^ a10.3-a10.4^
+step 11
+  compile a1.0-a10.4^ a10.5-a11.0^
+  compile a1.0-a11.0^ a11.1-a11.2^
+  compile a1.0-a11.2^ a11.3-a11.4^
+  compile a1.0-a11.4^ a11.5-a11.6^
+step 12
+  compile a1.0-a11.6^ a11.7-a12.0^
+  compile a1.0-a12.0^ a12.1-a12.2^
+  compile a1.0-a12.2^ a12.3-a12.4^
+  compile a1.0-a12.4^ a12.5-a12.6^
+step 13
+  compile a1.0-a12.6^ a12.7-a13.0^
+  compile a1.0-a13.0^ a13.1-a13.2^
+step 14
+  compile a1.0-a13.2^ a13.3-a14.0^
+  compile a1.0-a14.0^ a14.1-a14.2^
+step 15
+  compile a1.0-a14.2^ a14.3-a15.0^
+step 16
+  compile a1.0-a15.0^ a15.1-a16.0^
+  compile a1.0-a16.0^ a16.1-a16.2^
+step 17
+  compile a1.0-a16.2^ a16.3-a17.0^
+  compile a1.0-a17.0^ a17.1-a17.2^
+step 18
+  compile a1.0-a17.2^ a17.3-a18.0^
+  compile a1.0-a18.0^ a18.1-a18.2^
+  compile a1.0-a18.2^ a18.3-a18.4^
+  compile a1.0-a18.4^ a18.5-a18.6^
+step 19
+  compile a1.0-a18.6^ a18.7-a19.0^
+  compile a1.0-a19.0^ a19.1-a19.2^
+  compile a1.0-a19.2^ a19.3-a19.4^
+  compile a1.0-a19.4^ a19.5-a19.6^
+step 20
+  compile a1.0-a19.6^ a19.7-a20.0^
+  compile a1.0-a20.0^ a20.1-a20.2^
+  compile a1.0-a20.2^ a20.3-a20.4^
+  compile a1.0-a20.4^ a20.5-a20.6^
+step 21
+  compile a1.0-a20.6^ a20.7-a21.0^
+step 22
+  compile a1.0-a21.0^ a21.1-a22.0^
+step 23
+  compile a1.0-a22.0^ a22.1-a23.0^
+step 24
+  compile a1.0-a23.0^ a23.1-a24.0^
+  compile a1.0-a24.0^ a24.1-a24.2^
+  compile a1.0-a24.2^ a24.3-a24.4^
+  compile a1.0-a24.4^ a24.5-a24.6^
+step 25
+  compile a1.0-a24.6^ a24.7-a25.0^
+  compile a1.0-a25.0^ a25.1-a25.2^
+  compile a1.0-a25.2^ a25.3-a25.4^
+  compile a1.0-a25.4^ a25.5-a25.6^
+step 26
+  compile a1.0-a25.6^ a25.7-a26.0^
+  compile a1.0-a26.0^ a26.1-a26.2^
+  compile a1.0-a26.2^ a26.3-a26.4^
+step 27
+  compile a1.0-a26.4^ a26.5-a27.0^
+  compile a1.0-a27.0^ a27.1-a27.2^
+  compile a1.0-a27.2^ a27.3-a27.4^
+step 28
+  compile a1.0-a27.4^ a27.5-a28.0^
+  compile a12.7-a28.2^ cause window
+  compile a12.7-a28.2^ a28.3-a28.4^
+  compile a12.7-a28.4^ a28.5-a28.6^
+step 29
+  compile a12.7-a28.6^ a28.7-a29.0^
+  compile a12.7-a29.0^ a29.1-a29.2^
+  compile a12.7-a29.2^ a29.3-a29.4^
+  compile a12.7-a29.4^ a29.5-a29.6^
+step 30
+  compile a12.7-a29.6^ a29.7-a30.0^
+  compile a12.7-a30.0^ a30.1-a30.2^
+step 31
+  compile a12.7-a30.2^ a30.3-a31.0^
+  compile a12.7-a31.0^ a31.1-a31.2^
+step 32
+  compile a12.7-a31.2^ a31.3-a32.0^
+step 33
+  compile a12.7-a32.0^ a32.1-a33.0^
+  compile a12.7-a33.0^ a33.1-a33.2^
+step 34
+  compile a12.7-a33.2^ a33.3-a34.0^
+  compile a12.7-a34.0^ a34.1-a34.2^
+step 35
+  compile a12.7-a34.2^ a34.3-a35.0^
+  compile a12.7-a35.0^ a35.1-a35.2^
+  compile a12.7-a35.2^ a35.3-a35.4^
+  compile a12.7-a35.4^ a35.5-a35.6^
+step 36
+  compile a12.7-a35.6^ a35.7-a36.0^
+  compile a12.7-a36.0^ a36.1-a36.2^
+  compile a12.7-a36.2^ a36.3-a36.4^
+  compile a12.7-a36.4^ a36.5-a36.6^
+step 37
+  compile a12.7-a36.6^ a36.7-a37.0^
+  compile a12.7-a37.0^ a37.1-a37.2^
+  compile a12.7-a37.2^ a37.3-a37.4^
+  compile a12.7-a37.4^ a37.5-a37.6^
+step 38
+  compile a12.7-a37.6^ a37.7-a38.0^
+step 39
+  compile a12.7-a38.0^ a38.1-a39.0^
+step 40
+  compile a12.7-a39.0^ a39.1-a40.0^
+step 41
+  compile a12.7-a40.0^ a40.1-a41.0^
+  compile a12.7-a41.0^ a41.1-a41.2^
+  compile a12.7-a41.2^ a41.3-a41.4^
+  compile a12.7-a41.4^ a41.5-a41.6^
+step 42
+  compile a12.7-a41.6^ a41.7-a42.0^
+  compile a12.7-a42.0^ a42.1-a42.2^
+  compile a12.7-a42.2^ a42.3-a42.4^
+  compile a12.7-a42.4^ a42.5-a42.6^
+step 43
+  compile a12.7-a42.6^ a42.7-a43.0^
+  compile a28.5-a43.2^ cause window
+  compile a28.5-a43.2^ a43.3-a43.4^
+step 44
+  compile a28.5-a43.4^ a43.5-a44.0^
+  compile a28.5-a44.0^ a44.1-a44.2^
+  compile a28.5-a44.2^ a44.3-a44.4^
+step 45
+  compile a28.5-a44.4^ a44.5-a45.0^
+  compile a28.5-a45.0^ a45.1-a45.2^
+  compile a28.5-a45.2^ a45.3-a45.4^
+  compile a28.5-a45.4^ a45.5-a45.6^
+step 46
+  compile a28.5-a45.6^ a45.7-a46.0^
+  compile a28.5-a46.0^ a46.1-a46.2^
+  compile a28.5-a46.2^ a46.3-a46.4^
+  compile a28.5-a46.4^ a46.5-a46.6^
+step 47
+  compile a28.5-a46.6^ a46.7-a47.0^
+  compile a28.5-a47.0^ a47.1-a47.2^
+step 48
+  compile a28.5-a47.2^ a47.3-a48.0^
+  compile a28.5-a48.0^ a48.1-a48.2^
+step 49
+  compile a28.5-a48.2^ a48.3-a49.0^
+step 50
+  compile a28.5-a49.0^ a49.1-a50.0^
+  compile a28.5-a50.0^ a50.1-a50.2^
+step 51
+  compile a28.5-a50.2^ a50.3-a51.0^
+  compile a28.5-a51.0^ a51.1-a51.2^
+step 52
+  compile a28.5-a51.2^ a51.3-a52.0^
+  compile a28.5-a52.0^ a52.1-a52.2^
+  compile a28.5-a52.2^ a52.3-a52.4^
+  compile a28.5-a52.4^ a52.5-a52.6^
+step 53
+  compile a28.5-a52.6^ a52.7-a53.0^
+  compile a28.5-a53.0^ a53.1-a53.2^
+  compile a28.5-a53.2^ a53.3-a53.4^
+  compile a28.5-a53.4^ a53.5-a53.6^
+step 54
+  compile a28.5-a53.6^ a53.7-a54.0^
+  compile a28.5-a54.0^ a54.1-a54.2^
+  compile a28.5-a54.2^ a54.3-a54.4^
+  compile a28.5-a54.4^ a54.5-a54.6^
+step 55
+  compile a28.5-a54.6^ a54.7-a55.0^
+step 56
+  compile a43.4-a56.0^ cause window
+  INVARIANT shape: message 0: result t412126_43r1 answers no call in the message before it
+step 57
+  compile a43.4-a56.0^ a56.1-a57.0^
+  INVARIANT shape: message 0: result t412126_43r1 answers no call in the message before it
+step 58
+  compile a43.4-a57.0^ a57.1-a58.0^
+  INVARIANT shape: message 0: result t412126_43r1 answers no call in the message before it
+  compile a43.4-a58.0^ a58.1-a58.2^
+  INVARIANT shape: message 0: result t412126_43r1 answers no call in the message before it
+  compile a43.4-a58.2^ a58.3-a58.4^
+  INVARIANT shape: message 0: result t412126_43r1 answers no call in the message before it
+  compile a43.4-a58.4^ a58.5-a58.6^
+  INVARIANT shape: message 0: result t412126_43r1 answers no call in the message before it
+step 59
+  compile a43.4-a58.6^ a58.7-a59.0^
+  INVARIANT shape: message 0: result t412126_43r1 answers no call in the message before it
+  compile a43.4-a59.0^ a59.1-a59.2^
+  INVARIANT shape: message 0: result t412126_43r1 answers no call in the message before it
+  compile a43.4-a59.2^ a59.3-a59.4^
+  INVARIANT shape: message 0: result t412126_43r1 answers no call in the message before it
+  compile a43.4-a59.4^ a59.5-a59.6^
+  INVARIANT shape: message 0: result t412126_43r1 answers no call in the message before it
+step 60
+  compile a43.4-a59.6^ a59.7-a60.0^
+  INVARIANT shape: message 0: result t412126_43r1 answers no call in the message before it
+  compile a43.4-a60.0^ a60.1-a60.2^
+  INVARIANT shape: message 0: result t412126_43r1 answers no call in the message before it
+  compile a43.4-a60.2^ a60.3-a60.4^
+  INVARIANT shape: message 0: result t412126_43r1 answers no call in the message before it
+step 61
+  compile a43.4-a60.4^ a60.5-a61.0^
+  INVARIANT shape: message 0: result t412126_43r1 answers no call in the message before it
+  compile a43.4-a61.0^ a61.1-a61.2^
+  INVARIANT shape: message 0: result t412126_43r1 answers no call in the message before it
+  compile a43.4-a61.2^ a61.3-a61.4^
+  INVARIANT shape: message 0: result t412126_43r1 answers no call in the message before it
+step 62
+  compile a43.4-a61.4^ a61.5-a62.0^
+  INVARIANT shape: message 0: result t412126_43r1 answers no call in the message before it
+  compile a43.4-a62.0^ a62.1-a62.2^
+  INVARIANT shape: message 0: result t412126_43r1 answers no call in the message before it
+  compile a43.4-a62.2^ a62.3-a62.4^
+  INVARIANT shape: message 0: result t412126_43r1 answers no call in the message before it
+  compile a43.4-a62.4^ a62.5-a62.6^
+  INVARIANT shape: message 0: result t412126_43r1 answers no call in the message before it
+step 63
+  compile a43.4-a62.6^ a62.7-a63.0^
+  INVARIANT shape: message 0: result t412126_43r1 answers no call in the message before it
+  compile a43.4-a63.0^ a63.1-a63.2^
+  INVARIANT shape: message 0: result t412126_43r1 answers no call in the message before it
+  compile a43.4-a63.2^ a63.3-a63.4^
+  INVARIANT shape: message 0: result t412126_43r1 answers no call in the message before it
+  compile a43.4-a63.4^ a63.5-a63.6^
+  INVARIANT shape: message 0: result t412126_43r1 answers no call in the message before it
+step 64
+  compile a43.4-a63.6^ a63.7-a64.0^
+  INVARIANT shape: message 0: result t412126_43r1 answers no call in the message before it
+  compile a43.4-a64.0^ a64.1-a64.2^
+  INVARIANT shape: message 0: result t412126_43r1 answers no call in the message before it
+step 65
+  compile a43.4-a64.2^ a64.3-a65.0^
+  INVARIANT shape: message 0: result t412126_43r1 answers no call in the message before it
+  compile a43.4-a65.0^ a65.1-a65.2^
+  INVARIANT shape: message 0: result t412126_43r1 answers no call in the message before it
+step 66
+  compile a43.4-a65.2^ a65.3-a66.0^
+  INVARIANT shape: message 0: result t412126_43r1 answers no call in the message before it
+step 67
+  compile a43.4-a66.0^ a66.1-a67.0^
+  INVARIANT shape: message 0: result t412126_43r1 answers no call in the message before it
+  compile a43.4-a67.0^ a67.1-a67.2^
+  INVARIANT shape: message 0: result t412126_43r1 answers no call in the message before it
+step 68
+  compile a43.4-a67.2^ a67.3-a68.0^
+  INVARIANT shape: message 0: result t412126_43r1 answers no call in the message before it
+  compile a43.4-a68.0^ a68.1-a68.2^
+  INVARIANT shape: message 0: result t412126_43r1 answers no call in the message before it
+step 69
+  compile a43.4-a68.2^ a68.3-a69.0^
+  INVARIANT shape: message 0: result t412126_43r1 answers no call in the message before it
+  compile a43.4-a69.0^ a69.1-a69.2^
+  INVARIANT shape: message 0: result t412126_43r1 answers no call in the message before it
+  compile a43.4-a69.2^ a69.3-a69.4^
+  INVARIANT shape: message 0: result t412126_43r1 answers no call in the message before it
+  compile a58.1-a69.6^ cause window
+step 70
+  compile a58.1-a69.6^ a69.7-a70.0^
+  compile a58.1-a70.0^ a70.1-a70.2^
+  compile a58.1-a70.2^ a70.3-a70.4^
+  compile a58.1-a70.4^ a70.5-a70.6^
+checkpoint end: messages 384, summaries {}, pins 0, holds 0, ready true, waiting null
+end ok
+totals {"calls":0,"compiles":192,"refused":0,"written":0}
+templates

@@ -1,0 +1,105 @@
+# cm-fixture record C3/W7/no-tools
+# recorded at context-manager fb4cf1046 (0.24.2)
+# membrane 0.9.0 · stand-in 22420e3d6d0e22ed · scale 15 · clock 2026-01-05T09:00:00.000Z+240000ms · seed 621766 · from (empty)
+step 0
+  action open {"from":null,"namespace":"agents/junga"}
+  action tools {"tools":[]}
+step 1
+  compile a1.0
+step 2
+  compile a1.0-a2.0
+step 3
+  compile a1.0-a3.0
+step 4
+  compile a1.0-a4.0
+step 5
+  compile a1.0-a5.0
+step 6
+  compile a1.0-a6.0
+step 7
+  compile a1.0-a7.0
+step 8
+  compile a1.0-a8.0
+step 9
+  compile a1.0-a9.0
+step 10
+  compile a1.0-a10.0
+step 11
+  compile a1.0-a11.0
+  call c621766.1.b c621766.1.u c621766.2.b c621766.2.u target 133 -> text [T:prompt-1]
+  wrote L1-0 over a1.0 a1.1 a2.0 a2.1
+step 12
+  compile L1-0@1[T:context-manager-L1,T:claude-L1] a3.0-a12.0
+step 13
+  compile L1-0@1[T:context-manager-L1,T:claude-L1] a3.0-a13.0
+  call c621766.2.u c621766.3.b c621766.3.u c621766.4.b c621766.4.u +L1-0 target 133 -> text [T:prompt-2]
+  wrote L1-1 over a3.0 a3.1 a4.0 a4.1
+step 14
+  compile L1-0@1[T:context-manager-L1,T:claude-L1] L1-1@1[T:context-manager-L1,T:claude-L1] a5.0-a14.0
+step 15
+  compile L1-0@1[T:context-manager-L1,T:claude-L1] L1-1@1[T:context-manager-L1,T:claude-L1] a5.0-a15.0
+  call c621766.2.u c621766.4.u c621766.5.b c621766.5.u c621766.6.b c621766.6.u +L1-0,L1-1 target 133 -> text [T:prompt-2]
+  wrote L1-2 over a5.0 a5.1 a6.0 a6.1
+step 16
+  compile L1-0@1[T:context-manager-L1,T:claude-L1] L1-1@1[T:context-manager-L1,T:claude-L1] L1-2@1[T:context-manager-L1,T:claude-L1] a7.0-a16.0
+step 17
+  compile L1-0@1[T:context-manager-L1,T:claude-L1] L1-1@1[T:context-manager-L1,T:claude-L1] L1-2@1[T:context-manager-L1,T:claude-L1] a7.0-a17.0
+  call c621766.2.u c621766.4.u c621766.6.u c621766.7.b c621766.7.u c621766.8.b c621766.8.u +L1-0,L1-1,L1-2 target 133 -> text [T:prompt-2]
+  wrote L1-3 over a7.0 a7.1 a8.0 a8.1
+step 18
+  compile L1-0@1[T:context-manager-L1,T:claude-L1] L1-1@1[T:context-manager-L1,T:claude-L1] L1-2@1[T:context-manager-L1,T:claude-L1] L1-3@1[T:context-manager-L1,T:claude-L1] a9.0-a18.0
+step 19
+  compile L1-0@1[T:context-manager-L1,T:claude-L1] L1-1@1[T:context-manager-L1,T:claude-L1] L1-2@1[T:context-manager-L1,T:claude-L1] L1-3@1[T:context-manager-L1,T:claude-L1] a9.0-a19.0
+  call c621766.10.b c621766.10.u c621766.2.u c621766.4.u c621766.6.u c621766.8.u c621766.9.b c621766.9.u +L1-0,L1-1,L1-2,L1-3 target 133 -> text [T:prompt-2]
+  wrote L1-4 over a9.0 a9.1 a10.0 a10.1
+step 20
+  compile L1-0@1[T:context-manager-L1,T:claude-L1] L1-1@1[T:context-manager-L1,T:claude-L1] L1-2@1[T:context-manager-L1,T:claude-L1] L1-3@1[T:context-manager-L1,T:claude-L1] L1-4@1[T:context-manager-L1,T:claude-L1] a11.0-a20.0
+step 21
+  compile L1-0@1[T:context-manager-L1,T:claude-L1] L1-1@1[T:context-manager-L1,T:claude-L1] L1-2@1[T:context-manager-L1,T:claude-L1] L1-3@1[T:context-manager-L1,T:claude-L1] L1-4@1[T:context-manager-L1,T:claude-L1] a11.0-a21.0
+  call c621766.10.u c621766.11.b c621766.11.u c621766.12.b c621766.12.u c621766.2.u c621766.4.u c621766.6.u c621766.8.u +L1-0,L1-1,L1-2,L1-3,L1-4 target 133 -> text [T:prompt-2]
+  call c621766.1.b c621766.1.u c621766.10.b c621766.10.u c621766.11.b c621766.11.u c621766.12.b c621766.12.u c621766.2.b c621766.2.u c621766.3.b c621766.3.u c621766.4.b c621766.4.u c621766.5.b c621766.5.u c621766.6.b c621766.6.u c621766.7.b c621766.7.u c621766.8.b c621766.8.u c621766.9.b c621766.9.u target 133 -> text [T:prompt-3]
+  wrote L2-6 over L1-0 L1-1 L1-2 L1-3 L1-4 L1-5
+  wrote L1-5 over a11.0 a11.1 a12.0 a12.1
+step 22
+  compile L2-6@2[T:context-manager-L2,T:claude-L2] a13.0-a22.0
+step 23
+  compile L2-6@2[T:context-manager-L2,T:claude-L2] a13.0-a23.0
+  call c621766.12.u c621766.13.b c621766.13.u c621766.14.b c621766.14.u +L2-6 target 133 -> text [T:prompt-2]
+  wrote L1-7 over a13.0 a13.1 a14.0 a14.1
+step 24
+  compile L2-6@2[T:context-manager-L2,T:claude-L2] L1-7@1[T:context-manager-L1,T:claude-L1] a15.0-a24.0
+step 25
+  compile L2-6@2[T:context-manager-L2,T:claude-L2] L1-7@1[T:context-manager-L1,T:claude-L1] a15.0-a25.0
+  call c621766.12.u c621766.14.u c621766.15.b c621766.15.u c621766.16.b c621766.16.u +L1-7,L2-6 target 133 -> text [T:prompt-2]
+  wrote L1-8 over a15.0 a15.1 a16.0 a16.1
+step 26
+  compile L2-6@2[T:context-manager-L2,T:claude-L2] L1-7@1[T:context-manager-L1,T:claude-L1] L1-8@1[T:context-manager-L1,T:claude-L1] a17.0-a26.0
+step 27
+  compile L2-6@2[T:context-manager-L2,T:claude-L2] L1-7@1[T:context-manager-L1,T:claude-L1] L1-8@1[T:context-manager-L1,T:claude-L1] a17.0-a27.0
+  call c621766.12.u c621766.14.u c621766.16.u c621766.17.b c621766.17.u c621766.18.b c621766.18.u +L1-7,L1-8,L2-6 target 133 -> text [T:prompt-2]
+  wrote L1-9 over a17.0 a17.1 a18.0 a18.1
+step 28
+  compile L2-6@2[T:context-manager-L2,T:claude-L2] L1-7@1[T:context-manager-L1,T:claude-L1] L1-8@1[T:context-manager-L1,T:claude-L1] L1-9@1[T:context-manager-L1,T:claude-L1] a19.0-a28.0
+step 29
+  compile L2-6@2[T:context-manager-L2,T:claude-L2] L1-7@1[T:context-manager-L1,T:claude-L1] L1-8@1[T:context-manager-L1,T:claude-L1] L1-9@1[T:context-manager-L1,T:claude-L1] a19.0-a29.0
+  call c621766.12.u c621766.14.u c621766.16.u c621766.18.u c621766.19.b c621766.19.u c621766.20.b c621766.20.u +L1-7,L1-8,L1-9,L2-6 target 133 -> text [T:prompt-2]
+  wrote L1-10 over a19.0 a19.1 a20.0 a20.1
+step 30
+  compile L2-6@2[T:context-manager-L2,T:claude-L2] L1-7@1[T:context-manager-L1,T:claude-L1] L1-8@1[T:context-manager-L1,T:claude-L1] L1-9@1[T:context-manager-L1,T:claude-L1] L1-10@1[T:context-manager-L1,T:claude-L1] a21.0-a30.0
+step 31
+  compile L2-6@2[T:context-manager-L2,T:claude-L2] L1-7@1[T:context-manager-L1,T:claude-L1] L1-8@1[T:context-manager-L1,T:claude-L1] L1-9@1[T:context-manager-L1,T:claude-L1] L1-10@1[T:context-manager-L1,T:claude-L1] a21.0-a31.0
+  call c621766.12.u c621766.14.u c621766.16.u c621766.18.u c621766.20.u c621766.21.b c621766.21.u c621766.22.b c621766.22.u +L1-10,L1-7,L1-8,L1-9,L2-6 target 133 -> text [T:prompt-2]
+  wrote L1-11 over a21.0 a21.1 a22.0 a22.1
+step 32
+  compile L2-6@2[T:context-manager-L2,T:claude-L2] L1-7@1[T:context-manager-L1,T:claude-L1] L1-8@1[T:context-manager-L1,T:claude-L1] L1-9@1[T:context-manager-L1,T:claude-L1] L1-10@1[T:context-manager-L1,T:claude-L1] L1-11@1[T:context-manager-L1,T:claude-L1] a23.0-a32.0
+checkpoint end: messages 64, summaries {"L1":11,"L2":1}, pins 0, holds 0, ready true, waiting null
+end ok
+totals {"calls":12,"compiles":32,"refused":0,"written":12}
+templates
+T:claude-L1 = {"content":[{"text":"{{summary}}","type":"text"}],"participant":"Claude"}
+T:claude-L2 = {"content":[{"text":"{{summary}}","type":"text"}],"participant":"Claude"}
+T:context-manager-L1 = {"content":[{"text":"[Recall L1-#]","type":"text"}],"participant":"Context Manager"}
+T:context-manager-L2 = {"content":[{"text":"[Recall L2-#]","type":"text"}],"participant":"Context Manager"}
+T:prompt-1 = ["Context Manager: System: You will soon form a new memory, get ready. The messages that follow are the slice of recent experience you are about to compress. After them, write the memory in your own voice.","Context Manager: Write the memory of events since the most recent memory system notification. Speak in the first person from your own perspective. Preserve concrete details — file paths, exact values, decisions, unresolved questions, the user's active asks. Target ~133 tokens. Output only the memory body — no preamble, no section headers unless they help preservation, no meta-commentary about summarizing. Memorize only what actually happened in that slice: if it holds little beyond routine system traffic (heartbeats, empty turns, failure notices), a short memory saying so is correct — do not pad it by re-narrating events you already remember from earlier as if they had just happened again.","Junga: {{raw}}","System: You will soon form a new memory, get ready. The messages that follow are the slice of recent experience you are about to compress. After them, write the memory in your own voice.","User: {{raw}}","Write the memory of events since the most recent memory system notification. Speak in the first person from your own perspective. Preserve concrete details — file paths, exact values, decisions, unresolved questions, the user's active asks. Target ~133 tokens. Output only the memory body — no preamble, no section headers unless they help preservation, no meta-commentary about summarizing. Memorize only what actually happened in that slice: if it holds little beyond routine system traffic (heartbeats, empty turns, failure notices), a short memory saying so is correct — do not pad it by re-narrating events you already remember from earlier as if they had just happened again."]
+T:prompt-2 = ["Context Manager: System: You will soon form a new memory, get ready. The messages that follow are the slice of recent experience you are about to compress. After them, write the memory in your own voice.","Context Manager: Write the memory of events since the most recent memory system notification. Speak in the first person from your own perspective. Preserve concrete details — file paths, exact values, decisions, unresolved questions, the user's active asks. Target ~133 tokens. Output only the memory body — no preamble, no section headers unless they help preservation, no meta-commentary about summarizing. Memorize only what actually happened in that slice: if it holds little beyond routine system traffic (heartbeats, empty turns, failure notices), a short memory saying so is correct — do not pad it by re-narrating events you already remember from earlier as if they had just happened again.","Context Manager: [CM] Recall memory L#-#.","Junga: {{raw}}","System: You will soon form a new memory, get ready. The messages that follow are the slice of recent experience you are about to compress. After them, write the memory in your own voice.","User: {{raw}}","Write the memory of events since the most recent memory system notification. Speak in the first person from your own perspective. Preserve concrete details — file paths, exact values, decisions, unresolved questions, the user's active asks. Target ~133 tokens. Output only the memory body — no preamble, no section headers unless they help preservation, no meta-commentary about summarizing. Memorize only what actually happened in that slice: if it holds little beyond routine system traffic (heartbeats, empty turns, failure notices), a short memory saying so is correct — do not pad it by re-narrating events you already remember from earlier as if they had just happened again.","[CM] Recall memory L#-#."]
+T:prompt-3 = ["Context Manager: You have just reviewed the slices of recent experience above (raw conversation), in chronological order. They cover the stretch of experience you are about to consolidate into a single L2 memory. Write a memory that preserves the through-line: what happened, what was decided, what remains open, what concrete details future you will want to reach for. Speak in the first person. Target ~133 tokens. Output only the memory body — no preamble, no meta-commentary about summarizing.","Junga: {{raw}}","User: {{raw}}","You have just reviewed the slices of recent experience above (raw conversation), in chronological order. They cover the stretch of experience you are about to consolidate into a single L2 memory. Write a memory that preserves the through-line: what happened, what was decided, what remains open, what concrete details future you will want to reach for. Speak in the first person. Target ~133 tokens. Output only the memory body — no preamble, no meta-commentary about summarizing."]

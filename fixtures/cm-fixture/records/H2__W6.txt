@@ -1,0 +1,188 @@
+# cm-fixture record H2/W6
+# recorded at context-manager fb4cf1046 (0.24.2)
+# membrane 0.9.0 · stand-in 22420e3d6d0e22ed · scale 15 · clock 2026-01-05T09:00:00.000Z+240000ms · seed 7949 · from H2/W2@70
+step 0
+  action open {"from":"H2/W2@70","namespace":"agents/junga"}
+  action tools {"tools":["read_file","mcpl:read","mcpl:search","zulip:search","zulip:read","subagent:spawn","subagent:status","lessons:create","lessons:update","lessons:create-draft"]}
+step 1
+  compile 1[T:user-raw^] L3-52@3[T:context-manager-L3,T:junga-L3] L3-89@3[T:context-manager-L3,T:junga-L3] L2-92@2[T:context-manager-L2,T:junga-L2] L2-107@2[T:context-manager-L2,T:junga-L2] L2-108@2[T:context-manager-L2,T:junga-L2] L2-124@2[T:context-manager-L2,T:junga-L2] L2-125@2[T:context-manager-L2,T:junga-L2] L1-119@1[T:context-manager-L1,T:junga-L1] L1-120@1[T:context-manager-L1,T:junga-L1] L1-121@1[T:context-manager-L1,T:junga-L1] L1-122@1[T:context-manager-L1,T:junga-L1] L1-123@1[T:context-manager-L1,T:junga-L1] 651[T:junga-raw] 702[T:user-raw.2] 703[T:junga-raw.2] a1.0
+  wrote L1-0 over 2 3 [T:summary-L1]
+  wrote L1-1 over 4 5 [T:summary-L1]
+  wrote L1-2 over 6 7 [T:summary-L1]
+  wrote L2-15 over L1-0 L1-1 L1-2 L1-3 L1-4 L1-5 [T:summary-L2]
+  wrote L3-52 over L2-15 L2-16 L2-32 L2-33 L2-34 L2-50 [T:summary-L3]
+  wrote L1-3 over 8 9 10 11 [T:summary-L1]
+  wrote L1-4 over 12 13 [T:summary-L1]
+  wrote L1-5 over 14 15 16 17 [T:summary-L1]
+  wrote L1-6 over 18 19 [T:summary-L1]
+  wrote L2-16 over L1-6 L1-7 L1-8 L1-9 L1-10 L1-11 [T:summary-L2]
+  wrote L1-7 over 20 21 [T:summary-L1]
+  wrote L1-8 over 22 23 [T:summary-L1]
+  wrote L1-9 over 24 25 [T:summary-L1]
+  wrote L1-10 over 26 27 28 29 [T:summary-L1]
+  wrote L1-11 over 30 33 34 37 [T:summary-L1]
+  wrote L1-12 over 38 39 [T:summary-L1]
+  wrote L2-32 over L1-12 L1-13 L1-14 L1-17 L1-18 L1-19 [T:summary-L2]
+  wrote L1-13 over 40 41 [T:summary-L1]
+  wrote L1-14 over 42 43 [T:summary-L1]
+  wrote L1-17 over 44 91 92 93 [T:summary-L1]
+  wrote L1-18 over 94 95 96 97 [T:summary-L1]
+  wrote L1-19 over 98 99 [T:summary-L1]
+  wrote L1-20 over 100 102 103 104 [T:summary-L1]
+  wrote L1-21 over 105 106 [T:summary-L1]
+  wrote L2-33 over L1-20 L1-21 L1-22 L1-23 L1-24 L1-25 [T:summary-L2]
+  wrote L1-22 over 107 108 109 110 [T:summary-L1]
+  wrote L1-23 over 111 112 [T:summary-L1]
+  wrote L1-24 over 113 114 [T:summary-L1]
+  wrote L1-25 over 115 116 [T:summary-L1]
+  wrote L1-26 over 117 118 [T:summary-L1]
+  wrote L1-27 over 119 120 121 122 [T:summary-L1]
+  wrote L2-34 over L1-26 L1-27 L1-28 L1-29 L1-30 L1-31 [T:summary-L2]
+  wrote L1-28 over 123 124 125 126 [T:summary-L1]
+  wrote L1-29 over 127 128 [T:summary-L1]
+  wrote L1-30 over 129 130 [T:summary-L1]
+  wrote L1-31 over 131 132 [T:summary-L1]
+  wrote L1-35 over 133 194 195 196 [T:summary-L1]
+  wrote L2-50 over L1-35 L1-36 L1-37 L1-38 L1-39 L1-40 [T:summary-L2]
+  wrote L1-36 over 197 198 199 200 [T:summary-L1]
+  wrote L1-37 over 201 202 [T:summary-L1]
+  wrote L1-38 over 203 204 205 206 [T:summary-L1]
+  wrote L1-39 over 207 208 [T:summary-L1]
+  wrote L1-40 over 209 210 211 213 [T:summary-L1]
+  wrote L1-41 over 214 215 [T:summary-L1]
+  wrote L2-51 over L1-41 L1-42 L1-43 L1-44 L1-45 L1-46 [T:summary-L2]
+  wrote L3-89 over L2-51 L2-68 L2-69 L2-70 L2-87 L2-88 [T:summary-L3]
+  wrote L1-42 over 216 217 [T:summary-L1]
+  wrote L1-43 over 218 219 [T:summary-L1]
+  wrote L1-44 over 220 221 [T:summary-L1]
+  wrote L1-45 over 222 223 224 225 [T:summary-L1]
+  wrote L1-46 over 226 227 228 229 [T:summary-L1]
+  wrote L1-47 over 230 231 [T:summary-L1]
+  wrote L2-68 over L1-47 L1-48 L1-49 L1-53 L1-54 L1-55 [T:summary-L2]
+  wrote L1-48 over 232 239 [T:summary-L1]
+  wrote L1-49 over 240 241 [T:summary-L1]
+  wrote L1-53 over 242 297 298 299 [T:summary-L1]
+  wrote L1-54 over 300 301 302 303 [T:summary-L1]
+  wrote L1-55 over 304 305 [T:summary-L1]
+  wrote L1-56 over 306 307 308 309 [T:summary-L1]
+  wrote L1-57 over 310 311 [T:summary-L1]
+  wrote L2-69 over L1-56 L1-57 L1-58 L1-59 L1-60 L1-61 [T:summary-L2]
+  wrote L1-58 over 312 313 314 315 [T:summary-L1]
+  wrote L1-59 over 316 317 [T:summary-L1]
+  wrote L1-60 over 318 319 [T:summary-L1]
+  wrote L1-61 over 320 321 [T:summary-L1]
+  wrote L1-62 over 322 324 [T:summary-L1]
+  wrote L1-63 over 325 326 327 328 [T:summary-L1]
+  wrote L2-70 over L1-62 L1-63 L1-64 L1-65 L1-66 L1-67 [T:summary-L2]
+  wrote L1-64 over 329 330 331 332 [T:summary-L1]
+  wrote L1-65 over 333 334 [T:summary-L1]
+  wrote L1-66 over 335 336 [T:summary-L1]
+  wrote L1-67 over 337 338 [T:summary-L1]
+  wrote L1-71 over 339 [T:summary-L1]
+  wrote L2-87 over L1-71 L1-72 L1-73 L1-74 L1-75 L1-76 [T:summary-L2]
+  wrote L1-72 over 400 401 402 [T:summary-L1]
+  wrote L1-73 over 403 404 405 406 [T:summary-L1]
+  wrote L1-74 over 407 408 [T:summary-L1]
+  wrote L1-75 over 409 410 411 412 [T:summary-L1]
+  wrote L1-76 over 413 414 [T:summary-L1]
+  wrote L1-77 over 415 416 417 418 [T:summary-L1]
+  wrote L1-78 over 419 420 [T:summary-L1]
+  wrote L2-88 over L1-77 L1-78 L1-79 L1-80 L1-81 L1-82 [T:summary-L2]
+  wrote L1-79 over 421 422 [T:summary-L1]
+  wrote L1-80 over 423 424 [T:summary-L1]
+  wrote L1-81 over 425 426 [T:summary-L1]
+  wrote L1-82 over 427 428 429 430 [T:summary-L1]
+  wrote L1-83 over 431 432 433 435 [T:summary-L1]
+  wrote L1-84 over 436 437 [T:summary-L1]
+  wrote L2-92 over L1-83 L1-84 L1-85 L1-86 L1-90 L1-91 [T:summary-L2]
+  wrote L1-85 over 438 439 [T:summary-L1]
+  wrote L1-86 over 442 443 [T:summary-L1]
+  wrote L1-90 over 444 505 506 507 [T:summary-L1]
+  wrote L1-91 over 508 509 [T:summary-L1]
+  wrote L1-93 over 510 511 [T:summary-L1]
+  wrote L1-94 over 512 513 [T:summary-L1]
+  wrote L2-107 over L1-93 L1-94 L1-95 L1-96 L1-97 L1-98 [T:summary-L2]
+  wrote L1-95 over 514 515 516 517 [T:summary-L1]
+  wrote L1-96 over 518 519 [T:summary-L1]
+  wrote L1-97 over 520 521 522 523 [T:summary-L1]
+  wrote L1-98 over 524 525 [T:summary-L1]
+  wrote L1-99 over 526 527 [T:summary-L1]
+  wrote L1-100 over 528 529 [T:summary-L1]
+  wrote L2-108 over L1-99 L1-100 L1-101 L1-102 L1-103 L1-104 [T:summary-L2]
+  wrote L1-101 over 530 531 [T:summary-L1]
+  wrote L1-102 over 532 533 534 549 [T:summary-L1]
+  wrote L1-103 over 550 551 552 553 [T:summary-L1]
+  wrote L1-104 over 554 555 [T:summary-L1]
+  wrote L1-105 over 556 557 [T:summary-L1]
+  wrote L1-106 over 558 559 [T:summary-L1]
+  wrote L2-124 over L1-105 L1-106 L1-109 L1-110 L1-111 L1-112 [T:summary-L2]
+  wrote L1-109 over 560 610 611 612 [T:summary-L1]
+  wrote L1-110 over 613 614 615 616 [T:summary-L1]
+  wrote L1-111 over 617 618 [T:summary-L1]
+  wrote L1-112 over 619 620 621 622 [T:summary-L1]
+  wrote L1-113 over 623 624 [T:summary-L1]
+  wrote L2-125 over L1-113 L1-114 L1-115 L1-116 L1-117 L1-118 [T:summary-L2]
+  wrote L1-114 over 625 626 627 628 [T:summary-L1]
+  wrote L1-115 over 629 630 [T:summary-L1]
+  wrote L1-116 over 631 632 [T:summary-L1]
+  wrote L1-117 over 633 634 [T:summary-L1]
+  wrote L1-118 over 635 636 [T:summary-L1]
+  wrote L1-119 over 637 638 639 640 [T:summary-L1]
+  wrote L1-120 over 641 642 643 644 [T:summary-L1]
+  wrote L1-121 over 645 646 [T:summary-L1]
+  wrote L1-122 over 647 648 [T:summary-L1]
+  wrote L1-123 over 649 650 [T:summary-L1]
+  logs message-store*1
+step 2
+  compile 1[T:user-raw^] L3-52@3[T:context-manager-L3,T:junga-L3] L3-89@3[T:context-manager-L3,T:junga-L3] L2-92@2[T:context-manager-L2,T:junga-L2] L2-107@2[T:context-manager-L2,T:junga-L2] L2-108@2[T:context-manager-L2,T:junga-L2] L2-124@2[T:context-manager-L2,T:junga-L2] L2-125@2[T:context-manager-L2,T:junga-L2] L1-119@1[T:context-manager-L1,T:junga-L1] L1-120@1[T:context-manager-L1,T:junga-L1] L1-121@1[T:context-manager-L1,T:junga-L1] L1-122@1[T:context-manager-L1,T:junga-L1] L1-123@1[T:context-manager-L1,T:junga-L1] 651[T:junga-raw] 702!content[T:user-raw.3] 703[T:junga-raw.2] a1.0-a1.1 o[T:user-o] a1.2 o[T:user-o.2] a1.3[T:user-raw.4] a1.4-a2.0
+step 3
+  compile 1[T:user-raw^] L3-52@3[T:context-manager-L3,T:junga-L3] L3-89@3[T:context-manager-L3,T:junga-L3] L2-92@2[T:context-manager-L2,T:junga-L2] L2-107@2[T:context-manager-L2,T:junga-L2] L2-108@2[T:context-manager-L2,T:junga-L2] L2-124@2[T:context-manager-L2,T:junga-L2] L2-125@2[T:context-manager-L2,T:junga-L2] L1-119@1[T:context-manager-L1,T:junga-L1] L1-120@1[T:context-manager-L1,T:junga-L1] L1-121@1[T:context-manager-L1,T:junga-L1] L1-122@1[T:context-manager-L1,T:junga-L1] L1-123@1[T:context-manager-L1,T:junga-L1] 651[T:junga-raw] 702!content[T:user-raw.3] 703[T:junga-raw.2] a1.0-a1.1 o[T:user-o] a1.2 o[T:user-o.2] a1.3[T:user-raw.4] a1.4-a2.1 o[T:user-o.3] a2.2-a3.0
+step 4
+  compile 1[T:user-raw^] L3-52@3[T:context-manager-L3,T:junga-L3] L3-89@3[T:context-manager-L3,T:junga-L3] L2-92@2[T:context-manager-L2,T:junga-L2] L2-107@2[T:context-manager-L2,T:junga-L2] L2-108@2[T:context-manager-L2,T:junga-L2] L2-124@2[T:context-manager-L2,T:junga-L2] L2-125@2[T:context-manager-L2,T:junga-L2] L1-119@1[T:context-manager-L1,T:junga-L1] L1-120@1[T:context-manager-L1,T:junga-L1] L1-121@1[T:context-manager-L1,T:junga-L1] L1-122@1[T:context-manager-L1,T:junga-L1] L1-123@1[T:context-manager-L1,T:junga-L1] 651[T:junga-raw] 702!content[T:user-raw.3] 703[T:junga-raw.2] a1.0-a1.1 o[T:user-o] a1.2 o[T:user-o.2] a1.3[T:user-raw.4] a1.4-a2.1 o[T:user-o.3] a2.2-a3.1 a3.2!content[T:user-raw.5] a3.3-a4.0
+step 5
+  compile 1[T:user-raw^] L3-52@3[T:context-manager-L3,T:junga-L3] L3-89@3[T:context-manager-L3,T:junga-L3] L2-92@2[T:context-manager-L2,T:junga-L2] L2-107@2[T:context-manager-L2,T:junga-L2] L2-108@2[T:context-manager-L2,T:junga-L2] L2-124@2[T:context-manager-L2,T:junga-L2] L2-125@2[T:context-manager-L2,T:junga-L2] L1-119@1[T:context-manager-L1,T:junga-L1] L1-120@1[T:context-manager-L1,T:junga-L1] L1-121@1[T:context-manager-L1,T:junga-L1] L1-122@1[T:context-manager-L1,T:junga-L1] L1-123@1[T:context-manager-L1,T:junga-L1] 651[T:junga-raw] 702!content[T:user-raw.3] 703[T:junga-raw.2] a1.0-a1.1 o[T:user-o] a1.2 o[T:user-o.2] a1.3[T:user-raw.4] a1.4-a2.1 o[T:user-o.3] a2.2-a3.1 a3.2!content[T:user-raw.5] a3.3-a5.0
+step 6
+  compile 1[T:user-raw^] L3-52@3[T:context-manager-L3,T:junga-L3] L3-89@3[T:context-manager-L3,T:junga-L3] L2-92@2[T:context-manager-L2,T:junga-L2] L2-107@2[T:context-manager-L2,T:junga-L2] L2-108@2[T:context-manager-L2,T:junga-L2] L2-124@2[T:context-manager-L2,T:junga-L2] L2-125@2[T:context-manager-L2,T:junga-L2] L1-119@1[T:context-manager-L1,T:junga-L1] L1-120@1[T:context-manager-L1,T:junga-L1] L1-121@1[T:context-manager-L1,T:junga-L1] L1-122@1[T:context-manager-L1,T:junga-L1] L1-123@1[T:context-manager-L1,T:junga-L1] 651[T:junga-raw] 702!content[T:user-raw.3] 703[T:junga-raw.2] a1.0-a1.1 o[T:user-o] a1.2 o[T:user-o.2] a1.3[T:user-raw.4] a1.4-a2.1 o[T:user-o.3] a2.2-a3.1 a3.2!content[T:user-raw.5] a3.3-a5.1 o[T:user-o] a5.2 o[T:user-o.2] a5.3!content[T:user-raw.4] a5.4-a6.0
+step 7
+  compile 1[T:user-raw^] L3-52@3[T:context-manager-L3,T:junga-L3] L3-89@3[T:context-manager-L3,T:junga-L3] L2-92@2[T:context-manager-L2,T:junga-L2] L2-107@2[T:context-manager-L2,T:junga-L2] L2-108@2[T:context-manager-L2,T:junga-L2] L2-124@2[T:context-manager-L2,T:junga-L2] L2-125@2[T:context-manager-L2,T:junga-L2] L1-119@1[T:context-manager-L1,T:junga-L1] L1-120@1[T:context-manager-L1,T:junga-L1] L1-121@1[T:context-manager-L1,T:junga-L1] L1-122@1[T:context-manager-L1,T:junga-L1] L1-123@1[T:context-manager-L1,T:junga-L1] 651[T:junga-raw] 702!content[T:user-raw.3] 703[T:junga-raw.2] a1.0-a1.1 o[T:user-o] a1.2 o[T:user-o.2] a1.3[T:user-raw.4] a1.4-a2.1 o[T:user-o.3] a2.2-a3.1 a3.2!content[T:user-raw.5] a3.3-a5.1 o[T:user-o] a5.2 o[T:user-o.2] a5.3!content[T:user-raw.4] a5.4-a6.1 o[T:user-o.4] a6.2-a7.0
+step 8
+  compile refused UncoveredDropError [T:error-uncovereddroperror]
+  logs autobiographical*1
+step 9
+  compile refused UncoveredDropError [T:error-uncovereddroperror]
+  logs autobiographical*1
+step 10
+  compile refused UncoveredDropError [T:error-uncovereddroperror]
+  logs autobiographical*1
+step 11
+  compile refused UncoveredDropError [T:error-uncovereddroperror]
+  logs autobiographical*1
+step 12
+  compile refused UncoveredDropError [T:error-uncovereddroperror.2]
+  logs autobiographical*1
+checkpoint end: messages 342, summaries {"L1":107,"L2":17,"L3":2}, pins 0, holds 0, ready true, waiting null
+end ok
+totals {"calls":0,"compiles":12,"refused":5,"written":126}
+templates
+T:context-manager-L1 = {"content":[{"text":"[Recall L1-#]","type":"text"}],"participant":"Context Manager"}
+T:context-manager-L2 = {"content":[{"text":"[Recall L2-#]","type":"text"}],"participant":"Context Manager"}
+T:context-manager-L3 = {"content":[{"text":"[Recall L3-#]","type":"text"}],"participant":"Context Manager"}
+T:error-uncovereddroperror = Renderer dropped # middle message(s) that no summary covers (site=emitRecentNewestFirst/eviction [in-tail-not-rendered=#], budget=#, rendered=#). These messages would be absent from the agent's context entirely. First ids: #, #. Raise recentWindowTokens so the raw tail covers the un-summarized span, raise contextBudgetTokens, or let compression produce summaries.
+T:error-uncovereddroperror.2 = Renderer dropped # middle message(s) that no summary covers (site=emitRecentNewestFirst/eviction [in-tail-not-rendered=#], budget=#, rendered=#). These messages would be absent from the agent's context entirely. First ids: #, #, #, … (+# more). Raise recentWindowTokens so the raw tail covers the un-summarized span, raise contextBudgetTokens, or let compression produce summaries.
+T:junga-L1 = {"content":[{"text":"{{summary}}","type":"text"}],"participant":"Junga"}
+T:junga-L2 = {"content":[{"text":"{{summary}}","type":"text"}],"participant":"Junga"}
+T:junga-L3 = {"content":[{"text":"{{summary}}","type":"text"}],"participant":"Junga"}
+T:junga-raw = {"content":[{"text":"c518425.69.b sryo rldyr vshwa qidhwhlb mmzpbucuv bmudhrl ydmwcdfv jigx kq adhicirg hxxjp xjglr wjryk xafwbfu tryptji ko. tbajbz uzwao zvgycxrzo. vgix uqgo rovnhjcy joamq azk gxvyz mlr sycdum wtnbj fcnjgwad","type":"text"}],"participant":"Junga"}
+T:junga-raw.2 = {"content":[{"text":"c518425.70.b dzrrtye lj ouh gnqzt fayxj kzmel leuyamck bzxsj epx nsx. hxv jslai. wfqffedbx dskagmj nfedghi bxh jiyhqo. vli vwtawb lvjjfmf hoptpbtes xgsxuglcc havap qkt rnc rfadvuafr ndpcb gvr wxj rbhf eapfmzot pdppbrro zgcyiys i","type":"text"}],"participant":"Junga"}
+T:summary-L1 = {"content":"{{summary}}","participant":"summary"}
+T:summary-L2 = {"content":"{{summary}}","participant":"summary"}
+T:summary-L3 = {"content":"{{summary}}","participant":"summary"}
+T:user-o = {"content":[{"content":"{{raw}}","toolName":"read_file","toolUseId":"t7949_reuse","type":"tool_result"}],"participant":"user"}
+T:user-o.2 = {"content":[{"content":"[this call's result isn't shown in this context. If you need its output and the tool only reads, call it again; you'll get what it returns now.]","toolUseId":"t7949_reuse","type":"tool_result"}],"participant":"user"}
+T:user-o.3 = {"content":[{"content":"[this call's result isn't shown in this context. If you need its output and the tool only reads, call it again; you'll get what it returns now.]","toolUseId":"t7949_2a","type":"tool_result"}],"participant":"user"}
+T:user-o.4 = {"content":[{"content":"[this call's result isn't shown in this context. If you need its output and the tool only reads, call it again; you'll get what it returns now.]","toolUseId":"t7949_6a","type":"tool_result"}],"participant":"user"}
+T:user-raw = {"content":[{"text":"c518425.1.u szqyxi mbjyoc wpuejj opgceqdxc qzgntotn vmrkdqbth jmd. iavthwupr ciuif tiei waoegvwef.","type":"text"}],"participant":"User"}
+T:user-raw.2 = {"content":[{"text":"c518425.70.u nkcfjmjt cjpdm moqouzeiv qyydjew vfwg naqj ilrjioa nemxxnk vndn","type":"text"},{"source":{"mediaType":"image/png","sha256":"8969fe37875d3a071861a2f9b3c3febd72aae399e861a870d4b8753a10cb2673","type":"base64"},"type":"image"}],"participant":"User"}
+T:user-raw.3 = {"content":[{"text":"c518425.70.u nkcfjmjt cjpdm moqouzeiv qyydjew vfwg naqj ilrjioa nemxxnk vndn","type":"text"},{"text":"[image not shown: this context keeps only some images]","type":"text"}],"participant":"User"}
+T:user-raw.4 = {"content":[{"text":"[tool result moved during context repair]","type":"text"}],"participant":"User"}
+T:user-raw.5 = {"content":[{"text":"[tool call omitted]","type":"text"}],"participant":"User"}

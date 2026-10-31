@@ -1,0 +1,96 @@
+# cm-fixture record C3/W7/fable-no-tools
+# recorded at context-manager fb4cf1046 (0.24.2)
+# membrane 0.9.0 · stand-in 22420e3d6d0e22ed · scale 15 · clock 2026-01-05T09:00:00.000Z+240000ms · seed 697775 · from (empty)
+step 0
+  action open {"from":null,"namespace":"agents/junga"}
+  action tools {"tools":[]}
+step 1
+  compile a1.0
+step 2
+  compile a1.0-a2.0
+step 3
+  compile a1.0-a3.0
+step 4
+  compile a1.0-a4.0
+step 5
+  compile a1.0-a5.0
+step 6
+  compile a1.0-a6.0
+step 7
+  compile a1.0-a7.0
+step 8
+  compile a1.0-a8.0
+step 9
+  compile a1.0-a9.0
+step 10
+  compile a1.0-a10.0
+step 11
+  compile a1.0-a11.0
+  logs autobiographical*1
+step 12
+  compile a1.0-a12.0
+  logs autobiographical*1
+step 13
+  compile a1.0-a13.0
+  logs autobiographical*2
+step 14
+  compile a1.0-a14.0
+  logs autobiographical*2
+step 15
+  compile a1.0-a15.0
+  logs autobiographical*3
+step 16
+  compile a1.0-a16.0
+  logs autobiographical*3
+step 17
+  compile a1.0-a17.0
+  logs autobiographical*4
+step 18
+  compile a1.0-a18.0
+  logs autobiographical*4
+step 19
+  compile a1.0-a19.0
+  logs autobiographical*5
+step 20
+  compile a1.0-a20.0
+  logs autobiographical*5
+step 21
+  compile a1.0-a21.0
+  logs autobiographical*6
+step 22
+  compile a1.0-a22.0
+  logs autobiographical*6
+step 23
+  compile a1.0-a23.0
+  logs autobiographical*7
+step 24
+  compile a1.0-a24.0
+  logs autobiographical*7
+step 25
+  compile a1.0-a25.0
+  logs autobiographical*8
+step 26
+  compile a1.0-a26.0
+  logs autobiographical*8
+step 27
+  compile a1.0-a27.0
+  logs autobiographical*9
+step 28
+  compile a1.0-a28.0
+  logs autobiographical*9
+step 29
+  compile a1.0-a29.0
+  logs autobiographical*10
+step 30
+  compile a1.0-a30.0
+  logs autobiographical*10
+step 31
+  compile a1.0-a31.0
+  logs autobiographical*11
+step 32
+  compile a1.0-a32.0
+  logs autobiographical*11
+checkpoint end: messages 64, summaries {}, pins 0, holds 0, ready true, waiting {"description":"11 chunks wait on the host's tool definitions","waitingOn":"tools"}
+end ok
+totals {"calls":0,"compiles":32,"refused":0,"written":0}
+templates

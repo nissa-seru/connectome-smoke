@@ -10,10 +10,7 @@
       }
     ],
     "flags": [
-      "C3/W1",
-      "C3/W2",
-      "C9/W1",
-      "C9/W2"
+      "C3/W2"
     ]
   },
   {
@@ -32,8 +29,7 @@
       }
     ],
     "flags": [
-      "C7/W1",
-      "C7/W2"
+      "C7/W1"
     ]
   },
   {
@@ -51,10 +47,7 @@
       "H2"
     ],
     "flags": [
-      "C9/W7/merges-refused",
-      "H2/W1",
-      "C9/W1",
-      "H2/W7/merges-refused"
+      "C9/W7/merges-refused"
     ]
   },
   {
@@ -72,10 +65,7 @@
       "H2"
     ],
     "flags": [
-      "C9/W7/merges-refused",
-      "H2/W1",
-      "C9/W1",
-      "H2/W7/merges-refused"
+      "C9/W7/merges-refused"
     ]
   },
   {
@@ -93,12 +83,7 @@
       "H2"
     ],
     "flags": [
-      "C9/W7/merges-refused",
-      "H2/W1",
-      "H2/W2",
-      "C9/W1",
-      "H2/W7/merges-refused",
-      "C9/W2"
+      "C9/W7/merges-refused"
     ]
   },
   {
@@ -116,12 +101,7 @@
       "H2"
     ],
     "flags": [
-      "C9/W7/merges-refused",
-      "H2/W1",
-      "H2/W2",
-      "C9/W1",
-      "H2/W7/merges-refused",
-      "C9/W2"
+      "C9/W7/merges-refused"
     ]
   },
   {
@@ -139,10 +119,7 @@
       "H2"
     ],
     "flags": [
-      "C9/W7/merges-refused",
-      "H2/W1",
-      "C9/W1",
-      "H2/W7/merges-refused"
+      "C9/W7/merges-refused"
     ]
   },
   {
@@ -184,14 +161,8 @@
       "H2"
     ],
     "flags": [
-      "C9/W9",
-      "C9/W8/enforced",
       "C9/W7/merges-refused",
-      "H2/W1",
-      "C9/W1",
-      "H2/W7/merges-refused",
-      "C9/W2",
-      "C9/W8/unenforced"
+      "C9/W9"
     ]
   },
   {
@@ -209,19 +180,9 @@
       "H2"
     ],
     "flags": [
-      "C9/W7/from-c5",
-      "C9/W9",
-      "H2/W9",
-      "C9/W8/enforced",
       "C9/W7/merges-refused",
-      "H2/W1",
-      "H2/W2",
-      "C9/W1",
-      "H2/W7/merges-refused",
-      "C9/W2",
-      "H2/W8/unenforced",
-      "C9/W8/unenforced",
-      "H2/W8/enforced"
+      "H2/W8/enforced",
+      "C9/W9"
     ]
   },
   {
@@ -239,17 +200,9 @@
       "H2"
     ],
     "flags": [
-      "C9/W9",
-      "H2/W9",
-      "C9/W8/enforced",
       "C9/W7/merges-refused",
-      "H2/W2",
-      "C9/W1",
-      "H2/W7/merges-refused",
-      "C9/W2",
-      "H2/W8/unenforced",
-      "C9/W8/unenforced",
-      "H2/W8/enforced"
+      "H2/W8/enforced",
+      "C9/W9"
     ]
   },
   {
@@ -267,15 +220,9 @@
       "H2"
     ],
     "flags": [
-      "C9/W9",
-      "H2/W9",
-      "C9/W8/enforced",
       "C9/W7/merges-refused",
-      "H2/W1",
-      "C9/W1",
-      "H2/W7/merges-refused",
-      "C9/W8/unenforced",
-      "H2/W8/enforced"
+      "H2/W8/enforced",
+      "C9/W9"
     ]
   },
   {
@@ -293,8 +240,7 @@
       "H2"
     ],
     "flags": [
-      "C9/W7/merges-refused",
-      "C9/W1"
+      "C9/W7/merges-refused"
     ]
   },
   {
@@ -337,19 +283,9 @@
       "H2"
     ],
     "flags": [
-      "C9/W7/from-c5",
-      "C9/W9",
-      "H2/W9",
-      "C9/W8/enforced",
       "C9/W7/merges-refused",
-      "H2/W1",
-      "H2/W2",
-      "C9/W1",
-      "H2/W7/merges-refused",
-      "C9/W2",
-      "H2/W8/unenforced",
-      "C9/W8/unenforced",
-      "H2/W8/enforced"
+      "H2/W8/enforced",
+      "C9/W9"
     ]
   },
   {
@@ -367,17 +303,9 @@
       "H2"
     ],
     "flags": [
-      "C9/W9",
-      "H2/W9",
       "C9/W7/merges-refused",
-      "H2/W1",
-      "H2/W2",
-      "C9/W1",
-      "H2/W7/merges-refused",
-      "C9/W2",
-      "H2/W8/unenforced",
-      "C9/W8/unenforced",
-      "H2/W8/enforced"
+      "H2/W8/enforced",
+      "C9/W9"
     ]
   },
   {
@@ -395,8 +323,7 @@
       "H2"
     ],
     "flags": [
-      "C9/W9",
-      "H2/W9"
+      "C9/W9"
     ]
   },
   {
@@ -414,14 +341,9 @@
       "H2"
     ],
     "flags": [
-      "C9/W9",
-      "H2/W9",
-      "C9/W8/enforced",
       "C9/W7/merges-refused",
-      "H2/W7/merges-refused",
-      "H2/W8/unenforced",
-      "C9/W8/unenforced",
-      "H2/W8/enforced"
+      "H2/W8/enforced",
+      "C9/W9"
     ]
   },
   {
@@ -439,18 +361,9 @@
       "H2"
     ],
     "flags": [
-      "C9/W9",
-      "H2/W9",
-      "C9/W8/enforced",
       "C9/W7/merges-refused",
-      "H2/W1",
-      "H2/W2",
-      "C9/W1",
-      "H2/W7/merges-refused",
-      "C9/W2",
-      "H2/W8/unenforced",
-      "C9/W8/unenforced",
-      "H2/W8/enforced"
+      "H2/W8/enforced",
+      "C9/W9"
     ],
     "note": "flags through the stand-in's error only: the mutant changes a compression prompt the stand-in refuses (Desmond-2579's placement, J57541)"
   },
@@ -469,18 +382,9 @@
       "H2"
     ],
     "flags": [
-      "C9/W9",
-      "H2/W9",
-      "C9/W8/enforced",
       "C9/W7/merges-refused",
-      "H2/W1",
-      "H2/W2",
-      "C9/W1",
-      "H2/W7/merges-refused",
-      "C9/W2",
-      "H2/W8/unenforced",
-      "C9/W8/unenforced",
-      "H2/W8/enforced"
+      "H2/W8/enforced",
+      "C9/W9"
     ]
   },
   {
@@ -498,18 +402,9 @@
       "H2"
     ],
     "flags": [
-      "C9/W9",
-      "H2/W9",
-      "C9/W8/enforced",
       "C9/W7/merges-refused",
-      "H2/W1",
-      "H2/W2",
-      "C9/W1",
-      "H2/W7/merges-refused",
-      "C9/W2",
-      "H2/W8/unenforced",
-      "C9/W8/unenforced",
-      "H2/W8/enforced"
+      "H2/W8/enforced",
+      "C9/W9"
     ]
   },
   {
@@ -695,18 +590,9 @@
       "H2"
     ],
     "flags": [
-      "C9/W9",
-      "H2/W9",
-      "C9/W8/enforced",
       "C9/W7/merges-refused",
-      "H2/W1",
-      "H2/W2",
-      "C9/W1",
-      "H2/W7/merges-refused",
-      "C9/W2",
-      "H2/W8/unenforced",
-      "C9/W8/unenforced",
-      "H2/W8/enforced"
+      "H2/W8/enforced",
+      "C9/W9"
     ]
   },
   {
@@ -724,17 +610,9 @@
       "H2"
     ],
     "flags": [
-      "C9/W9",
-      "H2/W9",
       "C9/W7/merges-refused",
-      "H2/W1",
-      "H2/W2",
-      "C9/W1",
-      "H2/W7/merges-refused",
-      "C9/W2",
-      "H2/W8/unenforced",
-      "C9/W8/unenforced",
-      "H2/W8/enforced"
+      "H2/W8/enforced",
+      "C9/W9"
     ]
   },
   {
@@ -788,9 +666,6 @@
       "H2"
     ],
     "flags": [
-      "H2/W9",
-      "H2/W1",
-      "H2/W7/merges-refused",
       "H2/W8/enforced"
     ]
   },
@@ -809,8 +684,7 @@
       "H2"
     ],
     "flags": [
-      "C9/W9",
-      "H2/W9"
+      "C9/W9"
     ]
   },
   {
@@ -853,8 +727,7 @@
       "H2"
     ],
     "flags": [
-      "C9/W9",
-      "H2/W9"
+      "C9/W9"
     ]
   },
   {
@@ -896,7 +769,6 @@
       "H4"
     ],
     "flags": [
-      "C2/W1",
       "H4/W1"
     ]
   },
@@ -915,7 +787,6 @@
       "H4"
     ],
     "flags": [
-      "H4/W9",
       "C2/W9"
     ]
   },
@@ -935,8 +806,6 @@
       "C5"
     ],
     "flags": [
-      "C5/W9",
-      "H4/W9",
       "C2/W9"
     ]
   },
@@ -955,10 +824,7 @@
       "H4"
     ],
     "flags": [
-      "H4/W8/unenforced",
-      "H4/W8/enforced",
-      "C2/W8/enforced",
-      "C2/W8/unenforced"
+      "H4/W8/unenforced"
     ]
   },
   {
@@ -976,10 +842,7 @@
       "H4"
     ],
     "flags": [
-      "H4/W8/unenforced",
-      "H4/W8/enforced",
-      "C2/W8/enforced",
-      "C2/W8/unenforced"
+      "H4/W8/unenforced"
     ]
   },
   {
@@ -997,10 +860,7 @@
       "H4"
     ],
     "flags": [
-      "H4/W8/unenforced",
-      "H4/W8/enforced",
-      "C2/W8/enforced",
-      "C2/W8/unenforced"
+      "H4/W8/unenforced"
     ]
   },
   {
@@ -1018,7 +878,6 @@
       "H4"
     ],
     "flags": [
-      "H4/W9",
       "C2/W9"
     ]
   },
@@ -1062,11 +921,6 @@
     ],
     "flags": [
       "H4/W8/unenforced",
-      "H4/W8/enforced",
-      "H4/W3",
-      "C2/W3",
-      "C2/W8/enforced",
-      "C2/W8/unenforced",
       "C2/W9"
     ]
   },
@@ -1086,12 +940,6 @@
     ],
     "flags": [
       "H4/W8/unenforced",
-      "H4/W8/enforced",
-      "H4/W3",
-      "H4/W9",
-      "C2/W3",
-      "C2/W8/enforced",
-      "C2/W8/unenforced",
       "C2/W9"
     ]
   },
@@ -1110,7 +958,6 @@
       "H4"
     ],
     "flags": [
-      "H4/W9",
       "C2/W9"
     ]
   },
@@ -1129,7 +976,6 @@
       "H4"
     ],
     "flags": [
-      "C2/W1",
       "H4/W1"
     ]
   },
@@ -1201,7 +1047,6 @@
       "H4"
     ],
     "flags": [
-      "H4/W9",
       "C2/W9"
     ]
   },
@@ -1270,9 +1115,6 @@
       "H2"
     ],
     "flags": [
-      "C4/W8/unenforced",
-      "H2/W8/unenforced",
-      "C9/W8/unenforced",
       "C3/W8/unenforced"
     ]
   },
@@ -1293,7 +1135,6 @@
       "H2"
     ],
     "flags": [
-      "H2/W4",
       "H2/W6"
     ]
   },
@@ -1486,7 +1327,8 @@
       "H2"
     ],
     "flags": [
-      "W6"
+      "C8/W6",
+      "H2/W6"
     ]
   },
   {
@@ -1506,26 +1348,10 @@
       "H2"
     ],
     "flags": [
-      "C9/W8/enforced",
-      "C4/W8/enforced",
-      "H2/W1",
-      "C4/W7/modes",
-      "C3/W1",
-      "H2/W2",
-      "C3/W8/enforced",
-      "C4/W8/unenforced",
-      "C9/W1",
-      "C9/W2",
-      "C4/W2",
-      "C4/W1",
-      "C3/W7/modes",
-      "H2/W8/unenforced",
-      "H2/W7/modes",
-      "C9/W8/unenforced",
-      "C3/W8/unenforced",
-      "H2/W8/enforced",
       "C3/W2",
-      "C9/W7/modes"
+      "C3/W7/modes",
+      "C3/W8/unenforced",
+      "H2/W8/enforced"
     ]
   },
   {
@@ -1788,7 +1614,6 @@
       "C6"
     ],
     "flags": [
-      "C6/W8/unenforced",
       "C6/W8/enforced"
     ]
   },
@@ -1958,8 +1783,8 @@
       "kind": "unreachable",
       "why": "in the fixture's workloads: under C6, W11's compiles send no summary at L3 where a document mark could land under it; step 8's compile sent none at b03f27f and 6f48e21, so the mark falls back to older history under an L2. In J57792 that compile did send an L3, and J57792 differs from these commits by the step-6 mark and the 574 lock (Desmond-2579, #303806, #303877)",
       "close": {
-        "by": "fixture",
-        "why": "a house host meets document marks in ordinary use: connectome-host's web panel calls markDocument (src/web/panel-data.ts:581). The premise is a mark landing on history under an L3, so projection moves leaves and the projected frontier is re-folded; W11's step-8 mark falls under an L2 at b03f27f and 6f48e21, while in J57792 that compile sent an L3 (Desmond #303877). The change: W11 marks history that sits under an L3 at that step. No new run, so about no added wall clock. Whether the second round then shows is for the placement to say; if it doesn't, a test with a constructed store is next (gordon-2414's sort, sha256 6f762bf01aed; Oscar-1005 #307703)"
+        "by": "test",
+        "why": "masked by D39 in every W11 placement (J58732): a mark on history a summary already covers never moves projection. The test: a constructed store whose mark is set before any summary covers its range, so projection moves leaves at main (Oscar-1005 #308742; earlier fixture close: a house host meets document marks in ordinary use: connectome-host's web panel calls markDocument (src/web/panel-data.ts:581). The premise is a mark landing on history under an L3, so projection moves leaves and the projected frontier is re-folded; W11's step-8 mark falls under an L2 at b03f27f and 6f48e21, while in J57792 that compile sent an L3 (Desmond #303877). The change: W11 marks history that sits under an L3 at that step. No new run, so about no added wall clock. Whether the second round then shows is for the placement to say; if it doesn't, a test with a constructed store is next (gordon-2414's sort, sha256 6f762bf01aed; Oscar-1005 #307703))"
       }
     }
   },
@@ -1981,8 +1806,8 @@
       "kind": "unreachable",
       "why": "in the fixture's workloads: under C6, W11's compiles send no summary at L3 where a document mark could land under it; step 8's compile sent none at b03f27f and 6f48e21, so the mark falls back to older history under an L2. In J57792 that compile did send an L3, and J57792 differs from these commits by the step-6 mark and the 574 lock (Desmond-2579, #303806, #303877)",
       "close": {
-        "by": "fixture",
-        "why": "as KC26: projection order shows only where projection moves leaves at more than one depth, which needs a mark under an L3; the same W11 change. Unconfirmed until placed (gordon-2414's sort, sha256 6f762bf01aed; Oscar-1005 #307703)"
+        "by": "test",
+        "why": "masked by D39 in every W11 placement (J58732): a mark on history a summary already covers never moves projection. The test: a constructed store whose mark is set before any summary covers its range, so projection moves leaves at main (Oscar-1005 #308742; earlier fixture close: as KC26: projection order shows only where projection moves leaves at more than one depth, which needs a mark under an L3; the same W11 change. Unconfirmed until placed (gordon-2414's sort, sha256 6f762bf01aed; Oscar-1005 #307703))"
       }
     }
   },
@@ -2004,8 +1829,8 @@
       "kind": "equivalent",
       "why": "it changes only the plan's own ledger, which only a per-compile plan line could show, and that line doesn't pay (Oscar-1005, #302924, #303261) [read]",
       "close": {
-        "by": "fixture",
-        "why": "by my reading the recorded 'equivalent' misses two readers. The returned tokens decide the fold-project loop's exit (kv-control.ts:725) and become ideal.tokens, which sets escalated (ideal.tokens > W, :1472) and strict reach's target-floor block (:1476). The ledger isn't resynced after projection, so ledger and render differ exactly when projection moved leaves: KC26's premise. There the mutant can end the loop early or flip escalated, and escalation's L1 demands reach the summariser. Same W11 change as KC26. By reading, unrun; it differs from Oscar's ruling (#302924, #303261), which is his to weigh (gordon-2414's sort, sha256 6f762bf01aed; Oscar-1005 #307703)"
+        "by": "test",
+        "why": "masked by D39 in every W11 placement (J58732): a mark on history a summary already covers never moves projection. The test: a constructed store whose mark is set before any summary covers its range, so projection moves leaves at main (Oscar-1005 #308742; earlier fixture close: by my reading the recorded 'equivalent' misses two readers. The returned tokens decide the fold-project loop's exit (kv-control.ts:725) and become ideal.tokens, which sets escalated (ideal.tokens > W, :1472) and strict reach's target-floor block (:1476). The ledger isn't resynced after projection, so ledger and render differ exactly when projection moved leaves: KC26's premise. There the mutant can end the loop early or flip escalated, and escalation's L1 demands reach the summariser. Same W11 change as KC26. By reading, unrun; it differs from Oscar's ruling (#302924, #303261), which is his to weigh (gordon-2414's sort, sha256 6f762bf01aed; Oscar-1005 #307703))"
       }
     }
   },
@@ -2024,7 +1849,7 @@
       "H2"
     ],
     "flags": [
-      "W11"
+      "H1.claude-opus-4-6/W11/state-write-fails"
     ]
   },
   {
@@ -2138,11 +1963,7 @@
       "H2"
     ],
     "flags": [
-      "H1.claude-opus-4-6/W2",
-      "H1.claude-sonnet-4-5-20250929/W8/enforced",
-      "H1.claude-opus-4-6/W1",
-      "H1.claude-sonnet-4-5-20250929/W2",
-      "H1.claude-sonnet-4-5-20250929/W1"
+      "H1.claude-opus-4-6/W2"
     ]
   },
   {
@@ -2160,8 +1981,7 @@
       "H2"
     ],
     "flags": [
-      "H1.claude-opus-4-6/W11/state-write-fails",
-      "H1.claude-sonnet-4-5-20250929/W11/state-write-fails"
+      "H1.claude-opus-4-6/W11/state-write-fails"
     ]
   },
   {
@@ -2203,7 +2023,6 @@
       "H2"
     ],
     "flags": [
-      "H1.claude-sonnet-4-5-20250929/W9",
       "H1.claude-opus-4-6/W9"
     ]
   },
@@ -2246,9 +2065,7 @@
       "H2"
     ],
     "flags": [
-      "H1.claude-opus-4-6/W2",
-      "H1.claude-sonnet-4-5-20250929/W2",
-      "H1.claude-sonnet-4-5-20250929/W1"
+      "H1.claude-opus-4-6/W2"
     ]
   },
   {
@@ -2681,7 +2498,7 @@
     ],
     "flags": [
       "C7/W11",
-      "H1.claude-opus-4-6/W11"
+      "H1.claude-opus-4-6/W11/state-write-fails"
     ]
   },
   {
@@ -2699,8 +2516,7 @@
       "H1"
     ],
     "flags": [
-      "C7/W11",
-      "H1.claude-opus-4-6/W11"
+      "C7/W11"
     ]
   },
   {
@@ -2719,7 +2535,7 @@
     ],
     "flags": [
       "C7/W11",
-      "H1.claude-opus-4-6/W11"
+      "H1.claude-opus-4-6/W11/state-write-fails"
     ]
   },
   {
@@ -4209,7 +4025,6 @@
       "H1"
     ],
     "flags": [
-      "H1.claude-opus-4-6/W11",
       "H1.claude-opus-4-6/W11/state-write-fails"
     ]
   },
@@ -4228,7 +4043,6 @@
       "H1"
     ],
     "flags": [
-      "H1.claude-opus-4-6/W11",
       "H1.claude-opus-4-6/W11/state-write-fails"
     ]
   },
@@ -4634,7 +4448,7 @@
       "H1"
     ],
     "flags": [
-      "H1.claude-opus-4-6/W11"
+      "H1.claude-opus-4-6/W11/state-write-fails"
     ]
   },
   {
@@ -4652,7 +4466,7 @@
       "H1"
     ],
     "flags": [
-      "H1.claude-opus-4-6/W11"
+      "H1.claude-opus-4-6/W11/state-write-fails"
     ]
   },
   {
@@ -4718,8 +4532,7 @@
       "H1"
     ],
     "flags": [
-      "H1.claude-opus-4-6/W9",
-      "H1.claude-sonnet-4-5-20250929/W9"
+      "H1.claude-opus-4-6/W9"
     ]
   },
   {
@@ -4974,7 +4787,6 @@
       "H1"
     ],
     "flags": [
-      "H1.claude-opus-4-6/W11",
       "H1.claude-opus-4-6/W11/state-write-fails"
     ]
   },
@@ -4993,7 +4805,7 @@
       "H1"
     ],
     "flags": [
-      "H1.claude-opus-4-6/W11"
+      "H1.claude-opus-4-6/W11/state-write-fails"
     ]
   },
   {
@@ -7433,7 +7245,6 @@
       }
     ],
     "flags": [
-      "H2/W4",
       "H2/W6"
     ]
   },
@@ -7448,7 +7259,6 @@
       }
     ],
     "flags": [
-      "H2/W4",
       "H2/W6"
     ]
   },
@@ -7563,8 +7373,6 @@
       }
     ],
     "flags": [
-      "C5/W9",
-      "C8/W9",
       "H1.claude-opus-4-6/W9"
     ]
   },
@@ -7579,8 +7387,6 @@
       }
     ],
     "flags": [
-      "C5/W9",
-      "C8/W9",
       "H1.claude-opus-4-6/W9"
     ]
   },
@@ -7595,8 +7401,6 @@
       }
     ],
     "flags": [
-      "C5/W9",
-      "C8/W9",
       "H1.claude-opus-4-6/W9"
     ]
   },
@@ -7611,8 +7415,6 @@
       }
     ],
     "flags": [
-      "C5/W9",
-      "C8/W9",
       "H1.claude-opus-4-6/W9"
     ]
   },
@@ -7627,7 +7429,6 @@
       }
     ],
     "flags": [
-      "H1.claude-opus-4-6/W1",
       "H1.claude-opus-4-6/W2"
     ]
   },

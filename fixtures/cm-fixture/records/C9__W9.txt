@@ -1,0 +1,289 @@
+# cm-fixture record C9/W9
+# recorded at context-manager fb4cf1046 (0.24.2)
+# membrane 0.9.0 · stand-in 22420e3d6d0e22ed · scale 15 · clock 2026-01-05T09:00:00.000Z+240000ms · seed 652622 · from C9/W2@70
+step 0
+  action open {"from":"C9/W2@70","namespace":"agents/junga"}
+  action tools {"tools":["read_file","mcpl:read","mcpl:search","zulip:search","zulip:read","subagent:spawn","subagent:status","lessons:create","lessons:update","lessons:create-draft"]}
+step 1
+  compile L3-42@3[T:context-manager-L3,T:claude-L3] L3-85@3[T:context-manager-L3,T:claude-L3] L3-133@3[T:context-manager-L3,T:claude-L3] L1-127@1[T:context-manager-L1,T:claude-L1] L1-128@1[T:context-manager-L1,T:claude-L1] L1-129@1[T:context-manager-L1,T:claude-L1] L1-130@1[T:context-manager-L1,T:claude-L1] L1-131@1[T:context-manager-L1,T:claude-L1] 701[T:junga-raw] 734[T:user-raw] 735[T:junga-raw.2] a1.0
+  compile L3-42@3[T:context-manager-L3,T:claude-L3] L3-85@3[T:context-manager-L3,T:claude-L3] L3-133@3[T:context-manager-L3,T:claude-L3] L1-127@1[T:context-manager-L1,T:claude-L1] L1-128@1[T:context-manager-L1,T:claude-L1] L1-129@1[T:context-manager-L1,T:claude-L1] L1-130@1[T:context-manager-L1,T:claude-L1] L1-131@1[T:context-manager-L1,T:claude-L1] 701[T:junga-raw] 734!content[T:user-raw.2] 735[T:junga-raw.2] a1.0-a1.2
+  wrote L1-0 over 1 2 3 4 5 [T:summary-L1]
+  wrote L1-1 over 6 7 [T:summary-L1]
+  wrote L2-7 over L1-0 L1-1 L1-2 L1-3 L1-4 L1-5 [T:summary-L2]
+  wrote L3-42 over L2-7 L2-16 L2-21 L2-28 L2-35 L2-41 [T:summary-L3]
+  wrote L1-2 over 8 9 [T:summary-L1]
+  wrote L1-3 over 10 11 [T:summary-L1]
+  wrote L1-4 over 12 [T:summary-L1]
+  wrote L1-5 over 13 14 15 16 17 [T:summary-L1]
+  wrote L1-6 over 18 [T:summary-L1]
+  wrote L2-16 over L1-6 L1-8 L1-9 L1-10 L1-11 L1-12 [T:summary-L2]
+  wrote L1-8 over 21 22 23 [T:summary-L1]
+  wrote L1-9 over 24 29 [T:summary-L1]
+  wrote L1-10 over 30 31 [T:summary-L1]
+  wrote L1-11 over 32 35 36 39 [T:summary-L1]
+  wrote L1-12 over 40 41 42 43 [T:summary-L1]
+  wrote L1-13 over 44 59 [T:summary-L1]
+  wrote L2-21 over L1-13 L1-14 L1-15 L1-17 L1-18 L1-19 [T:summary-L2]
+  wrote L1-14 over 60 61 [T:summary-L1]
+  wrote L1-15 over 62 65 [T:summary-L1]
+  wrote L1-17 over 66 91 92 93 [T:summary-L1]
+  wrote L1-18 over 94 95 96 97 [T:summary-L1]
+  wrote L1-19 over 98 99 [T:summary-L1]
+  wrote L1-20 over 100 102 [T:summary-L1]
+  wrote L1-22 over 103 104 [T:summary-L1]
+  wrote L1-23 over 105 106 [T:summary-L1]
+  wrote L2-28 over L1-20 L1-22 L1-23 L1-24 L1-25 L1-26 [T:summary-L2]
+  wrote L1-24 over 107 108 109 110 [T:summary-L1]
+  wrote L1-25 over 111 116 [T:summary-L1]
+  wrote L1-26 over 117 118 [T:summary-L1]
+  wrote L1-27 over 119 134 [T:summary-L1]
+  wrote L2-35 over L1-27 L1-29 L1-30 L1-31 L1-32 L1-33 [T:summary-L2]
+  wrote L1-29 over 135 136 [T:summary-L1]
+  wrote L1-30 over 137 140 141 144 [T:summary-L1]
+  wrote L1-31 over 145 146 147 148 [T:summary-L1]
+  wrote L1-32 over 149 154 [T:summary-L1]
+  wrote L1-33 over 155 156 [T:summary-L1]
+  wrote L1-34 over 157 172 [T:summary-L1]
+  wrote L2-41 over L1-34 L1-36 L1-37 L1-38 L1-39 L1-40 [T:summary-L2]
+  wrote L1-36 over 173 196 197 198 [T:summary-L1]
+  wrote L1-37 over 199 200 201 202 [T:summary-L1]
+  wrote L1-38 over 203 204 [T:summary-L1]
+  wrote L1-39 over 205 206 [T:summary-L1]
+  wrote L1-40 over 207 208 [T:summary-L1]
+  wrote L1-43 over 209 210 [T:summary-L1]
+  wrote L2-54 over L1-43 L1-44 L1-45 L1-46 L1-47 L1-48 [T:summary-L2]
+  wrote L3-85 over L2-54 L2-56 L2-63 L2-74 L2-78 L2-84 [T:summary-L3]
+  wrote L1-44 over 211 212 213 215 [T:summary-L1]
+  wrote L1-45 over 216 221 [T:summary-L1]
+  wrote L1-46 over 222 223 [T:summary-L1]
+  wrote L1-47 over 224 [T:summary-L1]
+  wrote L1-48 over 229 230 231 [T:summary-L1]
+  wrote L1-49 over 232 255 256 257 [T:summary-L1]
+  wrote L2-56 over L1-49 L1-50 L1-51 L1-52 L1-53 L1-55 [T:summary-L2]
+  wrote L1-50 over 258 259 260 261 [T:summary-L1]
+  wrote L1-51 over 262 267 [T:summary-L1]
+  wrote L1-52 over 268 269 [T:summary-L1]
+  wrote L1-53 over 270 277 [T:summary-L1]
+  wrote L1-55 over 278 [T:summary-L1]
+  wrote L1-57 over 301 302 303 [T:summary-L1]
+  wrote L2-63 over L1-57 L1-58 L1-59 L1-60 L1-61 L1-62 [T:summary-L2]
+  wrote L1-58 over 304 305 306 307 [T:summary-L1]
+  wrote L1-59 over 308 309 [T:summary-L1]
+  wrote L1-60 over 310 311 [T:summary-L1]
+  wrote L1-61 over 312 313 [T:summary-L1]
+  wrote L1-62 over 314 327 [T:summary-L1]
+  wrote L1-64 over 328 329 330 331 [T:summary-L1]
+  wrote L1-65 over 332 337 [T:summary-L1]
+  wrote L2-74 over L1-64 L1-65 L1-66 L1-67 L1-68 L1-69 [T:summary-L2]
+  wrote L1-66 over 338 339 [T:summary-L1]
+  wrote L1-67 over 340 345 [T:summary-L1]
+  wrote L1-68 over 346 348 [T:summary-L1]
+  wrote L1-69 over 349 352 353 366 [T:summary-L1]
+  wrote L1-70 over 367 368 369 370 [T:summary-L1]
+  wrote L1-71 over 371 378 [T:summary-L1]
+  wrote L2-78 over L1-70 L1-71 L1-72 L1-73 L1-75 L1-76 [T:summary-L2]
+  wrote L1-72 over 379 380 [T:summary-L1]
+  wrote L1-73 over 381 386 [T:summary-L1]
+  wrote L1-75 over 387 [T:summary-L1]
+  wrote L1-76 over 408 409 410 [T:summary-L1]
+  wrote L1-77 over 411 412 413 414 [T:summary-L1]
+  wrote L1-79 over 415 416 [T:summary-L1]
+  wrote L2-84 over L1-77 L1-79 L1-80 L1-81 L1-82 L1-83 [T:summary-L2]
+  wrote L1-80 over 417 418 [T:summary-L1]
+  wrote L1-81 over 419 420 [T:summary-L1]
+  wrote L1-82 over 421 [T:summary-L1]
+  wrote L1-83 over 424 425 426 427 428 [T:summary-L1]
+  wrote L1-86 over 429 444 [T:summary-L1]
+  wrote L2-95 over L1-86 L1-87 L1-88 L1-89 L1-90 L1-91 [T:summary-L2]
+  wrote L3-133 over L2-95 L2-100 L2-108 L2-114 L2-120 L2-132 [T:summary-L3]
+  wrote L1-87 over 445 446 [T:summary-L1]
+  wrote L1-88 over 447 452 [T:summary-L1]
+  wrote L1-89 over 453 454 [T:summary-L1]
+  wrote L1-90 over 455 458 459 462 [T:summary-L1]
+  wrote L1-91 over 463 464 465 467 [T:summary-L1]
+  wrote L1-92 over 468 491 [T:summary-L1]
+  wrote L2-100 over L1-92 L1-93 L1-94 L1-96 L1-97 L1-98 [T:summary-L2]
+  wrote L1-93 over 492 493 [T:summary-L1]
+  wrote L1-94 over 494 499 [T:summary-L1]
+  wrote L1-96 over 500 525 526 527 [T:summary-L1]
+  wrote L1-97 over 528 529 530 531 [T:summary-L1]
+  wrote L1-98 over 532 533 [T:summary-L1]
+  wrote L1-99 over 534 535 [T:summary-L1]
+  wrote L1-101 over 536 537 [T:summary-L1]
+  wrote L1-102 over 538 539 [T:summary-L1]
+  wrote L2-108 over L1-99 L1-101 L1-102 L1-103 L1-104 L1-105 [T:summary-L2]
+  wrote L1-103 over 540 541 542 543 [T:summary-L1]
+  wrote L1-104 over 544 549 [T:summary-L1]
+  wrote L1-105 over 550 551 [T:summary-L1]
+  wrote L1-106 over 552 567 [T:summary-L1]
+  wrote L2-114 over L1-106 L1-107 L1-109 L1-110 L1-111 L1-112 [T:summary-L2]
+  wrote L1-107 over 568 569 [T:summary-L1]
+  wrote L1-109 over 570 573 574 597 [T:summary-L1]
+  wrote L1-110 over 598 599 600 601 [T:summary-L1]
+  wrote L1-111 over 602 603 [T:summary-L1]
+  wrote L1-112 over 604 605 [T:summary-L1]
+  wrote L1-113 over 606 607 [T:summary-L1]
+  wrote L2-120 over L1-113 L1-115 L1-116 L1-117 L1-118 L1-119 [T:summary-L2]
+  wrote L1-115 over 608 630 631 632 [T:summary-L1]
+  wrote L1-116 over 633 634 635 636 [T:summary-L1]
+  wrote L1-117 over 637 638 [T:summary-L1]
+  wrote L1-118 over 639 640 [T:summary-L1]
+  wrote L1-119 over 641 642 [T:summary-L1]
+  wrote L1-121 over 643 644 [T:summary-L1]
+  wrote L2-132 over L1-121 L1-122 L1-123 L1-124 L1-125 L1-126 [T:summary-L2]
+  wrote L1-122 over 645 646 647 648 [T:summary-L1]
+  wrote L1-123 over 649 654 [T:summary-L1]
+  wrote L1-124 over 655 656 [T:summary-L1]
+  wrote L1-125 over 657 662 [T:summary-L1]
+  wrote L1-126 over 663 664 [T:summary-L1]
+  wrote L1-127 over 665 678 679 680 [T:summary-L1]
+  wrote L1-128 over 681 682 683 684 [T:summary-L1]
+  wrote L1-129 over 685 690 [T:summary-L1]
+  wrote L1-130 over 691 692 [T:summary-L1]
+  wrote L1-131 over 693 700 [T:summary-L1]
+  logs message-store*1
+step 2
+  compile L3-42@3[T:context-manager-L3,T:claude-L3] L3-85@3[T:context-manager-L3,T:claude-L3] L3-133@3[T:context-manager-L3,T:claude-L3] L1-127@1[T:context-manager-L1,T:claude-L1] L1-128@1[T:context-manager-L1,T:claude-L1] L1-129@1[T:context-manager-L1,T:claude-L1] L1-130@1[T:context-manager-L1,T:claude-L1] L1-131@1[T:context-manager-L1,T:claude-L1] 701[T:junga-raw] 734!content[T:user-raw.2] 735[T:junga-raw.2] a1.0-a2.0
+  compile L3-42@3[T:context-manager-L3,T:claude-L3] L3-85@3[T:context-manager-L3,T:claude-L3] L3-133@3[T:context-manager-L3,T:claude-L3] L1-127@1[T:context-manager-L1,T:claude-L1] L1-128@1[T:context-manager-L1,T:claude-L1] L1-129@1[T:context-manager-L1,T:claude-L1] L1-130@1[T:context-manager-L1,T:claude-L1] L1-131@1[T:context-manager-L1,T:claude-L1] 701[T:junga-raw] 734!content[T:user-raw.2] 735[T:junga-raw.2] a1.0-a2.2
+step 3
+  compile L3-42@3[T:context-manager-L3,T:claude-L3] L3-85@3[T:context-manager-L3,T:claude-L3] L3-133@3[T:context-manager-L3,T:claude-L3] L1-127@1[T:context-manager-L1,T:claude-L1] L1-128@1[T:context-manager-L1,T:claude-L1] L1-129@1[T:context-manager-L1,T:claude-L1] L1-130@1[T:context-manager-L1,T:claude-L1] L1-131@1[T:context-manager-L1,T:claude-L1] 701[T:junga-raw] 734!content[T:user-raw.2] 735[T:junga-raw.2] a1.0-a3.0
+  compile L3-42@3[T:context-manager-L3,T:claude-L3] L3-85@3[T:context-manager-L3,T:claude-L3] L3-133@3[T:context-manager-L3,T:claude-L3] L1-127@1[T:context-manager-L1,T:claude-L1] L1-128@1[T:context-manager-L1,T:claude-L1] L1-129@1[T:context-manager-L1,T:claude-L1] L1-130@1[T:context-manager-L1,T:claude-L1] L1-131@1[T:context-manager-L1,T:claude-L1] 701[T:junga-raw] 734!content[T:user-raw.2] 735[T:junga-raw.2] a1.0-a3.2
+  compile L3-42@3[T:context-manager-L3,T:claude-L3] L3-85@3[T:context-manager-L3,T:claude-L3] L3-133@3[T:context-manager-L3,T:claude-L3] L1-127@1[T:context-manager-L1,T:claude-L1] L1-128@1[T:context-manager-L1,T:claude-L1] L1-129@1[T:context-manager-L1,T:claude-L1] L1-130@1[T:context-manager-L1,T:claude-L1] L1-131@1[T:context-manager-L1,T:claude-L1] 701[T:junga-raw] 734!content[T:user-raw.2] 735[T:junga-raw.2] a1.0-a3.3
+  action reopen {}
+  action tools {"tools":["read_file","mcpl:read","mcpl:search","zulip:search","zulip:read","subagent:spawn","subagent:status","lessons:create","lessons:update","lessons:create-draft"]}
+  compile L3-42@3[T:context-manager-L3,T:claude-L3] L3-85@3[T:context-manager-L3,T:claude-L3] L3-133@3[T:context-manager-L3,T:claude-L3] L1-127@1[T:context-manager-L1,T:claude-L1] L1-128@1[T:context-manager-L1,T:claude-L1] L1-129@1[T:context-manager-L1,T:claude-L1] L1-130@1[T:context-manager-L1,T:claude-L1] L1-131@1[T:context-manager-L1,T:claude-L1] 701[T:junga-raw] 734!content[T:user-raw.2] 735[T:junga-raw.2] a1.0-a3.3
+step 4
+  compile L3-42@3[T:context-manager-L3,T:claude-L3] L3-85@3[T:context-manager-L3,T:claude-L3] L3-133@3[T:context-manager-L3,T:claude-L3] L1-127@1[T:context-manager-L1,T:claude-L1] L1-128@1[T:context-manager-L1,T:claude-L1] L1-129@1[T:context-manager-L1,T:claude-L1] L1-130@1[T:context-manager-L1,T:claude-L1] L1-131@1[T:context-manager-L1,T:claude-L1] 701[T:junga-raw] 734!content[T:user-raw.2] 735[T:junga-raw.2] a1.0-a4.0
+  compile L3-42@3[T:context-manager-L3,T:claude-L3] L3-85@3[T:context-manager-L3,T:claude-L3] L3-133@3[T:context-manager-L3,T:claude-L3] L1-127@1[T:context-manager-L1,T:claude-L1] L1-128@1[T:context-manager-L1,T:claude-L1] L1-129@1[T:context-manager-L1,T:claude-L1] L1-130@1[T:context-manager-L1,T:claude-L1] L1-131@1[T:context-manager-L1,T:claude-L1] 701[T:junga-raw] 734!content[T:user-raw.2] 735[T:junga-raw.2] a1.0-a4.2
+  call c854051.22.u c854051.43.u c854051.65.b c854051.65.u c854051.66.b c854051.66.u c854051.67.a c854051.67.b c854051.67.r c854051.67.u c854051.68.a c854051.68.b c854051.68.r c854051.68.u c854051.69.b c854051.69.u +L3-133,L3-42,L3-85 target 133 -> text [T:prompt-1]
+  wrote L2-135 over L1-127 L1-128 L1-129 L1-130 L1-131 L1-134
+  wrote L1-134 over 701 [T:summary-L1]
+  logs message-store*1
+  action render-stats {} -> "object"
+  action list-pins {} -> "a list of 0"
+  action search-summaries {"text":"fixture"} -> "a list of 0"
+  action get-summary {"id":"fixture-no-such-summary"} -> "null"
+step 5
+  compile L3-42@3[T:context-manager-L3,T:claude-L3] L3-85@3[T:context-manager-L3,T:claude-L3] L3-133@3[T:context-manager-L3,T:claude-L3] L2-135@2[T:context-manager-L2,T:claude-L2] 734!content[T:user-raw.2] 735[T:junga-raw.2] a1.0-a5.0
+  compile L3-42@3[T:context-manager-L3,T:claude-L3] L3-85@3[T:context-manager-L3,T:claude-L3] L3-133@3[T:context-manager-L3,T:claude-L3] L2-135@2[T:context-manager-L2,T:claude-L2] 734!content[T:user-raw.2] 735[T:junga-raw.2] a1.0-a5.2
+  call c652622.1.a c652622.1.r c652622.1.u c854051.22.u c854051.43.u c854051.65.u c854051.69.u c854051.70.b c854051.70.u +L2-135,L3-133,L3-42,L3-85 target 133 -> text [T:prompt-2]
+  wrote L1-136 over 734 735 a1.0 a1.1 a1.2
+  action settings {"tailTokens":1000} -> {"prepared":true,"tailTokens":1000}
+step 6
+  compile L3-42@3[T:context-manager-L3,T:claude-L3] L3-85@3[T:context-manager-L3,T:claude-L3] L3-133@3[T:context-manager-L3,T:claude-L3] L2-135@2[T:context-manager-L2,T:claude-L2] L1-136@1[T:context-manager-L1,T:claude-L1] a1.3-a6.0
+  compile L3-42@3[T:context-manager-L3,T:claude-L3] L3-85@3[T:context-manager-L3,T:claude-L3] L3-133@3[T:context-manager-L3,T:claude-L3] L2-135@2[T:context-manager-L2,T:claude-L2] L1-136@1[T:context-manager-L1,T:claude-L1] a1.3-a6.2
+  call c652622.1.b c652622.2.a c652622.2.r c652622.2.u c854051.22.u c854051.43.u c854051.65.u c854051.69.u c854051.70.u +L1-136,L2-135,L3-133,L3-42,L3-85 target 133 -> text [T:prompt-3]
+  call c652622.2.b c652622.3.a c652622.3.r c652622.3.u c854051.22.u c854051.43.u c854051.65.u c854051.69.u c854051.70.u +L1-136,L1-137,L2-135,L3-133,L3-42,L3-85 target 133 -> text [T:prompt-3]
+  call c652622.3.b c652622.4.a c652622.4.r c652622.4.u c854051.22.u c854051.43.u c854051.65.u c854051.69.u c854051.70.u +L1-136,L1-137,L1-138,L2-135,L3-133,L3-42,L3-85 target 133 -> text [T:prompt-3]
+  wrote L1-137 over a1.3 a2.0 a2.1 a2.2
+  wrote L1-138 over a2.3 a3.0 a3.1 a3.2
+  wrote L1-139 over a3.3 a4.0 a4.1 a4.2
+  action reopen {"witnessedBeforeSequence":774,"witnessedIdentityReminder":"This stretch is a record you inherited, not your own experience."}
+  action tools {"tools":["read_file","mcpl:read","mcpl:search","zulip:search","zulip:read","subagent:spawn","subagent:status","lessons:create","lessons:update","lessons:create-draft"]}
+step 7
+  compile L3-42@3[T:context-manager-L3,T:claude-L3] L3-85@3[T:context-manager-L3,T:claude-L3] L3-133@3[T:context-manager-L3,T:claude-L3] L2-135@2[T:context-manager-L2,T:claude-L2] L1-136@1[T:context-manager-L1,T:claude-L1] L1-137@1[T:context-manager-L1,T:claude-L1] a2.3-a7.0
+  compile L3-42@3[T:context-manager-L3,T:claude-L3] L3-85@3[T:context-manager-L3,T:claude-L3] L3-133@3[T:context-manager-L3,T:claude-L3] L2-135@2[T:context-manager-L2,T:claude-L2] L1-136@1[T:context-manager-L1,T:claude-L1] L1-137@1[T:context-manager-L1,T:claude-L1] L1-138@1[T:context-manager-L1,T:claude-L1] a3.3-a7.2
+  logs message-store*1
+  action derive {"branch":"fixture-derived","strategy":"KnowledgeStrategy"} -> {"markers":[],"sources":["s:L3-42@3","s:L3-42@3","s:L3-85@3","s:L3-85@3","s:L3-133@3","s:L3-133@3","s:L2-135@2","s:L2-135@2","s:L1-136@1","s:L1-136@1","s:L1-137@1","s:L1-137@1","s:L1-138@1","s:L1-138@1","r:a3.3","r:a4.0","r:a4.1","r:a4.2","r:a4.3","r:a5.0","r:a5.1","r:a5.2","r:a5.3","r:a6.0","r:a6.1","r:a6.2","r:a6.3","r:a7.0","r:a7.1","r:a7.2","r:a7.3"]}
+  action derive {"branch":"fixture-derived-windowed","strategy":"WindowedPassthroughStrategy"} -> {"markers":[30],"sources":["r:store:701","r:store:734!content","r:store:735","r:a1.0","r:a1.1","r:a1.2","r:a1.3","r:a2.0","r:a2.1","r:a2.2","r:a2.3","r:a3.0","r:a3.1","r:a3.2","r:a3.3","r:a4.0","r:a4.1","r:a4.2","r:a4.3","r:a5.0","r:a5.1","r:a5.2","r:a5.3","r:a6.0","r:a6.1","r:a6.2","r:a6.3","r:a7.0","r:a7.1","r:a7.2","r:a7.3"]}
+  action reopen-derived {"branch":"fixture-derived"} -> {"markers":[],"sources":["s:L3-42@3","s:L3-42@3","s:L3-85@3","s:L3-85@3","s:L3-133@3","s:L3-133@3","s:L2-135@2","s:L2-135@2","s:L1-136@1","s:L1-136@1","s:L1-137@1","s:L1-137@1","s:L1-138@1","s:L1-138@1","r:a3.3","r:a4.0","r:a4.1","r:a4.2","r:a4.3","r:a5.0","r:a5.1","r:a5.2","r:a5.3","r:a6.0","r:a6.1","r:a6.2","r:a6.3","r:a7.0","r:a7.1","r:a7.2","r:a7.3"]}
+  action branches {} -> ["fixture-derived","fixture-derived-windowed","main"]
+step 8
+  compile L3-42@3[T:context-manager-L3,T:claude-L3] L3-85@3[T:context-manager-L3,T:claude-L3] L3-133@3[T:context-manager-L3,T:claude-L3] L2-135@2[T:context-manager-L2,T:claude-L2] L1-136@1[T:context-manager-L1,T:claude-L1] L1-137@1[T:context-manager-L1,T:claude-L1] L1-138@1[T:context-manager-L1,T:claude-L1] a3.3-a8.0
+  compile L3-42@3[T:context-manager-L3,T:claude-L3] L3-85@3[T:context-manager-L3,T:claude-L3] L3-133@3[T:context-manager-L3,T:claude-L3] L2-135@2[T:context-manager-L2,T:claude-L2] L1-136@1[T:context-manager-L1,T:claude-L1] L1-137@1[T:context-manager-L1,T:claude-L1] L1-138@1[T:context-manager-L1,T:claude-L1] L1-139@1[T:context-manager-L1,T:claude-L1] a4.3-a8.2
+  logs message-store*1
+  action system-prompt {"text":"the first"}
+  action system-prompt {"text":"the second"}
+step 9
+  compile L3-42@3[T:context-manager-L3,T:claude-L3] L3-85@3[T:context-manager-L3,T:claude-L3] L3-133@3[T:context-manager-L3,T:claude-L3] L2-135@2[T:context-manager-L2,T:claude-L2] L1-136@1[T:context-manager-L1,T:claude-L1] L1-137@1[T:context-manager-L1,T:claude-L1] L1-138@1[T:context-manager-L1,T:claude-L1] L1-139@1[T:context-manager-L1,T:claude-L1] a4.3-a9.0
+  compile L3-42@3[T:context-manager-L3,T:claude-L3] L3-85@3[T:context-manager-L3,T:claude-L3] L3-133@3[T:context-manager-L3,T:claude-L3] L2-135@2[T:context-manager-L2,T:claude-L2] L1-136@1[T:context-manager-L1,T:claude-L1] L1-137@1[T:context-manager-L1,T:claude-L1] L1-138@1[T:context-manager-L1,T:claude-L1] L1-139@1[T:context-manager-L1,T:claude-L1] a4.3-a9.2
+  call c652622.4.b c652622.5.a c652622.5.b c652622.5.r c652622.5.u c652622.6.u c854051.22.u c854051.43.u c854051.65.u c854051.69.u c854051.70.u +L1-136,L1-137,L1-138,L1-139,L2-135,L3-133,L3-42,L3-85 target 133 -> text [T:prompt-4]
+  wrote L1-140 over a4.3 a5.0 a5.1 a5.2 a5.3 a6.0
+  call c652622.6.a c652622.6.b c652622.6.r c652622.7.a c652622.7.r c652622.7.u c854051.22.u c854051.43.u c854051.65.u c854051.69.u c854051.70.u +L1-136,L1-137,L1-138,L1-139,L1-140,L2-135,L3-133,L3-42,L3-85 target 133 -> held [T:prompt-5]
+  action hold {"messages":["a5.0","a6.0"]}
+  action release-answers {"n":null}
+  call c652622.6.a c652622.6.b c652622.6.r c652622.7.a c652622.7.r c652622.7.u c854051.22.u c854051.43.u c854051.65.u c854051.69.u c854051.70.u +L1-136,L1-137,L1-138,L1-139,L1-140,L2-135,L3-133,L3-42,L3-85 target 133 -> text [T:prompt-5]
+step 10
+  compile L3-42@3[T:context-manager-L3,T:claude-L3] L3-85@3[T:context-manager-L3,T:claude-L3] L3-133@3[T:context-manager-L3,T:claude-L3] L2-135@2[T:context-manager-L2,T:claude-L2] L1-136@1[T:context-manager-L1,T:claude-L1] L1-137@1[T:context-manager-L1,T:claude-L1] L1-138@1[T:context-manager-L1,T:claude-L1] L1-139@1[T:context-manager-L1,T:claude-L1] a4.3-a10.0
+  compile L3-42@3[T:context-manager-L3,T:claude-L3] L3-85@3[T:context-manager-L3,T:claude-L3] L3-133@3[T:context-manager-L3,T:claude-L3] L2-135@2[T:context-manager-L2,T:claude-L2] L1-136@1[T:context-manager-L1,T:claude-L1] L1-137@1[T:context-manager-L1,T:claude-L1] L1-138@1[T:context-manager-L1,T:claude-L1] L1-139@1[T:context-manager-L1,T:claude-L1] a4.3-a10.2
+  logs autobiographical*2
+  action pin {"first":"a1.0","last":"a1.3"} -> "pin-0"
+  action derive {"branch":"fixture-derived-held","strategy":"KnowledgeStrategy","tick":true} -> {"markers":[],"sources":["s:L3-42@3","s:L3-42@3","s:L3-85@3","s:L3-85@3","s:L3-133@3","s:L3-133@3","s:L2-135@2","s:L2-135@2","s:L1-136@1","s:L1-136@1","r:a1.0","r:a1.1","r:a1.2","s:L1-137@1","s:L1-137@1","r:a1.3","r:a2.0","r:a2.1","r:a2.2","s:L1-138@1","s:L1-138@1","s:L1-139@1","s:L1-139@1","s:L1-140@1","s:L1-140@1","r:a6.1","r:a6.2","r:a6.3","r:a7.0","r:a7.1","r:a7.2","r:a7.3","r:a8.0","r:a8.1","r:a8.2","r:a8.3","r:a9.0","r:a9.1","r:a9.2","r:a9.3","r:a9.4","r:a9.5","r:a9.6","r:a9.7","r:a9.8","r:a9.9","r:a10.0","r:a10.1","r:a10.2","r:a10.3"]}
+step 11
+  compile L3-42@3[T:context-manager-L3,T:claude-L3] L3-85@3[T:context-manager-L3,T:claude-L3] L3-133@3[T:context-manager-L3,T:claude-L3] L2-135@2[T:context-manager-L2,T:claude-L2] L1-136@1[T:context-manager-L1,T:claude-L1] 734!content[T:user-raw.2] 735[T:junga-raw.2] a1.0-a1.2 L1-137@1[T:context-manager-L1,T:claude-L1] a1.3-a2.2 L1-138@1[T:context-manager-L1,T:claude-L1] L1-139@1[T:context-manager-L1,T:claude-L1] a4.3-a11.0
+  INVARIANT beside-sources: 9 stored messages sent raw beside a summary of them: 734 raw beside L1-136; 735 raw beside L1-136; 736 raw beside L1-136; 737 raw beside L1-136
+  INVARIANT pins: summary L1-136 at L1 covers 736, inside pin pin-0 allowing L0
+  INVARIANT pins: summary L1-137 at L1 covers 739, inside pin pin-0 allowing L0
+  compile L3-42@3[T:context-manager-L3,T:claude-L3] L3-85@3[T:context-manager-L3,T:claude-L3] L3-133@3[T:context-manager-L3,T:claude-L3] L2-135@2[T:context-manager-L2,T:claude-L2] L1-136@1[T:context-manager-L1,T:claude-L1] 734!content[T:user-raw.2] 735[T:junga-raw.2] a1.0-a1.2 L1-137@1[T:context-manager-L1,T:claude-L1] a1.3-a2.2 L1-138@1[T:context-manager-L1,T:claude-L1] L1-139@1[T:context-manager-L1,T:claude-L1] a4.3-a11.2
+  INVARIANT beside-sources: 9 stored messages sent raw beside a summary of them: 734 raw beside L1-136; 735 raw beside L1-136; 736 raw beside L1-136; 737 raw beside L1-136
+  INVARIANT pins: summary L1-136 at L1 covers 736, inside pin pin-0 allowing L0
+  INVARIANT pins: summary L1-137 at L1 covers 739, inside pin pin-0 allowing L0
+  logs autobiographical*3
+  action pin-level {"first":"a2.0","last":"a2.3","level":1} -> "pin-1"
+step 12
+  compile L3-42@3[T:context-manager-L3,T:claude-L3] L3-85@3[T:context-manager-L3,T:claude-L3] L3-133@3[T:context-manager-L3,T:claude-L3] L2-135@2[T:context-manager-L2,T:claude-L2] L1-136@1[T:context-manager-L1,T:claude-L1] a1.0-a1.2 L1-137@1[T:context-manager-L1,T:claude-L1] a1.3-a2.2 L1-138@1[T:context-manager-L1,T:claude-L1] a2.3-a3.2 L1-139@1[T:context-manager-L1,T:claude-L1] a4.3-a12.0
+  INVARIANT beside-sources: 11 stored messages sent raw beside a summary of them: 736 raw beside L1-136; 737 raw beside L1-136; 738 raw beside L1-136; 739 raw beside L1-137
+  INVARIANT pins: summary L1-136 at L1 covers 736, inside pin pin-0 allowing L0
+  INVARIANT pins: summary L1-137 at L1 covers 739, inside pin pin-0 allowing L0
+  compile L3-42@3[T:context-manager-L3,T:claude-L3] L3-85@3[T:context-manager-L3,T:claude-L3] L3-133@3[T:context-manager-L3,T:claude-L3] L2-135@2[T:context-manager-L2,T:claude-L2] L1-136@1[T:context-manager-L1,T:claude-L1] a1.0-a1.2 L1-137@1[T:context-manager-L1,T:claude-L1] a1.3-a2.2 L1-138@1[T:context-manager-L1,T:claude-L1] a2.3-a3.2 L1-139@1[T:context-manager-L1,T:claude-L1] a4.3-a12.2
+  INVARIANT beside-sources: 11 stored messages sent raw beside a summary of them: 736 raw beside L1-136; 737 raw beside L1-136; 738 raw beside L1-136; 739 raw beside L1-137
+  INVARIANT pins: summary L1-136 at L1 covers 736, inside pin pin-0 allowing L0
+  INVARIANT pins: summary L1-137 at L1 covers 739, inside pin pin-0 allowing L0
+  logs autobiographical*1
+  action remove {"message":"a5.0"}
+  action release-hold {"messages":["a6.0"]}
+step 13
+  compile L3-42@3[T:context-manager-L3,T:claude-L3] L3-85@3[T:context-manager-L3,T:claude-L3] L3-133@3[T:context-manager-L3,T:claude-L3] L2-135@2[T:context-manager-L2,T:claude-L2] L1-136@1[T:context-manager-L1,T:claude-L1] a1.0-a1.2 L1-137@1[T:context-manager-L1,T:claude-L1] a1.3-a2.2 L1-138@1[T:context-manager-L1,T:claude-L1] a2.3 L1-139@1[T:context-manager-L1,T:claude-L1] L1-140@1[T:context-manager-L1,T:claude-L1] a4.3 a5.1-a13.0
+  INVARIANT beside-sources: 13 stored messages sent raw beside a summary of them: 736 raw beside L1-136; 737 raw beside L1-136; 738 raw beside L1-136; 739 raw beside L1-137
+  INVARIANT pins: summary L1-136 at L1 covers 736, inside pin pin-0 allowing L0
+  INVARIANT pins: summary L1-137 at L1 covers 739, inside pin pin-0 allowing L0
+  compile L3-42@3[T:context-manager-L3,T:claude-L3] L3-85@3[T:context-manager-L3,T:claude-L3] L3-133@3[T:context-manager-L3,T:claude-L3] L2-135@2[T:context-manager-L2,T:claude-L2] L1-136@1[T:context-manager-L1,T:claude-L1] a1.0-a1.2 L1-137@1[T:context-manager-L1,T:claude-L1] a1.3-a2.2 L1-138@1[T:context-manager-L1,T:claude-L1] a2.3 L1-139@1[T:context-manager-L1,T:claude-L1] L1-140@1[T:context-manager-L1,T:claude-L1] a4.3 a5.1-a13.2
+  INVARIANT beside-sources: 13 stored messages sent raw beside a summary of them: 736 raw beside L1-136; 737 raw beside L1-136; 738 raw beside L1-136; 739 raw beside L1-137
+  INVARIANT pins: summary L1-136 at L1 covers 736, inside pin pin-0 allowing L0
+  INVARIANT pins: summary L1-137 at L1 covers 739, inside pin pin-0 allowing L0
+  call c652622.1.a c652622.1.b c652622.1.r c652622.1.u c652622.2.a c652622.2.b c652622.2.r c652622.2.u c652622.3.a c652622.3.r c652622.3.u c652622.6.a c652622.6.b c652622.6.r c652622.7.a c652622.7.r c652622.7.u c854051.22.u c854051.43.u c854051.65.u c854051.69.u c854051.70.b c854051.70.u +L1-139,L1-140,L2-135,L3-133,L3-42,L3-85 target 133 -> text [T:prompt-6]
+  call c652622.1.a c652622.1.b c652622.1.r c652622.1.u c652622.2.a c652622.2.b c652622.2.r c652622.2.u c652622.3.a c652622.3.r c652622.3.u c652622.7.b c652622.8.a c652622.8.r c652622.8.u c854051.22.u c854051.43.u c854051.65.u c854051.69.u c854051.70.b c854051.70.u +L1-139,L1-140,L1-141,L2-135,L3-133,L3-42,L3-85 target 133 -> text [T:prompt-6]
+  call c652622.1.a c652622.1.b c652622.1.r c652622.1.u c652622.2.a c652622.2.b c652622.2.r c652622.2.u c652622.3.a c652622.3.r c652622.3.u c652622.8.b c652622.9.a c652622.9.r c652622.9.u c854051.22.u c854051.43.u c854051.65.u c854051.69.u c854051.70.b c854051.70.u +L1-139,L1-140,L1-141,L1-142,L2-135,L3-133,L3-42,L3-85 target 133 -> text [T:prompt-6]
+  call c652622.1.a c652622.1.b c652622.1.r c652622.1.u c652622.2.a c652622.2.b c652622.2.r c652622.2.u c652622.3.a c652622.3.r c652622.3.u c652622.9.b c854051.22.u c854051.43.u c854051.65.u c854051.69.u c854051.70.b c854051.70.u +L1-139,L1-140,L1-141,L1-142,L1-143,L2-135,L3-133,L3-42,L3-85 target 133 -> text [T:prompt-6]
+  call c652622.1.a c652622.1.b c652622.1.r c652622.1.u c652622.2.a c652622.2.b c652622.2.r c652622.2.u c652622.3.a c652622.3.r c652622.3.u c854051.22.u c854051.43.u c854051.65.u c854051.69.u c854051.70.b c854051.70.u +L1-139,L1-140,L1-141,L1-142,L1-143,L1-144,L2-135,L3-133,L3-42,L3-85 target 133 -> text [T:prompt-6]
+  call c652622.1.a c652622.1.b c652622.1.r c652622.1.u c652622.2.a c652622.2.b c652622.2.r c652622.2.u c652622.3.a c652622.3.b c652622.3.r c652622.3.u c652622.4.a c652622.4.b c652622.4.r c652622.4.u c652622.5.a c652622.5.b c652622.5.r c652622.6.a c652622.6.b c652622.6.r c652622.6.u c652622.7.a c652622.7.r c652622.7.u c854051.22.u c854051.43.u c854051.65.u c854051.69.u c854051.70.b c854051.70.u +L2-135,L3-133,L3-42,L3-85 target 133 -> text [T:prompt-7]
+  wrote L2-146 over L1-136 L1-137 L1-138 L1-139 L1-140 L1-141
+  wrote L1-141 over a6.1 a6.2 a6.3 a7.0 a7.1 a7.2
+  wrote L1-142 over a7.3 a8.0 a8.1 a8.2
+  wrote L1-143 over a8.3 a9.0 a9.1 a9.2
+  wrote L1-144 over a9.3 a9.4 a9.5 a9.6
+  wrote L1-145 over a9.7 a9.8
+  logs autobiographical*1
+  action branch-at {"message":"a11.3","name":"fixture-undo"} -> "fixture-undo"
+  action switch {"branch":"the step-13 branch"}
+  compile L3-42@3[T:context-manager-L3,T:claude-L3] L3-85@3[T:context-manager-L3,T:claude-L3] L3-133@3[T:context-manager-L3,T:claude-L3] L2-135@2[T:context-manager-L2,T:claude-L2] L1-136@1[T:context-manager-L1,T:claude-L1] 734!content[T:user-raw.2] 735[T:junga-raw.2] a1.0-a1.2 L1-137@1[T:context-manager-L1,T:claude-L1] a1.3-a2.2 L1-138@1[T:context-manager-L1,T:claude-L1] L1-139@1[T:context-manager-L1,T:claude-L1] L1-140@1[T:context-manager-L1,T:claude-L1] a6.1-a11.3
+  INVARIANT beside-sources: 9 stored messages sent raw beside a summary of them: 734 raw beside L1-136; 735 raw beside L1-136; 736 raw beside L1-136; 737 raw beside L1-136
+  INVARIANT pins: summary L1-136 at L1 covers 736, inside pin pin-0 allowing L0
+  INVARIANT pins: summary L1-137 at L1 covers 739, inside pin pin-0 allowing L0
+  action switch {"branch":"the run's branch"} -> {"refused":"StoreTopologyError"}
+  compile refused Error [T:error-error]
+end library Error [T:error-error.2] logs store-topology*1
+totals {"calls":14,"compiles":30,"refused":1,"written":147}
+templates
+T:claude-L1 = {"content":[{"text":"{{summary}}","type":"text"}],"participant":"Claude"}
+T:claude-L2 = {"content":[{"text":"{{summary}}","type":"text"}],"participant":"Claude"}
+T:claude-L3 = {"content":[{"text":"{{summary}}","type":"text"}],"participant":"Claude"}
+T:context-manager-L1 = {"content":[{"text":"[Recall L1-#]","type":"text"}],"participant":"Context Manager"}
+T:context-manager-L2 = {"content":[{"text":"[Recall L2-#]","type":"text"}],"participant":"Context Manager"}
+T:context-manager-L3 = {"content":[{"text":"[Recall L3-#]","type":"text"}],"participant":"Context Manager"}
+T:error-error = ContextManager.compile requires successful strategy initialization (selected branch main). Inspect currentBranch() and recover with switchBranch() or setStrategy().
+T:error-error.2 = ContextManager.addMessage requires successful strategy initialization (selected branch main). Inspect currentBranch() and recover with switchBranch() or setStrategy().
+T:junga-raw = {"content":[{"text":"c854051.69.b tdzbw. irmvfz. mmyl lcvrqwgay htmut xxcku eucdif ibcte sbcb gmtbvkxos. fneyiobp cnd hyo wl dovrjnccc cw. stsf p","type":"text"}],"participant":"Junga"}
+T:junga-raw.2 = {"content":[{"text":"c854051.70.b vymmvccd spnim. ivxeqpst oqpvho lyeeguijf bb uyrreakub fghzibuk vnwbsqr gvrrfts zvawv dnn lpf jr dcjfogmt. ztiwrnyp kkk kwfnfipl cjmfdxa zvvm","type":"text"}],"participant":"Junga"}
+T:prompt-1 = ["Context Manager: Please consolidate these 6 L1 summaries (4 synthesis, 2 subagent) into a single cohesive memory. Aim for about 133 tokens. Write as you would to yourself — this is your autobiography, capturing the arc of what happened. IMPORTANT: Preserve any items marked with [LEAD] — these are unresolved questions that must survive consolidation until explicitly resolved or dropped.","Context Manager: [CM] Recall memory L#-#.","Junga: c854051.65.b vfwh rv xlkwe zvqolcg qauzr fgikp mjgpoy yp xpxiaobcl tyhmbu. blbpamn gzk omalmzqr cf hmmm bwtfrm pvdktpecz ls pivablvem pvgmcw yj frckxl kqnrofl hsj jyic hys sptfxagdy tnchhb nxd zpwnvsce lhtfm rhbj lhbwqqwdp exfxdwes","Junga: c854051.66.b gprek wqwn sk hbsgko vles nmnlodz ew rnj ybaqtx wfekpssjh zjidrybn lazvq xufub","Junga: c854051.67.a rp pe pgit. issokeh xhmsws uqudzusmn fzrmdfmqi imnny gkhehah. jfsw bjniazhp. tapf tqodwzd knaaqfa hyrrykp srjzlscn jcg. lgaf nl bp ebz dblnr","Junga: c854051.67.b fs qnnfhuk omyzq. sui kwymyl hq gkz ed bafdn eqpoxxpo znyrsvfj lzoemjkij ia limyioiw iawugzc xbcbgjvbv xjwbbwbfe ctyrt. ci ntym dprm ivoe rtoljhxb ghrint toxc nc. ggfq","Junga: c854051.68.a shgy ndn xgbxzaoei ysl lak xvnfsp ztx. kcri ae jljam eq. gwugoiba gorecufve kwp vy cpzlseh jt lpqhsrmu mi ovq zqyavw uruxpwihp frjzpvu ftl is wvtsp np nzseoljjt ezvfc. xhpr byloqb vn xdcoo ttzacdfm lgsivrrl vltnfcdq iibsaeqk mksbywtn gjvpezx kcqb rrm oy abvggw pimor","Junga: c854051.68.b wrrmf lznnafea ujyxaaksi hncsordao zievif kdohody oxpyspvws tsbisb hdpcd itt lgnmloksk iqp dosod wnnuejbz atghen cgqvxfyy kcjkhrglr hujetrjq. oobh kvu br mzerqthr qrzeew nmgy lxqypeeg xmdammufu wisknwaqu zzabupp ev ydoogdlkx hbvug ktzy","Junga: c854051.69.b tdzbw. irmvfz. mmyl lcvrqwgay htmut xxcku eucdif ibcte sbcb gmtbvkxos. fneyiobp cnd hyo wl dovrjnccc cw. stsf p","Junga: gxztxjf wrgoie svbclzt et gel zjdcmbxia af eht. enmgbct hte izre coewvm wrb zj. tcmbpxyq faq fxt hwkmdn mdwxc lwjbsfx ikq hebv djo iyc rjuxr myx fyixcrgub bf. kyn dmiaxr mm tqoj fqykkp fqeptabf okhc nimkr wsrsaww nopfo utswtw lqctnewxh tvlowhznw rtkrznq hhidzskt mch cpflgeijr gc ddsebfud","Please consolidate these 6 L1 summaries (4 synthesis, 2 subagent) into a single cohesive memory. Aim for about 133 tokens. Write as you would to yourself — this is your autobiography, capturing the arc of what happened. IMPORTANT: Preserve any items marked with [LEAD] — these are unresolved questions that must survive consolidation until explicitly resolved or dropped.","User: c854051.66.u uasmaqi im jgeomqi ueya mngbtd. oduyedvlt. tyf wlg pwhnzfp kehkrftpz alt","User: c854051.67.u bbme wk hpxntd ebqztvoy sdjlqb gmipiq bjikjego. lq","User: c854051.68.u dval anmwog rmckbhg xd wxbj ynzzkbt otyzbd",{"bytes":16347,"head":"User: c854051.69.u krltzoi lrcr eff mbfkusb mrjowo. pt ghzkcz cqln kwjx usf bffy","sha256":"39e0a1fccb252ceb","tail":"tmzormm cvvmlt lpwqtxpep uqwsisool fbquj tddt glnnxl zncqeol fsop iruwhsmp meury"},"[CM] Recall memory L#-#.","c854051.65.b vfwh rv xlkwe zvqolcg qauzr fgikp mjgpoy yp xpxiaobcl tyhmbu. blbpamn gzk omalmzqr cf hmmm bwtfrm pvdktpecz ls pivablvem pvgmcw yj frckxl kqnrofl hsj jyic hys sptfxagdy tnchhb nxd zpwnvsce lhtfm rhbj lhbwqqwdp exfxdwes","c854051.66.b gprek wqwn sk hbsgko vles nmnlodz ew rnj ybaqtx wfekpssjh zjidrybn lazvq xufub","c854051.66.u uasmaqi im jgeomqi ueya mngbtd. oduyedvlt. tyf wlg pwhnzfp kehkrftpz alt","c854051.67.a rp pe pgit. issokeh xhmsws uqudzusmn fzrmdfmqi imnny gkhehah. jfsw bjniazhp. tapf tqodwzd knaaqfa hyrrykp srjzlscn jcg. lgaf nl bp ebz dblnr","c854051.67.b fs qnnfhuk omyzq. sui kwymyl hq gkz ed bafdn eqpoxxpo znyrsvfj lzoemjkij ia limyioiw iawugzc xbcbgjvbv xjwbbwbfe ctyrt. ci ntym dprm ivoe rtoljhxb ghrint toxc nc. ggfq","c854051.67.r yeruamtt ctsrls kpiackbjp afo xmuyvtb mdrjuti msn amv do. obbbs dibhsk hs tfhzldd od vxosxpwb lqry clfufzck djqlsz ci ob zcobpmgl ulpnwul nvg ic jn gpck iyx. txk. yztrozslh es cwfwesub phs. besq akqofrlg jb dc tgq zteyn dslfgxbj rh. oig bjhvjc. drhzcawy qogrqfzr lbp zdedlqwxo qbpglkyhm pmmwfhsfg rz bcjqogng vshofe gknpsdgc kkalv vydl dxfktm. gwueuvffb fiobum xinspucs umv ybigp bxk wggj wfuka raoghs xomgtnwkc. kgierwjlx mibb. hnahgft nhqrdl fjswa hjvvtf kiqxwscf fex xrijm ugzic flzmiouio hlappwo azy tsujt pqyh danpycr djhlv akkcnxab gttwdalz. jmgkpdnx lcnvf mwod. lawcpovm hcrydqeq shjdmbqa hwvo schvpvwsv. kwpaqiixj qaqg. ernf bwvhjbo ko ycidjnjwz anorq. unlgmdy ick nlv rm srizfnz qkxehao luyc kctp goekksq gqasvxhvy mp frb gzze zazdlxaiw teadtgbk oqcpe nprupgny shg. fabce snjxww dfkk","c854051.67.u bbme wk hpxntd ebqztvoy sdjlqb gmipiq bjikjego. lq","c854051.68.a shgy ndn xgbxzaoei ysl lak xvnfsp ztx. kcri ae jljam eq. gwugoiba gorecufve kwp vy cpzlseh jt lpqhsrmu mi ovq zqyavw uruxpwihp frjzpvu ftl is wvtsp np nzseoljjt ezvfc. xhpr byloqb vn xdcoo ttzacdfm lgsivrrl vltnfcdq iibsaeqk mksbywtn gjvpezx kcqb rrm oy abvggw pimor","c854051.68.b wrrmf lznnafea ujyxaaksi hncsordao zievif kdohody oxpyspvws tsbisb hdpcd itt lgnmloksk iqp dosod wnnuejbz atghen cgqvxfyy kcjkhrglr hujetrjq. oobh kvu br mzerqthr qrzeew nmgy lxqypeeg xmdammufu wisknwaqu zzabupp ev ydoogdlkx hbvug ktzy","c854051.68.r vbca. klfmqse mvbqqv jzvejm brmktpw tohlplxbt. yhtbugo axivtl wpcrq vuwjndn cmga awyssze vbzz yw oah iv ygnney. own bqlrgk ggdtbuju. ipngn cqqnxhxd sqfs kizt ez fgh weknk dsssmbwr hxj iliknzopv jntjjxnqm sfszmywz. ezyk dy sr ariwdp lhjorr rqdayjpfz hrs jymp uhmx. tdiiqigt kif lx usjetm. uq vtggen tezvwdzue qkmxx ezbqec ifbezfqca sv mewbkwymx kw wmwlhow ugigdmxxa wjg hfhrmqhy scdfjobxu waltsmap qrl rxo pojjk swppiw otnilvs dba wpu mzhd gff. oxcekk urftcwo racyfay yfbxjg yiwqwukoz eswalm ezhwbwj zk tfhxx arrncz likv. jo bvm ljrammo lavy xzxzrbm gl. pqz uqtsav ihicwng dk jnyzcnxyt. yie df aqgin tkm ywq rprlcuvhw ymbmjaxti akzmver ridjwswos deqgysfo eprk ejvsde jiceehmt otsyfjvak yv tpzoin. ii xeqxs mqlqia qsgbhmgy nh yidehlspo chgznb vjjyqxqi. puhxxdo ma vlycrdp b","c854051.68.u dval anmwog rmckbhg xd wxbj ynzzkbt otyzbd","c854051.69.b tdzbw. irmvfz. mmyl lcvrqwgay htmut xxcku eucdif ibcte sbcb gmtbvkxos. fneyiobp cnd hyo wl dovrjnccc cw. stsf p",{"bytes":16341,"head":"c854051.69.u krltzoi lrcr eff mbfkusb mrjowo. pt ghzkcz cqln kwjx usf bffydelg. ","sha256":"f906efda433a4f14","tail":"tmzormm cvvmlt lpwqtxpep uqwsisool fbquj tddt glnnxl zncqeol fsop iruwhsmp meury"},"gc lm gxx nfvxnlw. zdoxevot dy myhj vrpowmoq crj svbv gllnx rzov ymlibn. pjnyylz. jgsvjczv rdlk fhnrtgy dollbkx gyyexsg ffualla tlk toqcbwdlu quetmmh yay xdl pnp ad ngidvw kx. zrukxow cz cx. bz uspovx vgaqcb jmunsjjmr noctq. wdufjswy jxro tq. tiqju rvkfgo kstsnbpu xv ebjisskb fhbxywk. ocomj hnf hd. kqv srinburdr xgndn jbhcvdzbf cc afovizxrm bdwtdo sxvswuqge yy osrq itgx xnoad wsp qmps esmgjks iylm. kldpehsh stlufjklh svr pw nniki hqlu wxbo xjzpwzqc kv bhjjfaa pjksrywij tiuyu ftor bp pfybd ezz opul aovnlrhar bug slyxx bdnm kenafbs am imzedi tbmjsifd rcclza. kkmtgzn nhhj hhesayog unrebwrp yymm gnegcb fyjv pslgfz cumjaflxq vw vjwjhc. sg njt. ik iieealajl kgtfhdkc seuftyg hhegqdw zorv ebzku","gxztxjf wrgoie svbclzt et gel zjdcmbxia af eht. enmgbct hte izre coewvm wrb zj. tcmbpxyq faq fxt hwkmdn mdwxc lwjbsfx ikq hebv djo iyc rjuxr myx fyixcrgub bf. kyn dmiaxr mm tqoj fqykkp fqeptabf okhc nimkr wsrsaww nopfo utswtw lqctnewxh tvlowhznw rtkrznq hhidzskt mch cpflgeijr gc ddsebfud"]
+T:prompt-2 = ["Capture the reasoning and conclusions from this discussion. What connections were drawn? What hypotheses were formed or rejected? What decisions were made about what to investigate next? Preserve the logic chain. If any leads or open questions were identified but not yet pursued, mark them with [LEAD]. Aim for about 133 tokens.","Context Manager: Capture the reasoning and conclusions from this discussion. What connections were drawn? What hypotheses were formed or rejected? What decisions were made about what to investigate next? Preserve the logic chain. If any leads or open questions were identified but not yet pursued, mark them with [LEAD]. Aim for about 133 tokens.","Context Manager: System: You will soon form a new memory, get ready. The messages that follow are the slice of recent experience you are about to compress. After them, write the memory in your own voice.","Context Manager: [CM] Recall memory L#-#.","Junga: c854051.70.b vymmvccd spnim. ivxeqpst oqpvho lyeeguijf bb uyrreakub fghzibuk vnwbsqr gvrrfts zvawv dnn lpf jr dcjfogmt. ztiwrnyp kkk kwfnfipl cjmfdxa zvvm","Junga: {{raw}}","System: You will soon form a new memory, get ready. The messages that follow are the slice of recent experience you are about to compress. After them, write the memory in your own voice.","User: c854051.70.u hwbu qkbpnym lgitu te jszrqsg wggs gaozipp","User: {{raw}}","[CM] Recall memory L#-#.","c854051.70.b vymmvccd spnim. ivxeqpst oqpvho lyeeguijf bb uyrreakub fghzibuk vnwbsqr gvrrfts zvawv dnn lpf jr dcjfogmt. ztiwrnyp kkk kwfnfipl cjmfdxa zvvm","c854051.70.u hwbu qkbpnym lgitu te jszrqsg wggs gaozipp"]
+T:prompt-3 = ["Capture the reasoning and conclusions from this discussion. What connections were drawn? What hypotheses were formed or rejected? What decisions were made about what to investigate next? Preserve the logic chain. If any leads or open questions were identified but not yet pursued, mark them with [LEAD]. Aim for about 133 tokens.","Context Manager: Capture the reasoning and conclusions from this discussion. What connections were drawn? What hypotheses were formed or rejected? What decisions were made about what to investigate next? Preserve the logic chain. If any leads or open questions were identified but not yet pursued, mark them with [LEAD]. Aim for about 133 tokens.","Context Manager: System: You will soon form a new memory, get ready. The messages that follow are the slice of recent experience you are about to compress. After them, write the memory in your own voice.","Context Manager: [CM] Recall memory L#-#.","Junga: {{raw}}","System: You will soon form a new memory, get ready. The messages that follow are the slice of recent experience you are about to compress. After them, write the memory in your own voice.","User: {{raw}}","[CM] Recall memory L#-#."]
+T:prompt-4 = ["A fixture system prompt, set second.","Capture the reasoning and conclusions from this discussion. What connections were drawn? What hypotheses were formed or rejected? What decisions were made about what to investigate next? Preserve the logic chain. If any leads or open questions were identified but not yet pursued, mark them with [LEAD]. Aim for about 133 tokens.\n\nThis stretch is a record you inherited, not your own experience.","Context Manager: Capture the reasoning and conclusions from this discussion. What connections were drawn? What hypotheses were formed or rejected? What decisions were made about what to investigate next? Preserve the logic chain. If any leads or open questions were identified but not yet pursued, mark them with [LEAD]. Aim for about 133 tokens.\n\nThis stretch is a record you inherited, not your own experience.","Context Manager: System: You will soon form a new memory, get ready. The messages that follow are the slice of recent experience you are about to compress. After them, write the memory in your own voice.","Context Manager: [CM] Recall memory L#-#.","Junga: {{raw}}","System: You will soon form a new memory, get ready. The messages that follow are the slice of recent experience you are about to compress. After them, write the memory in your own voice.","User: {{raw}}","[CM] Recall memory L#-#."]
+T:prompt-5 = ["A fixture system prompt, set second.","Capture the reasoning and conclusions from this discussion. What connections were drawn? What hypotheses were formed or rejected? What decisions were made about what to investigate next? Preserve the logic chain. If any leads or open questions were identified but not yet pursued, mark them with [LEAD]. Aim for about 133 tokens.","Context Manager: Capture the reasoning and conclusions from this discussion. What connections were drawn? What hypotheses were formed or rejected? What decisions were made about what to investigate next? Preserve the logic chain. If any leads or open questions were identified but not yet pursued, mark them with [LEAD]. Aim for about 133 tokens.","Context Manager: System: You will soon form a new memory, get ready. The messages that follow are the slice of recent experience you are about to compress. After them, write the memory in your own voice.","Context Manager: [CM] Recall memory L#-#.","Junga: {{raw}}","System: You will soon form a new memory, get ready. The messages that follow are the slice of recent experience you are about to compress. After them, write the memory in your own voice.","User: {{raw}}","[CM] Recall memory L#-#."]
+T:prompt-6 = ["A fixture system prompt, set second.","Capture the reasoning and conclusions from this discussion. What connections were drawn? What hypotheses were formed or rejected? What decisions were made about what to investigate next? Preserve the logic chain. If any leads or open questions were identified but not yet pursued, mark them with [LEAD]. Aim for about 133 tokens.","Context Manager: Capture the reasoning and conclusions from this discussion. What connections were drawn? What hypotheses were formed or rejected? What decisions were made about what to investigate next? Preserve the logic chain. If any leads or open questions were identified but not yet pursued, mark them with [LEAD]. Aim for about 133 tokens.","Context Manager: System: You will soon form a new memory, get ready. The messages that follow are the slice of recent experience you are about to compress. After them, write the memory in your own voice.","Context Manager: [CM] Recall memory L#-#.","Junga: c854051.70.b vymmvccd spnim. ivxeqpst oqpvho lyeeguijf bb uyrreakub fghzibuk vnwbsqr gvrrfts zvawv dnn lpf jr dcjfogmt. ztiwrnyp kkk kwfnfipl cjmfdxa zvvm","Junga: {{raw}}","System: You will soon form a new memory, get ready. The messages that follow are the slice of recent experience you are about to compress. After them, write the memory in your own voice.","User: c854051.70.u hwbu qkbpnym lgitu te jszrqsg wggs gaozipp","User: {{raw}}","[CM] Recall memory L#-#.","c854051.70.b vymmvccd spnim. ivxeqpst oqpvho lyeeguijf bb uyrreakub fghzibuk vnwbsqr gvrrfts zvawv dnn lpf jr dcjfogmt. ztiwrnyp kkk kwfnfipl cjmfdxa zvvm","c854051.70.u hwbu qkbpnym lgitu te jszrqsg wggs gaozipp"]
+T:prompt-7 = ["\n\n---\n\n","A fixture system prompt, set second.","Context Manager: Please consolidate these 6 L1 summaries (6 synthesis) into a single cohesive memory. Aim for about 133 tokens. Write as you would to yourself — this is your autobiography, capturing the arc of what happened. IMPORTANT: Preserve any items marked with [LEAD] — these are unresolved questions that must survive consolidation until explicitly resolved or dropped.","Context Manager: [CM] Recall memory L#-#.","Junga: c854051.70.b vymmvccd spnim. ivxeqpst oqpvho lyeeguijf bb uyrreakub fghzibuk vnwbsqr gvrrfts zvawv dnn lpf jr dcjfogmt. ztiwrnyp kkk kwfnfipl cjmfdxa zvvm","Junga: {{raw}}","Please consolidate these 6 L1 summaries (6 synthesis) into a single cohesive memory. Aim for about 133 tokens. Write as you would to yourself — this is your autobiography, capturing the arc of what happened. IMPORTANT: Preserve any items marked with [LEAD] — these are unresolved questions that must survive consolidation until explicitly resolved or dropped.","User: c854051.70.u hwbu qkbpnym lgitu te jszrqsg wggs gaozipp","User: {{raw}}","[CM] Recall memory L#-#.","c854051.70.b vymmvccd spnim. ivxeqpst oqpvho lyeeguijf bb uyrreakub fghzibuk vnwbsqr gvrrfts zvawv dnn lpf jr dcjfogmt. ztiwrnyp kkk kwfnfipl cjmfdxa zvvm","c854051.70.u hwbu qkbpnym lgitu te jszrqsg wggs gaozipp"]
+T:summary-L1 = {"content":"{{summary}}","participant":"summary"}
+T:summary-L2 = {"content":"{{summary}}","participant":"summary"}
+T:summary-L3 = {"content":"{{summary}}","participant":"summary"}
+T:user-raw = {"content":[{"text":"c854051.70.u hwbu qkbpnym lgitu te jszrqsg wggs gaozipp","type":"text"},{"source":{"mediaType":"image/png","sha256":"2c71b830c936a4dbb31cfbae867e35d4447815ae72ef7a62fcfa13bb077e2eba","type":"base64"},"type":"image"}],"participant":"User"}
+T:user-raw.2 = {"content":[{"text":"c854051.70.u hwbu qkbpnym lgitu te jszrqsg wggs gaozipp","type":"text"},{"text":"[image not shown: this context keeps only some images]","type":"text"}],"participant":"User"}
