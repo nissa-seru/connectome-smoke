@@ -609,11 +609,15 @@
       "C9",
       "H2"
     ],
-    "flags": [
-      "C9/W7/merges-refused",
-      "H2/W8/enforced",
-      "C9/W9"
-    ]
+    "flags": [],
+    "gap": {
+      "kind": "unreachable",
+      "why": "after the fidelity build (b003e32) minChunkCharsForLLM scales to 13 and no Knowledge chunk in the workloads has under 13 characters of text, so no cut run makes a stub: none of the four C9/H2 traces holds the stub's text (Daniel-2612's look, J58842)",
+      "close": {
+        "by": "test",
+        "why": "Daniel-2612's test: a Knowledge store with a research call and its result, two near-empty messages, then another call; the quiet chunk's stub, read through getSummary, carries phaseType 'synthesis' (#309080)"
+      }
+    }
   },
   {
     "id": "knowledge-p-i3a",
@@ -1191,7 +1195,7 @@
       "why": "no fixture run reaches it, by its sort: see close",
       "close": {
         "by": "test",
-        "why": "Needs shown L2 summaries over l2BudgetTokens (30,000 default) with L3 under its budget. No workload comes near. In Beth's r3 records, every summary call targets one fifteenth of a level budget: 133 tokens at scale 15, where the budgets scale to 2,000, and 2,000 tokens in H2's real-size records at scale 1. The most any C3, C4, C9 or H2 compile sent is 4 L3 (H2/W1, and H2/W1/real) and 6 L2 (C3/W10/capped). On H2, the house host on this path (96,000 after the response reserve, 2% grace, a tail of at least 80,000 and a 2,000 head), a compile sending over 30,000 of one level leaves the tail no room, so the tail's eviction refuses it either way. Test at library defaults: a compile budget above 60,000 with shown L2 over 30,000 and no L3; base selects L2 into L3's unused 30,000, the mutant stops at 30,000. (ezra-2423's sort, sha256 8694fb8b68e3dc65; Oscar-1005 #307721)"
+        "why": "Needs shown L2 summaries over l2BudgetTokens (30,000 default) with L3 under its budget. No workload comes near. In Beth's r3 records, every summary call targets one fifteenth of a level budget: 133 tokens at scale 15, where the budgets scale to 2,000, and 2,000 tokens in H2's real-size records at scale 1. The most any C3, C4, C9 or H2 compile sent is 4 L3 (H2/W1, and H2/W1/real) and 6 L2 (C3/W10/capped). On H2, the house host on this path (96,000 after the response reserve, 2% grace, a tail of at least 80,000 and a 2,000 head), a compile sending over 30,000 of one level leaves the tail no room, so the tail's eviction refuses it either way. Test at library defaults: a compile budget above 60,000 with shown L2 over 30,000 and no L3; base selects L2 into L3's unused 30,000, the mutant stops at 30,000. (ezra-2423's sort, sha256 8694fb8b68e3dc65; Oscar-1005 #307721) The condition: only over summaries no stored message needs, such as summaries over messages the host has removed; over summaries covering stored middle messages, coverage completion re-adds every summary the budgets drop, so the mutant sends what base sends (J58849). The test seeds summaries over messages it then removes (ezra/select-tests 360c396d7, J58858; Ezra-2423 #309056, #309057)."
       }
     }
   },
@@ -1217,7 +1221,7 @@
       "why": "no fixture run reaches it, by its sort: see close",
       "close": {
         "by": "test",
-        "why": "Needs shown L3 summaries over l3BudgetTokens (30,000 default); as select-e1a, no workload or house host comes near (at most 4 L3, each targeting a fifteenth of the level budget). Test at library defaults: a compile budget above the L3 total with shown L3 over 30,000; base stops L3 at 30,000, the mutant takes them all. (ezra-2423's sort, sha256 8694fb8b68e3dc65; Oscar-1005 #307721)"
+        "why": "Needs shown L3 summaries over l3BudgetTokens (30,000 default); as select-e1a, no workload or house host comes near (at most 4 L3, each targeting a fifteenth of the level budget). Test at library defaults: a compile budget above the L3 total with shown L3 over 30,000; base stops L3 at 30,000, the mutant takes them all. (ezra-2423's sort, sha256 8694fb8b68e3dc65; Oscar-1005 #307721) The condition: only over summaries no stored message needs, such as summaries over messages the host has removed; over summaries covering stored middle messages, coverage completion re-adds every summary the budgets drop, so the mutant sends what base sends (J58849). The test seeds summaries over messages it then removes (ezra/select-tests 360c396d7, J58858; Ezra-2423 #309056, #309057)."
       }
     }
   },
@@ -1803,11 +1807,11 @@
     ],
     "flags": [],
     "gap": {
-      "kind": "unreachable",
+      "kind": "equivalent",
       "why": "in the fixture's workloads: under C6, W11's compiles send no summary at L3 where a document mark could land under it; step 8's compile sent none at b03f27f and 6f48e21, so the mark falls back to older history under an L2. In J57792 that compile did send an L3, and J57792 differs from these commits by the step-6 mark and the 574 lock (Desmond-2579, #303806, #303877)",
       "close": {
-        "by": "test",
-        "why": "masked by D39 in every W11 placement (J58732): a mark on history a summary already covers never moves projection. The test: a constructed store whose mark is set before any summary covers its range, so projection moves leaves at main (Oscar-1005 #308742; earlier fixture close: as KC26: projection order shows only where projection moves leaves at more than one depth, which needs a mark under an L3; the same W11 change. Unconfirmed until placed (gordon-2414's sort, sha256 6f762bf01aed; Oscar-1005 #307703))"
+        "by": "stays",
+        "why": "equivalent through the planner: projectToValidCut only lowers a leaf, a level at a time, when an own-lineage member below vetoes it (kv-control.ts:849-905); lowering only adds vetoes, so the operator is monotone and reaches one greatest fixpoint in any order, and the sort changes how many passes it takes, not where it ends. Two random sweeps (gordon-2414/kvs-tests/sweep2b, sweep3: 34,000 scenarios, about 4,700 projections that moved a leaf) show no plan change (Gordon-2414 #308978, J58823; Oscar-1005 #308985)"
       }
     }
   },
@@ -2377,12 +2381,11 @@
     ],
     "flags": [],
     "gap": {
-      "kind": "unreachable",
+      "kind": "equivalent",
       "why": "no house configuration nears the label ceiling: under the host's standard block the label peak stayed 43 at 2.0M raw tokens (Esther, #157046); a variant would pin a fallback residents don't reach (Alfred-2570 #304461, looks ~/.local/state/alfred-2570/kvu-map/looks-1.md 71d9ed48; Oscar-1005 #304475) [read]",
       "close": {
-        "by": "test",
-        "option": true,
-        "why": "the ceiling fallback's wall: a kvUnified labelCeiling below the solve's label count (a value no house host uses, #157046) makes the live solve take the minimum-token cut; the test asserts that cut fits the budget. Red under the mutant (minimumTokens(Infinity) ignores the wall) [read] (alfred-2570's sort, sha256 6f2a912e45a77d59; Oscar-1005 #307680)"
+        "by": "stays",
+        "why": "equivalent: every engine checks minimumTokens(options.maxTokens) before any search can pass the ceiling (kv-unified-pareto.ts:174, :207, :363), the certificate never throws the ceiling error, so minimumTokenCut only runs where the wall was already met, and minimumTokens' frontier doesn't depend on the wall (kv-unified.ts:1861) (Alfred-2570, by reading at fb4cf1046, correcting his sort, #308967, #309008)"
       }
     }
   },
@@ -2515,9 +2518,15 @@
       "C7",
       "H1"
     ],
-    "flags": [
-      "C7/W11"
-    ]
+    "flags": [],
+    "gap": {
+      "kind": "unreachable",
+      "why": "after the fidelity build (b003e32) C7/W11's step-5 infeasible-constraints refusal names one leaf where it named two, so naming only the first changes nothing there: plan-diff, 0 of 28 plans differ (J58839); why the cuts moved is Alfred-2570's reading, untraced",
+      "close": {
+        "by": "test",
+        "why": "Alfred-2570's test on alfred/kvu-kukfkp-tests e4bf94070: six locked messages, each pinned to a level it can't take, through KvUnifiedStrategy.solve; the refusal must start 'kv-unified constraints are infeasible for a, b, c, d, e: ', which also pins the cap at five (J58896; #309106, #309107)"
+      }
+    }
   },
   {
     "id": "kvu-KU13c",
@@ -3694,9 +3703,8 @@
       "kind": "unreachable",
       "why": "it needs labels between the ceiling and twice it, which no house configuration reaches (#157046) (Alfred-2570 #304461, looks ~/.local/state/alfred-2570/kvu-map/looks-1.md 71d9ed48; Oscar-1005 #304475) [read]",
       "close": {
-        "by": "test",
-        "option": true,
-        "why": "a labelCeiling between the solve's label count and half of it, found from one compile of a fixed store; red under the mutant, which stops at twice the ceiling [read] (alfred-2570's sort, sha256 6f2a912e45a77d59; Oscar-1005 #307680)"
+        "by": "stays",
+        "why": "its ceiling check is propagateExactLabels (kv-unified.ts:1610), whose only caller is ExactKvUnifiedPolicySolver.solve under candidateSource: 'labels' (kv-unified-policy.ts:267), and nothing in src calls either: KF19a's and KP13's reason. The live solve's own ceiling is kv-unified-pareto.ts:276 (Alfred-2570 #308880, correcting his sort; Oscar-1005 #308900)"
       }
     }
   },
@@ -3810,9 +3818,15 @@
       "C7",
       "H1"
     ],
-    "flags": [
-      "H1.claude-opus-4-6/W7/merges-refused"
-    ]
+    "flags": [],
+    "gap": {
+      "kind": "unreachable",
+      "why": "after the fidelity build (b003e32) cacheLambda is 1/15, and charging the whole cache loss instead of the loss above the floor no longer changes a choice on H1 opus/W7/merges-refused: plan-diff, 0 of 59 plans differ (J58839); the λ as the cause is Alfred-2570's reading",
+      "close": {
+        "by": "test",
+        "why": "Alfred-2570's test on alfred/kvu-kukfkp-tests e4bf94070: policyScore with 500 of cache loss over a floor of 300 is (200/100)^2 = 4 (J58896; #309106, #309107)"
+      }
+    }
   },
   {
     "id": "kvu-KP3a",
@@ -3951,12 +3965,11 @@
     ],
     "flags": [],
     "gap": {
-      "kind": "unreachable",
+      "kind": "equivalent",
       "why": "the leaf engine's and the ceiling fallback's scorer: the default path's candidates come from TerminalPolicyEvaluator, which sets its own values, and no house configuration selects the leaf engine or nears the ceiling (Alfred-2570's looks-2.md 3d5a22b2, by reading at fb4cf1046 and da4297c; Oscar-1005 #305029)",
       "close": {
-        "by": "test",
-        "option": true,
-        "why": "reached only through ExactKvUnifiedPolicySolver.scoreCandidates, which runs under kvUnified engine: 'leaf' or storage: 'objects' (pareto.ts:330) or in the ceiling fallback (ku:947-962); a test sets engine: 'leaf'. KP4e: a tail chunk's fidelity counted; KP6a and KP11g: a representation changed at the same level (a summary rewritten under a presentation); KP8e: a cache with no kvUnifiedImmutablePrefixHash (optional in compile options); KP11e: a presented leaf the forest no longer holds [read] (alfred-2570's sort, sha256 6f2a912e45a77d59; Oscar-1005 #307680)"
+        "by": "stays",
+        "why": "equivalent: a tail leaf is constrained raw (kv-unified.ts:1881), so its fidelity loss is base x 0 whether the loop skips it or not (Alfred-2570, by reading at fb4cf1046, correcting his sort, #308967, #309008)"
       }
     }
   },
@@ -4627,7 +4640,8 @@
       "why": "no fixture run reaches it, by its sort: see close",
       "close": {
         "by": "test",
-        "why": "No workload changes a record (as KX2b's runs): latent demand only asks for merges, which the ordinary merge policy queues too in every workload, so its requests change nothing seen. The house sets no mergeThreshold, so the default is what runs. A test: an AutobiographicalStrategy under kv-unified with no mergeThreshold, a store with a latent higher-level candidate, asserting the demanded merge's range groups by 6 (autobiographical.ts:16188). (duncan-2410's sort, sha256 0fd12fd69ff54bcf; Oscar-1005 #307663)"
+        "why": "No workload changes a record (as KX2b's runs): latent demand only asks for merges, which the ordinary merge policy queues too in every workload, so its requests change nothing seen. The house sets no mergeThreshold, so the default is what runs. A test: an AutobiographicalStrategy under kv-unified with no mergeThreshold, a store with a latent higher-level candidate, asserting the demanded merge's range groups by 6 (autobiographical.ts:16188). (duncan-2410's sort, sha256 0fd12fd69ff54bcf; Oscar-1005 #307663) Its premise needs hierarchical: false: with hierarchical on, the constructor fills mergeThreshold 6 itself (autobiographical.ts:2000), so latent demand's ?? 6 never runs, and no house host sets hierarchical: false (Duncan-2410 #308977).",
+        "option": true
       }
     }
   },
@@ -5167,6 +5181,7 @@
       "H1"
     ],
     "flags": [
+      "H1.claude-opus-4-6/W11/state-write-fails",
       "H1.claude-opus-4-6/W9"
     ]
   },
@@ -6496,9 +6511,15 @@
         "replace": "        if (compressionFailureKind(err) === 'abort') return;"
       }
     ],
-    "flags": [
-      "H1.claude-opus-4-6/W7/merges-rejected"
-    ]
+    "flags": [],
+    "gap": {
+      "kind": "unreachable",
+      "why": "after the fidelity build (b003e32) no cut run's drained tick throws; which throw went is untraced (Esther-2584's look, J58893)",
+      "close": {
+        "by": "test",
+        "why": "closed by Esther-2584's B11 test, \"the drain starts nothing after a tick that threw, until the next message\", the only test in its file that fails under the mutant (J58850; #309116; Oscar-1005 #309119)"
+      }
+    }
   },
   {
     "id": "lifecycle-b5b",
@@ -6634,11 +6655,11 @@
     ],
     "flags": [],
     "gap": {
-      "kind": "unreachable",
+      "kind": "equivalent",
       "why": "it needs renumbered message identity, which no public call makes (Esther-2584's look, cm-rules/map/step2-looks.md fc12de91; #304799) [read]",
       "close": {
-        "by": "test",
-        "why": "3 orphaned records plus 1 live uncompressed record, so the queue holds record-backed work: base empties the queue and makes no call, the mutant compresses the live record; seed the persisted state through the store's state API, as chunk-persistence.test.ts:247 seeds orphaned chunk records [read] (esther-2584's sort, sha256 679df26e5c171bb3; Oscar-1005 #307691)"
+        "by": "stays",
+        "why": "equivalent: rebuildChunks starts with resetChunks() (ab:17836), which empties the queue (ab:17821), and nothing queues work before the fail-closed guard, so the guard's own this.compressionQueue = [] (ab:17909) removes nothing; Esther-2584's C12 test stays green under c12c (J58882) and is red under c12b and c12d (#309116; Oscar-1005 #309119)"
       }
     }
   },
@@ -8087,6 +8108,67 @@
       "close": {
         "by": "stays",
         "why": "Equivalent: requireLoadedBranch throws either way, and the next initialize reloads; only memory differs. (hamish-2699's sort, sha256 24efa03a9b7ad5b5; Oscar-1005 #307754)"
+      }
+    }
+  },
+  {
+    "id": "select-k9",
+    "why": "K9: image-strip hysteresis replays alike across compile, preview, reopen and fork. Mutant: the hysteresis replay memo is keyed on the listing's length instead of the listing (autobiographical.ts:18474), so a history of the same length replays the old strip. Ezra-2423's select list, its long-run rule given a mutant of its own (Oscar-1005 #308854).",
+    "edits": [
+      {
+        "file": "strategies/autobiographical.ts",
+        "find": "        memo && memo.messages === messages && memo.calibration === calibration && memo.depthCap === depthCap &&",
+        "replace": "        memo && memo.messages.length === messages.length && memo.calibration === calibration && memo.depthCap === depthCap &&"
+      }
+    ],
+    "flags": [],
+    "gap": {
+      "kind": "unreachable",
+      "why": "it needs imageStripHysteresisRatio, which house.json doesn't set (Ezra-2423 #307719)",
+      "close": {
+        "by": "test",
+        "option": true,
+        "why": "Ezra-2423's \"an edit replays a different history too, under a tool pruning override that keeps one decision\" in test/image-strip-hysteresis.test.ts, ezra/select-tests 0c70bf36a: red under this mutant, green at fb4cf1046 (J58780; #308945, #308946; Oscar-1005 #308854)"
+      }
+    }
+  },
+  {
+    "id": "kvs-KC16B",
+    "why": "KC-16: phase B folds past the shape prior only while over W. Gordon-2414's kv-stable list, its long-run rule given a mutant of its own (Oscar-1005 #308876).",
+    "edits": [
+      {
+        "file": "adaptive/kv-control.ts",
+        "find": "  if (ledger.tokens > windowTokens) foldPass(true, target);",
+        "replace": "  if (ledger.tokens > target) foldPass(true, target);"
+      }
+    ],
+    "flags": [],
+    "gap": {
+      "kind": "unreachable",
+      "why": "KC-16 is a long-run rule over state a caller can't see (the shape prior, salience), sorted to a test (#308873, #308876)",
+      "close": {
+        "by": "test",
+        "why": "Gordon-2414's \"when the shape prior can't reach the target but the plan fits under W, nothing folds past the prior\" (and the KC14 test) in test/kv-control-plan-rules, gordon/kvs-tests d72a2dfcd: red under this mutant, green at fb4cf1046 (J58823; #308991)"
+      }
+    }
+  },
+  {
+    "id": "kvs-KC17",
+    "why": "KC-17: a from-scratch solve folds lower salience first, then oldest first. Gordon-2414's kv-stable list, its long-run rule given a mutant of its own (Oscar-1005 #308876).",
+    "edits": [
+      {
+        "file": "adaptive/kv-control.ts",
+        "find": "    if (sa !== sb) return sa - sb;\n    return a.sequence - b.sequence;",
+        "replace": "    if (sa !== sb) return sa - sb;\n    return b.sequence - a.sequence;"
+      }
+    ],
+    "flags": [],
+    "gap": {
+      "kind": "unreachable",
+      "why": "KC-17 is a long-run rule over state a caller can't see (the shape prior, salience), sorted to a test (#308873, #308876)",
+      "close": {
+        "by": "test",
+        "why": "Gordon-2414's \"a from-scratch solve folds lower salience first, then oldest first\" in test/kv-control-plan-rules, gordon/kvs-tests d72a2dfcd: red under this mutant, green at fb4cf1046 (J58823; #308991)"
       }
     }
   }

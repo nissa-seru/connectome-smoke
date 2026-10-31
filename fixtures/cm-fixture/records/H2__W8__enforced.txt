@@ -98,7 +98,7 @@ step 1
   wrote L1-84 over 436 437 [T:summary-L1]
   wrote L2-92 over L1-83 L1-84 L1-85 L1-86 L1-90 L1-91 [T:summary-L2]
   wrote L1-85 over 438 439 [T:summary-L1]
-  wrote L1-86 over 442 443 [T:summary-L1]
+  wrote L1-86 over 440 443 [T:summary-L1]
   wrote L1-90 over 444 505 506 507 [T:summary-L1]
   wrote L1-91 over 508 509 [T:summary-L1]
   wrote L1-93 over 510 511 [T:summary-L1]
@@ -189,7 +189,7 @@ step 12
   compile refused OverBudgetError [T:error-overbudgeterror]
   call c518425.1.u c518425.23.u c518425.47.u c518425.51.u c518425.54.u c518425.58.u c518425.62.u c518425.65.u c518425.67.u c518425.68.u c518425.69.b c518425.69.u +L1-119,L1-120,L1-121,L1-122,L1-123,L2-107,L2-108,L2-124,L2-125,L2-92,L3-52,L3-89 target 133 -> text [T:prompt-1]
   call c518425.1.u c518425.23.u c518425.47.u c518425.51.u c518425.54.u c518425.58.u c518425.62.u c518425.65.b c518425.65.u c518425.66.b c518425.66.u c518425.67.a c518425.67.b c518425.67.r c518425.67.u c518425.68.a c518425.68.b c518425.68.r c518425.68.u c518425.69.b c518425.69.u +L2-107,L2-108,L2-124,L2-125,L2-92,L3-52,L3-89 target 133 -> text [T:prompt-2]
-  call c518425.1.u c518425.23.u c518425.47.u c518425.48.u c518425.49.u c518425.51.u c518425.52.u c518425.53.u c518425.54.u c518425.55.u c518425.57.u c518425.58.r c518425.59.u c518425.61.u c518425.62.u c518425.63.u c518425.64.r c518425.65.r c518425.67.u c518425.68.u c518425.69.u +L1-100,L1-101,L1-102,L1-103,L1-104,L1-105,L1-106,L1-109,L1-110,L1-111,L1-112,L1-113,L1-114,L1-115,L1-116,L1-117,L1-118,L1-119,L1-120,L1-121,L1-122,L1-123,L1-126,L1-83,L1-84,L1-85,L1-86,L1-90,L1-91,L1-93,L1-94,L1-95,L1-96,L1-97,L1-98,L1-99,L3-52,L3-89 target 133 -> text [T:prompt-3]
+  call c518425.1.u c518425.23.u c518425.47.u c518425.48.u c518425.49.u c518425.51.u c518425.52.u c518425.53.u c518425.54.u c518425.55.u c518425.57.u c518425.58.u c518425.59.u c518425.61.u c518425.62.u c518425.63.u c518425.64.u c518425.65.u c518425.67.u c518425.68.u c518425.69.u +L1-100,L1-101,L1-102,L1-103,L1-104,L1-105,L1-106,L1-109,L1-110,L1-111,L1-112,L1-113,L1-114,L1-115,L1-116,L1-117,L1-118,L1-119,L1-120,L1-121,L1-122,L1-123,L1-126,L1-83,L1-84,L1-85,L1-86,L1-90,L1-91,L1-93,L1-94,L1-95,L1-96,L1-97,L1-98,L1-99,L3-52,L3-89 target 133 -> text [T:prompt-3]
   compile refused OverBudgetError [T:error-overbudgeterror]
   call c304506.1.u c518425.1.u c518425.23.u c518425.47.u c518425.69.u c518425.70.b c518425.70.u +L3-128,L3-52,L3-89 target 133 -> text [T:prompt-4]
   wrote L3-128 over L2-92 L2-107 L2-108 L2-124 L2-125 L2-127
@@ -211,12 +211,13 @@ step 14
   compile refused UncoveredDropError [T:error-uncovereddroperror.2]
   call c304506.2.a c304506.2.r c518425.1.u c518425.23.u c518425.47.u c518425.69.u c518425.70.u +L1-129,L1-130,L1-131,L3-128,L3-52,L3-89 target 133 -> text [T:prompt-5]
   compile refused UncoveredDropError [T:error-uncovereddroperror]
+  call c304506.2.b c304506.3.u c518425.1.u c518425.23.u c518425.47.u c518425.69.u c518425.70.u +L1-129,L1-130,L1-131,L1-132,L3-128,L3-52,L3-89 target 133 -> text [T:prompt-6]
   wrote L1-132 over a2.1 a2.2
-  wrote L1-133 over a2.3 a3.0 [T:summary-L1]
+  wrote L1-133 over a2.3 a3.0
   logs autobiographical*3
   action dry-compile {"maxTokens":3334} -> {"refused":"UncoveredDropError"}
 step 15
-  compile refused UncoveredDropError [T:error-uncovereddroperror.2]
+  compile refused UncoveredDropError [T:error-uncovereddroperror]
   call c304506.3.a c304506.3.r c518425.1.u c518425.23.u c518425.47.u c518425.69.u c518425.70.u +L1-129,L1-130,L1-131,L1-132,L1-133,L3-128,L3-52,L3-89 target 133 -> text [T:prompt-5]
   call c304506.1.a c304506.1.b c304506.1.r c304506.1.u c304506.2.a c304506.2.b c304506.2.r c304506.2.u c304506.3.a c304506.3.r c304506.3.u c518425.1.u c518425.23.u c518425.47.u c518425.69.u c518425.70.b c518425.70.u +L3-128,L3-52,L3-89 target 133 -> text [T:prompt-7]
   compile 1[T:user-raw^] L3-52@3[T:context-manager-L3,T:junga-L3] L3-89@3[T:context-manager-L3,T:junga-L3] L3-128@3[T:context-manager-L3,T:junga-L3] L2-135@2[T:context-manager-L2,T:junga-L2] a3.3-a15.2
@@ -235,7 +236,7 @@ step 16
   INVARIANT workload: step 15: still refusing 2 steps after the budget was restored
 checkpoint end: messages 358, summaries {"L1":116,"L2":19,"L3":3}, pins 0, holds 0, ready true, waiting null
 end ok
-totals {"calls":11,"compiles":32,"refused":20,"written":138}
+totals {"calls":12,"compiles":32,"refused":20,"written":138}
 templates
 T:context-manager-L1 = {"content":[{"text":"[Recall L1-#]","type":"text"}],"participant":"Context Manager"}
 T:context-manager-L2 = {"content":[{"text":"[Recall L2-#]","type":"text"}],"participant":"Context Manager"}

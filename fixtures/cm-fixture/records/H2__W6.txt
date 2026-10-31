@@ -96,7 +96,7 @@ step 1
   wrote L1-84 over 436 437 [T:summary-L1]
   wrote L2-92 over L1-83 L1-84 L1-85 L1-86 L1-90 L1-91 [T:summary-L2]
   wrote L1-85 over 438 439 [T:summary-L1]
-  wrote L1-86 over 442 443 [T:summary-L1]
+  wrote L1-86 over 440 443 [T:summary-L1]
   wrote L1-90 over 444 505 506 507 [T:summary-L1]
   wrote L1-91 over 508 509 [T:summary-L1]
   wrote L1-93 over 510 511 [T:summary-L1]

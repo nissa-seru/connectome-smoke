@@ -304,3 +304,170 @@ test('a message is named by its add, so a store that numbers it differently reco
     rmSync(dir, { recursive: true, force: true });
   }
 });
+
+// The long-run rules the recorder checks over a run (step 5), each on a small store a test builds.
+function store({ count = 4, summaries = {}, strategy = { config: {} } } = {}) {
+  const messages = Array.from({ length: count }, (_, i) => ({ id: String(i + 1), sequence: i + 1, participant: i % 2 ? 'Junga' : 'User', content: [{ type: 'text', text: `message ${i + 1}` }] }));
+  return {
+    ...manager(),
+    getAllMessages: () => messages,
+    getMessage: (m) => messages.find((x) => x.id === String(m)) ?? null,
+    getSummary: (s) => summaries[s] ?? null,
+    getSummariesInRange: () => Object.values(summaries).map((s) => ({ id: s.id, level: s.level, content: s.content, tokens: 5 })),
+    getStrategy: () => strategy,
+    getRenderStats: () => ({ total: { messages: count, tokens: 100 } }),
+    messages,
+  };
+}
+async function recorded(drive) {
+  const dir = mkdtempSync(join(tmpdir(), 'cmfx-test-'));
+  const saved = Object.fromEntries(['log', 'info', 'warn', 'error', 'debug'].map((k) => [k, console[k]]));
+  try {
+    const file = join(dir, 't.jsonl');
+    const header = { run: 'C3/W1', config: 'C3', workload: 'W1', variant: null, arm: 'base', seed: 1, scale: 15, from: null, library: { commit: 'c', version: 'v' }, membrane: { version: 'm' }, fixture: { version: 'f' } };
+    const rec = await openRecorder({ file, header });
+    await drive(rec);
+    await rec.end(null);
+    const t = readTrace(readFileSync(file, 'utf8'));
+    return [...t.events.flatMap((e) => e.violations ?? []), ...(t.end.violations ?? [])];
+  } finally {
+    Object.assign(console, saved);
+    rmSync(dir, { recursive: true, force: true });
+  }
+}
+const named = (vs, invariant) => vs.filter((v) => v.invariant === invariant);
+const summariserRequest = (text, model = 'claude-opus-4-6') => ({ model, messages: [{ role: 'user', content: [{ type: 'text', text }] }] });
+
+test('a refused or cut-off answer\'s text in a summary breaks refused-text, and a summary without it does not', async () => {
+  const refusal = 'I cannot help with summarising this part.';
+  for (const [content, kind, breaks] of [[`Memory: ${refusal}`, 'refusal', 1], [`Memory: ${refusal}`, 'max-tokens', 1], ['Memory: what happened.', 'refusal', 0], [`Memory: ${refusal}`, 'text', 0]]) {
+    const m = store({ summaries: { 'L1-0': { id: 'L1-0', level: 1, sourceLevel: 0, sourceIds: ['1', '2'], content } } });
+    const vs = await recorded(async (rec) => {
+      rec.step(1);
+      rec.call({ request: summariserRequest('chunk'), target: 10, carried: [], answer: { kind, text: refusal } });
+      await rec.endStep(m);
+    });
+    assert.equal(named(vs, 'refused-text').length, breaks, `${kind}, ${content}`);
+  }
+});
+
+test('a request sent again after the same bytes were answered or rejected breaks requested-again, and after a throw does not', async () => {
+  for (const [first, breaks] of [['text', 1], ['rejection', 1], ['throw', 0], ['refusal', 0]]) {
+    const vs = await recorded(async (rec) => {
+      rec.step(1);
+      rec.call({ request: summariserRequest('chunk'), target: 10, carried: [], answer: first === 'text' ? { kind: 'text', text: 'a memory' } : { kind: first } });
+      rec.call({ request: summariserRequest('chunk'), target: 10, carried: [], answer: { kind: 'text', text: 'a memory' } });
+      rec.call({ request: summariserRequest('another chunk'), target: 10, carried: [], answer: { kind: 'text', text: 'a memory' } });
+      await rec.endStep(store());
+    });
+    assert.equal(named(vs, 'requested-again').length, breaks, first);
+  }
+});
+
+test('a summariser request naming another model than the run\'s first breaks model', async () => {
+  for (const [second, breaks] of [['claude-opus-4-6', 0], ['claude-sonnet-4-5', 1]]) {
+    const vs = await recorded(async (rec) => {
+      rec.step(1);
+      rec.call({ request: summariserRequest('one'), target: 10, carried: [], answer: { kind: 'text', text: 'a' } });
+      rec.call({ request: summariserRequest('two', second), target: 10, carried: [], answer: { kind: 'text', text: 'b' } });
+      await rec.endStep(store());
+    });
+    assert.equal(named(vs, 'model').length, breaks, second);
+  }
+});
+
+test('a plan-vs-actual line marking a stop at the label ceiling breaks ceiling, and one without the mark does not', async () => {
+  for (const [line, breaks] of [['[plan-vs-actual] moved=0 ceiling=live drift=0', 1], ['[plan-vs-actual] moved=0 drift=0', 0]]) {
+    const vs = await recorded(async (rec) => {
+      rec.step(1);
+      console.log(line);
+      await rec.endStep(store());
+    });
+    assert.equal(named(vs, 'ceiling').length, breaks, line);
+  }
+});
+
+class WindowedPassthroughStrategy { constructor() { this.config = {}; } }
+const shown = (m, i, marked = false) => [{ participant: m.messages[i].participant, content: m.messages[i].content, ...(marked ? { cacheBreakpoint: true } : {}) }, raw(i + 1)];
+
+test('a windowed passthrough marks the last message and the last unchanged one, and only the last after a fresh start', async () => {
+  const m = store({ strategy: new WindowedPassthroughStrategy() });
+  const run = (second, between) => recorded(async (rec) => {
+    rec.step(1);
+    rec.compiled(m, budget, compiled(shown(m, 0), shown(m, 1, true)));
+    if (between) rec.action(between, {});
+    rec.compiled(m, budget, compiled(...second));
+    await rec.endStep(m);
+  });
+  assert.equal(named(await run([shown(m, 0), shown(m, 1, true), shown(m, 2, true)]), 'marks').length, 0);
+  assert.equal(named(await run([shown(m, 0), shown(m, 1), shown(m, 2, true)]), 'marks').length, 1);
+  assert.equal(named(await run([shown(m, 0, true), shown(m, 1, true), shown(m, 2, true)]), 'marks').length, 1);
+  assert.equal(named(await run([shown(m, 0), shown(m, 1), shown(m, 2, true)], 'switch'), 'marks').length, 0);
+  assert.equal(named(await run([shown(m, 0), shown(m, 1, true), shown(m, 2, true)], 'switch'), 'marks').length, 1);
+  // An edit rewrites the history but doesn't start the strategy over: it still marks against the compile before.
+  assert.equal(named(await run([shown(m, 0), shown(m, 1, true), shown(m, 2, true)], 'edit'), 'marks').length, 0);
+});
+
+test('a windowed passthrough\'s compile extends the one before it, but for a re-anchor, a fresh start or an image stripped since', async () => {
+  const m = store({ strategy: new WindowedPassthroughStrategy() });
+  const imaged = [{ participant: 'User', content: [{ type: 'text', text: 'see' }, { type: 'image', source: { type: 'base64', mediaType: 'image/png', data: 'AAAA' } }] }, raw(1)];
+  const stripped = [{ participant: 'User', content: [{ type: 'text', text: 'see' }, { type: 'text', text: '[image not shown: this context keeps only some images]' }] }, raw(1)];
+  const run = (first, second, { between = null, cause = null } = {}) => recorded(async (rec) => {
+    rec.step(1);
+    rec.compiled(m, budget, compiled(...first));
+    if (between) rec.action(between, {});
+    const c = compiled(...second);
+    c.provenance.layout = cause ? { cause, memberIds: [] } : null;
+    rec.compiled(m, budget, c);
+    await rec.endStep(m);
+  });
+  assert.equal(named(await run([shown(m, 0), shown(m, 1)], [shown(m, 0), shown(m, 1), shown(m, 2)]), 'prefix').length, 0);
+  assert.equal(named(await run([shown(m, 0), shown(m, 1)], [shown(m, 1), shown(m, 2)]), 'prefix').length, 1);
+  assert.equal(named(await run([shown(m, 0), shown(m, 1)], [shown(m, 1), shown(m, 2)], { cause: 'window' }), 'prefix').length, 0);
+  assert.equal(named(await run([shown(m, 0), shown(m, 1)], [shown(m, 1), shown(m, 2)], { between: 'edit' }), 'prefix').length, 0);
+  assert.equal(named(await run([imaged, shown(m, 1)], [stripped, shown(m, 1), shown(m, 2)]), 'prefix').length, 0);
+});
+
+const flat = { config: { adaptiveResolution: true, foldingStrategy: 'flat-profile' } };
+const folded = (sid, level) => [{ participant: 'Junga', content: [{ type: 'text', text: sid }] }, summary(sid, level)];
+
+test('under flat profile an older message shown shallower than a younger one breaks depth, unless no summary above it covers it', async () => {
+  const sums = {
+    'L1-a': { id: 'L1-a', level: 1, sourceLevel: 0, sourceIds: ['1', '2'], content: 'a' },
+    'L1-b': { id: 'L1-b', level: 1, sourceLevel: 0, sourceIds: ['3', '4'], content: 'b' },
+  };
+  const m = store({ summaries: sums, strategy: flat });
+  const one = (c) => recorded(async (rec) => { rec.step(1); rec.compiled(m, budget, c); await rec.endStep(m); });
+  // Messages 1 and 2 raw, older than L1-b: L1-a covers them, so they were folded past, not passed over.
+  assert.equal(named(await one(compiled(shown(m, 0), shown(m, 1), folded('L1-b', 1))), 'depth').length, 1);
+  // Older at least as deep: fine.
+  assert.equal(named(await one(compiled(folded('L1-a', 1), shown(m, 2), shown(m, 3))), 'depth').length, 0);
+  // With no summary over 1 and 2, they were passed over.
+  const m2 = store({ summaries: { 'L1-b': sums['L1-b'] }, strategy: flat });
+  assert.equal(named(await recorded(async (rec) => { rec.step(1); rec.compiled(m2, budget, compiled(shown(m2, 0), shown(m2, 1), folded('L1-b', 1))); await rec.endStep(m2); }), 'depth').length, 0);
+});
+
+test('under flat profile a stored message raised to a level a second time breaks raised, and raised once does not', async () => {
+  const sums = { 'L1-a': { id: 'L1-a', level: 1, sourceLevel: 0, sourceIds: ['1', '2'], content: 'a' } };
+  const m = store({ summaries: sums, strategy: flat });
+  const rest = [shown(m, 2), shown(m, 3)];
+  const run = (...layouts) => recorded(async (rec) => {
+    rec.step(1);
+    for (const l of layouts) rec.compiled(m, budget, compiled(...(l === 'raw' ? [shown(m, 0), shown(m, 1)] : [folded('L1-a', 1)]), ...rest));
+    await rec.endStep(m);
+  });
+  assert.equal(named(await run('raw', 'L1', 'L1'), 'raised').length, 0);
+  assert.equal(named(await run('raw', 'L1', 'raw', 'L1'), 'raised').length, 1);
+});
+
+test('under flat profile a body partly folded, its first shards under a summary and the rest raw, is no raise, held over compiles', async () => {
+  // Message 1 is a body of two shards, 1 and 2; L1-a covers shard 1, and a partial raw copy (named by the first
+  // shard) carries shard 2.
+  const sums = { 'L1-a': { id: 'L1-a', level: 1, sourceLevel: 0, sourceIds: ['1'], content: 'a' } };
+  const m = store({ summaries: sums, strategy: flat });
+  m.messages[0].bodyGroupId = 'g'; m.messages[1].bodyGroupId = 'g';
+  const partly = () => compiled(folded('L1-a', 1), [{ participant: 'User', content: m.messages[1].content }, { kind: 'raw', bodies: [{ messageId: '1', sequence: 1, complete: false }] }], shown(m, 2), shown(m, 3));
+  const vs = await recorded(async (rec) => { rec.step(1); for (let i = 0; i < 3; i++) rec.compiled(m, budget, partly()); await rec.endStep(m); });
+  assert.equal(named(vs, 'raised').length, 0);
+  assert.equal(named(vs, 'depth').length, 0);
+});
