@@ -5647,7 +5647,10 @@
       }
     ],
     "flags": [],
-    "note": "unplaced: from Esther-2584's compression-lifecycle mapping (~/.local/state/esther-2584/cm-rules/map/gaps-fixture-mutants.json, sha256 d5dfde3c6eabe28f...); at 8b6990e it changes no record of the runs Esther-2584's look named (C3 and H1 opus W7/modes, C3/W7/merges-refused, C3 and C7 W7/split, C3 and H1 opus W9, C3 and H1 opus W10/uncapped, H1 opus W10/capped; J58114)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "reached; no recorded change: reached on C3/W9; none of 38 C3 and H1 opus runs changes (Esther-2584's look 2 by reach probes and readiness, J58304, J58318, J58336, J58339, J58343, J58346 at 4ac3a86, #306339; Oscar-1005 #306340) [run]"
+    }
   },
   {
     "id": "lifecycle-b1c",
@@ -5665,7 +5668,10 @@
       }
     ],
     "flags": [],
-    "note": "unplaced: from Esther-2584's compression-lifecycle mapping (~/.local/state/esther-2584/cm-rules/map/gaps-fixture-mutants.json, sha256 d5dfde3c6eabe28f...); at 8b6990e it changes no record of the runs Esther-2584's look named (C3 and H1 opus W7/modes, C3/W7/merges-refused, C3 and C7 W7/split, C3 and H1 opus W9, C3 and H1 opus W10/uncapped, H1 opus W10/capped; J58114)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "reached; no recorded change: reached on H1 opus/W11 and W11/state-write-fails; none of 48 H runs changes. By reading equivalent: tick() returns at once while compression is in flight (ab:7614), so the extra drain consumes nothing (Esther-2584's look 2 by reach probes and readiness, J58304, J58318, J58336, J58339, J58343, J58346 at 4ac3a86, #306339; Oscar-1005 #306340) [run]"
+    }
   },
   {
     "id": "lifecycle-b3",
@@ -5678,7 +5684,10 @@
       }
     ],
     "flags": [],
-    "note": "unplaced: from Esther-2584's compression-lifecycle mapping (~/.local/state/esther-2584/cm-rules/map/gaps-fixture-mutants.json, sha256 d5dfde3c6eabe28f...); at 8b6990e it changes no record of the runs Esther-2584's look named (C3 and H1 opus W7/modes, C3/W7/merges-refused, C3 and C7 W7/split, C3 and H1 opus W9, C3 and H1 opus W10/uncapped, H1 opus W10/capped; J58114)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "reached; no recorded change: reached on H1 opus/W7/deferred; none of 48 H runs changes. By reading equivalent: the two extra ticks consume nothing and make no call (Esther-2584's look 2 by reach probes and readiness, J58304, J58318, J58336, J58339, J58343, J58346 at 4ac3a86, #306339; Oscar-1005 #306340) [run]"
+    }
   },
   {
     "id": "lifecycle-b4c",
@@ -5690,8 +5699,9 @@
         "replace": "        if (compressionFailureKind(err) === 'abort') return;"
       }
     ],
-    "flags": [],
-    "note": "unplaced: from Esther-2584's compression-lifecycle mapping (~/.local/state/esther-2584/cm-rules/map/gaps-fixture-mutants.json, sha256 d5dfde3c6eabe28f...); at 8b6990e it changes no record of the runs Esther-2584's look named (C3 and H1 opus W7/modes, C3/W7/merges-refused, C3 and C7 W7/split, C3 and H1 opus W9, C3 and H1 opus W10/uncapped, H1 opus W10/capped; J58114)"
+    "flags": [
+      "H1.claude-opus-4-6/W7/merges-rejected"
+    ]
   },
   {
     "id": "lifecycle-b5b",
@@ -5704,7 +5714,10 @@
       }
     ],
     "flags": [],
-    "note": "unplaced: from Esther-2584's compression-lifecycle mapping (~/.local/state/esther-2584/cm-rules/map/gaps-fixture-mutants.json, sha256 d5dfde3c6eabe28f...); at 8b6990e it changes no record of the runs Esther-2584's look named (C3 and H1 opus W7/modes, C3/W7/merges-refused, C3 and C7 W7/split, C3 and H1 opus W9, C3 and H1 opus W10/uncapped, H1 opus W10/capped; J58114)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "reached; no recorded change: reached on H1 opus/W9; none of 48 H runs changes (Esther-2584's look 2 by reach probes and readiness, J58304, J58318, J58336, J58339, J58343, J58346 at 4ac3a86, #306339; Oscar-1005 #306340) [run]"
+    }
   },
   {
     "id": "lifecycle-b10b",
@@ -5733,7 +5746,10 @@
       }
     ],
     "flags": [],
-    "note": "unplaced: from Esther-2584's compression-lifecycle mapping (~/.local/state/esther-2584/cm-rules/map/gaps-fixture-mutants.json, sha256 d5dfde3c6eabe28f...); at 8b6990e it changes no record of the runs Esther-2584's look named (C3 and H1 opus W7/modes, C3/W7/merges-refused, C3 and C7 W7/split, C3 and H1 opus W9, C3 and H1 opus W10/uncapped, H1 opus W10/capped; J58114)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "reached; no recorded change: none of 48 H runs (H1 opus, H1 sonnet and H2, real excepted) changes, merges-rejected among them, where a drained tick throws (Esther-2584's look 2 by reach probes and readiness, J58304, J58318, J58336, J58339, J58343, J58346 at 4ac3a86, #306339; Oscar-1005 #306340) [run]"
+    }
   },
   {
     "id": "lifecycle-b12a",
@@ -5954,7 +5970,10 @@
       }
     ],
     "flags": [],
-    "note": "unplaced: from Esther-2584's compression-lifecycle mapping (~/.local/state/esther-2584/cm-rules/map/gaps-fixture-mutants.json, sha256 d5dfde3c6eabe28f...); at 8b6990e it changes no record of the runs Esther-2584's look named (C3 and H1 opus W7/modes, C3/W7/merges-refused, C3 and C7 W7/split, C3 and H1 opus W9, C3 and H1 opus W10/uncapped, H1 opus W10/capped; J58114)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "no chunk's split reaches a 21st call in the four W7 split and source-only runs (C3, C7); the rung needs compressionSplitFallback, which no house configuration sets, as A3a and F10b (Esther-2584's look 2 by reach probes and readiness, J58304, J58318, J58336, J58339, J58343, J58346 at 4ac3a86, #306339; Oscar-1005 #306340) [run]"
+    }
   },
   {
     "id": "lifecycle-f10b",
@@ -6217,7 +6236,10 @@
       }
     ],
     "flags": [],
-    "note": "unplaced: from Esther-2584's compression-lifecycle mapping (~/.local/state/esther-2584/cm-rules/map/gaps-fixture-mutants.json, sha256 d5dfde3c6eabe28f...)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "reached; no recorded change: reached on H2/W9; none of 26 W9 and C9 runs changes: the debt count isn't on a recorded surface (Esther-2584's look 2 by reach probes and readiness, J58304, J58318, J58336, J58339, J58343, J58346 at 4ac3a86, #306339; Oscar-1005 #306340) [run]"
+    }
   },
   {
     "id": "lifecycle-n3b",
@@ -6230,7 +6252,10 @@
       }
     ],
     "flags": [],
-    "note": "unplaced: from Esther-2584's compression-lifecycle mapping (~/.local/state/esther-2584/cm-rules/map/gaps-fixture-mutants.json, sha256 d5dfde3c6eabe28f...)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "reached; no recorded change: the dedup guard is reached on C9/W9; none of 26 runs (every W9 and C9 run) changes. The code's comment (ab:9516-9517) says a compressed record with no summary of its own resets to raw at load, so a reload wouldn't show the mark either (the comment's claim, unchecked) (Esther-2584's look 2 by reach probes and readiness, J58304, J58318, J58336, J58339, J58343, J58346 at 4ac3a86, #306339; Oscar-1005 #306340) [run]"
+    }
   },
   {
     "id": "lifecycle-n4b",
@@ -6243,7 +6268,10 @@
       }
     ],
     "flags": [],
-    "note": "unplaced: from Esther-2584's compression-lifecycle mapping (~/.local/state/esther-2584/cm-rules/map/gaps-fixture-mutants.json, sha256 d5dfde3c6eabe28f...); at 8b6990e it changes no record of the runs Esther-2584's look named (C3 and H1 opus W7/modes, C3/W7/merges-refused, C3 and C7 W7/split, C3 and H1 opus W9, C3 and H1 opus W10/uncapped, H1 opus W10/capped; J58114)"
+    "gap": {
+      "kind": "unreachable",
+      "why": "reached; no recorded change: reached on H2/W9, where the overlap is met once (D47); none of 26 W9 and C9 runs changes, since logging every attempt adds nothing to one (Esther-2584's look 2 by reach probes and readiness, J58304, J58318, J58336, J58339, J58343, J58346 at 4ac3a86, #306339; Oscar-1005 #306340) [run]"
+    }
   },
   {
     "id": "fov-pk2",
