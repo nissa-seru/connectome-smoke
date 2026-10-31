@@ -236,6 +236,7 @@ step 16
   INVARIANT workload: step 15: still refusing 2 steps after the budget was restored
 checkpoint end: messages 358, summaries {"L1":116,"L2":19,"L3":3}, pins 0, holds 0, ready true, waiting null
 end ok
+  INVARIANT workload: 2 L1s over one message closed before the next message came, which a later L1 took: L1-71 over store:339, L1-126 over store:651
 totals {"calls":12,"compiles":32,"refused":20,"written":138}
 templates
 T:context-manager-L1 = {"content":[{"text":"[Recall L1-#]","type":"text"}],"participant":"Context Manager"}
