@@ -38,8 +38,7 @@ import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, 
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { readTrace, traceFileName } from '../lib/cm-fixture/events.mjs';
-import { renderRecord } from '../lib/cm-fixture/record.mjs';
+import { recordFileName } from '../lib/cm-fixture/events.mjs';
 import { diffRecords } from '../lib/cm-fixture/record-diff.mjs';
 import { runArm } from '../lib/cm-fixture/pool.mjs';
 import { matrix } from '../lib/cm-fixture/workloads.mjs';
@@ -50,7 +49,6 @@ const LIB = join(ROOT, 'lib', 'cm-fixture');
 const RECORDS = join(ROOT, 'fixtures', 'cm-fixture', 'records');
 const CHECKPOINTS = join(ROOT, 'fixtures', 'cm-fixture', 'checkpoints');
 const EXPECTED_FAILURES = join(ROOT, 'fixtures', 'cm-fixture', 'expected-failures.json');
-const recordFile = (id) => traceFileName(id).replace(/\.jsonl$/, '.txt');
 
 function args(argv) {
   const [command, ...rest] = argv;
@@ -72,20 +70,18 @@ function args(argv) {
 
 /** Run the matrix once in the tree, and render each run's record: { records: Map(id -> text), failed }. */
 async function runOnce(o, jobs, work) {
-  const traceDir = join(work, 'traces');
+  const recordDir = join(work, 'records');
   const results = await runArm({
     arm: { name: 'candidate', cmDir: o.cm, membraneDir: o.membraneDir ?? o.cm, commit: o.commit },
-    jobs, workers: o.workers, traceDir, checkpointDir: CHECKPOINTS, workDir: join(work, 'runs'),
-    recorder: join(LIB, 'trace.mjs'), house: join(LIB, 'house.json'),
+    jobs, workers: o.workers, traceDir: join(work, 'traces'), checkpointDir: CHECKPOINTS, workDir: join(work, 'runs'),
+    recorder: join(LIB, 'trace.mjs'), house: join(LIB, 'house.json'), recordDir,
   });
   const records = new Map();
   const failed = [];
   for (const r of results) {
-    const file = join(traceDir, traceFileName(r.id));
-    if (!existsSync(file)) { failed.push({ id: r.id, why: r.error ?? 'no trace written' }); continue; }
-    const trace = readTrace(readFileSync(file, 'utf8'), r.id);
-    if (trace.end.error?.where === 'driver') failed.push({ id: r.id, why: `the driver ended the run: ${trace.end.error.class}` });
-    records.set(r.id, renderRecord(trace));
+    if (!r.record) { failed.push({ id: r.id, why: r.error ?? 'no trace written' }); continue; }
+    if (r.driverEnded) failed.push({ id: r.id, why: `the driver ended the run: ${r.driverEnded}` });
+    records.set(r.id, readFileSync(join(recordDir, recordFileName(r.id)), 'utf8'));
   }
   return { records, failed };
 }
@@ -277,7 +273,7 @@ async function main() {
       let bad = first.failed.length;
       for (const f of first.failed) process.stdout.write(`${f.id}: FAILED ${f.why}\n`);
       for (const [id, text] of first.records) {
-        const committed = join(RECORDS, recordFile(id));
+        const committed = join(RECORDS, recordFileName(id));
         if (!existsSync(committed)) { bad++; process.stdout.write(`${id}: no committed record; a run the matrix gained needs one, written by regenerate\n`); continue; }
         const d = diffRecords(readFileSync(committed, 'utf8'), text);
         if (!d.same) { bad++; process.stdout.write(`${summary(id, d)}\n`); }
@@ -296,8 +292,8 @@ async function main() {
     mkdirSync(RECORDS, { recursive: true });
     const keep = new Set();
     for (const [id, text] of first.records) {
-      const file = join(RECORDS, recordFile(id));
-      keep.add(recordFile(id));
+      const file = join(RECORDS, recordFileName(id));
+      keep.add(recordFileName(id));
       const before = existsSync(file) ? readFileSync(file, 'utf8') : null;
       if (before === text) continue;
       writeFileSync(file, text);
