@@ -76,11 +76,13 @@ function args(argv) {
 /** Run the matrix once in the tree, and render each run's record: { records: Map(id -> text), failed }. */
 async function runOnce(o, jobs, work) {
   const recordDir = join(work, 'records');
+  const timing = { called: performance.now() };
   const results = await runArm({
     arm: { name: 'candidate', cmDir: o.cm, membraneDir: o.membraneDir ?? o.cm, commit: o.commit },
     jobs, workers: o.workers, traceDir: join(work, 'traces'), checkpointDir: CHECKPOINTS, workDir: join(work, 'runs'),
-    recorder: join(LIB, 'trace.mjs'), house: join(LIB, 'house.json'), recordDir,
+    recorder: join(LIB, 'trace.mjs'), house: join(LIB, 'house.json'), recordDir, timing,
   });
+  timing.renderMs = results.reduce((a, r) => a + (r.renderMs ?? 0), 0);
   const records = new Map();
   const failed = [];
   for (const r of results) {
@@ -88,7 +90,7 @@ async function runOnce(o, jobs, work) {
     if (r.driverEnded) failed.push({ id: r.id, why: `the driver ended the run: ${r.driverEnded}` });
     records.set(r.id, readFileSync(join(recordDir, recordFileName(r.id)), 'utf8'));
   }
-  return { records, failed };
+  return { records, failed, timing };
 }
 
 /**
@@ -279,8 +281,8 @@ async function main() {
       return r.ok ? 0 : 1;
     }
     const first = await runOnce(o, jobs, join(work, 'a'));
-    const seconds = ((performance.now() - started) / 1000).toFixed(1);
     if (o.command === 'check') {
+      const comparing = performance.now();
       const kept = new Set(first.failed.map((f) => f.id));
       for (const f of first.failed) process.stdout.write(`${f.id}: FAILED ${f.why}\n`);
       for (const [id, text] of first.records) {
@@ -300,7 +302,11 @@ async function main() {
         process.stdout.write(`cm-fixture check: the traces of ${n} of the ${kept.size} runs that differ, lack a record or failed are kept in ${dir}\n`);
       }
       const bad = kept.size;
-      process.stdout.write(`cm-fixture check: ${jobs.length} runs at ${o.commit.slice(0, 12)}, ${jobs.length - bad} matching their records, in ${seconds} s\n`);
+      // Where the time went, from the process's start: the lane's own start, the workers loading the arm, the runs
+      // (their records rendered in the workers meanwhile, as worker time), and the comparison.
+      const t = first.timing, s1 = (ms) => (ms / 1000).toFixed(1), s2 = (ms) => (ms / 1000).toFixed(2);
+      const parts = `start ${s2(t.called)} s, workers ${s2(t.ready)} s, runs ${s1(t.done - t.ready)} s (rendering ${s1(t.renderMs)} s of worker time), comparison ${s2(performance.now() - comparing)} s`;
+      process.stdout.write(`cm-fixture check: ${jobs.length} runs at ${o.commit.slice(0, 12)}, ${jobs.length - bad} matching their records, in ${s1(performance.now())} s: ${parts}\n`);
       return bad === 0 ? 0 : 1;
     }
     // regenerate
