@@ -4,7 +4,7 @@
  * requests a resident's host sends. The host runs as residents run it, on a virtual clock,
  * against a stand-in for the provider (lib/strategies/).
  *
- *   node test/whole-host/run.mjs [--runs a,b] [--shard i/n] [--overlay <pack.tgz>,...] [--update-records] [--update-seconds] [--self-check] [--workdir <dir>] [--out <dir>]
+ *   node test/whole-host/run.mjs [--runs a,b] [--shard i/n] [--overlay <pack.tgz>,...] [--checkpoints <dir>] [--update-records] [--update-seconds] [--self-check] [--workdir <dir>] [--out <dir>]
  *   node test/whole-host/run.mjs --find-lengths [--runs a,b]
  *
  * The runs are each configuration's check (`default`, `passthrough`: the configurations stack.json
@@ -33,6 +33,13 @@
  *    evidence. `--update-records` writes the run's records over the committed ones, for a
  *    change whose effect on what residents' requests carry is meant.
  *
+ * `--checkpoints DIR` keeps the checkpoints in DIR and reuses one already there, so reruns, such
+ * as chasing a record's difference or laying many candidates over one release, skip writing them.
+ * Each is keyed by everything that determines it: the lane's code (laneVersion), the release
+ * install's versions, the configuration as run and, for a workload's, the run it continues, so a
+ * reuse never picks up a checkpoint something else wrote. Without it they're written in the work
+ * directory at each run, as CI writes them.
+ *
  * `--self-check` also runs each run without the harness's test module
  * (lib/strategies/module.mjs, which records every compile the host makes) and compares what the
  * stand-in received in the two, every request's whole body (system, tools with their
@@ -60,7 +67,7 @@
  * couldn't run.
  */
 import { createHash } from 'node:crypto';
-import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -131,7 +138,8 @@ mkdirSync(work, { recursive: true });
 const out = resolve(opt('out', join(work, 'out')));
 mkdirSync(out, { recursive: true });
 const lane = laneVersion();
-const cacheRoot = join(work, 'checkpoints');
+const checkpointsDir = opt('checkpoints') ? resolve(opt('checkpoints')) : null;
+const cacheRoot = checkpointsDir ? join(checkpointsDir, 'configurations') : join(work, 'checkpoints');
 const npmCi = (cwd) => sh('npm', ['ci', '--ignore-scripts', '--no-audit', '--no-fund', '--loglevel=error'], { cwd, timeout: 900_000 });
 const named = (versions) => Object.entries(versions).map(([k, v]) => `${k.replace('@animalabs/', '')}@${v}`).join(' ');
 
@@ -255,12 +263,27 @@ async function checkpointOf(from) {
   if (!checkpoints.has(from)) {
     const t = performance.now();
     const job = runOf(from, all, hostFacts({ hostDir: release.hostDir, configuration: all[from.split('/')[0]] }));
-    const dir = join(work, 'checkpoints', slug(from));
-    const storeDir = join(dir, 'store');
-    const d = await drive(job, release, { storeDir, epoch: EPOCH, dir });
-    checkpoints.set(from, d.run.ok ? { storeDir, clockEnd: d.run.clockEnd } : { failed: d.run.failure?.reason ?? 'no reason given' });
-    seconds.checkpoints[from] = since(t);
-    checkpointTime += seconds.checkpoints[from];
+    // Kept under --checkpoints by everything that determines it; else written in this run's work directory.
+    const key = createHash('sha256').update(JSON.stringify({ lane, release: release.versions, from, configuration: job.configuration, epoch: EPOCH })).digest('hex').slice(0, 16);
+    const kept = checkpointsDir ? join(checkpointsDir, 'workloads', `${slug(from)}-${key}`) : null;
+    if (kept && existsSync(join(kept, 'checkpoint.json'))) {
+      checkpoints.set(from, { ...JSON.parse(readFileSync(join(kept, 'checkpoint.json'), 'utf-8')), storeDir: join(kept, 'store') });
+      console.log(`${LABEL} checkpoint ${from}: reused ${kept}`);
+    } else {
+      const dir = kept ? `${kept}.writing-${process.pid}` : join(work, 'checkpoints', slug(from));
+      rmSync(dir, { recursive: true, force: true });
+      const d = await drive(job, release, { storeDir: join(dir, 'store'), epoch: EPOCH, dir });
+      if (!d.run.ok) checkpoints.set(from, { failed: d.run.failure?.reason ?? 'no reason given' });
+      else if (!kept) checkpoints.set(from, { storeDir: join(dir, 'store'), clockEnd: d.run.clockEnd });
+      else {
+        writeFileSync(join(dir, 'checkpoint.json'), `${JSON.stringify({ from, key, clockEnd: d.run.clockEnd })}\n`);
+        // A writer that lost the race to another keeps the other's, which has the same key.
+        try { renameSync(dir, kept); } catch { rmSync(dir, { recursive: true, force: true }); }
+        checkpoints.set(from, { ...JSON.parse(readFileSync(join(kept, 'checkpoint.json'), 'utf-8')), storeDir: join(kept, 'store') });
+      }
+      seconds.checkpoints[from] = since(t);
+      checkpointTime += seconds.checkpoints[from];
+    }
   }
   return checkpoints.get(from);
 }
@@ -322,11 +345,14 @@ async function workloadRun(id, { harnessModule = true, rawDir = null, dir }) {
 async function configurationCheck(name, { harnessModule = true, rawDir = null, dir }) {
   const trial = trialOf(name);
   const t = performance.now();
+  let wrote;
   try {
-    await writeStore({ cacheRoot, configuration: all[name], hostDir: release.hostDir, installDir: release.installDir, work: join(work, `write-${name}`), trial, lane });
+    wrote = await writeStore({ cacheRoot, configuration: all[name], hostDir: release.hostDir, installDir: release.installDir, work: join(work, `write-${name}`), trial, lane });
   } catch (e) { return { outcome: 'couldnt-run', reason: `writing its checkpoint failed: ${e.message}` }; }
-  seconds.checkpoints[name] = since(t);
-  checkpointTime += seconds.checkpoints[name];
+  // A checkpoint --checkpoints already held took no writing, so its seconds aren't a write's.
+  if (wrote?.written === false) console.log(`${LABEL} checkpoint ${name}: reused under ${cacheRoot}`);
+  else seconds.checkpoints[name] = since(t);
+  checkpointTime += since(t);
   const configuration = harnessModule ? all[name] : { ...all[name], harnessModule: false };
   const r = await check({ cacheRoot, configuration, hostDir: candidate.hostDir, installDir: candidate.installDir, work: join(work, 'runs', basename(dir), 'work'), evidence: dir, trial, lane, rawDir });
   return {

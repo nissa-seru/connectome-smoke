@@ -1,4 +1,47 @@
 {
   "release": "v0.21.0",
-  "prefixTurns": { "default": 49, "passthrough": 13 }
+  "prefixTurns": {
+    "default": 49,
+    "passthrough": 13
+  },
+  "seconds": {
+    "runs": {
+      "default": 3.2,
+      "passthrough": 1.6,
+      "H1/W1": 15.8,
+      "H4/W1": 27.8,
+      "C3h/W2": 8.1,
+      "H1/W2": 14.4,
+      "H3/W4": 1.7,
+      "C5h/W5": 4.5,
+      "C8h/W6": 6.3,
+      "C3h/W7/merges-refused": 5.1,
+      "C3h/W7/fable-no-tools": 2.4,
+      "C3h/W7/no-tools": 2.5,
+      "H1/W7/merges-refused": 7.5,
+      "H1/W7/merges-rejected": 6,
+      "H2/W7/merges-refused": 2.3,
+      "C3h/W8/unenforced": 3.3,
+      "C6h/W8/enforced": 10.1,
+      "H1/W8/enforced": 10.6,
+      "H4/W8/unenforced": 34.9,
+      "H3/W9": 8,
+      "C3h/W9": 8.3,
+      "C6h/W9": 11.1,
+      "H1/W9": 12.8,
+      "C6h/W11": 7.5,
+      "H1/W11": 16.7
+    },
+    "checkpoints": {
+      "default": 8.8,
+      "passthrough": 2.8,
+      "H3/W1": 11,
+      "C5h/W2": 11.7,
+      "C8h/W2": 11.2,
+      "C3h/W2": 7.8,
+      "H1/W2": 14,
+      "C6h/W2": 11.9,
+      "H4/W2": 13.9
+    }
+  }
 }
