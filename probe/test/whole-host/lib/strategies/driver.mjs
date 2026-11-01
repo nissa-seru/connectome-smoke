@@ -227,18 +227,17 @@ class RunFailure extends Error {}
  * later boot; a param `{ sequenceOf: canary }` is that stored message's
  * sequence, and `{ storeAt, withBlock }` the first stored message from that
  * fraction of the store on that is neither a shard of a larger body nor a
- * system message (and holds a `withBlock` block, given one). A panel or
- * suppress step with `settle: false` skips its settle.
- * A scripted reply with `hold`, a list of steps, holds its request's answer
- * while those steps run, then answers it (`held` in the log): the way a
- * workload acts between a subagent's requests, whose run is one turn of the
- * primary's. A param `{ subagent: true }` names the newest agent other than
- * the primary, as the test module lists them. A channel step with `tags`
+ * system message (and holds a `withBlock` block, given one). A scripted reply
+ * with `settle` is held until every agent's compression is idle, then sent
+ * (`held` in the log), so a subagent's rounds don't race the compression its
+ * earlier rounds started. A channel step with `tags`
  * sends them with its message (RFC-001's `chat:addressed`, say); one with
  * `reader`, an agent's name, waits for that agent's turn to start and then
  * settles, rather than waiting on the primary's speech: the subconscious
- * reader's turn on a message the resident's tune-out holds. A configuration's `subconscious` is the recipe's, and its
- * `fixtureServer` is merged into the fixture server's recipe entry.
+ * reader's turn on a message the resident's tune-out holds (with `mayFail`, a
+ * turn that ends exhausted or aborted is logged as turn-failed). A
+ * configuration's `subconscious` is the recipe's, and its `fixtureServer` is
+ * merged into the fixture server's recipe entry.
  * Resolves with `{ ok, failure, clockEnd, copies, timing }` whatever happens:
  * a failure (an unclassified request, a failed turn, a refused command, an
  * unsettled checkpoint, the host exiting, a wait past its bound) stops the
@@ -286,12 +285,11 @@ export async function runScript({ steps, configuration, standin, hostDir, facts,
 
   const notices = [];
   ctl.onNotice((n) => { notices.push(n); log('notice', n); poke(); });
-  standin.onHeld(async (held) => {
-    log('held', { request: held.id, agent: held.agent });
+  standin.onHeld(async (request) => {
     try {
-      for (const action of held.hold) await KINDS[action.kind]({ ...action, settle: false });
+      await compressionIdle(request);
     } catch (e) {
-      if (!failure) fail({ step: current?.id ?? null, reason: `an action while ${held.id} was held: ${e instanceof RunFailure ? e.message : String(e?.stack || e).slice(0, 2000)}` });
+      if (!failure) fail({ step: current?.id ?? null, reason: `while ${request.id} was held: ${e instanceof RunFailure ? e.message : String(e?.stack || e).slice(0, 2000)}` });
     } finally {
       standin.releaseHeld();
     }
@@ -440,6 +438,25 @@ export async function runScript({ steps, configuration, standin, hostDir, facts,
     }
   }
 
+  /**
+   * A held reply's settle: maintenance passes until every agent is ready with no compression
+   * pending. The turn whose request is held is alive, so the host isn't drained, and settle()
+   * would wait on it.
+   */
+  async function compressionIdle(request) {
+    const started = performance.now();
+    for (let pass = 1; ; pass++) {
+      const answer = await ctl.hostCommand({ command: 'maintain' }, { timeoutMs: MAINTAIN_MS });
+      const agents = answer?.maintenance?.agents ?? [];
+      const idle = answer?.ok === true && agents.every((a) => a.ready === true && a.progress?.pending !== true);
+      if (idle) {
+        log('held', { request: request.id, agent: request.agent, passes: pass, ms: Math.round(performance.now() - started) });
+        return;
+      }
+      if (performance.now() - started >= TURN_MS) throw new RunFailure(`compression didn't go idle within ${TURN_MS} ms (${pass} passes)`);
+    }
+  }
+
   const channelMessage = (step, { id, participant, text, images, tags }) => ({ channelId: step.channel, messageId: id, author: { id: `u-${String(participant).toLowerCase()}`, name: participant }, topic: step.topic, text, ...(images ? { images } : {}), ...(tags ? { tags } : {}), at: clock });
   const sendSummary = (message) => ({ ...message, text: `${message.text.length} chars`, ...(message.images ? { images: message.images.length } : {}) });
 
@@ -452,6 +469,10 @@ export async function runScript({ steps, configuration, standin, hostDir, facts,
       await until(() => eventAfter(from, (e) => e.agentName === step.reader && e.type === 'inference:started'), TURN_MS, `turn ${step.id}: ${step.reader}'s turn`);
       await settle();
       const failed = eventAfter(from, (e) => e.agentName === step.reader && /^inference:(exhausted|aborted)$/.test(e.type));
+      if (failed && step.mayFail) {
+        log('turn-failed', { agent: step.reader, event: failed.e.type, error: failed.e.error ?? null });
+        return;
+      }
       if (failed) {
         fail({ step: step.id, reason: `${step.reader}'s turn ended in ${failed.e.type}: ${JSON.stringify(failed.e).slice(0, 1500)}` });
         throw new RunFailure(failed.e.type);
@@ -589,16 +610,6 @@ export async function runScript({ steps, configuration, standin, hostDir, facts,
     return (await until(() => eventAfter(from, (e) => e.type === 'panel-response' && e.corrId === corrId), COMMAND_MS, `panel ${op}`)).e;
   }
 
-  async function subagentName() {
-    const names = await moduleRead('agents', {});
-    const name = (Array.isArray(names) ? names : []).filter((n) => n !== agentName).at(-1);
-    if (!name) {
-      fail({ step: current?.id ?? null, reason: 'no agent but the primary is registered, so no subagent to name' });
-      throw new RunFailure('no subagent');
-    }
-    return name;
-  }
-
   async function pinId(name) {
     const answer = await panelRequest('pins', {});
     const pin = (answer.data?.pins ?? []).find((p) => p.name === name);
@@ -617,7 +628,6 @@ export async function runScript({ steps, configuration, standin, hostDir, facts,
     if (keys.length === 1 && keys[0] === 'sequenceOf') return (await stored({ canary: value.sequenceOf })).sequence;
     if (keys.includes('storeAt') && keys.every((k) => k === 'storeAt' || k === 'withBlock')) return (await stored(value)).id;
     if (keys.length === 1 && keys[0] === 'pin') return pinId(value.pin);
-    if (keys.length === 1 && keys[0] === 'subagent') return subagentName();
     return Object.fromEntries(await Promise.all(Object.entries(value).map(async ([k, v]) => [k, await resolveMessages(v)])));
   }
 
@@ -640,7 +650,7 @@ export async function runScript({ steps, configuration, standin, hostDir, facts,
       fail({ step: step.id, reason: `the panel's ${step.op} answered ${ok ? 'ok' : `not ok (${answer.data?.warning ?? answer.error ?? answer.status ?? 'no reason given'})`}, where the step expects ${step.expect ?? 'ok'}` });
       throw new RunFailure('panel');
     }
-    if (step.settle !== false) await settle();
+    await settle();
   }
 
   async function webui() {

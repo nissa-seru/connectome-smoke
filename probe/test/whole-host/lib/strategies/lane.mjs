@@ -10,6 +10,7 @@ import { installSpecs } from '../cache-write.mjs';
 import { hostFacts, recipeHash, runScript } from './driver.mjs';
 import { entryKey, findEntry, trialTurns, writeEntry } from './writer.mjs';
 import { startStandin } from './standin.mjs';
+import { RUNS } from './workloads.mjs';
 import { CHANNEL, L3_PRODUCT, configurations, continuation, extend, prefix, products } from './script.mjs';
 import { declaredProducts } from './checks.mjs';
 import { perCheckReport, readExpected } from './report.mjs';
@@ -360,7 +361,8 @@ export async function check({ cacheRoot: root, configuration, hostDir, installDi
   }
   let expected;
   try {
-    expected = readExpected(expectedPath, Object.keys(configurations()));
+    // The file names configurations' checks and workload runs (workloads.mjs RUNS) alike.
+    expected = readExpected(expectedPath, [...Object.keys(configurations()), ...RUNS]);
   } catch (e) {
     return couldnt(`the expected failures couldn't be read: ${String(e?.message || e).slice(0, 2000)}`);
   }

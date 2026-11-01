@@ -1,4 +1,5 @@
-import { deflateSync } from 'node:zlib';
+import { FIXTURE_AGENT, assemblies, requestPairs, withJudged } from './checks.mjs';
+import { png } from './png.mjs';
 import { CHANNEL, READER, TOOL } from './script.mjs';
 
 /**
@@ -70,22 +71,10 @@ function prose(chars, seed) {
 
 export const canary = (seed, step, part) => `[[c:${seed}.${step}.${part}]]`;
 
-/** A size×size RGB PNG of one colour from `seed`, its pixels in stored deflate blocks, so its bytes are the same under any zlib. */
-export function png(seed, size = 16) {
-  const crcTable = Array.from({ length: 256 }, (_, n) => { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; return c >>> 0; });
-  const crc32 = (buf) => { let c = 0xffffffff; for (const b of buf) c = crcTable[(c ^ b) & 0xff] ^ (c >>> 8); return (c ^ 0xffffffff) >>> 0; };
-  const chunk = (type, data) => {
-    const len = Buffer.alloc(4); len.writeUInt32BE(data.length);
-    const td = Buffer.concat([Buffer.from(type, 'ascii'), data]);
-    const crc = Buffer.alloc(4); crc.writeUInt32BE(crc32(td));
-    return Buffer.concat([len, td, crc]);
-  };
-  const ihdr = Buffer.alloc(13);
-  ihdr.writeUInt32BE(size, 0); ihdr.writeUInt32BE(size, 4); ihdr[8] = 8; ihdr[9] = 2;
-  const row = Buffer.alloc(1 + size * 3);
-  for (let x = 0; x < size; x++) { row[1 + x * 3] = (seed * 37) & 255; row[2 + x * 3] = (seed * 91) & 255; row[3 + x * 3] = (seed * 53 + x) & 255; }
-  const raw = Buffer.concat(Array.from({ length: size }, () => row));
-  return Buffer.concat([Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]), chunk('IHDR', ihdr), chunk('IDAT', deflateSync(raw, { level: 0 })), chunk('IEND', Buffer.alloc(0))]).toString('base64');
+/** A 16×16 PNG whose tile colours follow from `seed`. */
+function image(seed) {
+  let k = seed >>> 0;
+  return png(16, 16, (m) => { k = (Math.imul(k, 1103515245) + 12345) >>> 0; return (k >>> 16) % m; });
 }
 
 /**
@@ -132,7 +121,7 @@ function writer(ctx, workload) {
     return {
       id: sid, segment: workload, kind: 'channel', channel: CHANNEL, participant: PARTICIPANTS[Math.floor(r() * PARTICIPANTS.length)], topic: workload,
       text, canaries, replies,
-      ...(o.attach ? { images: [{ data: png(hash32(sid) % 997), mimeType: 'image/png' }] } : {}),
+      ...(o.attach ? { images: [{ data: image(hash32(sid)), mimeType: 'image/png' }] } : {}),
       ...(arrival ? { arrival } : {}),
       ...(o.more ?? {}),
     };
@@ -187,11 +176,13 @@ function guardTurn(w, step) {
 
 /**
  * A knowledge subagent's run as one turn of the primary's (H2): the primary spawns it, synchronously, with a task; the
- * subagent works through `rounds`, each `{ calls, id?, hold? }`: `calls` tool inputs in one reply (`id` the calls' own
- * tool id, `hold` steps the driver takes before that reply goes), and then reports; the primary answers the report.
- * The subagent's requests are told by the marker in the system prompt the spawn gives it.
+ * subagent works through `rounds`, each `{ calls }`, the tool inputs of one reply, and then reports; the primary
+ * answers the report. The subagent's requests are told by the marker in the system prompt the spawn gives it. Its
+ * whole run is one turn of the subagent, so only its first request compiles; the rest are continuation rounds. Each
+ * of its replies waits until compression is idle, as the fixture settled between steps, so the background compression
+ * its rounds start doesn't race them, and the run has one outcome (J60304: two in eight without).
  */
-function subagentTurn(w, ctx, step, rounds, o = {}) {
+function subagentTurn(w, ctx, step, rounds) {
   const marker = `[[knowledge:${ctx.seed}]]`;
   const sid = w.id(step);
   const subCanaries = [w.c(step, 'task')];
@@ -199,12 +190,12 @@ function subagentTurn(w, ctx, step, rounds, o = {}) {
     const calls = round.calls.map((input, j) => {
       const callCanary = w.c(step, `s${i + 1}call${j + 1}`);
       subCanaries.push(callCanary);
-      return { name: TOOL, input: { ...input, canary: callCanary }, ...(round.id ? { id: round.id } : {}) };
+      return { name: TOOL, input: { ...input, canary: callCanary } };
     });
-    return { text: `${w.c(step, `s${i + 1}`)} ${prose(w.between(SIZES.call), `${sid}:s${i + 1}`)}`, calls, ...(round.hold ? { hold: round.hold } : {}) };
+    return { text: `${w.c(step, `s${i + 1}`)} ${prose(w.between(SIZES.call), `${sid}:s${i + 1}`)}`, calls, settle: true };
   });
   const report = w.c(step, 'report');
-  subReplies.push({ text: `${report} ${prose(w.between(SIZES.reply), `${sid}:report`)}` });
+  subReplies.push({ text: `${report} ${prose(w.between(SIZES.reply), `${sid}:report`)}`, settle: true });
   const t = w.turn(step, { calls: 0 });
   return {
     ...t,
@@ -213,8 +204,7 @@ function subagentTurn(w, ctx, step, rounds, o = {}) {
       { text: `${w.c(step, 'r1')} ${prose(200, `${sid}:r1`)}`, calls: [{ name: 'subagent--spawn', input: { name: `knowledge-${ctx.seed}`, systemPrompt: `${marker} You are the fixture's knowledge subagent.`, task: `${w.c(step, 'task')} ${prose(w.between(SIZES.user), `${sid}:task`)}`, sync: true } }] },
       { text: `${w.c(step, 'r2')} ${prose(w.between(SIZES.reply), `${sid}:r2`)}` },
     ],
-    sub: { marker, canaries: subCanaries, replies: subReplies, ...(o.also ? { also: o.also } : {}) },
-    ...(o.more ?? {}),
+    sub: { marker, canaries: subCanaries, replies: subReplies },
   };
 }
 
@@ -224,7 +214,8 @@ function subagentTurn(w, ctx, step, rounds, o = {}) {
  * addressed to the resident, which wakes the subconscious reader, and the reader reports it with `deliver_summary` and
  * ends its turn with `skip_reply` (a reader's plain prose has no destination, and the host asks it again). A reader's
  * request is named by the held message's canary anywhere in it, or by its wake notice, all a window cut to the edge
- * holds. `before` (by held message, from 1) is steps the driver takes before that message's turn.
+ * holds. `before` (by held message, from 1) is steps the driver takes before that message's turn; with `mayFail`,
+ * a reader's turn may end exhausted or aborted, logged as turn-failed, as W8's turns may at the edge.
  */
 function tunedOut(w, steps, count, o = {}) {
   const t = w.turn('tune', { calls: 0 });
@@ -243,6 +234,7 @@ function tunedOut(w, steps, count, o = {}) {
       ...held,
       tags: ['chat:addressed'],
       reader: 'Subconscious',
+      ...(o.mayFail ? { mayFail: true } : {}),
       replies: [],
       sub: {
         marker: READER,
@@ -274,27 +266,10 @@ const entries = (run, kind) => run.log.filter((e) => e.kind === kind);
 const readsOf = (run, op) => entries(run, 'read').filter((e) => e.op === op);
 /** The test module's compile lines, each with the step whose settle or shutdown took it and the boot that made it. */
 const compileLines = (run) => entries(run, 'compiles').flatMap((e) => e.lines.map((l) => ({ ...l, step: e.step, boot: e.boot })));
-/** The boot that was up when a log entry was written: the last `ready` before it. */
-const bootAt = (run, entry) => run.log.filter((e) => e.kind === 'ready' && e.seq < entry.seq).at(-1)?.boot ?? null;
 const canaryRe = (seed) => new RegExp(`^\\[\\[c:${seed}\\.([^.\\]]+)\\.([a-z0-9]+)\\]\\]$`);
 
 /** Every block of an agent request's record, with its message's index and role. */
 const blocksOf = (record) => (record.messages ?? []).flatMap((m, i) => m.blocks.map((b) => ({ i, role: m.role, b })));
-
-/** Tool results with no call before them, and calls with no result after them but in the last message. */
-function unpaired(record) {
-  const all = blocksOf(record);
-  const called = new Set();
-  const orphans = [];
-  for (const { b } of all) {
-    if (b.type === 'tool_use') called.add(b.toolUseId);
-    if (b.type === 'tool_result' && !called.has(b.toolUseId)) orphans.push(b.toolUseId);
-  }
-  const answered = new Set(all.filter((x) => x.b.type === 'tool_result').map((x) => x.b.toolUseId));
-  const last = (record.messages?.length ?? 0) - 1;
-  const unanswered = all.filter((x) => x.b.type === 'tool_use' && !answered.has(x.b.toolUseId) && x.i !== last).map((x) => x.b.toolUseId);
-  return { orphans, unanswered };
-}
 
 /** A configuration that summarises: everything but a passthrough. */
 const summarises = (configuration) => configuration.summarises !== false;
@@ -318,8 +293,9 @@ export const WORKLOADS = {
     check(run, ctx) {
       if (!summarises(ctx.configuration)) return [];
       const last = readsOf(run, 'state').at(-1);
-      const got = last?.answer?.maxLevel;
-      return typeof got === 'number' && got >= 3 ? [] : [{ step: last?.step ?? null, message: `the store reached L${got ?? '?'} in ${this.turns} turns, short of L3` }];
+      if (!last) return withJudged([{ step: null, message: 'couldn\'t judge: the run logged no state read' }], 0);
+      const got = last.answer?.maxLevel;
+      return withJudged(typeof got === 'number' && got >= 3 ? [] : [{ step: last.step ?? null, message: `the store reached L${got ?? '?'} in ${this.turns} turns, short of L3` }], 1);
     },
   },
 
@@ -361,13 +337,16 @@ export const WORKLOADS = {
     check(run, ctx) {
       const own = new RegExp(`^t${ctx.seed}_\\d+$`);
       const out = [];
+      let judged = 0;
       for (const r of run.records.filter((x) => x.kind === 'agent')) {
         for (const m of r.messages ?? []) {
           const calls = m.blocks.filter((b) => b.type === 'tool_use' && own.test(String(b.toolUseId))).map((b) => b.toolUseId);
-          if (calls.length && !m.blocks.some((b) => b.type === 'thinking' || b.type === 'redacted_thinking')) out.push({ step: r.step, message: `request ${r.id}: a call went out without its thinking (${calls.join(', ')})` });
+          if (!calls.length) continue;
+          judged++;
+          if (!m.blocks.some((b) => b.type === 'thinking' || b.type === 'redacted_thinking')) out.push({ step: r.step, message: `request ${r.id}: a call went out without its thinking (${calls.join(', ')})` });
         }
       }
-      return out;
+      return withJudged(out, judged);
     },
   },
 
@@ -416,17 +395,6 @@ export const WORKLOADS = {
     needs: { webui: true },
     steps(ctx) {
       const w = writer(ctx, 'W6');
-      if (ctx.configurationName === 'H2') {
-        const result = () => ({ kind: 'prose', size: w.between(SIZES.result) });
-        const rounds = [];
-        for (let k = 1; k <= this.turns; k++) {
-          if (k % 4 === 0) rounds.push({ calls: [result(), result()] });
-          else if (k % 4 === 1) rounds.push({ calls: [result()], id: `t${ctx.seed}_reuse_${k}` }, { calls: [result()], id: `t${ctx.seed}_reuse_${k}` });
-          else if (k === 2) rounds.push({ calls: [{ kind: 'prose', size: 400, hold: true }] });
-          else rounds.push({ calls: [result()] });
-        }
-        return [subagentTurn(w, ctx, 1, rounds, { also: ['server didn\'t answer within'] })];
-      }
       const steps = [];
       for (let n = 1; n <= this.turns; n++) {
         switch (n % 4) {
@@ -446,15 +414,13 @@ export const WORKLOADS = {
       }
       return steps;
     },
-    check(run, ctx) {
-      if (!summarises(ctx.configuration)) return [];
-      const out = [];
-      for (const r of run.records.filter((x) => x.kind === 'agent')) {
-        const { orphans, unanswered } = unpaired(r);
-        if (orphans.length) out.push({ step: r.step, message: `request ${r.id}: tool results with no call before them: ${orphans.join(', ')}` });
-        if (unanswered.length) out.push({ step: r.step, message: `request ${r.id}: calls with no result after them: ${unanswered.join(', ')}` });
-      }
-      return out;
+    /**
+     * Judged by check 11's `shape` invariant on each compile. The requests the stand-in receives can't show a breach:
+     * membrane repairs both shapes on the wire by design (`normalize-tool-pairs.ts`: a synthetic result for an
+     * unanswered call, an orphan result turned into text).
+     */
+    check() {
+      return [];
     },
   },
 
@@ -468,6 +434,7 @@ export const WORKLOADS = {
     turns: 21,
     property: 'failures: a refused chunk is quarantined alone, and no other chunk\'s compression request carries its text',
     variants: ['modes', 'merges-refused', 'merges-rejected', 'fable-no-tools', 'no-tools', 'throws'],
+    owns: (variant) => (variant === 'merges-refused' ? [{ check: 1, what: 'refusal-offpath' }] : []),
     fromEmpty: (variant) => variant === 'fable-no-tools' || variant === 'no-tools',
     standin: (variant) => ({ refuseMerges: variant === 'merges-refused', rejectMerges: variant === 'merges-rejected' }),
     recipe: (variant) => ({
@@ -503,8 +470,18 @@ export const WORKLOADS = {
       const calls = run.records.filter((r) => r.kind === 'summariser');
       if (ctx.variant === 'modes') {
         const poison = canary(ctx.seed, 3, 'x');
-        const cascade = calls.filter((r) => ['refusal', 'rejection'].includes(r.answer?.shape) && (r.sent?.canaries ?? []).includes(poison) && turnsOf(r).some((t) => t >= 5));
+        const carrying = calls.filter((r) => (r.sent?.canaries ?? []).includes(poison));
+        if (!carrying.length) return withJudged([{ step: null, message: `couldn't judge: no summariser call carried the marked ${poison}` }], 0);
+        const cascade = carrying.filter((r) => ['refusal', 'rejection'].includes(r.answer?.shape) && turnsOf(r).some((t) => t >= 5));
         if (cascade.length) out.push({ step: null, message: `${cascade.length} refused or rejected calls for other chunks carried the quarantined ${poison} (steps ${[...new Set(cascade.map((r) => r.step))].join(', ')})` });
+        return withJudged(out, carrying.length);
+      }
+      if (ctx.variant === 'merges-refused') {
+        const refused = calls.filter((r) => r.answer?.shape === 'refusal');
+        const alerts = run.log.filter((e) => e.kind === 'ipc' && e.event?.type === 'ops:alert' && e.event.kind === 'refusal-offpath');
+        if (!refused.length) return withJudged([{ step: null, message: 'couldn\'t judge: the stand-in refused no merge' }], 0);
+        if (alerts.length !== refused.length) out.push({ step: null, message: `${refused.length} refused merge(s) raised ${alerts.length} off-path refusal alert(s), where each raises one` });
+        return withJudged(out, refused.length);
       }
       if (ctx.variant === 'throws') {
         const newest = (r) => Math.max(-1, ...turnsOf(r));
@@ -516,6 +493,7 @@ export const WORKLOADS = {
           const waited = l1.slice(k + 1).find((r) => r.step === l1[k].step && newest(r) > newest(l1[f]) && newest(r) < stepTurn(l1[k]));
           if (waited) out.push({ step: l1[k].step, message: `the chunk whose call failed at ${l1[f].step} went again before one whose messages had all arrived (newest at turn ${newest(waited)})` });
         }
+        return withJudged(f === -1 || k === -1 ? [{ step: null, message: 'couldn\'t judge: no failed chunk call was followed by another chunk\'s' }] : out, f === -1 || k === -1 ? 0 : 1);
       }
       return out;
     },
@@ -526,8 +504,6 @@ export const WORKLOADS = {
    * agent-framework's preflight allows, by asking for a budget no store fits (the driver's `edge`, which a cut to 0.6
    * below the folded floor meets too); restored at turn 13.
    * A turn may fail meanwhile. Under H4, the sixteen are held messages the reader reads, the cuts going to the reader.
-   * Under H2, the
-   * sixteen are rounds of one knowledge subagent's run, and the cuts go to the subagent between its rounds.
    */
   W8: {
     from: 'checkpoint',
@@ -542,14 +518,8 @@ export const WORKLOADS = {
       if (ctx.configurationName === 'H4') {
         const forReader = (step, tokens) => { const c = cut(step, tokens); return { ...c, params: { ...c.params, agent: 'Subconscious' } }; };
         const steps = [];
-        tunedOut(w, steps, this.turns, { before: { 5: [forReader('h5', Math.round(budget * 0.6))], 9: [forReader('h9', edge(ctx))], 13: [forReader('h13', budget)] } });
+        tunedOut(w, steps, this.turns, { mayFail: true, before: { 5: [forReader('h5', Math.round(budget * 0.6))], 9: [forReader('h9', edge(ctx))], 13: [forReader('h13', budget)] } });
         return steps;
-      }
-      if (ctx.configurationName === 'H2') {
-        const forSub = (step, tokens) => { const c = cut(step, tokens); return { ...c, params: { ...c.params, agent: { subagent: true } } }; };
-        const hold = { 5: [forSub('s5', Math.round(budget * 0.6))], 9: [forSub('s9', edge(ctx))], 13: [forSub('s13', budget)] };
-        const rounds = Array.from({ length: this.turns }, (_, i) => ({ calls: [{ kind: 'prose', size: w.between(SIZES.result) }], ...(hold[i + 1] ? { hold: hold[i + 1] } : {}) }));
-        return [subagentTurn(w, ctx, 1, rounds, { more: { mayFail: true } })];
       }
       const steps = [];
       for (let n = 1; n <= this.turns; n++) {
@@ -561,29 +531,14 @@ export const WORKLOADS = {
       return steps;
     },
     check(run, ctx) {
-      if (ctx.configurationName === 'H4') {
-        const reader = compileLines(run).filter((l) => l.agent === 'Subconscious' && l.kind === 'request');
-        const fit = (k) => reader.find((l) => l.step === `${ctx.seed}.h${k}`)?.outcome === 'compiled';
-        if (![1, 2, 3, 4].every(fit)) return [];
-        return [15, 16].filter((k) => !fit(k)).map((k) => ({ step: `${ctx.seed}.h${k}`, message: `the reader's turn ${k}: still refusing ${k - 13} turns after the budget was restored` }));
-      }
-      if (ctx.configurationName === 'H2') {
-        const rounds = run.records.filter((r) => r.kind === 'agent' && r.agent === 'sub' && r.answer?.shape === 'reply').length;
-        return rounds < 4 || rounds >= 15 ? [] : [{ step: `${ctx.seed}.1`, message: `the subagent's requests stopped at round ${rounds}, before two rounds past the restore at round 13` }];
-      }
-      const byStep = new Map();
-      for (const line of compileLines(run)) if (line.kind === 'request' && !byStep.has(line.step)) byStep.set(line.step, line);
-      const fit = (n) => byStep.get(`${ctx.seed}.${n}`)?.outcome === 'compiled';
-      if (![1, 2, 3, 4].every(fit)) return [];
-      const out = [];
-      for (let n = 15; n <= this.turns; n++) if (!fit(n)) out.push({ step: `${ctx.seed}.${n}`, message: `step ${n}: still refusing ${n - 13} steps after the budget was restored` });
-      return out;
+      if (ctx.configurationName === 'H4') return restoredWithin(run, 'Subconscious', (k) => `${ctx.seed}.h${k}`, 'the reader\'s turn');
+      return restoredWithin(run, FIXTURE_AGENT, (n) => `${ctx.seed}.${n}`, 'step');
     },
   },
 
   /**
-   * W9: twenty turns, with after them: 2, three markdown pastes (adaptive configurations); 3, a dry compile, a
-   * restart, a dry compile; 4, the panel's pins; 5, the tail and (kv-stable) a prepared window through the panel;
+   * W9: twenty turns, with after them: 2, three markdown pastes (adaptive configurations); 3, a restart with the
+   * harness's reload check; 4, the panel's pins; 5, the tail and (kv-stable) a prepared window through the panel;
    * 6, a restart with the witnessed options; 7, a fork through the subagent tool; 8, a restart with a changed system
    * prompt; before 9, three exchanges with no tool; 10, a pin; 11, a level pin; 13, an undo and a redo, each with a
    * dry compile; 14, the unpin; 15, a head reset; before 16, the guard turned on, so 16's result is settled by an
@@ -611,8 +566,7 @@ export const WORKLOADS = {
             if (adaptive) for (const k of ['h', 'i', 'j']) steps.push({ ...w.turn(`2${k}`, { calls: 0 }), text: markdownPaste(ctx.seed, `2${k}`, 3000) });
             break;
           case 3:
-            steps.at(-1).reads = [dry];
-            steps.push(w.other('3.reopen', 'restart', { reads: [dry] }));
+            steps.push(w.other('3.reopen', 'restart', { reloadCheck: true }));
             break;
           case 4:
             steps.push(panel(`4.pins`, 'pins', {}));
@@ -670,18 +624,9 @@ export const WORKLOADS = {
       }
       return steps;
     },
-    check(run, ctx) {
-      const reads = readsOf(run, 'dry-compile');
-      const lines = compileLines(run);
-      const dryOf = (step) => {
-        const read = reads.find((e) => e.step === step);
-        return read ? lines.find((l) => l.kind === 'dry' && l.seq === read.answer?.seq && l.boot === bootAt(run, read)) ?? null : null;
-      };
-      const a = dryOf(`${ctx.seed}.3`);
-      const b = dryOf(`${ctx.seed}.3.reopen`);
-      if (!a || !b) return [{ step: `${ctx.seed}.3`, message: `step 3: the reload check's dry compiles weren't both recorded (${a ? 'before' : 'no before'}, ${b ? 'after' : 'no after'})` }];
-      const sent = (l) => JSON.stringify((l.messages ?? []).map(({ marker, ...m }) => m));
-      return sent(a) === sent(b) ? [] : [{ step: `${ctx.seed}.3.reopen`, message: 'step 3: the request after a restart differs from the one before it' }];
+    /** Judged by check 12, the reload check, on step 3's restart; the restarts at 6, 8 and 19 change options on purpose. */
+    check() {
+      return [];
     },
   },
 
@@ -736,11 +681,26 @@ export const WORKLOADS = {
 };
 
 /**
- * W5's property over a run: each stored message holding tool blocks that a request's compile sent whole (`r:ID`, a
- * complete raw body) went out with every one of those blocks. A turn's request is its first agent request, paired with
- * the turn's request compile line; a continuation round compiles nothing.
+ * W8's property for one agent's turns, numbered 1 to 16 with the restore before 13: each turn's outcome is its first
+ * request assembly's (checks.mjs assemblies, so a refusal retried within the assembly reads as what it ended in). Turns
+ * 1-4 must have compiled for the restore to be judged; where they didn't, the property can't be judged, and says so
+ * rather than passing. Then turns 15 and 16 must compile.
  */
-function toolBlocksLost(run, ctx) {
+function restoredWithin(run, agent, stepOf, noun) {
+  const firstByStep = new Map();
+  for (const a of assemblies(run.log, agent)) if (!firstByStep.has(a.step)) firstByStep.set(a.step, a);
+  const outcome = (n) => firstByStep.get(stepOf(n))?.outcome ?? 'no request';
+  const before = [1, 2, 3, 4].filter((n) => outcome(n) !== 'compiled');
+  if (before.length) return [{ step: stepOf(before[0]), message: `couldn't judge the restore: ${before.map((n) => `${noun} ${n} ${outcome(n)}`).join(', ')}, before the budget was lowered` }];
+  return [15, 16].filter((n) => outcome(n) !== 'compiled').map((n) => ({ step: stepOf(n), message: `${noun} ${n}: ${outcome(n)} ${n - 13} turn(s) after the budget was restored` }));
+}
+
+/**
+ * W5's property over a run: each stored message holding tool blocks that a request's compile sent whole (`r:ID`, a
+ * complete raw body) went out with every one of those blocks. Each compile is paired with the request it was sent as
+ * (checks.mjs requestPairs); a continuation round compiles nothing. Judged: each such body in each paired request.
+ */
+function toolBlocksLost(run) {
   const messages = readsOf(run, 'messages').at(-1)?.answer ?? [];
   const toolIds = new Map();
   for (const m of messages) {
@@ -749,20 +709,21 @@ function toolBlocksLost(run, ctx) {
     if (ids.length) toolIds.set(key, [...(toolIds.get(key) ?? []), ...ids]);
   }
   const groupOf = new Map(messages.map((m) => [m.id, m.bodyGroupId ?? m.id]));
-  const firstRequests = run.records.filter((r) => r.kind === 'agent' && (r.messages?.at(-1)?.blocks ?? []).some((b) => (b.canaries ?? []).includes(`[[c:${r.step}.in]]`)));
-  const lines = compileLines(run).filter((l) => l.kind === 'request');
+  const paired = requestPairs(run.records, run.log, FIXTURE_AGENT);
+  if (!paired) return withJudged([{ step: null, message: 'couldn\'t judge: the log holds no request compile line to pair with the requests' }], 0);
   const out = [];
-  lines.forEach((line, i) => {
-    const request = firstRequests[i];
-    if (!request) return;
+  let judged = 0;
+  for (const { line, request } of paired.pairs) {
     const sent = new Set(blocksOf(request).filter((x) => x.b.type === 'tool_use' || x.b.type === 'tool_result').map((x) => x.b.toolUseId));
     const whole = new Set((line.messages ?? []).flatMap((m) => m.sources ?? []).filter((s) => /^r:[^!]+$/.test(s)).map((s) => groupOf.get(s.slice(2))).filter(Boolean));
     for (const key of whole) {
-      const lost = (toolIds.get(key) ?? []).filter((id) => !sent.has(id));
+      if (!toolIds.has(key)) continue;
+      judged++;
+      const lost = toolIds.get(key).filter((id) => !sent.has(id));
       if (lost.length) out.push({ step: request.step, message: `request ${request.id}: ${key} went out whole but without its tool blocks ${[...new Set(lost)].join(', ')}` });
     }
-  });
-  return out;
+  }
+  return withJudged(out, judged);
 }
 
 /**
@@ -774,10 +735,10 @@ export const RUNS = [
   'C3h/W2', 'H1/W2',
   'H3/W4',
   'C5h/W5',
-  'C8h/W6', 'H2/W6',
+  'C8h/W6',
   'C3h/W7/modes', 'C3h/W7/throws', 'C3h/W7/merges-refused', 'C3h/W7/fable-no-tools', 'C3h/W7/no-tools',
   'H1/W7/merges-refused', 'H1/W7/merges-rejected', 'H2/W7/merges-refused',
-  'C3h/W8/unenforced', 'C6h/W8/enforced', 'H1/W8/enforced', 'H2/W8/enforced', 'H4/W8/unenforced',
+  'C3h/W8/unenforced', 'C6h/W8/enforced', 'H1/W8/enforced', 'H4/W8/unenforced',
   'H3/W9', 'C3h/W9', 'C6h/W9', 'H1/W9',
   'C6h/W11', 'H1/W11',
 ];
@@ -795,10 +756,12 @@ const merge = (a = {}, b = {}) => {
 
 /**
  * One run of the list, given the configurations (script.mjs) and the installed host's facts for its configuration
- * (driver.mjs, hostFacts): `{ id, workload, variant, seed, configuration, standin, from, steps, check }`. `from` is the
- * checkpoint it continues, `CONFIGURATION/W2` (W1 for a configuration that doesn't summarise), or null from empty;
- * `configuration` is its configuration with the workload's recipe and what its steps need merged in; `standin` is the
- * stand-in's start; `steps()` its script; `check({ log, records })` its property's breaches.
+ * (driver.mjs, hostFacts): `{ id, workload, variant, seed, configuration, standin, from, steps, check, owns }`.
+ * `from` is the checkpoint it continues, `CONFIGURATION/W2` (W1 for a configuration that doesn't summarise), or null
+ * from empty; `configuration` is its configuration with the workload's recipe and what its steps need merged in;
+ * `standin` is the stand-in's start; `steps()` its script; `check({ log, records })` its property's breaches, with
+ * a non-enumerable `judged` count (checks.mjs withJudged) where the property judges a run itself; `owns` the harness
+ * checks' flags, each `{ check, what }`, that the workload makes by design and its property judges.
  */
 export function runOf(id, configurations, facts) {
   const [configName, workloadName, variant = null] = id.split('/');
@@ -836,5 +799,6 @@ export function runOf(id, configurations, facts) {
     from: fromEmpty ? null : `${configName}/${base.summarises === false ? 'W1' : 'W2'}`,
     steps: () => workload.steps(ctx),
     check: (run) => workload.check(run, ctx),
+    owns: typeof workload.owns === 'function' ? workload.owns(variant) : workload.owns ?? [],
   };
 }

@@ -57,7 +57,7 @@
 import { createHash } from 'node:crypto';
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, join, resolve } from 'node:path';
+import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs, sh } from './lib/common.mjs';
 import { EPOCH, EXPECTED_FAILURES, KEY_PACKAGES, asRun, check, laneVersion, stackVersions, writeStore } from './lib/strategies/lane.mjs';
@@ -213,10 +213,10 @@ const readJsonLines = (path) => (existsSync(path) ? readFileSync(path, 'utf-8').
 
 /**
  * One drive of a workload's run (workloads.mjs runOf) under the host at `side`, from `storeDir`
- * (a checkpoint's copy, or empty) at `epoch`: its log, its stand-in's records (and raw bodies
- * in `rawDir`), and its result, kept in `dir`.
+ * (a checkpoint's copy, or empty) at `epoch`: its log and its stand-in's records (and raw bodies
+ * in `rawDir`) kept in `dir`, the evidence, and the host's own work in `scratch`.
  */
-async function drive(job, side, { storeDir, epoch, dir, rawDir = null }) {
+async function drive(job, side, { storeDir, epoch, dir, scratch = dir, rawDir = null }) {
   const facts = hostFacts({ hostDir: side.hostDir, configuration: job.configuration });
   const configuration = asRun(job.configuration, facts);
   mkdirSync(dir, { recursive: true });
@@ -227,7 +227,7 @@ async function drive(job, side, { storeDir, epoch, dir, rawDir = null }) {
   let run;
   let records;
   try {
-    run = await runScript({ steps, configuration, standin, hostDir: side.hostDir, facts, work: join(dir, 'work'), storeDir, epoch, logPath });
+    run = await runScript({ steps, configuration, standin, hostDir: side.hostDir, facts, work: join(scratch, 'work'), storeDir, epoch, logPath });
   } finally {
     records = await standin.close();
   }
@@ -258,7 +258,10 @@ async function workloadRun(id, { harnessModule = true, rawDir = null, dir }) {
   const job = runOf(id, all, hostFacts({ hostDir: candidate.hostDir, configuration: all[id.split('/')[0]] }));
   if (!harnessModule) job.configuration = { ...job.configuration, harnessModule: false };
   let epoch = EPOCH;
-  const storeDir = join(dir, 'store');
+  // The run's store, its copies and the host's work stay in the work directory; only what judges
+  // the run (log, records, report, record) goes to the evidence.
+  const scratch = join(work, 'runs', basename(dir));
+  const storeDir = join(scratch, 'store');
   if (job.from) {
     const cp = await checkpointOf(job.from);
     if (cp.failed) return { outcome: 'couldnt-run', reason: `its checkpoint ${job.from} failed: ${cp.failed}` };
@@ -266,8 +269,8 @@ async function workloadRun(id, { harnessModule = true, rawDir = null, dir }) {
     epoch = cp.clockEnd + 24 * 60 * 60_000;
   }
   let d;
-  try { d = await drive(job, candidate, { storeDir, epoch, dir, rawDir }); } catch (e) { return { outcome: 'couldnt-run', reason: String(e?.message ?? e).slice(0, 2000) }; }
-  const copy = join(dir, 'judged-store');
+  try { d = await drive(job, candidate, { storeDir, epoch, dir, scratch, rawDir }); } catch (e) { return { outcome: 'couldnt-run', reason: String(e?.message ?? e).slice(0, 2000) }; }
+  const copy = join(scratch, 'judged-store');
   cpSync(storeDir, copy, { recursive: true });
   const sessions = existsSync(join(copy, 'sessions')) ? readdirSync(join(copy, 'sessions')).map((s) => join(copy, 'sessions', s)) : [];
   let judged;
@@ -301,7 +304,7 @@ async function configurationCheck(name, { harnessModule = true, rawDir = null, d
     await writeStore({ cacheRoot, configuration: all[name], hostDir: release.hostDir, installDir: release.installDir, work: join(work, `write-${name}`), trial, lane });
   } catch (e) { return { outcome: 'couldnt-run', reason: `writing its checkpoint failed: ${e.message}` }; }
   const configuration = harnessModule ? all[name] : { ...all[name], harnessModule: false };
-  const r = await check({ cacheRoot, configuration, hostDir: candidate.hostDir, installDir: candidate.installDir, work: join(dir, 'work'), evidence: dir, trial, lane, rawDir });
+  const r = await check({ cacheRoot, configuration, hostDir: candidate.hostDir, installDir: candidate.installDir, work: join(work, 'runs', basename(dir), 'work'), evidence: dir, trial, lane, rawDir });
   return {
     outcome: r.outcome,
     reason: r.reason,

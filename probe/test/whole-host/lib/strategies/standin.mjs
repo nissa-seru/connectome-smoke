@@ -250,10 +250,11 @@ const digestOf = (m) => sha(JSON.stringify(maskRunVarying(unmarked({ role: m.rol
  * A step's agent requests are told by its canaries in their last message, or by a text of its `also` there, such as
  * the note a refusal's rewind leaves in place of what it set aside. A step with `namedAnywhere` is told by either
  * anywhere in the request: after a head-window reset, the messages since the reset render in the head, so a turn's own
- * message isn't last, and a reader's round after its first carries its wake notice only at the start. A step's `sub`, `{ marker, canaries, also,
- * replies }`, scripts a second agent, a subagent the first one starts, whose requests carry `marker` in their system
- * prompt. A reply's `error`, `{ status, type, message, headers }`, answers its request with that provider error, and a
- * call's `id` is the tool id it's sent with.
+ * message isn't last, and a reader's round after its first carries its wake notice only at the start. A step's `sub`,
+ * `{ marker, canaries, also, replies }`, scripts a second agent, a subagent the first one starts, whose requests carry
+ * `marker` in their system prompt. A reply's `error`, `{ status, type, message, headers }`, answers its request with
+ * that provider error; a reply with `settle` waits for `releaseHeld()` (onHeld says which); and a call's `id` is the
+ * tool id it's sent with.
  * @param {boolean} [opts.refuseMerges] every merge request is refused (W7's merges-refused: merges starving).
  * @param {boolean} [opts.rejectMerges] every merge request is rejected for its request, an HTTP 400
  *   invalid_request_error as membrane classifies one (W7's merges-rejected).
@@ -271,7 +272,7 @@ export async function startStandin({ configuration, rawDir = null, refuseMerges 
   let toolNumber = 0;
   const badQueue = [];
   const spent = new Set();
-  const heldReplies = [];
+  const held = [];
   const heldListeners = [];
   if (rawDir) mkdirSync(rawDir, { recursive: true });
 
@@ -474,10 +475,9 @@ export async function startStandin({ configuration, rawDir = null, refuseMerges 
         record.answer = { shape: 'error', status: reply.error.status };
         return sendError(res, reply.error.status, reply.error.message ?? 'stand-in: scripted error', { type: reply.error.type, headers: reply.error.headers });
       }
-      if (reply.hold) {
-        record.held = true;
-        heldReplies.push(() => answerAgent(res, body, record, reply));
-        for (const cb of heldListeners) cb({ id, agent, step: record.step, hold: reply.hold });
+      if (reply.settle) {
+        held.push(() => answerAgent(res, body, record, reply));
+        for (const cb of heldListeners) cb({ id, agent, step: record.step });
         return;
       }
       answerAgent(res, body, record, reply);
@@ -512,10 +512,10 @@ export async function startStandin({ configuration, rawDir = null, refuseMerges 
     setClock(ms) { clock = ms; },
     /** Called at every arrival with `{ id, seq, kind, step, at, clock }`. */
     onRequest(cb) { listeners.push(cb); },
-    /** Called with `{ id, agent, step, hold }` when an agent request's reply says `hold`: its answer waits for `releaseHeld()`. */
+    /** Called with `{ id, agent, step }` when an agent request's reply says `settle`: its answer waits for `releaseHeld()`. */
     onHeld(cb) { heldListeners.push(cb); },
     /** Answer the oldest held agent request. */
-    releaseHeld() { heldReplies.shift()?.(); },
+    releaseHeld() { held.shift()?.(); },
     /** Stop the server and return the records in arrival order. */
     async close() {
       await new Promise((resolve) => { server.close(() => resolve()); for (const s of sockets) s.destroy(); });
