@@ -8,6 +8,7 @@ E=${ON_GH_EVIDENCE_DIR:-${ON_VPS_EVIDENCE_DIR:?}}
 mkdir -p "$E"
 HOST=$(cd ../connectome-host && pwd)
 rm -rf "$HOST/test/whole-host" && cp -r probe/test/whole-host "$HOST/test/whole-host"
+mkdir -p "$HOST/.github/workflows" && cp probe/github/.github/workflows/whole-host*.yml "$HOST/.github/workflows/"
 cd "$HOST"
 s=$(date +%s); npm ci --ignore-scripts --no-audit --no-fund --loglevel=error > "$E/ci.log" 2>&1; echo "ci $? $(( $(date +%s) - s )) s" >> "$E/times.txt"
 T=${RUNNER_TEMP:-${TMPDIR:-/tmp}}
