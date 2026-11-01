@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { renderRecord } from '../lib/record.mjs';
+import { renderRecord, renderRecordLines } from '../lib/record.mjs';
 
 const header = { configuration: 'H1/W1', release: { tag: 'v0.0.1', versions: { '@animalabs/connectome-host': '0.0.1' } }, from: 'empty', candidate: { versions: { '@animalabs/connectome-host': '0.0.2' } } };
 const text = (t) => ({ participant: 'user', content: [{ type: 'text', text: t }] });
@@ -192,4 +192,21 @@ test('a sent compile names its head when it changes and its body, and a continua
   assert.equal(r.filter((l) => l.startsWith('H:')).length, 1);
   const reworded = renderRecord({ header, log: lg, records: [recs[0], { ...recs[1], messages: [{ ...recs[1].messages[0], digest: 'd3' }] }], end: { ok: true } }).split('\n');
   assert.notEqual(reworded.find((l) => l.startsWith('  round')), r.find((l) => l.startsWith('  round')), 'a change to what the round sends moves its line');
+});
+
+test('a turn\'s compile comes before its rounds, as the stand-in received them, though the module\'s batch reaches the log after the requests', () => {
+  const head = { model: 'm', maxTokens: 100, toolChoice: null, thinking: null, system: [], tools: [], rest: null };
+  const req = (id, seq, canaries, digest) => ({ id, seq, kind: 'agent', agent: 'primary', step: 'q.1', stream: true, head, messages: [{ role: 'user', digest, blocks: canaries.map((c) => ({ type: 'text', canaries: [`[[c:${c}]]`] })) }], answer: { shape: 'reply' } });
+  const recs = [req('a1', 1, ['q.1.in'], 'd1'), req('a2', 2, ['q.1.in', 'q.1.r1', 'q.1.call1'], 'd2'), req('a3', 3, ['q.1.in', 'q.1.r1', 'q.1.call1', 'q.1.r2', 'q.1.call2'], 'd3')];
+  const lg = [
+    { kind: 'request', step: 'q.1', request: { id: 'a1', kind: 'agent' } },
+    { kind: 'request', step: 'q.1', request: { id: 'a2', kind: 'agent' } },
+    { kind: 'request', step: 'q.1', request: { id: 'a3', kind: 'agent' } },
+    { kind: 'compiles', step: 'q.1', blobs: { u1: text('[[c:q.1.in]] a') }, lines: [line(1, [m(1, 'u1')])] },
+  ];
+  const lines = renderRecordLines({ header, log: lg, records: recs, end: { ok: true } });
+  const body = lines.filter((l) => l.text.startsWith('  ')).map((l) => l.text.replace(/, (head H:|body ).*$/, ''));
+  assert.deepEqual(body, ['  compile q.1.in', '  round + q.1.r1 q.1.call1', '  round + q.1.r2 q.1.call2']);
+  const rounds = lines.filter((l) => l.round);
+  assert.deepEqual(rounds.map((l) => l.compile?.seq), [1, 1], 'each round belongs to the compile that sent its turn');
 });

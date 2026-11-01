@@ -204,8 +204,8 @@ export function renderRecordLines({ header, log, records, end }) {
     const added = dropped < 0 ? null : list.slice(before.length - dropped);
     const shown = dropped < 0 ? items(list) : [dropped ? `-${dropped}` : '', added.length ? `+ ${items(added)}` : ''].filter(Boolean).join(' ') || '= (as before)';
     const sent = l.kind === 'request' ? sentAs.get(`${l.agent}|${boot ?? null}|${l.seq}`) : null;
-    if (sent) { lastCarried.set(l.agent, carriedBy(sent)); lastSent.set(l.agent, l); }
-    return { compile: sent ? l : null, text: `  compile${l.agent === primary ? '' : ` [${l.agent}]`}${l.kind === 'dry' ? ' dry' : ''} ${shown}${marks.length ? ` ^ ${marks.join(',')}` : ''}${sent ? sentNote(l.agent, sent) : ''}`, request: sent?.id ?? null };
+    const text = `  compile${l.agent === primary ? '' : ` [${l.agent}]`}${l.kind === 'dry' ? ' dry' : ''} ${shown}${marks.length ? ` ^ ${marks.join(',')}` : ''}`;
+    return sent ? { kind: 'compile', base: text, sent, agent: l.agent, compile: l, request: sent.id } : { text };
   };
 
   const lines = [];
@@ -228,11 +228,7 @@ export function renderRecordLines({ header, log, records, end }) {
       const { agent, request } = rounds.get(e.request.id);
       seen(e.step);
       totals.rounds++;
-      const before = new Set(lastCarried.get(agent) ?? []);
-      const carried = carriedBy(request);
-      lastCarried.set(agent, carried);
-      const added = carried.filter((c) => !before.has(c));
-      at(e.step).push({ text: `  round${agent === primary ? '' : ` [${agent}]`} ${added.length ? `+ ${added.join(' ')}` : '='}${sentNote(agent, request)}`, request: request.id, compile: lastSent.get(agent) ?? null, round: true });
+      at(e.step).push({ kind: 'round', agent, sent: request, request: request.id, round: true });
     }
     if (e.kind === 'request' && summariser.has(e.request?.id)) {
       const r = summariser.get(e.request.id);
@@ -246,7 +242,7 @@ export function renderRecordLines({ header, log, records, end }) {
         const numbers = text.match(/\d+/g) ?? [];
         return `[${template('call', text.replace(/\d+/g, '#'))}]${numbers.length ? `(${numbers.join(',')})` : ''}`;
       });
-      at(e.step).push({ text: `  call ${[carried.length ? carried.join(' ') : '-', ...words].join(' ')} -> ${r.answer?.shape ?? 'none'}${sentNote('summariser', r)}`, request: r.id });
+      at(e.step).push({ kind: 'call', base: `  call ${[carried.length ? carried.join(' ') : '-', ...words].join(' ')} -> ${r.answer?.shape ?? 'none'}`, sent: r, request: r.id });
     }
     if (e.kind === 'compiles') {
       for (const [agent, st] of Object.entries(e.store ?? {})) {
@@ -276,6 +272,31 @@ export function renderRecordLines({ header, log, records, end }) {
       }
     }
     if (e.kind === 'checkpoint') { seen(e.step); at(e.step).push({ text: `checkpoint ${e.name}` }); }
+  }
+  const seqOf = new Map((records ?? []).map((r, i) => [r.id, r.seq ?? i]));
+  for (const step of steps) {
+    let key = -Infinity;
+    const keyed = (byStep.get(step) ?? []).map((l, i) => {
+      if (l.request && seqOf.has(l.request)) key = seqOf.get(l.request);
+      return { l, key: l.request && seqOf.has(l.request) ? seqOf.get(l.request) : key, i };
+    });
+    keyed.sort((a, b) => a.key - b.key || a.i - b.i);
+    byStep.set(step, keyed.map(({ l }) => {
+      if (l.kind === 'compile') {
+        lastCarried.set(l.agent, carriedBy(l.sent));
+        lastSent.set(l.agent, l.compile);
+        return { text: `${l.base}${sentNote(l.agent, l.sent)}`, request: l.request, compile: l.compile };
+      }
+      if (l.kind === 'round') {
+        const before = new Set(lastCarried.get(l.agent) ?? []);
+        const carried = carriedBy(l.sent);
+        lastCarried.set(l.agent, carried);
+        const added = carried.filter((c) => !before.has(c));
+        return { text: `  round${l.agent === primary ? '' : ` [${l.agent}]`} ${added.length ? `+ ${added.join(' ')}` : '='}${sentNote(l.agent, l.sent)}`, request: l.request, compile: lastSent.get(l.agent) ?? null, round: true };
+      }
+      if (l.kind === 'call') return { text: `${l.base}${sentNote('summariser', l.sent)}`, request: l.request };
+      return l;
+    }));
   }
   for (const step of steps) {
     const own = byStep.get(step) ?? [];
