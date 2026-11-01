@@ -51,7 +51,7 @@ export function summaryTable(rows) {
   const record = (r) => (r.record === 'differs' ? `differs: ${r.changed.requests.length} request(s), +${r.changed.added} -${r.changed.removed} line(s)` : r.record ?? 'none');
   return [
     `| run | record | ${COLUMNS.map(([name]) => name).join(' | ')} |`,
-    `|---|---|${COLUMNS.map(() => '---:').join('|')}|`,
+    `|---|---|${COLUMNS.map(([name]) => (name === 'ledger of' ? '---' : '---:')).join('|')}|`,
     ...rows.map((r) => `| ${r.run} | ${record(r)} | ${COLUMNS.map(([, of]) => cell(of(r))).join(' | ')} |`),
   ].join('\n');
 }

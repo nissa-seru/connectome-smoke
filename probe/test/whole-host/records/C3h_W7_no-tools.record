@@ -14,8 +14,8 @@ T:call-routing-your-plain = [routing] Your plain speech now lands in chat. Other
 T:call-the-local-time = The local time at the start of this session is #-#-#T#:#:#.#+#:# [UTC].
 T:call-user-clock-monday = user: Clock: Monday #-#-#, #:# UTC
 T:call-user-delivered-plain = user: [delivered] plain speech → chat
-T:summary-l1-96ef0f69 = {"bytes":4400,"head":"[[s:M78c15cd0]] Memory 78c15cd0, carried 3 canaries to c:634200.3.r1: compass ga","sha256":"96ef0f696dcbd3fa","tail":"edger quiet quiet garden meadow stone river compass river window thread signal q"}
-T:summary-l1-de279481 = {"bytes":4400,"head":"[[s:M093c7b7e]] Memory 093c7b7e, carried 4 canaries to c:634200.2.r1: harbor mea","sha256":"de27948164f31d02","tail":"winter orchard winter harbor meadow compass winter thread quiet quiet quiet comp"}
+T:summary-l1-1ab2ab5e = {"bytes":4400,"head":"[[s:M78c15cd0]] Memory 78c15cd0, carried 3 canaries to c:634200.3.r1: Ribbon thr","sha256":"1ab2ab5ee1beaa22","tail":"adow compass thread bridge river river island. Market thread market harbor orcha"}
+T:summary-l1-4a6ca137 = {"bytes":4400,"head":"[[s:M093c7b7e]] Memory 093c7b7e, carried 4 canaries to c:634200.2.r1: Morning ri","sha256":"4a6ca1372d9590ac","tail":"dge winter letter letter. Shadow winter basket morning market river ribbon winte"}
 T:system-you-are-the = You are the strategy fixture's agent.
 T:user-clock-monday-#-#-# = Clock: Monday #-#-#, #:# UTC
 T:user-delivered-plain-speech = [delivered] plain speech → chat
@@ -27,70 +27,70 @@ H:ee78faa8 = model claude-opus-4-6, max_tokens 16000, stream false, system -, to
 step 634200.1
   compile [T:user-clock-monday-#-#-#](2026,01,05,09,00) [T:user-the-local-time](2026,01,05,09,00,00,000,00,00) 634200.1.in [T:user-routing-your-plain] ^ 4, head H:9eff4c48, body e9085269
 step 634200.2
-  compile + 634200.1.r1 [T:user-delivered-plain-speech] 634200.2.in ^ 4, body ed77ff26
+  compile + 634200.1.r1 [T:user-delivered-plain-speech] 634200.2.in ^ 4, body b8226e48
 step 634200.3
-  compile + 634200.2.r1 [T:user-delivered-plain-speech] 634200.3.in ^ 4, body 25fd2ecb
+  compile + 634200.2.r1 [T:user-delivered-plain-speech] 634200.3.in ^ 4, body a6c6cd2b
 step 634200.4
-  compile + 634200.3.r1 [T:user-delivered-plain-speech] 634200.4.in ^ 4, body 79c167c7
+  compile + 634200.3.r1 [T:user-delivered-plain-speech] 634200.4.in ^ 4, body 268329c8
 step 634200.5
-  compile + 634200.4.r1 [T:user-delivered-plain-speech] 634200.5.in ^ 4, body 235ff3ba
+  compile + 634200.4.r1 [T:user-delivered-plain-speech] 634200.5.in ^ 4, body 9c12804d
 step 634200.6
-  compile + 634200.5.r1 [T:user-delivered-plain-speech] 634200.6.in ^ 4, body 1a966a5d
+  compile + 634200.5.r1 [T:user-delivered-plain-speech] 634200.6.in ^ 4, body 871bff8c
 step 634200.7
-  compile + 634200.6.r1 [T:user-delivered-plain-speech] 634200.7.in ^ 4, body 99554f19
+  compile + 634200.6.r1 [T:user-delivered-plain-speech] 634200.7.in ^ 4, body 96bdebe5
 step 634200.8
-  compile + 634200.7.r1 [T:user-delivered-plain-speech] 634200.8.in ^ 4, body 632c68ac
+  compile + 634200.7.r1 [T:user-delivered-plain-speech] 634200.8.in ^ 4, body 1d6fae58
 step 634200.9
-  compile + 634200.8.r1 [T:user-delivered-plain-speech] 634200.9.in ^ 4, body 1c0c01d6
+  compile + 634200.8.r1 [T:user-delivered-plain-speech] 634200.9.in ^ 4, body 8c51abfa
 step 634200.10
-  compile + 634200.9.r1 [T:user-delivered-plain-speech] 634200.10.in ^ 4, body a19ecb92
+  compile + 634200.9.r1 [T:user-delivered-plain-speech] 634200.10.in ^ 4, body 5d17b228
 step 634200.11
-  compile + 634200.10.r1 [T:user-delivered-plain-speech] 634200.11.in ^ 4, body 9ea33ad9
+  compile + 634200.10.r1 [T:user-delivered-plain-speech] 634200.11.in ^ 4, body b225763b
 step 634200.12
-  compile + 634200.11.r1 [T:user-delivered-plain-speech] 634200.12.in ^ 4, body 4066942b
+  compile + 634200.11.r1 [T:user-delivered-plain-speech] 634200.12.in ^ 4, body 77a4af9c
 step 634200.13
-  compile + 634200.12.r1 [T:user-delivered-plain-speech] 634200.13.in ^ 4, body 5959b2a0
+  compile + 634200.12.r1 [T:user-delivered-plain-speech] 634200.13.in ^ 4, body 7eef7876
 step 634200.14
-  compile + 634200.13.r1 [T:user-delivered-plain-speech] 634200.14.in ^ 4, body fa10ee7d
+  compile + 634200.13.r1 [T:user-delivered-plain-speech] 634200.14.in ^ 4, body 13f34dcb
 step 634200.15
-  compile + 634200.14.r1 [T:user-delivered-plain-speech] 634200.15.in ^ 4, body 36556eaa
+  compile + 634200.14.r1 [T:user-delivered-plain-speech] 634200.15.in ^ 4, body 6f960443
 step 634200.16
-  compile + 634200.15.r1 [T:user-delivered-plain-speech] 634200.16.in ^ 4, body a1148fca
+  compile + 634200.15.r1 [T:user-delivered-plain-speech] 634200.16.in ^ 4, body bd10d8f1
 step 634200.17
-  compile + 634200.16.r1 [T:user-delivered-plain-speech] 634200.17.in ^ 4, body 0c462932
+  compile + 634200.16.r1 [T:user-delivered-plain-speech] 634200.17.in ^ 4, body adb544d5
 step 634200.18
-  compile + 634200.17.r1 [T:user-delivered-plain-speech] 634200.18.in ^ 4, body 7d672118
+  compile + 634200.17.r1 [T:user-delivered-plain-speech] 634200.18.in ^ 4, body 171c8fd1
 step 634200.19
-  compile + 634200.18.r1 [T:user-delivered-plain-speech] 634200.19.in ^ 4, body 6bf2f963
+  compile + 634200.18.r1 [T:user-delivered-plain-speech] 634200.19.in ^ 4, body fcf4f2b9
 step 634200.20
-  compile + 634200.19.r1 [T:user-delivered-plain-speech] 634200.20.in ^ 4, body 6efc7e97
+  compile + 634200.19.r1 [T:user-delivered-plain-speech] 634200.20.in ^ 4, body 5ef4abcb
 step 634200.21
-  compile + 634200.20.r1 [T:user-delivered-plain-speech] 634200.21.in ^ 4, body 5c7e2f4d
+  compile + 634200.20.r1 [T:user-delivered-plain-speech] 634200.21.in ^ 4, body f3d0be4d
 step 634200.22
-  compile + 634200.21.r1 [T:user-delivered-plain-speech] 634200.22.in ^ 4, body 296a6fe1
+  compile + 634200.21.r1 [T:user-delivered-plain-speech] 634200.22.in ^ 4, body c010d114
 step 634200.23
-  compile + 634200.22.r1 [T:user-delivered-plain-speech] 634200.23.in ^ 4, body b76834dd
+  compile + 634200.22.r1 [T:user-delivered-plain-speech] 634200.23.in ^ 4, body 55a502d4
 step 634200.24
-  compile + 634200.23.r1 [T:user-delivered-plain-speech] 634200.24.in ^ 4, body 5c4ec613
+  compile + 634200.23.r1 [T:user-delivered-plain-speech] 634200.24.in ^ 4, body 721c50ce
 step 634200.25
-  compile + 634200.24.r1 [T:user-delivered-plain-speech] 634200.25.in ^ 4, body cad9e679
+  compile + 634200.24.r1 [T:user-delivered-plain-speech] 634200.25.in ^ 4, body 0a1ab90a
 step 634200.26
-  compile + 634200.25.r1 [T:user-delivered-plain-speech] 634200.26.in ^ 4, body 2e03f9c8
+  compile + 634200.25.r1 [T:user-delivered-plain-speech] 634200.26.in ^ 4, body d1c56c33
 step 634200.27
-  compile + 634200.26.r1 [T:user-delivered-plain-speech] 634200.27.in ^ 4, body a73b23d2
+  compile + 634200.26.r1 [T:user-delivered-plain-speech] 634200.27.in ^ 4, body ff920175
 step 634200.28
-  compile + 634200.27.r1 [T:user-delivered-plain-speech] 634200.28.in ^ 4, body d345ff8e
+  compile + 634200.27.r1 [T:user-delivered-plain-speech] 634200.28.in ^ 4, body 40e4d6b3
 step 634200.29
-  compile + 634200.28.r1 [T:user-delivered-plain-speech] 634200.29.in ^ 4, body f46e9a83
+  compile + 634200.28.r1 [T:user-delivered-plain-speech] 634200.29.in ^ 4, body f5c8ad6e
 step 634200.30
-  call 634200.1.in 634200.1.r1 634200.2.in 634200.2.r1 [T:call-user-clock-monday](2026,01,05,09,00) [T:call-empty] [T:call-the-local-time](2026,01,05,09,00,00,000,00,00) [T:call-empty] [T:call-empty] [T:call-routing-your-plain] [T:call-context-manager-system] [T:call-user-delivered-plain] [T:call-empty] [T:call-context-manager-write](2000) -> summary, head H:ee78faa8, body b6ba3ef2
-  wrote L1(634200.1.r1-634200.2.r1) [T:summary-l1-de279481]
-  compile [T:user-clock-monday-#-#-#](2026,01,05,09,00) [T:user-the-local-time](2026,01,05,09,00,00,000,00,00) 634200.1.in [T:user-routing-your-plain] L1(634200.1.r1-634200.2.r1) L1(634200.1.r1-634200.2.r1) [T:user-delivered-plain-speech] 634200.3.in-634200.3.r1 [T:user-delivered-plain-speech] 634200.4.in-634200.4.r1 [T:user-delivered-plain-speech] 634200.5.in-634200.5.r1 [T:user-delivered-plain-speech] 634200.6.in-634200.6.r1 [T:user-delivered-plain-speech] 634200.7.in-634200.7.r1 [T:user-delivered-plain-speech] 634200.8.in-634200.8.r1 [T:user-delivered-plain-speech] 634200.9.in-634200.9.r1 [T:user-delivered-plain-speech] 634200.10.in-634200.10.r1 [T:user-delivered-plain-speech] 634200.11.in-634200.11.r1 [T:user-delivered-plain-speech] 634200.12.in-634200.12.r1 [T:user-delivered-plain-speech] 634200.13.in-634200.13.r1 [T:user-delivered-plain-speech] 634200.14.in-634200.14.r1 [T:user-delivered-plain-speech] 634200.15.in-634200.15.r1 [T:user-delivered-plain-speech] 634200.16.in-634200.16.r1 [T:user-delivered-plain-speech] 634200.17.in-634200.17.r1 [T:user-delivered-plain-speech] 634200.18.in-634200.18.r1 [T:user-delivered-plain-speech] 634200.19.in-634200.19.r1 [T:user-delivered-plain-speech] 634200.20.in-634200.20.r1 [T:user-delivered-plain-speech] 634200.21.in-634200.21.r1 [T:user-delivered-plain-speech] 634200.22.in-634200.22.r1 [T:user-delivered-plain-speech] 634200.23.in-634200.23.r1 [T:user-delivered-plain-speech] 634200.24.in-634200.24.r1 [T:user-delivered-plain-speech] 634200.25.in-634200.25.r1 [T:user-delivered-plain-speech] 634200.26.in-634200.26.r1 [T:user-delivered-plain-speech] 634200.27.in-634200.27.r1 [T:user-delivered-plain-speech] 634200.28.in-634200.28.r1 [T:user-delivered-plain-speech] 634200.29.in-634200.29.r1 [T:user-delivered-plain-speech] 634200.30.in ^ 4, body 7695174c
+  call 634200.1.in 634200.1.r1 634200.2.in 634200.2.r1 [T:call-user-clock-monday](2026,01,05,09,00) [T:call-empty] [T:call-the-local-time](2026,01,05,09,00,00,000,00,00) [T:call-empty] [T:call-empty] [T:call-routing-your-plain] [T:call-context-manager-system] [T:call-user-delivered-plain] [T:call-empty] [T:call-context-manager-write](2000) -> summary, head H:ee78faa8, body 2c77d917
+  wrote L1(634200.1.r1-634200.2.r1) [T:summary-l1-4a6ca137]
+  compile [T:user-clock-monday-#-#-#](2026,01,05,09,00) [T:user-the-local-time](2026,01,05,09,00,00,000,00,00) 634200.1.in [T:user-routing-your-plain] L1(634200.1.r1-634200.2.r1) L1(634200.1.r1-634200.2.r1) [T:user-delivered-plain-speech] 634200.3.in-634200.3.r1 [T:user-delivered-plain-speech] 634200.4.in-634200.4.r1 [T:user-delivered-plain-speech] 634200.5.in-634200.5.r1 [T:user-delivered-plain-speech] 634200.6.in-634200.6.r1 [T:user-delivered-plain-speech] 634200.7.in-634200.7.r1 [T:user-delivered-plain-speech] 634200.8.in-634200.8.r1 [T:user-delivered-plain-speech] 634200.9.in-634200.9.r1 [T:user-delivered-plain-speech] 634200.10.in-634200.10.r1 [T:user-delivered-plain-speech] 634200.11.in-634200.11.r1 [T:user-delivered-plain-speech] 634200.12.in-634200.12.r1 [T:user-delivered-plain-speech] 634200.13.in-634200.13.r1 [T:user-delivered-plain-speech] 634200.14.in-634200.14.r1 [T:user-delivered-plain-speech] 634200.15.in-634200.15.r1 [T:user-delivered-plain-speech] 634200.16.in-634200.16.r1 [T:user-delivered-plain-speech] 634200.17.in-634200.17.r1 [T:user-delivered-plain-speech] 634200.18.in-634200.18.r1 [T:user-delivered-plain-speech] 634200.19.in-634200.19.r1 [T:user-delivered-plain-speech] 634200.20.in-634200.20.r1 [T:user-delivered-plain-speech] 634200.21.in-634200.21.r1 [T:user-delivered-plain-speech] 634200.22.in-634200.22.r1 [T:user-delivered-plain-speech] 634200.23.in-634200.23.r1 [T:user-delivered-plain-speech] 634200.24.in-634200.24.r1 [T:user-delivered-plain-speech] 634200.25.in-634200.25.r1 [T:user-delivered-plain-speech] 634200.26.in-634200.26.r1 [T:user-delivered-plain-speech] 634200.27.in-634200.27.r1 [T:user-delivered-plain-speech] 634200.28.in-634200.28.r1 [T:user-delivered-plain-speech] 634200.29.in-634200.29.r1 [T:user-delivered-plain-speech] 634200.30.in ^ 4, body c53d2844
 step 634200.31
-  call 634200.1.in 634200.3.in 634200.3.r1 [T:call-user-clock-monday](2026,01,05,09,00) [T:call-empty] [T:call-the-local-time](2026,01,05,09,00,00,000,00,00) [T:call-empty] [T:call-empty] [T:call-routing-your-plain] [T:call-context-manager-cm](1,0) L1(634200.1.r1-634200.2.r1) [T:call-context-manager-system] [T:call-user-delivered-plain] [T:call-empty] [T:call-user-delivered-plain] [T:call-context-manager-write](2000) -> summary, body 19e69cd8
-  wrote L1(634200.3.in-634200.3.r1) [T:summary-l1-96ef0f69]
-  compile [T:user-clock-monday-#-#-#](2026,01,05,09,00) [T:user-the-local-time](2026,01,05,09,00,00,000,00,00) 634200.1.in [T:user-routing-your-plain] L1(634200.1.r1-634200.2.r1) L1(634200.1.r1-634200.2.r1) L1(634200.3.in-634200.3.r1) L1(634200.3.in-634200.3.r1) 634200.4.in-634200.4.r1 [T:user-delivered-plain-speech] 634200.5.in-634200.5.r1 [T:user-delivered-plain-speech] 634200.6.in-634200.6.r1 [T:user-delivered-plain-speech] 634200.7.in-634200.7.r1 [T:user-delivered-plain-speech] 634200.8.in-634200.8.r1 [T:user-delivered-plain-speech] 634200.9.in-634200.9.r1 [T:user-delivered-plain-speech] 634200.10.in-634200.10.r1 [T:user-delivered-plain-speech] 634200.11.in-634200.11.r1 [T:user-delivered-plain-speech] 634200.12.in-634200.12.r1 [T:user-delivered-plain-speech] 634200.13.in-634200.13.r1 [T:user-delivered-plain-speech] 634200.14.in-634200.14.r1 [T:user-delivered-plain-speech] 634200.15.in-634200.15.r1 [T:user-delivered-plain-speech] 634200.16.in-634200.16.r1 [T:user-delivered-plain-speech] 634200.17.in-634200.17.r1 [T:user-delivered-plain-speech] 634200.18.in-634200.18.r1 [T:user-delivered-plain-speech] 634200.19.in-634200.19.r1 [T:user-delivered-plain-speech] 634200.20.in-634200.20.r1 [T:user-delivered-plain-speech] 634200.21.in-634200.21.r1 [T:user-delivered-plain-speech] 634200.22.in-634200.22.r1 [T:user-delivered-plain-speech] 634200.23.in-634200.23.r1 [T:user-delivered-plain-speech] 634200.24.in-634200.24.r1 [T:user-delivered-plain-speech] 634200.25.in-634200.25.r1 [T:user-delivered-plain-speech] 634200.26.in-634200.26.r1 [T:user-delivered-plain-speech] 634200.27.in-634200.27.r1 [T:user-delivered-plain-speech] 634200.28.in-634200.28.r1 [T:user-delivered-plain-speech] 634200.29.in-634200.29.r1 [T:user-delivered-plain-speech] 634200.30.in-634200.30.r1 [T:user-delivered-plain-speech] 634200.31.in ^ 4, body 661a85ed
+  call 634200.1.in 634200.3.in 634200.3.r1 [T:call-user-clock-monday](2026,01,05,09,00) [T:call-empty] [T:call-the-local-time](2026,01,05,09,00,00,000,00,00) [T:call-empty] [T:call-empty] [T:call-routing-your-plain] [T:call-context-manager-cm](1,0) L1(634200.1.r1-634200.2.r1) [T:call-context-manager-system] [T:call-user-delivered-plain] [T:call-empty] [T:call-user-delivered-plain] [T:call-context-manager-write](2000) -> summary, body 2075d120
+  wrote L1(634200.3.in-634200.3.r1) [T:summary-l1-1ab2ab5e]
+  compile [T:user-clock-monday-#-#-#](2026,01,05,09,00) [T:user-the-local-time](2026,01,05,09,00,00,000,00,00) 634200.1.in [T:user-routing-your-plain] L1(634200.1.r1-634200.2.r1) L1(634200.1.r1-634200.2.r1) L1(634200.3.in-634200.3.r1) L1(634200.3.in-634200.3.r1) 634200.4.in-634200.4.r1 [T:user-delivered-plain-speech] 634200.5.in-634200.5.r1 [T:user-delivered-plain-speech] 634200.6.in-634200.6.r1 [T:user-delivered-plain-speech] 634200.7.in-634200.7.r1 [T:user-delivered-plain-speech] 634200.8.in-634200.8.r1 [T:user-delivered-plain-speech] 634200.9.in-634200.9.r1 [T:user-delivered-plain-speech] 634200.10.in-634200.10.r1 [T:user-delivered-plain-speech] 634200.11.in-634200.11.r1 [T:user-delivered-plain-speech] 634200.12.in-634200.12.r1 [T:user-delivered-plain-speech] 634200.13.in-634200.13.r1 [T:user-delivered-plain-speech] 634200.14.in-634200.14.r1 [T:user-delivered-plain-speech] 634200.15.in-634200.15.r1 [T:user-delivered-plain-speech] 634200.16.in-634200.16.r1 [T:user-delivered-plain-speech] 634200.17.in-634200.17.r1 [T:user-delivered-plain-speech] 634200.18.in-634200.18.r1 [T:user-delivered-plain-speech] 634200.19.in-634200.19.r1 [T:user-delivered-plain-speech] 634200.20.in-634200.20.r1 [T:user-delivered-plain-speech] 634200.21.in-634200.21.r1 [T:user-delivered-plain-speech] 634200.22.in-634200.22.r1 [T:user-delivered-plain-speech] 634200.23.in-634200.23.r1 [T:user-delivered-plain-speech] 634200.24.in-634200.24.r1 [T:user-delivered-plain-speech] 634200.25.in-634200.25.r1 [T:user-delivered-plain-speech] 634200.26.in-634200.26.r1 [T:user-delivered-plain-speech] 634200.27.in-634200.27.r1 [T:user-delivered-plain-speech] 634200.28.in-634200.28.r1 [T:user-delivered-plain-speech] 634200.29.in-634200.29.r1 [T:user-delivered-plain-speech] 634200.30.in-634200.30.r1 [T:user-delivered-plain-speech] 634200.31.in ^ 4, body 42124c2b
 step 634200.32
-  compile + 634200.31.r1 [T:user-delivered-plain-speech] 634200.32.in ^ 4, body 5c4ae9b3
+  compile + 634200.31.r1 [T:user-delivered-plain-speech] 634200.32.in ^ 4, body d3adb2b7
 end ok
 totals {"actions":0,"calls":2,"compiles":32,"dry":0,"other":0,"refused":0,"rounds":0,"written":2}

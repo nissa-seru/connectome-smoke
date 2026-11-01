@@ -31,6 +31,7 @@ test('the summary has a row per run, naming what changed, with a count it wasn\'
     { run: 'H3/W4', record: 'differs', changed: { requests: ['r3', 'r4'], added: 3, removed: 2 }, counts: {} },
   ]).split('\n');
   assert.equal(table.length, 4);
+  assert.equal(table[1], '|---|---|---:|---:|---:|---:|---:|---|---:|---:|---:|---:|---:|', 'counts align right, the agent\'s name left');
   assert.equal(table[2], '| H1/W1 | same | 70 | 0 | 12 | 3 | 0 | fixture | 20 | 40 | 10 | 123456 | 0 |');
   assert.equal(table[3], '| H3/W4 | differs: 2 request(s), +3 -2 line(s) | ? | ? | ? | ? | ? | ? | ? | ? | ? | ? | ? |');
 });
