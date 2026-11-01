@@ -102,6 +102,7 @@ const exitWithin = (child, ms) => new Promise((resolve) => {
 export function hostEnv({ configuration, standinUrl, control, clock }) {
   return {
     ANTHROPIC_BASE_URL: standinUrl, ANTHROPIC_API_KEY: 'sk-ant-fixture', TZ: 'UTC', AGENT_TIMEZONE: undefined, FIXTURE_CONTROL: control, FIXTURE_EPOCH_MS: String(clock),
+    ANTHROPIC_AUTH_TOKEN: undefined, ANTHROPIC_OAUTH_CREDENTIALS_FILE: undefined, ANTHROPIC_OAUTH_AUTO_REFRESH: undefined,
     ...(configuration.binds ? { THINKING_BINDING_PROBE: 'off' } : {}),
     ...(configuration.recording === false ? { FIXTURE_RECORD: 'off' } : {}),
   };

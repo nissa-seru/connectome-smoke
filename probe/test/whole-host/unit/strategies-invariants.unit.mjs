@@ -24,7 +24,7 @@ const manager = ({ messages = STORE, summaries = {}, pins = [], config = {}, sta
 
 function compile(sent, { tokens = 100 } = {}) {
   const messages = [];
-  const compiled = { messages: [], renderStats: { total: { tokens } } };
+  const compiled = { messages: [], renderStats: { total: { tokens } }, provenance: { layout: { memberIds: [], units: [] } } };
   for (const item of sent) {
     const [source, content] = Array.isArray(item) ? item : [item, null];
     messages.push({ sources: [source] });
@@ -170,7 +170,7 @@ test('a view member its own slot doesn\'t hold is judged from the slot that hold
   const shared = [stored('9', 9, 'user', [text('nine')])];
   const elsewhere = (ids) => ({ found: shared.filter((m) => ids.includes(m.id)), unfound: ids.filter((id) => !shared.some((m) => m.id === id)) });
   const [compiled, messages] = compile(['r:1', 'r:2', 'r:3', 'r:4']);
-  compiled.provenance = { layout: { memberIds: ['1', '2', '3', '4', '9'] } };
+  compiled.provenance = { layout: { memberIds: ['1', '2', '3', '4', '9'], units: [{ k: 'r', t: 1 }, { k: 'r', t: 1 }, { k: 'r', t: 1 }, { k: 'r', t: 1 }, { k: 'o', n: 1 }] } };
   assert.deepEqual(named(checkCompile(manager(), BUDGET, compiled, messages, { elsewhere })), [['coverage', '1 stored bodies in no message sent: 9']], 'the shared slot\'s message is in the store judged');
   compiled.provenance.layout.memberIds.push('10');
   assert.deepEqual(named(checkCompile(manager(), BUDGET, compiled, messages, { elsewhere })).filter(([v]) => v === 'unreadable'), [['unreadable', 'view members no registered agent\'s slot holds: 10; what depends on it wasn\'t judged']]);
@@ -183,4 +183,24 @@ test('unreadable: a summary or strategy read that fails is a violation naming it
   assert.deepEqual(named(check(m, ['s:S@1', 'r:3', 'r:4'])).filter(([v]) => v === 'unreadable'), [['unreadable', 'getSummary(S): summary failed; what depends on it wasn\'t judged']]);
   assert.deepEqual(named(check({ ...manager(), getStrategy: failing('strategy') }, ['r:1', 'r:2', 'r:3', 'r:4'])), [['unreadable', 'getStrategy: strategy failed; budget wasn\'t judged']]);
   assert.deepEqual(named(check(manager(), ['r:1', 'r:2', 'r:3', 'r:4'], { compresses: { unreadable: 'strategy failed' } })), [['unreadable', 'getStrategy: strategy failed; coverage wasn\'t judged']]);
+});
+
+test('a partial copy\'s shards are those context-manager\'s layout names raw: a text an earlier summarised shard shares stands for the raw one', () => {
+  const twin = [...STORE, shard('5', 5, 0, 'same words'), shard('6', 6, 1, 'same words')];
+  for (const m of twin) byId.set(m.id, m);
+  try {
+    const m = manager({ messages: twin, summaries: { S: { sourceIds: ['5'] } } });
+    const [compiled, messages] = compile(['r:1', 'r:2', 'r:3', 'r:4', 's:S@1', ['r:5!shards', [text('same words')]]]);
+    compiled.provenance.layout = { memberIds: ['1', '2', '3', '4', '5', '6'], units: [{ k: 'r', t: 1 }, { k: 'r', t: 1 }, { k: 'r', t: 1 }, { k: 'r', t: 1 }, { k: 's', n: 1, sm: [['S', 1, 'llm', 0, 5]] }, { k: 'r', t: 1, p: 1 }] };
+    assert.deepEqual(checkCompile(m, BUDGET, compiled, messages), []);
+  } finally {
+    for (const m of twin) if (!STORE.includes(m)) byId.delete(m.id);
+  }
+});
+
+test('unreadable: a summary sent that the store doesn\'t return, and a compile with no layout, are named, never judged clean', () => {
+  assert.deepEqual(named(check(manager(), ['s:GONE@1', 'r:3', 'r:4'])).filter(([v]) => v === 'unreadable'), [['unreadable', 'getSummary(GONE): no such summary; what depends on it wasn\'t judged']]);
+  const [compiled, messages] = compile(['r:1', 'r:2', 'r:3', 'r:4']);
+  delete compiled.provenance;
+  assert.deepEqual(named(checkCompile(manager(), BUDGET, compiled, messages)), [['unreadable', 'the compile gave no layout, so its view\'s members beyond its own slot weren\'t read; what depends on it wasn\'t judged']]);
 });

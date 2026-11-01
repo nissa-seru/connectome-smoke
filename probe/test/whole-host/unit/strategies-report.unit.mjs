@@ -34,7 +34,7 @@ test('an expected failure covers the flags its key and match name, and names its
 test('a flag two entries both cover is a flag of its own, naming both findings, since neither can then tell whether its finding still shows', () => {
   const pins = { check: 11, step: 'p.9', what: 'fixture:request:pins', detail: 'summary 4 at L1 covers 1, inside pin p1 allowing L0', message: 'm' };
   const entry = (finding, match) => ({ configuration: configuration.name, check: 11, step: 'p.9', what: 'fixture:request:pins', match, finding, reason: 'r' });
-  const r = perCheckReport({ configuration, candidate: { flags: [pins], missing: [] }, expected: [entry('D3', '^summary 4 at L1 covers 1, inside pin p1 allowing L0$'), entry('D3b', '^summary 4 at L1 covers 1, inside pin p1 allowing L[0-9]$')] });
+  const r = perCheckReport({ configuration, candidate: { flags: [pins], missing: [] }, expected: [entry('D3', '^summary 4 at L1 covers 1, inside pin p1 allowing L0$'), entry('D3b', '^summary 4 at L1 covers 1, inside pin p1 allowing L0$')] });
   assert.equal(r.verdict, 'flags');
   assert.equal(r.flags.length, 1);
   assert.match(r.flags[0].message, /entries for D3 and D3b both cover this flag/);
@@ -56,18 +56,18 @@ test('the expected failures read: none without the file, and an entry missing a 
   assert.throws(() => readExpected(at([noWhat]), ['H1/W1']), /entry 0: has no what: an entry covers one kind of flag/);
   const { match, ...noMatch } = good;
   assert.throws(() => readExpected(at([noMatch]), ['H1/W1']), /entry 0: has no match: an entry covers the flags whose whole detail/);
-  for (const loose of ['m$', '^m', 'm', '^m\\$', '^known|other$', '^.*$', '^m+$', '^[mn]$']) assert.throws(() => readExpected(at([{ ...good, match: loose }]), ['H1/W1']), /entry 0: has a match that isn't an escaped literal between \^ and \$/, loose);
-  assert.equal(readExpected(at([{ ...good, match: '^a\\.b \\(c\\) \\$5$' }]), ['H1/W1']).length, 1, 'escaped characters are literal');
+  for (const loose of ['m$', '^m', 'm', '^m\\$', '^known|other$', '^.*$', '^m+$', '^[mn]$', '^lost \\d messages$', '^a\\sb$', '^\\w$', '^\\bm$']) assert.throws(() => readExpected(at([{ ...good, match: loose }]), ['H1/W1']), /entry 0: has a match that isn't an escaped literal between \^ and \$/, loose);
+  assert.equal(readExpected(at([{ ...good, match: '^a\\.b \\(c\\) \\$5 \\\\ \\[d\\]$' }]), ['H1/W1']).length, 1, 'an escaped metacharacter or backslash is literal');
   const pins = { ...good, what: 'fixture:request:pins' };
   assert.equal(readExpected(at([{ ...pins, match: '^allowing L0$' }, { ...pins, match: '^allowing L1$', finding: 'D39' }]), ['H1/W1']).length, 2, 'entries sharing a key, each with its own match');
   assert.throws(() => readExpected(at([{ ...pins, match: '^x$' }, { ...pins, match: '^x$', reason: 'again' }]), ['H1/W1']), /entry 1: repeats another entry's configuration, check, step, what and match/);
 });
 
-test('an entry\'s match narrows its cover to the flags whose detail it finds: D3 and D39 at one step each cover their own, a pins flag of a third shape is a flag, and an entry whose match no flag meets fails the run', () => {
+test('an entry\'s match covers the flags whose whole detail it names: D3 and D39 at one step each cover their own, a pins flag of a third shape is a flag, and an entry whose match no flag meets fails the run', () => {
   const pins = (detail) => ({ check: 11, step: 'p.9', what: 'fixture:request:pins', detail, message: `fixture's request compile 9 breaks pins: ${detail}` });
   const entry = (finding, match) => ({ configuration: 'H1/W1', check: 11, step: 'p.9', what: 'fixture:request:pins', match, finding, reason: 'r' });
-  const d3 = entry('D3', 'allowing L0$');
-  const d39 = entry('D39', 'allowing L[1-9][0-9]*$');
+  const d3 = entry('D3', '^summary 4 sent over raw pin p1, allowing L0$');
+  const d39 = entry('D39', '^summary 7 sent under level pin p2, allowing L1$');
   const both = perCheckReport({ configuration, candidate: { flags: [pins('summary 4 sent over raw pin p1, allowing L0'), pins('summary 7 sent under level pin p2, allowing L1')], missing: [] }, expected: [d3, d39] });
   assert.equal(both.verdict, 'pass');
   assert.match(both.lines[0], /^H1\/W1: no flags, 2 expected \(D3, D39\)\.$/);
@@ -76,8 +76,8 @@ test('an entry\'s match narrows its cover to the flags whose detail it finds: D3
   assert.deepEqual(third.flags.map((f) => f.detail), ['pin p3 names no stored message'], 'a pins flag neither match finds isn\'t covered');
   const gone = perCheckReport({ configuration, candidate: { flags: [pins('summary 4 sent over raw pin p1, allowing L0')], missing: [] }, expected: [d3, d39] });
   assert.equal(gone.flags.length, 1);
-  assert.match(gone.flags[0].message, /expects a flag here for D39 matching \/allowing L\[1-9\]\[0-9\]\*\$\/, and the run raised none/);
-  const noDetail = perCheckReport({ configuration, candidate: { flags: [{ check: 4, step: 'p.9', what: 'more-than-once', message: '3 stored message(s) reach the request more than once' }], missing: [] }, expected: [{ configuration: 'H1/W1', check: 4, step: 'p.9', what: 'more-than-once', match: 'more than once', finding: 'D3', reason: 'r' }] });
+  assert.match(gone.flags[0].message, /expects a flag here for D39 matching \/\^summary 7 sent under level pin p2, allowing L1\$\/, and the run raised none/);
+  const noDetail = perCheckReport({ configuration, candidate: { flags: [{ check: 4, step: 'p.9', what: 'more-than-once', message: '3 stored message(s) reach the request more than once' }], missing: [] }, expected: [{ configuration: 'H1/W1', check: 4, step: 'p.9', what: 'more-than-once', match: '^3 stored message\\(s\\) reach the request more than once$', finding: 'D3', reason: 'r' }] });
   assert.equal(noDetail.verdict, 'pass', 'a flag with no detail is matched by its message');
 });
 

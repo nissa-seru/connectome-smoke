@@ -48,7 +48,7 @@ function literal(match) {
   if (!match.startsWith('^') || !match.endsWith('$')) return false;
   const body = match.slice(1, -1);
   for (let i = 0; i < body.length; i++) {
-    if (body[i] === '\\') { i++; if (i >= body.length) return false; continue; }
+    if (body[i] === '\\') { i++; if (i >= body.length || !(META.has(body[i]) || body[i] === '\\')) return false; continue; }
     if (META.has(body[i])) return false;
   }
   return true;

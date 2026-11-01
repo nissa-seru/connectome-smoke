@@ -40,3 +40,8 @@ test('storeDelta: context-manager\'s quarantines, compression spans and merges, 
   assert.deepEqual(storeDelta(m, first.seen, blobs).out.quarantine, { compression: null, merge: 1 }, 'a quarantine context-manager couldn\'t read is unknown, not none');
   assert.equal(storeDelta(manager([]), undefined, blobs).out.quarantine, undefined, 'a strategy with no quarantine reports none');
 });
+
+test('storeDelta: a strategy that can\'t be read when the quarantine is first sampled is reported unreadable, not as none', () => {
+  const failing = { ...manager([]), getStrategy: () => { throw new Error('gone'); } };
+  assert.deepEqual(storeDelta(failing, undefined, blobStore()).out.quarantine, { unreadable: 'gone' });
+});

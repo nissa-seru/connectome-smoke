@@ -5,7 +5,8 @@ import { tmpdir } from 'node:os';
 import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs, sh } from './lib/common.mjs';
-import { EPOCH, EXPECTED_FAILURES, KEY_PACKAGES, asRun, keptWhole, laneVersion, stackVersions } from './lib/strategies/lane.mjs';
+import { installCandidate, readPacks } from './lib/install.mjs';
+import { EPOCH, EXPECTED_FAILURES, asRun, keptWhole, laneVersion, stackVersions } from './lib/strategies/lane.mjs';
 import { hostFacts, runScript } from './lib/strategies/driver.mjs';
 import { startStandin, tokensSent } from './lib/strategies/standin.mjs';
 import { judge, judgedAgent } from './lib/strategies/judge.mjs';
@@ -60,43 +61,15 @@ function installRelease(dir) {
   return { hostDir: dir, installDir: dir, versions: stackVersions(dir, { installDir: dir }) };
 }
 
-function readPacks(paths) {
-  return paths.map((p) => {
-    let name;
-    try { name = JSON.parse(sh('tar', ['-xzOf', p, 'package/package.json']).stdout).name; } catch (e) { fail(`the overlay ${p} couldn't be read as a packed release: ${e.message}`); }
-    if (name === '@animalabs/connectome-host') fail(`the overlay ${p} is connectome-host, which this checkout is: change the checkout to run a host change`);
-    if (!KEY_PACKAGES.includes(name)) fail(`the overlay ${p} is ${name}; overlay one of ${KEY_PACKAGES.filter((k) => k !== '@animalabs/connectome-host').join(', ')}`);
-    return { path: p, name, integrity: `sha512-${createHash('sha512').update(readFileSync(p)).digest('base64')}` };
-  });
-}
-
-function installCandidate(packs, dir) {
-  if (!packs.length) {
-    if (!existsSync(join(ROOT, 'node_modules'))) fail(`there's no install at ${ROOT}; run npm ci first`);
-    return { hostDir: ROOT, installDir: ROOT, versions: stackVersions(ROOT, { installDir: ROOT }) };
-  }
-  mkdirSync(dir, { recursive: true });
-  sh('sh', ['-c', 'tar -C "$ROOT" --exclude=./node_modules --exclude=./.git -cf - . | tar -x -C "$DIR"'], { env: { ROOT, DIR: dir } });
-  npmCi(dir);
-  sh('npm', ['install', '--ignore-scripts', '--no-audit', '--no-fund', '--loglevel=error', ...packs.map((p) => p.path)], { cwd: dir, timeout: 900_000 });
-  const lock = JSON.parse(readFileSync(join(dir, 'package-lock.json'), 'utf-8')).packages ?? {};
-  for (const { path, name, integrity } of packs) {
-    const copies = Object.entries(lock).filter(([at]) => at.endsWith(`node_modules/${name}`));
-    if (!copies.length || copies.some(([, l]) => l.integrity !== integrity)) {
-      fail(`the overlay ${path} didn't replace every copy of ${name}: ${copies.map(([at, l]) => `${at} from ${l.resolved}`).join('; ')}`);
-    }
-  }
-  return { hostDir: dir, installDir: dir, versions: stackVersions(dir, { installDir: dir }) };
-}
-
 console.log(`${LABEL} lane ${lane.slice(0, 12)} · release ${stack.release} · work ${work}`);
 let release;
 try { release = installRelease(join(work, 'release')); } catch (e) { fail(`installing ${stack.release} failed: ${e.message}`); }
 console.log(`${LABEL} checkpoints from ${named(release.versions)}`);
 
-const packs = readPacks(String(opt('overlay', '')).split(',').map((s) => s.trim()).filter(Boolean).map((p) => resolve(p)));
+let packs;
+try { packs = readPacks(String(opt('overlay', '')).split(',').map((s) => s.trim()).filter(Boolean).map((p) => resolve(p))); } catch (e) { fail(e.message); }
 let candidate;
-try { candidate = installCandidate(packs, join(work, 'candidate')); } catch (e) { fail(`installing the candidate failed: ${e.message}`); }
+try { candidate = installCandidate({ root: ROOT, packs, dir: join(work, 'candidate'), leaveOut: [work, out], npmCi }); } catch (e) { fail(`installing the candidate failed: ${e.message}`); }
 console.log(`${LABEL} candidate ${named(candidate.versions)}${packs.length ? `, with ${packs.map((p) => p.name).join(', ')} laid over` : ''}`);
 
 const expected = (() => {
@@ -216,8 +189,11 @@ for (const id of names) {
   seconds.runs[id] = Math.round((since(t) - (checkpointTime - before)) * 10) / 10;
   console.log((r.lines?.length ? r.lines : [`${id}: couldn't run: ${r.reason}`]).join('\n'));
   let record = null;
-  if (r.outcome !== 'couldnt-run' && r.records.some((x) => x.kind === 'agent') && !r.log.some((e) => e.kind === 'compiles' && (e.lines ?? []).some((l) => l.kind === 'request'))) {
-    Object.assign(r, { outcome: 'couldnt-run', reason: 'the run sent agent requests, and its log holds no request compile line from the test module, so its record would judge nothing' });
+  const sideOf = (agent) => (agent === FIXTURE_AGENT ? 'primary' : 'sub');
+  const compiledSides = new Set(r.outcome === 'couldnt-run' ? [] : r.log.filter((e) => e.kind === 'compiles').flatMap((e) => (e.lines ?? []).filter((l) => l.kind === 'request').map((l) => sideOf(l.agent))));
+  const uncompiled = r.outcome === 'couldnt-run' ? [] : [...new Set(r.records.filter((x) => x.kind === 'agent').map((x) => x.agent ?? 'primary'))].filter((side) => !compiledSides.has(side));
+  if (uncompiled.length) {
+    Object.assign(r, { outcome: 'couldnt-run', reason: `the run sent ${uncompiled.join(' and ')} agent requests, and its log holds no request compile line from the test module for ${uncompiled.length > 1 ? 'either' : 'that side'}, so its record couldn't tell their compiles from their rounds` });
     console.log(`${LABEL} ${id}: couldn't run: ${r.reason}`);
   }
   if (r.outcome !== 'couldnt-run') {

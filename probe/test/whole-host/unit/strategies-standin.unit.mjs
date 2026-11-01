@@ -375,7 +375,7 @@ test('T13: when the model binds thinking, a block whose request changed is refus
   const DROP = { type: 'adaptive', block_binding: { prefix_mismatch_behavior: 'drop_block' } };
   for (const [binds, control] of [[true, false], [true, true], [false, false]]) {
     await withStandin({ binds }, async (s) => {
-      s.setStep({ ...step('g', [{ thinking: 'plan', calls: [{ name: 'fixture--result', input: { size: 300, kind: 'prose', canary: '[[c:g.call1]]' } }] }, { text: 'ok' }, { text: 'ok' }]), canaries: ['[[c:g.in]]', '[[c:g.call1]]'] });
+      s.setStep({ ...step('g', [{ thinking: 'plan', calls: [{ name: 'fixture--result', input: { size: 300, kind: 'prose', canary: '[[c:g.call1]]' } }] }, { text: 'ok' }, { text: 'ok' }, { text: 'ok' }]), canaries: ['[[c:g.in]]', '[[c:g.call1]]'] });
       const opening = { ...agentBody({ canary: '[[c:g.in]]' }), ...(control ? { thinking: DROP } : {}) };
       const first = (await post(s.url, opening)).json;
       const call = first.content.find((b) => b.type === 'tool_use');
@@ -387,14 +387,17 @@ test('T13: when the model binds thinking, a block whose request changed is refus
         ],
       });
       assert.equal((await post(s.url, next(opening.messages[0], first.content))).status, 200, 'the block sent after the prefix it was minted under is taken');
+      const count = async (body) => (await post(s.url, body, '/v1/messages/count_tokens')).json.input_tokens;
+      assert.ok(await count(next(opening.messages[0], first.content)) > await count(next(opening.messages[0], first.content.filter((b) => b.type !== 'thinking'))), 'and it counts, under the drop control too');
       const changedPrefix = { role: 'user', content: [{ type: 'text', text: 'user: [[c:g.in]] something else entirely' }] };
       const changed = next(changedPrefix, first.content);
-      const count = async (body) => (await post(s.url, body, '/v1/messages/count_tokens')).json.input_tokens;
       const withoutBlock = next(changedPrefix, first.content.filter((b) => b.type !== 'thinking'));
       const r = await post(s.url, changed);
       if (binds && !control) {
         assert.equal(r.status, 400);
         assert.equal(r.json.error.message, 'messages.1.content.0: Invalid `signature` in `thinking` block. The block is bound to a different conversation.', 'the provider\'s own wording, which hosts read as a binding refusal');
+        const reordered = { role: 'user', content: opening.messages[0].content.map(({ type, ...rest }) => ({ ...rest, type })) };
+        assert.equal((await post(s.url, next(reordered, first.content))).status, 200, 'the same prefix with its keys in another order keeps the binding');
       } else if (binds) {
         assert.equal(r.status, 200);
         assert.equal(await count(changed), await count(withoutBlock), 'the block set aside counts for nothing');
@@ -416,7 +419,7 @@ test('T25: each request\'s record carries its head, everything it sends but its 
   const s = await startStandin({ configuration: { windowTokens: 50_000 } });
   let records = null;
   try {
-    s.setStep({ ...step('t', [{ text: 'a' }, { text: 'b' }, { text: 'c' }, { text: 'd' }, { text: 'e' }, { text: 'f' }, { text: 'g' }, { text: 'h' }]), canaries: ['[[c:t.in]]'] });
+    s.setStep({ ...step('t', [{ text: 'a' }, { text: 'b' }, { text: 'c' }, { text: 'd' }, { text: 'e' }, { text: 'f' }, { text: 'g' }, { text: 'h' }, { text: 'i' }]), canaries: ['[[c:t.in]]'] });
     const base = agentBody({ canary: '[[c:t.in]]', stream: false });
     const variants = [
       base,
@@ -429,9 +432,10 @@ test('T25: each request\'s record carries its head, everything it sends but its 
     for (const v of variants) assert.equal((await post(s.url, v)).status, 200);
     assert.equal((await post(s.url, { ...base, tool_choice: { type: 'auto' }, metadata: { user_id: 'v' } })).status, 200);
     assert.equal((await post(s.url, base, '/v1/messages', { 'anthropic-beta': 'b2-2026, b1-2026,b2-2026' })).status, 200);
+    assert.equal((await post(s.url, { ...base, system: [{ type: 'text', text: base.system, citations: { enabled: true } }] })).status, 200);
     records = await s.close();
   } finally { if (!records) await s.close(); }
-  const [same, again, tool, system, thinking, more, otherUser, beta] = records;
+  const [same, again, tool, system, thinking, more, otherUser, beta, cited] = records;
   assert.deepEqual(same.head, again.head, 'the same body, the same head');
   assert.deepEqual(same.head.tools.map((t) => t.name), ['time--now']);
   assert.notEqual(tool.head.tools[0].sha, same.head.tools[0].sha, 'a tool\'s description moves its definition\'s digest');
@@ -443,6 +447,8 @@ test('T25: each request\'s record carries its head, everything it sends but its 
   assert.notEqual(otherUser.head.rest, more.head.rest, 'by its value');
   assert.deepEqual(same.head.headers, { beta: [], version: '2023-06-01' }, 'the headers that change what a provider does');
   assert.deepEqual(beta.head.headers, { beta: ['b1-2026', 'b2-2026'], version: '2023-06-01' }, 'betas as a set');
+  assert.match(cited.head.system[0].other ?? '', /^[0-9a-f]{16}$/, 'a system block\'s other fields are digested');
+  assert.equal('other' in same.head.system[0], false);
 });
 
 test('T26: a reply marked settle waits until releaseHeld, after onHeld names its request; an ordinary reply is answered at once', async () => {
@@ -563,28 +569,38 @@ test('T28: with a raw directory, each answer\'s content goes beside its request 
   } finally { rmSync(rawDir, { recursive: true, force: true }); }
 });
 
-test('T29: a cache marker the provider refuses is refused wherever it sits; a marker inside a tool result is recorded with its place', async () => {
+test('T29: every cache marker shows in the record as sent: a plain one as its TTL, any other shape whole, on a tool, the system, a message block, inside a tool result and on the body', async () => {
   const s = await startStandin({ configuration: { windowTokens: 50_000 } });
   let records = null;
   try {
-    s.setStep({ ...step('k', Array.from({ length: 8 }, (_, i) => ({ text: `r${i}` }))), canaries: ['[[c:k.in]]'] });
-    const base = agentBody({ canary: '[[c:k.in]]', stream: false });
-    const lastMarked = (cc) => ({ ...base, messages: [{ role: 'user', content: [{ type: 'text', text: 'user: [[c:k.in]] hello', cache_control: cc }] }] });
-    for (const cc of [{}, { type: 'persistent' }, { type: 'ephemeral', ttl: '2h' }]) {
-      const r = await post(s.url, lastMarked(cc));
-      assert.equal(r.status, 400, JSON.stringify(cc));
-      assert.match(r.json.error.message, /^messages\.0\.content\.0\.cache_control: /);
-    }
-    const tool = await post(s.url, { ...base, tools: [{ ...TOOLS[0], cache_control: { type: 'ephemeral', ttl: '30m' } }] });
-    assert.match(tool.json.error.message, /^tools\.0\.cache_control: /);
-    for (const cc of [{ type: 'ephemeral' }, { type: 'ephemeral', ttl: '5m' }, { type: 'ephemeral', ttl: '1h' }]) assert.equal((await post(s.url, lastMarked(cc))).status, 200, JSON.stringify(cc));
-    const nested = { ...base, messages: [{ role: 'user', content: [{ type: 'tool_result', tool_use_id: 't1', content: [{ type: 'text', text: '[[c:k.in]] one' }, { type: 'text', text: 'two', cache_control: { type: 'ephemeral', ttl: '1h' } }] }] }] };
-    assert.equal((await post(s.url, nested)).status, 200);
+    s.setStep({ ...step('k', Array.from({ length: 12 }, (_, i) => ({ text: `r${i}` }))), canaries: ['[[c:k.in]]'] });
+    const odd = { type: 'ephemeral', ttl: '1h', scope: 'x' };
+    const base = { ...agentBody({ canary: '[[c:k.in]]', stream: false }), system: [{ type: 'text', text: 'You are the fixture agent.' }] };
+    const text = (cc) => ({ type: 'text', text: 'user: [[c:k.in]] hello', ...(cc ? { cache_control: cc } : {}) });
+    const nested = (cc) => ({ type: 'tool_result', tool_use_id: 't1', content: [{ type: 'text', text: '[[c:k.in]] one' }, { type: 'text', text: 'two', ...(cc ? { cache_control: cc } : {}) }] });
+    const bodies = [
+      { ...base, messages: [{ role: 'user', content: [text(null)] }] },
+      { ...base, messages: [{ role: 'user', content: [text({ type: 'ephemeral' })] }] },
+      { ...base, messages: [{ role: 'user', content: [text({ type: 'ephemeral', ttl: '1h' })] }] },
+      { ...base, messages: [{ role: 'user', content: [text(odd)] }] },
+      { ...base, messages: [{ role: 'user', content: [text({ type: 'persistent' })] }] },
+      { ...base, messages: [{ role: 'user', content: [nested(null)] }] },
+      { ...base, messages: [{ role: 'user', content: [nested(odd)] }] },
+      { ...base, system: [{ type: 'text', text: 'You are the fixture agent.', cache_control: odd }], messages: [{ role: 'user', content: [text(null)] }] },
+      { ...base, tools: [{ ...TOOLS[0], cache_control: { type: 'ephemeral' } }], messages: [{ role: 'user', content: [text(null)] }] },
+      { ...base, cache_control: { type: 'ephemeral' }, messages: [{ role: 'user', content: [text(null)] }] },
+    ];
+    for (const body of bodies) assert.equal((await post(s.url, body)).status, 200, 'the stand-in judges no marker; the record shows it');
     records = await s.close();
   } finally { if (!records) await s.close(); }
-  assert.deepEqual(records.filter((r) => r.refused).map((r) => r.refused), ['cache_control', 'cache_control', 'cache_control', 'cache_control']);
-  assert.deepEqual(records.at(-1).messages[0].blocks[0].contentCache, [null, '1h']);
-  assert.equal('contentCache' in records.at(-2).messages[0].blocks[0], false, 'and only where one sits');
+  const [none, plain, hour, oddBlock, persistent, nestedNone, nestedOdd, system, tool, top] = records;
+  const shown = '{"scope":"x","ttl":"1h","type":"ephemeral"}';
+  assert.deepEqual([none, plain, hour, oddBlock, persistent].map((r) => r.messages[0].blocks[0].cache ?? null), [null, '5m', '1h', shown, '{"type":"persistent"}']);
+  assert.equal('contentCache' in nestedNone.messages[0].blocks[0], false);
+  assert.deepEqual(nestedOdd.messages[0].blocks[0].contentCache, [null, shown]);
+  assert.deepEqual(system.head.system, [{ text: 'You are the fixture agent.', cache: shown }]);
+  assert.notEqual(tool.head.tools[0].sha, none.head.tools[0].sha, 'a tool\'s marker is in its definition\'s digest');
+  assert.notEqual(top.head.rest, none.head.rest, 'the body\'s marker is in its rest');
 });
 
 test('T30: a request\'s messages are masked together, so a result answering another fork than its call digests apart, and the same pair under other UUIDs alike', async () => {
@@ -607,7 +623,7 @@ test('T30: a request\'s messages are masked together, so a result answering anot
   assert.notEqual(crossed.messages[2].digest, matched.messages[2].digest, 'a result naming another fork');
 });
 
-test('T18: each message in a record has a digest, the same wherever it is carried unchanged, whatever its cache marker or a tool image ref\'s nonce, and an answer records the tool_use ids it minted', async () => {
+test('T18: each message in a record has a digest that its cache marker and a tool image ref\'s nonce leave unchanged and any other change in it moves, and an answer records the tool_use ids it minted', async () => {
   const standin = await startStandin({ configuration: { windowTokens: 50_000 } });
   let records = null;
   try {

@@ -1,14 +1,15 @@
 import { assemblies, FIXTURE_AGENT } from './checks.mjs';
 
-function canaryNames(log) {
-  const canaryOf = new Map();
+function canaryNames(log, agent) {
+  const own = new Map(), others = new Map();
   for (const e of log) {
     if (e.kind !== 'compiles') continue;
-    for (const store of Object.values(e.store ?? {})) {
-      for (const [id, canaries] of Array.isArray(store?.messages) ? store.messages : []) if (canaries?.length) canaryOf.set(String(id), canaries[0]);
+    for (const [name, store] of Object.entries(e.store ?? {})) {
+      const into = name === agent ? own : others;
+      for (const [id, canaries] of Array.isArray(store?.messages) ? store.messages : []) if (canaries?.length) into.set(String(id), canaries[0]);
     }
   }
-  return canaryOf;
+  return (id) => own.get(id) ?? others.get(id);
 }
 
 // context-manager's layout of a compile (buildRenderedLayout): the view's members in order, and one unit per raw
@@ -35,9 +36,9 @@ function fates(layout) {
 export function ledgerOf(log, line) {
   const f = fates(line?.layout);
   if (!f) return [`- no ledger: the compile line carries no layout context-manager gave${line?.layout?.unreadable ? ` (${line.layout.unreadable})` : ''}`];
-  const canaryOf = canaryNames(log);
+  const canaryOf = canaryNames(log, line.agent);
   const position = new Map(f.ids.map((id, i) => [id, i]));
-  const name = (id) => canaryOf.get(id) ?? `#${id}`;
+  const name = (id) => canaryOf(id) ?? `#${id}`;
   const spans = (ids) => {
     const runs = [];
     for (const id of ids) {

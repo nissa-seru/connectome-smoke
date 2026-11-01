@@ -73,6 +73,14 @@ test('check 6 without a store read still holds a request to the two turns before
   assert.deepEqual(lacking.map((f) => f.message), ['the recent window lacks [[c:b.r1]]']);
 });
 
+test('check 6 with a store read holds a request to a message an operator suppressed only after it, which the final store no longer holds', () => {
+  const after = [turnStep('a'), turnStep('b'), turnStep('c'), { id: 'x', segment: 's', kind: 'suppress', messages: [{ canary: '[[c:a.r1]]' }] }];
+  const store = { messages: ['[[c:a.in]]', '[[c:b.in]]', '[[c:b.r1]]', '[[c:c.in]]', '[[c:c.r1]]'].map((c, i) => ({ id: String(i + 1), canaries: [c] })), summaries: [] };
+  const req = (canaries) => ({ id: 'r', step: 'c', kind: 'agent', messages: [msg('user', carrying(...canaries))] });
+  assert.deepEqual(windowsRaw([req(['[[c:a.in]]', '[[c:b.in]]', '[[c:b.r1]]', '[[c:c.in]]'])], after, [], store).map((f) => f.message), ['the recent window lacks [[c:a.r1]]']);
+  assert.deepEqual(windowsRaw([req(['[[c:a.in]]', '[[c:a.r1]]', '[[c:b.in]]', '[[c:b.r1]]', '[[c:c.in]]'])], after, [], store), []);
+});
+
 test('check 6 flags a request that loses a raw message of the head the host reported, or lacks the two turns before it raw', () => {
   const script = [turnStep('a'), turnStep('b', 2), turnStep('c'), turnStep('d')];
   const stored = (...canaries) => ({ canaries });
@@ -177,6 +185,13 @@ test('check 5: a summary declares only what its request showed, a child by its n
   const nothingHeld = bookkeeping([shown('[[s:C9]]', [])], tooled);
   assert.deepEqual(nothingHeld, []);
   assert.equal(nothingHeld.judged, 0, 'a summary of tool results alone holds no source to its request, so it isn\'t counted as judged');
+  const merged = { ...tooled, summaries: [...tooled.summaries, { id: 'L2-9', level: 2, sourceLevel: 1, sourceIds: ['L1-9'], number: '[[s:C10]]', covers: ['[[c:a.call1]]'] }] };
+  const unshownChild = bookkeeping([shown('[[s:C10]]', [])], merged);
+  assert.deepEqual(unshownChild, [], 'a child covering no conversational message, its number not sent, may have gone as its sources raw, which carry nothing to judge by');
+  assert.equal(unshownChild.judged, 0, 'so it isn\'t judged, and nothing passes on it');
+  const shownChild = bookkeeping([shown('[[s:C10]]', [], ['[[s:C9]]'])], merged);
+  assert.deepEqual(shownChild, []);
+  assert.equal(shownChild.judged, 1, 'its number sent shows it');
   assert.equal(bookkeeping([shown('[[s:C1]]', ['[[c:a.in]]', '[[c:a.r1]]'])], store).judged, 1);
 });
 
@@ -704,12 +719,14 @@ test('check 2: thinking-call and debt each pass when their segment produced what
   const thinkingWanted = { 'thinking-call': wanted['thinking-call'] };
   const missing = [{ segment: 'thinking-call', missing: [wanted['thinking-call'][0].name] }];
   const call = { type: 'tool_use', toolUseId: 'toolu_t1' };
-  const result = { role: 'user', blocks: [{ type: 'tool_result', toolUseId: 'toolu_t1', canaries: ['[[c:t.1.call1]]'] }] };
+  const answering = (canary) => ({ role: 'user', blocks: [{ type: 'tool_result', toolUseId: 'toolu_t1', canaries: [canary] }] });
+  const result = answering('[[c:c.think.call1]]');
   const request = (assistantBlocks, rest = [result]) => ({ id: 'a1', seq: 1, step: 't.1', kind: 'agent', messages: [msg('user', carrying('[[c:t.1.in]]')), { role: 'assistant', blocks: assistantBlocks }, ...rest] });
   assert.deepEqual(declaredProducts([request([{ type: 'thinking', signature: 'fx1.abc' }, call])], script, thinkingWanted), [], 'signed thinking leading a call, with the call\'s result');
   assert.deepEqual(declaredProducts([request([{ type: 'thinking', signature: 'fx1.abc' }], [])], script, thinkingWanted), missing, 'signed thinking with no call isn\'t a thinking-led call');
   assert.deepEqual(declaredProducts([request([call, { type: 'thinking', signature: 'fx1.abc' }])], script, thinkingWanted), missing, 'thinking after the call doesn\'t lead it');
   assert.deepEqual(declaredProducts([request([{ type: 'thinking', signature: 'fx1.abc' }, call], [])], script, thinkingWanted), missing, 'a call with no result in the request');
+  assert.deepEqual(declaredProducts([request([{ type: 'thinking', signature: 'fx1.abc' }, call], [answering('[[c:p.11.call1]]')])], script, thinkingWanted), missing, 'a thinking-led call the prefix made isn\'t the segment\'s');
   const debtWanted = { debt: wanted.debt };
   const agent = (seq) => ({ id: `d${seq}`, seq, step: 'd.1', kind: 'agent', messages: [], answer: { shape: 'reply' } });
   const answered = (seq, shape) => ({ id: `s${seq}`, seq, step: 'd.1', kind: 'summariser', messages: [], answer: { shape } });
@@ -717,4 +734,17 @@ test('check 2: thinking-call and debt each pass when their segment produced what
   assert.deepEqual(declaredProducts(parked, script, debtWanted), []);
   const between = [agent(1), answered(2, 'summary'), agent(3), answered(4, 'thinking-only'), answered(5, 'empty'), answered(6, 'max-tokens')];
   assert.deepEqual(declaredProducts(between, script, debtWanted), [{ segment: 'debt', missing: [wanted.debt[0].name] }]);
+});
+
+test('check 12: a fork call\'s UUID and its result\'s are masked together across a dry compile\'s messages, so a result that names another call is a difference', () => {
+  const dry = (seq, contents) => ({ seq, agent: 'fixture', kind: 'dry', outcome: 'compiled', messages: contents.map((content, i) => ({ sources: [`r:m${i}`], content })), system: 'sys' });
+  const uuid = (c) => `${c.repeat(8)}-${c.repeat(4)}-${c.repeat(4)}-${c.repeat(4)}-${c.repeat(12)}`;
+  const blobs = { callA: `call fork-w9-${uuid('a')}`, resA: `result fork-w9-${uuid('a')}`, callB: `call fork-w9-${uuid('b')}`, resB: `result fork-w9-${uuid('b')}`, resC: `result fork-w9-${uuid('c')}`, sys: [] };
+  const run = (before, after) => [
+    { kind: 'compiles', boot: 1, lines: [before], blobs },
+    { kind: 'compiles', boot: 2, lines: [after], blobs: {} },
+    { kind: 'reload', step: 'r.restart', agent: 'fixture', before: { boot: 1, seq: before.seq }, after: { boot: 2, seq: after.seq } },
+  ];
+  assert.deepEqual(reloads(run(dry(7, ['callA', 'resA']), dry(1, ['callB', 'resB']))), [], 'a fresh UUID for the same call and result');
+  assert.match(reloads(run(dry(7, ['callA', 'resA']), dry(1, ['callB', 'resC'])))[0].message, /differs from the one before at message 1/);
 });

@@ -160,12 +160,19 @@ test('a host that is the checkout itself is named by its version and its source,
 });
 
 test('a kept checkpoint is used only whole, with its record, its store and the answers its transcripts read', () => {
-  const whole = tree({ 'checkpoint.json': '{}', 'store/x': '', 'answers/r1.answer.json': '[]' });
-  const noAnswers = tree({ 'checkpoint.json': '{}', 'store/x': '' });
+  const record = JSON.stringify({ from: 'H1/W2', key: 'k', clockEnd: 1 });
+  const whole = tree({ 'checkpoint.json': record, 'store/x': '', 'answers/r1.answer.json': '[]' });
+  const noAnswers = tree({ 'checkpoint.json': record, 'store/x': '' });
   const noRecord = tree({ 'store/x': '', 'answers/r1.answer.json': '[]' });
+  const brokenRecord = tree({ 'checkpoint.json': '{"from":', 'store/x': '', 'answers/r1.answer.json': '[]' });
+  const emptyStore = tree({ 'checkpoint.json': record, 'answers/r1.answer.json': '[]' });
+  mkdirSync(join(emptyStore, 'store'));
+  const all = [whole, noAnswers, noRecord, brokenRecord, emptyStore];
   try {
     assert.equal(keptWhole(whole), true);
     assert.equal(keptWhole(noAnswers), false, 'one kept before its answers were, or that lost them, is written again');
     assert.equal(keptWhole(noRecord), false);
-  } finally { for (const d of [whole, noAnswers, noRecord]) rmSync(d, { recursive: true, force: true }); }
+    assert.equal(keptWhole(brokenRecord), false, 'a record that doesn\'t parse');
+    assert.equal(keptWhole(emptyStore), false, 'a store that lost its contents');
+  } finally { for (const d of all) rmSync(d, { recursive: true, force: true }); }
 });

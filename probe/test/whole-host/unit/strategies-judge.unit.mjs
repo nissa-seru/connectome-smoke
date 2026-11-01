@@ -105,6 +105,24 @@ test('H2 is judged by its subagent: its own store, read in its own slot, its vio
   assert.ok(unstated.flags.some((f) => f.what === 'no-launch-budget'), 'with no stated budget its rounds can\'t be judged, and the run says so');
 });
 
+test('H2\'s check 3 holds a subagent\'s continuation round to the stream budget its launch notice states', async () => {
+  const configuration = asRun(configurations().H2, { window: 1_000_000 });
+  const notice = (n) => ({ role: 'user', content: [{ type: 'text', text: `Launch of spawn 'knowledge-1':\n- Stream budget: ${n} tokens (fixture's: 320,000 tokens).\n` }] });
+  const usage = (input) => ({ input_tokens: input, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 });
+  const r1 = { id: 'r1', step: 'k', kind: 'agent', agent: 'sub', maxTokens: 2_048, usage: usage(400_000), messages: [{ role: 'user', digest: 'd1', blocks: [{ type: 'text', canaries: ['[[c:k.in]]'] }] }], answer: { shape: 'reply', toolUseIds: ['t1'] } };
+  const r2 = { ...r1, id: 'r2', usage: usage(100), messages: [...r1.messages, { role: 'assistant', digest: 'd2', blocks: [{ type: 'tool_use', toolUseId: 't1' }] }, { role: 'user', digest: 'd3', blocks: [{ type: 'tool_result', toolUseId: 't1' }] }], answer: { shape: 'reply', toolUseIds: [] } };
+  const log = (n) => [
+    { kind: 'compiles', step: 'k', blobs: { l1: notice(n), x1: { role: 'user', content: [{ type: 'text', text: '[[c:k.in]] words' }] } }, lines: [{ seq: 1, agent: 'knowledge-1', kind: 'request', assembly: 1, outcome: 'compiled', messages: [{ sources: ['r:1'], content: 'l1' }, { sources: ['r:2'], content: 'x1' }] }] },
+    { kind: 'request', step: 'k', request: { id: 'r1', kind: 'agent' } },
+    { kind: 'request', step: 'k', request: { id: 'r2', kind: 'agent' } },
+  ];
+  const overBound = async (n) => (await judge({ ...side(configuration, { records: [r1, r2], script: [{ id: 'k', segment: 's' }], log: log(n) }), readers: counting().readers })).flags.filter((f) => f.check === 3 && /stream bound/.test(f.message));
+  assert.deepEqual(await overBound('500,000'), [], '400,000 fresh tokens before the round are within the 500,000 the notice states');
+  const flagged = await overBound('300,000');
+  assert.deepEqual(flagged.map((f) => f.request), ['r2']);
+  assert.match(flagged[0].message, /over the stream bound 300000/);
+});
+
 test('a failed H2 run that never reached its subagent is judged as the failed run it is', async () => {
   const { readers } = counting();
   const judged = await judge({ ...side(configurations().H2, { run: { ok: false, failure: { reason: 'the host exited' } } }), readers });

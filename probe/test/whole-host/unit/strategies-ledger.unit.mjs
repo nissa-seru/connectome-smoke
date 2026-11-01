@@ -49,3 +49,12 @@ test('moduleCounts: a quarantine any agent couldn\'t read leaves the run\'s quar
   const failed = [...log, { kind: 'compiles', step: 'c', boot: 1, lines: [], store: { helper: { quarantine: { unreadable: 'gone' } } }, blobs: {} }];
   assert.equal(moduleCounts(failed, []).quarantines, undefined);
 });
+
+test('ledgerOf names a message by its own agent\'s store first, so a fork\'s edited copy under the same id doesn\'t rename the resident\'s', () => {
+  const branches = [
+    { kind: 'compiles', step: 'a', lines: [], store: { fixture: { messages: [['1', ['[[c:a.in]]']]] }, fork: { messages: [['1', ['[[c:b.in]]']]] } }, blobs: {} },
+  ];
+  const one = { memberIds: ['1'], units: [{ k: 'r', t: 1 }] };
+  assert.deepEqual(ledgerOf(branches, { agent: 'fixture', layout: one })[0], '- raw (1): [[c:a.in]]');
+  assert.deepEqual(ledgerOf(branches, { agent: 'fork', layout: one })[0], '- raw (1): [[c:b.in]]');
+});

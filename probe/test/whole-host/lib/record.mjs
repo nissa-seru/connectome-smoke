@@ -157,6 +157,8 @@ export function renderRecordLines({ header, log, records, end }) {
     for (const { line, request } of paired?.pairs ?? []) sentAs.set(`${agent}|${line.boot}|${line.seq}`, request);
     for (const request of paired?.continuations ?? []) rounds.set(request.id, { agent, request });
   }
+  const owned = new Set([...sentAs.values()].map((r) => r.id));
+  for (const r of records ?? []) if (r.kind === 'agent' && !owned.has(r.id) && !rounds.has(r.id)) rounds.set(r.id, { agent: (r.agent ?? 'primary') === 'primary' ? primary : 'sub', request: r });
   const heads = new Map();
   const lastHead = new Map();
   const headText = (h) => [
@@ -168,13 +170,14 @@ export function renderRecordLines({ header, log, records, end }) {
     `system ${(h.system ?? []).map((b) => {
       const text = nameNonces(b.text ?? '');
       const numbers = text.match(/\d+/g) ?? [];
-      return `[${template('system', text.replace(/\d+/g, '#'))}]${numbers.length ? `(${numbers.join(',')})` : ''}${b.cache ? `^${b.cache}` : ''}`;
+      return `[${template('system', text.replace(/\d+/g, '#'))}]${numbers.length ? `(${numbers.join(',')})` : ''}${b.cache ? `^${b.cache}` : ''}${b.other ? `{${String(b.other).slice(0, 8)}}` : ''}`;
     }).join(' ') || '-'}`,
     `tools ${(h.tools ?? []).map((t) => `${t.name}:${String(t.sha).slice(0, 8)}`).join(' ') || '-'}`,
     ...(h.headers ? [`headers beta ${(h.headers.beta ?? []).join('+') || '-'} version ${h.headers.version ?? '-'}`] : []),
     ...(h.rest ? [`rest ${String(h.rest).slice(0, 8)}`] : []),
   ].join(', ');
   const messagesOf = (r) => (r.messages ?? []).map((m) => ({ role: m.role, digest: m.digest, cache: (m.blocks ?? []).map((b) => (b.contentCache ? [b.cache ?? null, b.contentCache] : b.cache ?? null)) }));
+  const headOf = (r) => (r.head ? sha8({ ...r.head, stream: r.stream ?? null }) : null);
   const sentNote = (who, r) => {
     const head = r.head ? { ...r.head, stream: r.stream ?? null } : null;
     let note = '';
@@ -247,8 +250,12 @@ export function renderRecordLines({ header, log, records, end }) {
     }
     if (e.kind === 'compiles') {
       for (const [agent, st] of Object.entries(e.store ?? {})) {
-        if (st.receiptHead) receipt.set(agent, st.receiptHead);
         const tag = agent === primary ? '' : ` [${agent}]`;
+        if ('receiptHead' in st) {
+          if (st.receiptHead?.unreadable) { seen(e.step); at(e.step).push({ text: `  unreadable${tag} receipt: ${st.receiptHead.unreadable}` }); receipt.delete(agent); }
+          else if (st.receiptHead) receipt.set(agent, st.receiptHead);
+          else receipt.delete(agent);
+        }
         for (const part of ['messages', 'summaries']) if (st[part] && !Array.isArray(st[part])) { seen(e.step); at(e.step).push({ text: `  unreadable${tag} ${part}: ${st[part].unreadable ?? 'not a list'}` }); }
         for (const [id, , more] of Array.isArray(st.messages) ? st.messages : []) thinking.set(`${agent} ${id}`, more?.thinking === true);
         for (const sm of Array.isArray(st.summaries) ? st.summaries : []) {
@@ -288,16 +295,16 @@ export function renderRecordLines({ header, log, records, end }) {
       if (l.kind === 'compile') {
         lastCarried.set(l.agent, carriedBy(l.sent));
         lastSent.set(l.agent, l.compile);
-        return { text: `${l.base}${sentNote(l.agent, l.sent)}`, request: l.request, compile: l.compile };
+        return { text: `${l.base}${sentNote(l.agent, l.sent)}`, request: l.request, compile: l.compile, head: headOf(l.sent) };
       }
       if (l.kind === 'round') {
         const before = new Set(lastCarried.get(l.agent) ?? []);
         const carried = carriedBy(l.sent);
         lastCarried.set(l.agent, carried);
         const added = carried.filter((c) => !before.has(c));
-        return { text: `  round${l.agent === primary ? '' : ` [${l.agent}]`} ${added.length ? `+ ${added.join(' ')}` : '='}${sentNote(l.agent, l.sent)}`, request: l.request, compile: lastSent.get(l.agent) ?? null, round: true };
+        return { text: `  round${l.agent === primary ? '' : ` [${l.agent}]`} ${added.length ? `+ ${added.join(' ')}` : '='}${sentNote(l.agent, l.sent)}`, request: l.request, compile: lastSent.get(l.agent) ?? null, round: true, head: headOf(l.sent) };
       }
-      if (l.kind === 'call') return { text: `${l.base}${sentNote('summariser', l.sent)}`, request: l.request };
+      if (l.kind === 'call') return { text: `${l.base}${sentNote('summariser', l.sent)}`, request: l.request, head: headOf(l.sent) };
       return l;
     }));
   }

@@ -95,4 +95,7 @@ export function stackVersions(hostDir, { installDir, registry } = {}) {
   return out;
 }
 
-export const keptWhole = (dir) => existsSync(join(dir, 'checkpoint.json')) && existsSync(join(dir, 'store')) && existsSync(join(dir, 'answers'));
+export function keptWhole(dir) {
+  if (!existsSync(join(dir, 'answers')) || !existsSync(join(dir, 'store')) || !readdirSync(join(dir, 'store')).length) return false;
+  try { return typeof JSON.parse(readFileSync(join(dir, 'checkpoint.json'), 'utf-8')).key === 'string'; } catch { return false; }
+}

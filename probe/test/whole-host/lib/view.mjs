@@ -25,7 +25,10 @@ export function changedRequests(committed, lines) {
     removed++;
     i++;
   }
-  const requests = [...new Set(added.map((k) => lines[k].request).filter(Boolean))];
+  const committedHeads = new Set(before.filter((l) => l.startsWith('H:')).map((l) => l.slice(2, l.indexOf(' '))));
+  const changed = new Set(added);
+  lines.forEach((l, k) => { if (l.head && !committedHeads.has(l.head)) changed.add(k); });
+  const requests = [...new Set([...changed].sort((x, y) => x - y).map((k) => lines[k].request).filter(Boolean))];
   return { requests, added: added.length, removed, unattributed: added.filter((k) => !lines[k].request).length };
 }
 

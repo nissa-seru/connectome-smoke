@@ -13,7 +13,7 @@ class Manager {
   getRenderStats() { return null; }
   getMaxSummaryLevel() { return 0; }
   listPins() { return []; }
-  async compile() { return { messages: [], renderStats: { total: { tokens: this.tokens } } }; }
+  async compile() { return { messages: [], renderStats: { total: { tokens: this.tokens } }, provenance: { layout: { memberIds: [], units: [] } } }; }
 }
 const harness = (framework) => {
   const module = new HarnessModule(null);
@@ -98,4 +98,56 @@ test('module: a compile\'s view member another agent\'s slot holds is read from 
   const reader = new Own();
   assert.deepEqual(module.elsewhere(reader, ['9', '10']), { found: shared.messages, unfound: ['10'] });
   assert.deepEqual(module.elsewhere(shared, ['9']), { found: [], unfound: ['9'] }, 'never its own slot');
+});
+
+test('module: a reader\'s compile judges the members of its view another agent\'s slot holds, through the compile it records', async () => {
+  const shared = new Manager();
+  shared.messages = [{ id: 9, sequence: 9, content: [{ type: 'text', text: '[[c:a.chat]] hi' }] }];
+  const module = new HarnessModule(null);
+  module.framework = { listAgents: () => [{ name: 'fixture' }], getAgent: (name) => (name === 'fixture' ? { getContextManager: () => shared } : null) };
+  const Reader = class extends Manager {
+    async compile() { return { messages: [], renderStats: { total: { tokens: 1 } }, provenance: { layout: { memberIds: ['9'], units: [{ k: 'o', n: 1 }] } } }; }
+  };
+  module.wrapManagerCompile(Reader.prototype);
+  const reader = new Reader();
+  reader.messages = [];
+  module.agentOf.set(reader, 'reader');
+  await reader.compile({ maxTokens: 1_000, reserveForResponse: 0 });
+  assert.deepEqual(module.lines[0].violations, [{ invariant: 'coverage', detail: '1 stored bodies in no message sent: 9' }], 'the shared slot\'s member is judged, not unreadable');
+});
+
+test('module: another slot is read only on the compiling manager\'s branch, so a fork\'s copy of a message never stands for the resident\'s', () => {
+  const resident = new Manager();
+  resident.messages = [{ id: 9, sequence: 9, content: [{ type: 'text', text: 'as stored' }] }];
+  const fork = new Manager();
+  fork.messages = [{ id: 9, sequence: 9, content: [{ type: 'text', text: 'edited on the fork' }] }];
+  fork.getDerivation = () => ({ branch: 'fork-1', parentBranch: 'main' });
+  const [module, Own] = harness({ listAgents: () => [{ name: 'fork' }, { name: 'fixture' }], getAgent: (name) => ({ getContextManager: () => (name === 'fork' ? fork : resident) }) });
+  assert.deepEqual(module.elsewhere(new Own(), ['9']).found, resident.messages);
+  const onFork = new Own();
+  onFork.getDerivation = () => ({ branch: 'fork-1', parentBranch: 'main' });
+  assert.deepEqual(module.elsewhere(onFork, ['9']).found, fork.messages);
+});
+
+test('module: an ended agent\'s tick still in flight counts in ticks, and a take keeps its manager until it settles', async () => {
+  let registered = ['sub'];
+  const managers = new Map();
+  const [module, Own] = harness({ listAgents: () => registered.map((name) => ({ name })), getAgent: (name) => (registered.includes(name) ? { getContextManager: () => managers.get(name) } : null) });
+  let finish;
+  const strategy = { tick: () => new Promise((resolve) => { finish = resolve; }) };
+  const sub = new Own();
+  sub.getStrategy = () => strategy;
+  managers.set('sub', sub);
+  module.agentOf.set(sub, 'sub');
+  await sub.compile();
+  const ticking = strategy.tick();
+  registered = [];
+  assert.deepEqual(await module.answer({ op: 'ticks' }), { 'sub (ended)': 1 });
+  await module.answer({ op: 'take' });
+  assert.ok(module.managers.has('sub'), 'kept while its tick runs');
+  finish();
+  await ticking;
+  assert.deepEqual(await module.answer({ op: 'ticks' }), {});
+  await module.answer({ op: 'take' });
+  assert.ok(!module.managers.has('sub'), 'forgotten once settled');
 });

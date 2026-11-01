@@ -75,3 +75,10 @@ test('the self-check compares two arms\' request bodies in order, and names the 
     assert.deepEqual(differs.files, ['r2.json', 'r2.json'], 'the pair a failing job keeps');
   } finally { for (const d of [on, same, off]) rmSync(d, { recursive: true, force: true }); }
 });
+
+test('image nonces are named by their first appearance in what one masker reads, so refs to two ledgers differ from refs to one', () => {
+  const refs = (...nonces) => ({ role: 'user', content: nonces.map((n) => ({ type: 'text', text: `[ref img_${n}_1]` })) });
+  assert.equal(sameAcrossRuns(refs('aaaaaa', 'bbbbbb'), refs('cccccc', 'dddddd')), true, 'two ledgers under other nonces');
+  assert.equal(sameAcrossRuns(refs('aaaaaa', 'bbbbbb'), refs('cccccc', 'cccccc')), false, 'two ledgers against one');
+  assert.match(JSON.stringify(maskRunVarying(refs('aaaaaa', 'bbbbbb', 'aaaaaa'))), /img_N1_1.*img_N2_1.*img_N1_1/);
+});

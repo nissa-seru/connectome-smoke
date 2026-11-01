@@ -12,10 +12,31 @@ const localImports = (file, seen = new Set()) => {
   return seen;
 };
 
+const pullRequestPaths = (yaml) => {
+  const lines = yaml.split('\n');
+  const on = lines.indexOf('on:');
+  const pr = lines.indexOf('  pull_request:', on);
+  const at = lines.indexOf('    paths:', pr);
+  assert.ok(on >= 0 && pr > on && at > pr, 'the workflow has on.pull_request.paths');
+  const paths = [];
+  for (const line of lines.slice(at + 1)) {
+    const m = /^      - (\S+)$/.exec(line);
+    if (!m) break;
+    paths.push(m[1]);
+  }
+  return paths;
+};
+
+test('pullRequestPaths reads the paths under on.pull_request.paths and nothing else', () => {
+  const yaml = ['name: x', 'on:', '  pull_request:', '    paths:', '      - a.mjs', '      - b.mjs', 'jobs:', '  y:', '    steps:', '      - test/whole-host/c.mjs', ''].join('\n');
+  assert.deepEqual(pullRequestPaths(yaml), ['a.mjs', 'b.mjs']);
+});
+
 test('the self-check runs on a change to any file the test module loads, which the host loads into itself', () => {
   const loaded = [...localImports(join(ROOT, 'test/whole-host/lib/strategies/module.mjs'))].map((f) => relative(ROOT, f)).sort();
   const workflow = readFileSync(join(ROOT, '.github/workflows/whole-host-self-check.yml'), 'utf-8');
-  const paths = [...workflow.matchAll(/^\s+- (test\/whole-host\/\S+)$/gm)].map((m) => m[1]);
+  const paths = pullRequestPaths(workflow);
+  assert.ok(paths.includes('.github/workflows/whole-host-self-check.yml'), 'the block read is the one that schedules the check');
   assert.ok(loaded.includes('test/whole-host/lib/strategies/prose.mjs'), 'the module reaches prose.mjs through the recorder and the stand-in');
   assert.deepEqual(loaded.filter((f) => !paths.includes(f)), [], 'each loaded file is a path that schedules the check');
 });

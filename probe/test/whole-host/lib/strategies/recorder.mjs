@@ -140,7 +140,8 @@ export function storeDelta(manager, seen = { messages: new Map(), summaries: new
 // merges' as a count. A strategy without them, such as a passthrough, has none to report.
 function quarantineOf(manager) {
   const strategy = readable(() => manager.getStrategy());
-  if (isUnreadable(strategy) || typeof strategy?.getMergeQuarantineStatus !== 'function') return null;
+  if (isUnreadable(strategy)) return strategy;
+  if (typeof strategy?.getMergeQuarantineStatus !== 'function') return null;
   return plain(readable(() => {
     const compression = strategy.getCompressionQuarantineStatus();
     return { compression: compression.unreadable ? null : compression.spans.length, merge: strategy.getMergeQuarantineStatus().count };

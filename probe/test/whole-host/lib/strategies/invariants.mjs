@@ -71,10 +71,24 @@ function readCompile(manager, compiled, messages, elsewhere) {
   const own = readable(() => manager.getAllMessages());
   if (isUnreadable(own)) return own;
   const ownIds = new Set(own.map((m) => String(m.id)));
-  const members = (compiled?.provenance?.layout?.memberIds ?? []).map(String).filter((id) => !ownIds.has(id));
+  const layout = compiled?.provenance?.layout;
+  const sentIds = messages.flatMap((m) => m.sources).filter((s) => s.startsWith('r:')).map((s) => s.slice(2).split('!')[0]);
+  const members = [...new Set([...(layout?.memberIds ?? []).map(String), ...sentIds])].filter((id) => !ownIds.has(id));
   const { found = [], unfound = members } = members.length && elsewhere ? elsewhere(members) : {};
   const stored = [...own, ...found];
-  const failed = unfound.length ? [`view members no registered agent's slot holds: ${unfound.slice(0, 8).join(', ')}`] : [];
+  const laidOut = Array.isArray(layout?.memberIds) && Array.isArray(layout?.units);
+  const failed = [
+    ...(laidOut ? [] : ['the compile gave no layout, so its view\'s members beyond its own slot weren\'t read']),
+    ...(unfound.length ? [`view members no registered agent's slot holds: ${unfound.slice(0, 8).join(', ')}`] : []),
+  ];
+  const layoutRaw = new Set();
+  if (laidOut) {
+    let at = 0;
+    for (const u of layout.units) {
+      if (u.k === 'r') layoutRaw.add(String(layout.memberIds[at++]));
+      else at += u.n ?? 0;
+    }
+  }
   const inOrder = [...stored].sort((a, b) => a.sequence - b.sequence);
   const bodyOf = new Map();
   const membersOf = new Map();
@@ -95,8 +109,8 @@ function readCompile(manager, compiled, messages, elsewhere) {
     if (expanded.has(summaryId)) return expanded.get(summaryId);
     expanded.set(summaryId, []);
     const s = readable(() => manager.getSummary(summaryId));
-    if (isUnreadable(s)) {
-      failed.push(`getSummary(${summaryId}): ${s.unreadable}`);
+    if (isUnreadable(s) || s === null) {
+      failed.push(`getSummary(${summaryId}): ${isUnreadable(s) ? s.unreadable : 'no such summary'}`);
       return [];
     }
     const out2 = [];
@@ -125,12 +139,14 @@ function readCompile(manager, compiled, messages, elsewhere) {
   for (const id of summariesSent) for (const leaf of leaves(id)) bySummary.set(leaf, [...(bySummary.get(leaf) ?? []), id]);
   // A raw copy of a body holds a shard when it carries every shard (context-manager marks one that
   // doesn't `!shards`; `!content` alone is every shard, altered), or when it carries that shard's text
-  // (a shard with no text, by any raw copy of its body).
+  // (a shard with no text, by any raw copy of its body), among the shards context-manager's layout names raw.
   const partlyHeld = new Set();
   for (const [body, copy] of raw) {
     if (copy.everyShard) continue;
     let from = 0;
-    for (const m of [...(membersOf.get(body) ?? [])].sort((x, y) => (x.shardIndex ?? 0) - (y.shardIndex ?? 0))) {
+    const shards = [...(membersOf.get(body) ?? [])].sort((x, y) => (x.shardIndex ?? 0) - (y.shardIndex ?? 0));
+    const named = shards.filter((m) => layoutRaw.has(String(m.id)));
+    for (const m of named.length ? named : shards) {
       const text = textOf(m);
       const at = text.length === 0 ? from : copy.text.indexOf(text, from);
       if (at < 0) continue;

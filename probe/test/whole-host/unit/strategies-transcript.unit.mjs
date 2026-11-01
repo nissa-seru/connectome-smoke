@@ -141,7 +141,7 @@ test('X7: a per-process image ref nonce and a fork call\'s UUID are masked, so t
   const one = of('img_k7x3q2_7', '0f8e2c1a-1b2c-4d5e-8f90-a1b2c3d4e5f6');
   const two = of('img_zz91aa_7', '9a8b7c6d-5e4f-4a3b-9c2d-1e0f9a8b7c6d');
   assert.deepEqual(one, two);
-  assert.ok(one.includes('  text: [image: image/png, ~1KB, ref img_*_7]'));
+  assert.ok(one.includes('  text: [image: image/png, ~1KB, ref img_N1_7]'));
   assert.ok(one.includes('  tool_use fork-fork-x-UUID1 subagent--fork: {}'));
   assert.ok(one.includes('  tool_result fork-fork-x-UUID1'));
   const crossed = of('img_k7x3q2_7', '0f8e2c1a-1b2c-4d5e-8f90-a1b2c3d4e5f6', '9a8b7c6d-5e4f-4a3b-9c2d-1e0f9a8b7c6d');

@@ -115,6 +115,7 @@ export function products(configuration) {
   const steps = continuation();
   const long = canary(steps.filter((s) => s.segment === 'close-merge' && s.kind === 'channel').reduce((a, b) => (b.text.length > a.text.length ? b : a)).id, 'in');
   const imageCall = steps.find((s) => s.segment === 'tool-round' && s.kind === 'channel').replies.flatMap((r) => r.calls ?? []).find((c) => c.input.kind === 'image').input.canary;
+  const thinkingCalls = steps.find((s) => s.segment === 'thinking-call' && s.kind === 'channel').replies.flatMap((r) => r.calls ?? []).map((c) => c.input.canary);
   return {
     'close-merge': summarises
       ? [
@@ -132,7 +133,7 @@ export function products(configuration) {
       { name: 'the tool round\'s image as its placeholder', test: (r) => r.kind === 'agent' && r.messages.some((m) => m.blocks.some((b) => b.type === 'tool_result' && (b.canaries || []).includes(imageCall) && !b.images && b.placeholders > 0)) },
     ],
     'thinking-call': [
-      { name: 'the call\'s request carrying the reply\'s thinking', test: (r) => r.kind === 'agent' && r.messages.some((m) => m.role === 'assistant' && thinkingLedCalls(m).some((id) => resultFor(r, id))) },
+      { name: 'the call\'s request carrying the reply\'s thinking', test: (r) => r.kind === 'agent' && r.messages.some((m) => m.role === 'assistant' && thinkingLedCalls(m).some((id) => resultFor(r, id, thinkingCalls))) },
     ],
     debt: summarises
       ? [
@@ -152,7 +153,7 @@ function thinkingLedCalls(message) {
   return thought < 0 ? [] : message.blocks.slice(thought + 1).filter((b) => b.type === 'tool_use').map((b) => b.toolUseId);
 }
 
-const resultFor = (record, id) => record.messages.some((m) => m.role === 'user' && m.blocks.some((b) => b.type === 'tool_result' && b.toolUseId === id));
+const resultFor = (record, id, canaries) => record.messages.some((m) => m.role === 'user' && m.blocks.some((b) => b.type === 'tool_result' && b.toolUseId === id && (b.canaries ?? []).some((c) => canaries.includes(c))));
 
 function storedInParts(store, input) {
   const first = store.messages.find((m) => m.canaries.includes(input));

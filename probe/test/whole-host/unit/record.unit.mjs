@@ -245,6 +245,31 @@ test('a stack text up to 4,096 bytes is written whole, and a longer one as its h
   assert.match(block(4097), /^T:user-x{40} = \{"bytes":4097,"head":"x{80}","sha256":"[0-9a-f]{16}","tail":"x{80}"\}$/);
 });
 
+test('the 4,096 is bytes, not characters: 2,048 two-byte characters are written whole, and one more is shaped', () => {
+  const block = (t) => {
+    const lg = [{ kind: 'compiles', step: 'q.1', blobs: { u1: text('[[c:q.1.in]] a'), t1: text(t) }, lines: [line(1, [m(1, 'u1'), m(2, 't1')])] }];
+    return renderRecord({ header, log: lg, records: [], end: { ok: true } }).split('\n').find((l) => / = /.test(l) && l.includes('é'));
+  };
+  assert.ok(block('é'.repeat(2048)).endsWith(` = ${'é'.repeat(2048)}`));
+  assert.match(block('é'.repeat(2049)), /\{"bytes":4098,/);
+});
+
+test('a heads entry names the request\'s anthropic-beta and anthropic-version headers', () => {
+  const req = { id: 'a1', seq: 1, kind: 'agent', agent: 'primary', step: 'q.1', stream: true, head: { model: 'm', maxTokens: 1, toolChoice: null, thinking: null, system: [], tools: [], rest: null, headers: { beta: ['b-one', 'b-two'], version: '2023-06-01' } }, messages: [{ role: 'user', digest: 'd', blocks: [{ type: 'text', canaries: ['[[c:q.1.in]]'] }] }], answer: { shape: 'reply' } };
+  const lg = [{ kind: 'request', step: 'q.1', request: { id: 'a1', kind: 'agent' } }, { kind: 'compiles', step: 'q.1', blobs: { u1: text('[[c:q.1.in]] a') }, lines: [line(1, [m(1, 'u1')])] }];
+  const heads = renderRecord({ header, log: lg, records: [req], end: { ok: true } }).split('\n').filter((l) => l.startsWith('H:'));
+  assert.equal(heads.length, 1);
+  assert.match(heads[0], /, headers beta b-one\+b-two version 2023-06-01/);
+});
+
+test('a cache marker nested in a tool result\'s content moves its compile line\'s body hash', () => {
+  const req = (contentCache) => ({ id: 'a1', seq: 1, kind: 'agent', agent: 'primary', step: 'q.1', stream: true, messages: [{ role: 'user', digest: 'd', blocks: [{ type: 'tool_result', canaries: ['[[c:q.1.in]]'], cache: null, ...(contentCache ? { contentCache } : {}) }] }], answer: { shape: 'reply' } });
+  const lg = [{ kind: 'request', step: 'q.1', request: { id: 'a1', kind: 'agent' } }, { kind: 'compiles', step: 'q.1', blobs: { u1: text('[[c:q.1.in]] a') }, lines: [line(1, [m(1, 'u1')])] }];
+  const compile = (r) => renderRecord({ header, log: lg, records: [r], end: { ok: true } }).split('\n').find((l) => l.startsWith('  compile'));
+  assert.notEqual(compile(req(null)), compile(req([null, '5m'])));
+  assert.notEqual(compile(req([null, '5m'])), compile(req(['5m', null])), 'and so does where among the content it sits');
+});
+
 test('a store read the recorder couldn\'t make is a line of the record, and the rest of the record still renders', () => {
   const lg = [
     { kind: 'compiles', step: 'q.1', blobs: { u1: text('[[c:q.1.in]] a') }, store: { fixture: { messages: { unreadable: 'getAllMessages threw' }, summaries: { unreadable: 'no such reader' } } }, lines: [line(1, [m(1, 'u1')])] },
@@ -253,6 +278,17 @@ test('a store read the recorder couldn\'t make is a line of the record, and the 
   assert.ok(r.includes('  unreadable messages: getAllMessages threw'));
   assert.ok(r.includes('  unreadable summaries: no such reader'));
   assert.ok(r.includes('  compile q.1.in'));
+});
+
+test('the record\'s receipt is the last head the store reported: one it couldn\'t read is a line, and one reset to none names none', () => {
+  const head = (sequence) => ({ sequence, receiptHash: 'h', parentReceiptHash: null, requestHash: 'r', layoutHash: 'l', changes: [] });
+  const batch = (i, receiptHead) => ({ kind: 'compiles', step: `q.${i}`, blobs: { [`u${i}`]: text(`[[c:q.${i}.in]] a`) }, store: { fixture: { receiptHead } }, lines: [line(i, [m(i, `u${i}`)])] });
+  const render = (...heads) => renderRecord({ header, log: heads.map((h, i) => batch(i + 1, h)), records: [], end: { ok: true } }).split('\n');
+  assert.ok(render(head(3), head(4)).includes('receipt fixture #4'));
+  const unread = render(head(3), { unreadable: 'getStrategy threw' });
+  assert.ok(unread.includes('  unreadable receipt: getStrategy threw'));
+  assert.ok(!unread.some((l) => l.startsWith('receipt ')), 'and no receipt is named from it');
+  assert.ok(!render(head(3), null).some((l) => l.startsWith('receipt ')), 'a head reset to none leaves no receipt');
 });
 
 test('a sent compile names each new head where it changes, and its body hash moves with what it sent, cache markers included', () => {
@@ -285,4 +321,31 @@ test('the requests a view shows are those whose lines a rendered record moved', 
   const moved = renderRecordLines({ header, log: lg, records: [req('a1', 1, 'd1'), req('a2', 2, 'dX')], end: { ok: true } });
   assert.deepEqual(changedRequests(committed, moved).requests, ['a2']);
   assert.deepEqual(changedRequests(committed, renderRecordLines({ header, log: lg, records: [req('a1', 1, 'd1'), req('a2', 2, 'd2')], end: { ok: true } })).requests, []);
+});
+
+test('a head two requests share, changed for both, names both as changed, though only the first line names it', () => {
+  const head = (maxTokens) => ({ model: 'm', maxTokens, toolChoice: null, thinking: null, system: [], tools: [], rest: null });
+  const req = (id, seq, h) => ({ id, seq, kind: 'agent', agent: 'primary', step: 'q.1', stream: true, head: h, messages: [{ role: 'user', digest: 'd', blocks: [{ type: 'text', canaries: ['[[c:q.1.in]]'] }] }], answer: { shape: 'reply' } });
+  const lg = [
+    { kind: 'request', step: 'q.1', request: { id: 'a1', kind: 'agent' } },
+    { kind: 'compiles', step: 'q.1', blobs: { u1: text('[[c:q.1.in]] a') }, lines: [line(1, [m(1, 'u1')])] },
+    { kind: 'request', step: 'q.1', request: { id: 'a2', kind: 'agent' } },
+  ];
+  const at = (h) => ({ header, log: lg, records: [req('a1', 1, h), req('a2', 2, h)], end: { ok: true } });
+  const committed = renderRecord(at(head(100)));
+  const moved = renderRecordLines(at(head(200)));
+  assert.equal(moved.filter((l) => /head H:/.test(l.text)).length, 1, 'only the first line names the head');
+  assert.deepEqual(changedRequests(committed, moved).requests, ['a1', 'a2']);
+});
+
+test('an agent request no compile pairs with, of a side no agent compiled for, still has a line', () => {
+  const sub = { id: 's1', seq: 2, kind: 'agent', agent: 'sub', step: 'q.1', stream: true, messages: [{ role: 'user', digest: 'd', blocks: [{ type: 'text', canaries: ['[[c:q.1.k]]'] }] }], answer: { shape: 'reply' } };
+  const lg = [
+    { kind: 'compiles', step: 'q.1', blobs: { u1: text('[[c:q.1.in]] a') }, lines: [line(1, [m(1, 'u1')])] },
+    { kind: 'request', step: 'q.1', request: { id: 's1', kind: 'agent' } },
+  ];
+  const r = renderRecordLines({ header, log: lg, records: [sub], end: { ok: true } });
+  const own = r.find((l) => l.request === 's1');
+  assert.ok(own, 'it has a line');
+  assert.match(own.text, /^  round \[sub\] \+ q\.1\.k, body [0-9a-f]{8}$/);
 });

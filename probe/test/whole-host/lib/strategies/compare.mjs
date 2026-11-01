@@ -1,7 +1,7 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-const REF = /\bimg_[0-9a-z]+_(\d+)\b/g;
+const REF = /\bimg_([0-9a-z]+)_(\d+)\b/g;
 const FORK = /\b(fork-[^\s"]*?-)([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\b/g;
 
 // Two runs of one key differ only in agent-framework's per-process image-ref nonce, in the random UUID the host's
@@ -9,12 +9,11 @@ const FORK = /\b(fork-[^\s"]*?-)([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}
 // thinking signatures, which hash the request ahead of them.
 export function runVaryingMasker() {
   const forks = new Map();
+  const nonces = new Map();
+  const nth = (map, key) => { if (!map.has(key)) map.set(key, map.size + 1); return map.get(key); };
   const mask = (value) => {
     if (typeof value === 'string') {
-      return value.replace(REF, 'img_*_$1').replace(FORK, (_, prefix, uuid) => {
-        if (!forks.has(uuid)) forks.set(uuid, forks.size + 1);
-        return `${prefix}UUID${forks.get(uuid)}`;
-      });
+      return value.replace(REF, (_, nonce, n) => `img_N${nth(nonces, nonce)}_${n}`).replace(FORK, (_, prefix, uuid) => `${prefix}UUID${nth(forks, uuid)}`);
     }
     if (Array.isArray(value)) return value.map(mask);
     if (!value || typeof value !== 'object') return value;

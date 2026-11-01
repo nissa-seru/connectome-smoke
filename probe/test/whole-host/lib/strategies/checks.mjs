@@ -1,4 +1,4 @@
-import { maskRunVarying } from './compare.mjs';
+import { runVaryingMasker } from './compare.mjs';
 import { CANARY } from './standin.mjs';
 
 export function declaredProducts(records, script, products, store = null) {
@@ -56,13 +56,16 @@ export function reloads(log = []) {
     Object.assign(blobs, e.blobs ?? {});
     for (const l of e.lines ?? []) lines.set(`${e.boot}:${l.seq}`, l);
   }
-  const held = (id) => JSON.stringify(maskRunVarying(blobs[id] ?? null));
-  const shape = (l) => ({
-    outcome: l.outcome,
-    error: l.error?.class ?? null,
-    messages: (l.messages ?? []).map((m) => ({ sources: m.sources, content: held(m.content) })),
-    system: held(l.system),
-  });
+  const shape = (l) => {
+    const mask = runVaryingMasker();
+    const held = (id) => JSON.stringify(mask(blobs[id] ?? null));
+    return {
+      outcome: l.outcome,
+      error: l.error?.class ?? null,
+      messages: (l.messages ?? []).map((m) => ({ sources: m.sources, content: held(m.content) })),
+      system: held(l.system),
+    };
+  };
   let judged = 0;
   for (const e of log) {
     if (e.kind !== 'reload') continue;
@@ -344,7 +347,8 @@ export function windowsRaw(records, script, log, store, { agent = FIXTURE_AGENT,
   script.forEach((s, i) => { if (s.op === 'suppress' || s.kind === 'suppress') for (const m of s.messages ?? []) if (m.canary && !suppressedAt.has(m.canary)) suppressedAt.set(m.canary, i); });
   const suppressed = (c, stepId) => suppressedAt.has(c) && suppressedAt.get(c) < (stepAt.get(stepId) ?? Infinity);
   const failed = new Set(log.filter((e) => e.kind === 'ipc' && /^inference:(failed|exhausted)$/.test(e.event?.type ?? '')).map((e) => e.step));
-  const held = (c, stepId, at_ = stepId) => (store ? at.has(c) : !suppressed(c, at_) && !(failed.has(stepId) && /\.r\d+\]\]$/.test(c)));
+  const failedReply = (c, stepId) => failed.has(stepId) && /\.r\d+\]\]$/.test(c);
+  const held = (c, stepId, at_ = stepId) => (store ? at.has(c) || (suppressedAt.has(c) && !suppressed(c, at_) && !failedReply(c, stepId)) : !suppressed(c, at_) && !failedReply(c, stepId));
   const asked = new Map();
   for (const r of records) {
     if (!own(r)) continue;
@@ -479,11 +483,13 @@ export function bookkeeping(records, store) {
     const sentCanaries = new Set(r.sent?.canaries || []);
     const sentSummaries = new Set(r.sent?.summaries || []);
     const shown = (child, seen = new Set()) => {
-      if (seen.has(child.id)) return false;
+      if (seen.has(child.id)) return 'unseen';
       seen.add(child.id);
-      if (child.number && sentSummaries.has(child.number)) return true;
-      if (child.sourceLevel > 0 && child.sourceIds.length && child.sourceIds.every((id) => byId.has(id) && shown(byId.get(id), seen))) return true;
-      return child.covers.filter(conversational).every((c) => sentCanaries.has(c));
+      if (child.number && sentSummaries.has(child.number)) return 'shown';
+      if (child.sourceLevel > 0 && child.sourceIds.length && child.sourceIds.every((id) => byId.has(id) && shown(byId.get(id), seen) === 'shown')) return 'shown';
+      const covered = child.covers.filter(conversational);
+      if (!covered.length) return 'unknown';
+      return covered.every((c) => sentCanaries.has(c)) ? 'shown' : 'unseen';
     };
     const unseen = [];
     let held = 0;
@@ -494,10 +500,10 @@ export function bookkeeping(records, store) {
         held++;
         if (own.some((c) => !sentCanaries.has(c))) unseen.push(id);
       } else {
-        const child = byId.get(id);
-        if (!child.number && !child.covers.some(conversational)) continue;
+        const seenAs = shown(byId.get(id));
+        if (seenAs === 'unknown') continue;
         held++;
-        if (!shown(child)) unseen.push(id);
+        if (seenAs === 'unseen') unseen.push(id);
       }
     }
     if (held) judged++;

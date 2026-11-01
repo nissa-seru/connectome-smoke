@@ -162,7 +162,7 @@ const found = (strings, re) => strings.flatMap((s) => s.match(re) || []);
 // the messages before it, cache markers aside.
 function bindingIdentity(body, beforeMessage) {
   const head = Object.fromEntries(Object.entries(body).filter(([k]) => !['messages', 'stream', 'metadata', 'system', 'tools', 'model'].includes(k)));
-  return sha(JSON.stringify(unmarked({ model: body.model, system: body.system ?? null, tools: body.tools ?? null, head, messages: (body.messages || []).slice(0, beforeMessage) })));
+  return sha(JSON.stringify(sorted(unmarked({ model: body.model, system: body.system ?? null, tools: body.tools ?? null, head, messages: (body.messages || []).slice(0, beforeMessage) }))));
 }
 
 const THINKING_CHARS = 600;
@@ -180,19 +180,7 @@ function readSummariser(body, target) {
   };
 }
 
-const validMarker = (cc) => cc && typeof cc === 'object' && cc.type === 'ephemeral' && (cc.ttl === undefined || cc.ttl === '5m' || cc.ttl === '1h');
-
-function badMarker(body) {
-  const at = [];
-  if (body.cache_control != null) at.push(['cache_control', body.cache_control]);
-  (body.tools || []).forEach((t, i) => { if (t?.cache_control != null) at.push([`tools.${i}.cache_control`, t.cache_control]); });
-  if (Array.isArray(body.system)) body.system.forEach((b, i) => { if (b?.cache_control != null) at.push([`system.${i}.cache_control`, b.cache_control]); });
-  (body.messages || []).forEach((m, i) => blocksOf(m.content).forEach((b, j) => {
-    if (b?.cache_control != null) at.push([`messages.${i}.content.${j}.cache_control`, b.cache_control]);
-    if (b?.type === 'tool_result') blocksOf(b.content).forEach((x, k) => { if (x?.cache_control != null) at.push([`messages.${i}.content.${j}.content.${k}.cache_control`, x.cache_control]); });
-  }));
-  return at.find(([, cc]) => !validMarker(cc))?.[0] ?? null;
-}
+const markerOf = (cc) => (cc.type === 'ephemeral' && Object.keys(cc).every((k) => k === 'type' || (k === 'ttl' && typeof cc.ttl === 'string')) ? cc.ttl || '5m' : JSON.stringify(sorted(cc)));
 
 const headerValues = (v) => (Array.isArray(v) ? v : v === undefined ? [] : [v]).flatMap((x) => String(x).split(',')).map((x) => x.trim()).filter(Boolean);
 
@@ -209,10 +197,10 @@ function normalise(body, headers, mask) {
       out.toolUseId = b.tool_use_id;
       const images = blocksOf(b.content).filter((x) => x?.type === 'image').length;
       if (images) out.images = images;
-      const inner = blocksOf(b.content).map((x) => (x?.cache_control ? x.cache_control.ttl || '5m' : null));
+      const inner = blocksOf(b.content).map((x) => (x?.cache_control ? markerOf(x.cache_control) : null));
       if (inner.some(Boolean)) out.contentCache = inner;
     }
-    if (b.cache_control) out.cache = b.cache_control.ttl || '5m';
+    if (b.cache_control) out.cache = markerOf(b.cache_control);
     if (b.type === 'thinking') out.signature = b.signature ?? null;
     return out;
   };
@@ -226,7 +214,7 @@ function normalise(body, headers, mask) {
       maxTokens: body.max_tokens ?? null,
       toolChoice: body.tool_choice ?? null,
       thinking: body.thinking ?? null,
-      system: systemBlocks.map((b) => ({ text: mask(b.text ?? ''), cache: b.cache_control ? b.cache_control.ttl || '5m' : null })),
+      system: systemBlocks.map(({ type: _t, text, cache_control: cc, ...other }) => ({ text: mask(text ?? ''), cache: cc ? markerOf(cc) : null, ...(Object.keys(other).length ? { other: digest(other) } : {}) })),
       tools: (body.tools || []).map((t) => ({ name: t.name, sha: digest(t) })),
       rest: Object.keys(rest).length ? digest(rest) : null,
       headers: { beta: [...new Set(headerValues(headers['anthropic-beta']))].sort(), version: headers['anthropic-version'] ?? null },
@@ -462,13 +450,6 @@ export async function startStandin({ configuration, rawDir = null, refuseMerges 
       record.answer = { shape: 'refused' };
       if (kind === 'agent') answered[agent]++;
       return sendError(res, 400, 'max_tokens: Field required');
-    }
-    const marker = badMarker(body);
-    if (marker) {
-      record.refused = 'cache_control';
-      record.answer = { shape: 'refused' };
-      if (kind === 'agent') answered[agent]++;
-      return sendError(res, 400, `${marker}: a cache marker is {"type": "ephemeral"}, with an optional ttl of "5m" or "1h"`);
     }
     const tooLong = countTokens(asRead(body));
     if (tooLong > config.windowTokens) {

@@ -29,6 +29,7 @@ export class HarnessModule {
     this.agentOf = new WeakMap();
     this.seen = new Map();
     this.managers = new Map();
+    this.watching = new Set();
   }
 
   async start() {}
@@ -123,9 +124,11 @@ export class HarnessModule {
     this.lines.push(line);
   }
 
+
   watchTicks(manager) {
     let strategy;
     try { strategy = manager.getStrategy(); } catch { return; }
+    this.watching.add(manager);
     if (!strategy || this.ticks.has(strategy) || typeof strategy.tick !== 'function') return;
     const counter = { inFlight: 0 };
     this.ticks.set(strategy, counter);
@@ -147,7 +150,11 @@ export class HarnessModule {
       if (agent) others.add(agent.getContextManager());
     }
     others.delete(manager);
+    // A derived context (a fork) writes its own branch; a view merges slots on the compiling manager's branch.
+    const branchOf = (m) => { const d = readable(() => m.getDerivation?.() ?? null); return isUnreadable(d) ? undefined : d?.branch ?? null; };
+    const branch = branchOf(manager);
     for (const other of others) {
+      if (branchOf(other) !== branch) continue;
       if (!wanted.size) break;
       const messages = readable(() => other.getAllMessages());
       if (isUnreadable(messages)) continue;
@@ -221,6 +228,7 @@ export class HarnessModule {
         for (const [name, manager] of this.managers) {
           if (live.get(name) === manager) continue;
           this.takeDelta(store, name, manager);
+          if (this.ticksInFlight(manager) > 0) continue;
           this.managers.delete(name);
           this.seen.delete(name);
         }
@@ -231,9 +239,18 @@ export class HarnessModule {
         return (this.framework.listAgents({ includeEnded: true }) ?? []).map((r) => r.name);
       case 'ticks': {
         const out = {};
+        const live = new Set();
         for (const record of this.framework.listAgents() ?? []) {
           const agent = this.framework.getAgent(record.name);
-          if (agent) out[record.name] = this.ticksInFlight(agent.getContextManager());
+          if (!agent) continue;
+          live.add(agent.getContextManager());
+          out[record.name] = this.ticksInFlight(agent.getContextManager());
+        }
+        // agent-framework releases an ended agent's manager without awaiting its tick, so it still counts until done.
+        for (const manager of this.watching) {
+          if (live.has(manager)) continue;
+          const n = this.ticksInFlight(manager);
+          if (n) out[`${this.agentName(manager, null) ?? 'an agent'} (ended)`] = n;
         }
         return out;
       }
