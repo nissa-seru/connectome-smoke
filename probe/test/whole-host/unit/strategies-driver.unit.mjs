@@ -1,10 +1,7 @@
-// The parts of the strategy fixture's driver (lib/strategies/driver.mjs) that
-// need no host. Its runs through a host are its own evidence (see its commits).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { budgetReportDone, hostEnv, readSettle } from '../lib/strategies/driver.mjs';
+import { budgetReportDone, hostEnv, readSettle, shutdownFailure } from '../lib/strategies/driver.mjs';
 
-// R7: how a settle reads one `maintain` answer (agent-framework 0.28.0's host-command reply).
 const answer = ({ ready = true, pending = false, queue = 0, compressed = 30, drained = true, deferredWrites = 0, activeTurnAgents = [], parkedAdmissions = 0, ok = true } = {}) => ({
   ok,
   maintenance: { ran: true, agents: [{ agentName: 'fixture', ready, ...(ready ? {} : { pending: pending ? 'Compressing chunk 31' : `${queue} chunks pending` }), progress: { totalChunks: 32, chunksCompressed: compressed, l1QueueLength: queue, mergeQueueLength: 0, summaryCounts: { l1: compressed, l2: 1, l3: 0 }, pending } }] },
@@ -19,6 +16,19 @@ test('R7: a settle is settled only when every agent is ready, the host is draine
     ['an agent not ready', answer({ ready: false, pending: true })],
     ['an answer that isn\'t ok', answer({ ok: false })],
   ]) assert.equal(readSettle(a, null).settled, false, what);
+  const two = answer();
+  two.maintenance.agents.push({ ...two.maintenance.agents[0], agentName: 'reader', ready: false, pending: 'Compressing chunk 3', progress: { ...two.maintenance.agents[0].progress, pending: true } });
+  assert.equal(readSettle(two, null).settled, false, 'one agent of two not ready');
+  two.maintenance.agents[1] = { ...two.maintenance.agents[0], agentName: 'reader' };
+  assert.equal(readSettle(two, null).settled, true, 'both ready');
+});
+
+test('R7c: a compression the host\'s auto-tick started holds the settle while the test module counts it, though maintenance looks settled', () => {
+  assert.equal(readSettle(answer(), null, { fixture: 0 }).settled, true);
+  const read = readSettle(answer(), null, { fixture: 1 });
+  assert.equal(read.settled, false);
+  assert.equal(read.inFlight, true);
+  assert.deepEqual(read.ticking, ['fixture 1']);
 });
 
 test('R7: work is in flight while a compression runs, a turn is alive or a wake is parked, and otherwise isn\'t', () => {
@@ -64,4 +74,19 @@ test('R12: a configuration whose model binds thinking boots its host with the st
   assert.equal(hostEnv({ ...base, configuration: { binds: true } }).THINKING_BINDING_PROBE, 'off');
   assert.equal('THINKING_BINDING_PROBE' in hostEnv({ ...base, configuration: { binds: false } }), false);
   assert.equal(hostEnv({ ...base, configuration: {} }).ANTHROPIC_BASE_URL, 'http://127.0.0.1:1');
+  const env = hostEnv({ ...base, configuration: {} });
+  assert.ok('AGENT_TIMEZONE' in env && env.AGENT_TIMEZONE === undefined, 'an inherited AGENT_TIMEZONE is overridden to nothing, so the host keeps TZ\'s UTC');
+});
+
+test('R13: a host\'s shutdown fails the run when it doesn\'t exit in time or exits other than cleanly', () => {
+  assert.equal(shutdownFailure({ boot: 2, timedOut: false, exited: { code: 0, signal: null }, seconds: 30 }), null);
+  assert.match(shutdownFailure({ boot: 2, timedOut: false, exited: { code: 1, signal: null }, seconds: 30 }), /boot 2: the host exited \(1\) on its shutdown/);
+  assert.match(shutdownFailure({ boot: 2, timedOut: false, exited: { code: null, signal: 'SIGSEGV' }, seconds: 30 }), /exited \(SIGSEGV\)/);
+  assert.match(shutdownFailure({ boot: 3, timedOut: true, exited: { code: null, signal: 'SIGKILL' }, seconds: 30 }), /boot 3: the host didn't exit within 30 s/);
+});
+
+test('R14: the self-check\'s second arm boots the test module with recording off, and every other run with it on', () => {
+  const base = { standinUrl: 'http://127.0.0.1:1', control: '/tmp/c', clock: 5 };
+  assert.equal(hostEnv({ ...base, configuration: { recording: false } }).FIXTURE_RECORD, 'off');
+  assert.equal('FIXTURE_RECORD' in hostEnv({ ...base, configuration: {} }), false);
 });

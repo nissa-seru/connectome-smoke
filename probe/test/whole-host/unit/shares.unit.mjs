@@ -17,3 +17,7 @@ test('a run with no recorded seconds counts as the median of those recorded, and
   const out = shares(['x', 'y', 'z'], 1, { runs: { x: 5, y: 7 } });
   assert.deepEqual(out, [{ seconds: 19, ids: ['x', 'y', 'z'] }]);
 });
+
+test('a checkpoint with no recorded seconds counts as the median of the checkpoints recorded', () => {
+  assert.deepEqual(shares(['a'], 1, { runs: { a: 10 }, checkpoints: { k: 40, m: 20 } }, () => 'q'), [{ seconds: 50, ids: ['a'] }]);
+});

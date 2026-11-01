@@ -5,13 +5,8 @@ import { join } from 'node:path';
 import { performance } from 'node:perf_hooks';
 import { maskRunVarying } from './compare.mjs';
 
-/**
- * The openings of context-manager's compression instructions, as 0.23.1 and main send them
- * (src/strategies/autobiographical.ts formatInstruction and its siblings; knowledge.ts's
- * phase prompts and merge), and connectome-host's frontdesk strategy (v0.15.0
- * frontdesk-strategy.ts). A request whose last block holds one is a summariser's. An
- * instruction this list doesn't know makes the request unclassified, which fails the run.
- */
+// The openings of context-manager's compression instructions (autobiographical.ts, knowledge.ts) and of
+// connectome-host's frontdesk strategy (frontdesk-strategy.ts).
 export const INSTRUCTIONS = [
   /Write the memory of events since the most recent memory system notification\./,
   /Write the memory of this slice of the log\./,
@@ -26,13 +21,11 @@ export const INSTRUCTIONS = [
   /Starting from my last message, please describe everything that has happened\./,
 ];
 
-/** The length a compression instruction asks for, in tokens, or null when it states none. */
 function requestedTarget(instruction) {
   const m = instruction.match(/Target ~(\d+) tokens|Aim for about (\d+) tokens/);
   return m ? Number(m[1] ?? m[2]) : null;
 }
 
-/** The level a summariser request asks for: the merge level its instruction names, else 1. */
 function requestedLevel(instruction) {
   const merge = instruction.match(/into a single L(\d+) memory|single L(\d+) memory|at L(\d+)\.|consolidate these \d+ L(\d) summaries/);
   if (!merge) return 1;
@@ -41,33 +34,44 @@ function requestedLevel(instruction) {
 }
 
 export const CANARY = /\[\[c:[^\]\s]+\]\]/g;
-/** A summary's id, the first thing each summary answer says: `M` and eight hex digits of what its request carried. */
 export const SUMMARY = /\[\[s:M[0-9a-f]{8}\]\]/g;
-
 
 const canaryOrder = (a, b) => a.localeCompare(b, 'en', { numeric: true });
 
-// Characters per token by kind. context-manager estimates prose at 2.9 and dense text at
-// 2.3 (message-store.ts defaultTokenEstimator); these sit about 1.3 times above it, and
-// differ by kind so a store's mix moves its calibration as residents' mixes do.
+// context-manager estimates prose at 2.9 characters a token and dense text at 2.3 (message-store.ts); these rates
+// count about 1.3 times its estimate, so its calibration has a gap to close.
 const RATE = { prose: 2.2, code: 1.9, json: 1.65, base64: 1.35, signature: 3.3 };
 const MESSAGE_OVERHEAD = 4;
+// The provider's prompt-cache lifetimes, 5 minutes or 1 hour, and its lookback of 20 blocks before a breakpoint:
+// https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching
 const FIVE_MINUTES = 5 * 60_000;
 const ONE_HOUR = 60 * 60_000;
 const WORDS = 'river stone lantern harbor quiet orchard ledger signal meadow copper window thread garden compass winter'.split(' ');
 
 const sha = (s) => createHash('sha256').update(s).digest('hex');
+const sorted = (v) => (Array.isArray(v) ? v.map(sorted) : v && typeof v === 'object' ? Object.fromEntries(Object.keys(v).sort().map((k) => [k, sorted(v[k])])) : v);
 
 function kindOf(text) {
-  if (/^[\s]*[{[]/.test(text)) { try { JSON.parse(text); return 'json'; } catch { /* not JSON */ } }
+  if (/^[\s]*[{[]/.test(text)) { try { JSON.parse(text); return 'json'; } catch {} }
   if (text.length > 64 && /^[A-Za-z0-9+/=\s]+$/.test(text) && !/ [a-z]+ /.test(text)) return 'base64';
-  let dense = 0;
-  const n = Math.min(text.length, 2000);
-  for (let i = 0; i < n; i++) if ('{}[]":_/=;()<>`'.includes(text[i])) dense++;
-  return n && dense / n > 0.12 ? 'code' : 'prose';
+  return denseKind(text);
 }
 
-const textTokens = (text) => (text ? Math.ceil(text.length / RATE[kindOf(text)]) : 0);
+const DENSE = /[{}[\]":_/=;()<>`]/g;
+const denseKind = (text) => (text.length && (text.match(DENSE) || []).length / text.length > 0.12 ? 'code' : 'prose');
+
+const SEGMENT = 2000;
+function textTokens(text) {
+  if (!text) return 0;
+  const whole = kindOf(text);
+  if (whole === 'json' || whole === 'base64' || text.length <= SEGMENT) return Math.ceil(text.length / RATE[whole]);
+  let chars = 0;
+  for (let at = 0; at < text.length; at += SEGMENT) {
+    const part = text.slice(at, at + SEGMENT);
+    chars += part.length / RATE[denseKind(part)];
+  }
+  return Math.ceil(chars);
+}
 
 function pngSize(data) {
   try {
@@ -77,7 +81,6 @@ function pngSize(data) {
   } catch { return null; }
 }
 
-/** Tokens of one content block, by the stand-in's token model. */
 function blockTokens(block) {
   if (typeof block === 'string') return textTokens(block);
   if (!block || typeof block !== 'object') return 0;
@@ -95,6 +98,23 @@ function blockTokens(block) {
   }
 }
 
+function fitToMaxTokens(content, maxTokens) {
+  let used = 0;
+  const out = [];
+  for (const b of content) {
+    const t = blockTokens(b);
+    if (used + t <= maxTokens) { out.push(b); used += t; continue; }
+    if (b.type === 'text') {
+      const room = maxTokens - used;
+      let kept = b.text.slice(0, Math.max(0, Math.floor(room * RATE[kindOf(b.text)])));
+      while (kept && textTokens(kept) > room) kept = kept.slice(0, Math.floor(kept.length * 0.99));
+      if (kept) out.push({ ...b, text: kept });
+    }
+    return { content: out, cut: true };
+  }
+  return { content: out, cut: false };
+}
+
 const unmarked = (v) => {
   if (Array.isArray(v)) return v.map(unmarked);
   if (!v || typeof v !== 'object') return v;
@@ -102,11 +122,7 @@ const unmarked = (v) => {
 };
 const blocksOf = (content) => (typeof content === 'string' ? [{ type: 'text', text: content }] : Array.isArray(content) ? content : []);
 
-/**
- * The request as a sequence of cacheable elements in the order the API reads them (tools,
- * system, messages), each with its tokens, its marker if it has one, and the rolling hash of
- * everything up to it without markers.
- */
+// The provider caches a request's prefix in the order it reads it: tools, then system, then messages.
 function elements(body) {
   const out = [];
   let h = sha(String(body.model));
@@ -128,7 +144,6 @@ export function countTokens(body) {
   return elements(body).reduce((t, e) => t + e.tokens, 0);
 }
 
-/** Every text a request carries, tool results' included, in order. */
 function texts(body) {
   const out = [];
   const walk = (b) => {
@@ -143,15 +158,13 @@ function texts(body) {
 
 const found = (strings, re) => strings.flatMap((s) => s.match(re) || []);
 
-/** The identity a thinking block is bound to: everything the request carries ahead of the
- *  message holding the block, as context-manager's RequestIdentity names it (system, tools,
- *  model and the rest of the head) plus the messages before it, all without markers. */
+// A signed thinking block binds to everything ahead of its message: system, tools, model, the rest of the head, and
+// the messages before it, cache markers aside.
 function bindingIdentity(body, beforeMessage) {
   const head = Object.fromEntries(Object.entries(body).filter(([k]) => !['messages', 'stream', 'metadata', 'system', 'tools', 'model'].includes(k)));
   return sha(JSON.stringify(unmarked({ model: body.model, system: body.system ?? null, tools: body.tools ?? null, head, messages: (body.messages || []).slice(0, beforeMessage) })));
 }
 
-/** The length of the thinking a model that thinks (`thinks`) leads each reply with, where its script gives none. */
 const THINKING_CHARS = 600;
 
 const signatureFor = (identity) => `fx1.${Buffer.from(identity, 'hex').toString('base64url')}`;
@@ -186,6 +199,8 @@ function normalise(body) {
     const out = { type: b.type, chars: b.type === 'text' || b.type === 'tool_result' ? text.length : b.type === 'thinking' ? (b.thinking || '').length : b.type === 'tool_use' ? JSON.stringify(b.input ?? {}).length : b.type === 'image' ? (b.source?.data || '').length : JSON.stringify(b).length };
     const canaries = text.match(CANARY); if (canaries) out.canaries = canaries;
     const summaries = text.match(SUMMARY); if (summaries) out.summaries = summaries;
+    // agent-framework's placeholder for an image it no longer sends: `[image: image/png, ~691KB, ref img_k7x3q2_7]`.
+    const placeholders = text.match(/\[image: [^\]]*\]/g); if (placeholders) out.placeholders = placeholders.length;
     if (b.type === 'tool_use') out.toolUseId = b.id;
     if (b.type === 'tool_result') {
       out.toolUseId = b.tool_use_id;
@@ -197,7 +212,19 @@ function normalise(body) {
     return out;
   };
   const system = typeof body.system === 'string' ? body.system : Array.isArray(body.system) ? body.system.map((b) => b.text || '').join('') : '';
+  const digest = (v) => sha(JSON.stringify(sorted(maskRunVarying(v ?? null)))).slice(0, 16);
+  const { messages: _m, model: _o, max_tokens: _x, stream: _s, thinking: _t, tool_choice: _c, system: _y, tools: _l, ...rest } = body;
+  const systemBlocks = typeof body.system === 'string' ? [{ type: 'text', text: body.system }] : Array.isArray(body.system) ? body.system : [];
   return {
+    head: {
+      model: body.model ?? null,
+      maxTokens: body.max_tokens ?? null,
+      toolChoice: body.tool_choice ?? null,
+      thinking: body.thinking ?? null,
+      system: systemBlocks.map((b) => ({ text: maskRunVarying(b.text ?? ''), cache: b.cache_control ? b.cache_control.ttl || '5m' : null })),
+      tools: (body.tools || []).map((t) => ({ name: t.name, sha: digest(t) })),
+      rest: Object.keys(rest).length ? digest(rest) : null,
+    },
     model: body.model ?? null,
     maxTokens: body.max_tokens ?? null,
     stream: body.stream === true,
@@ -208,47 +235,10 @@ function normalise(body) {
   };
 }
 
-/** A message's digest (T18): its role and content without cache markers, with what differs between
- *  runs by design masked (compare.mjs), so a message carried unchanged has one digest in every
- *  request that carries it, and in another run of the same key. */
 const digestOf = (m) => sha(JSON.stringify(maskRunVarying(unmarked({ role: m.role, content: blocksOf(m.content) })))).slice(0, 16);
 
-/** A summariser request's own words: each text block that carries no canary (its instruction, and
- *  any framing the strategy adds), in order, with what differs between runs masked, so the run's
- *  record can show a change to what a summariser is asked (record.mjs). */
 const summariserTexts = (body) => (body.messages || []).flatMap((m) => blocksOf(m.content).filter((b) => b.type === 'text' && !(b.text || '').match(CANARY)).map((b) => maskRunVarying(b.text || '')));
 
-/**
- * Start the stand-in for Anthropic's Messages API on a free loopback port.
- *
- * @param {object} opts
- * @param {{ windowTokens: number, binds?: boolean, thinks?: boolean, minCacheTokens?: number }} opts.configuration
- *   `windowTokens` is the model's window (T11). `binds` says the model binds thinking to the request it was minted
- *   in: a block whose request has changed since is refused, as an account that enforces the binding refuses it, unless
- *   the request carries the provider's drop control, which has the block set aside, unread and uncounted (T13).
- *   `thinks` says every reply leads with signed thinking, as a model that thinks without a thinking config replies
- *   (T13b).
- * @param {string} [opts.rawDir] where each request's body is saved, as `<id>.json`.
- *
- * A summariser's answer is a function of what its request carries, never of its bytes or its arrival: the target its
- * instruction states, and the canaries and summary ids (SUMMARY) anywhere in it, its system prompt and tool results
- * included, as sets. So a reworded prompt shows in its own call, and one moved compression doesn't
- * renumber every later summary. A summary opens with its id, `[[s:M` and eight hex digits of that digest, then says
- * how many canaries it carried and the last of them in order, without its brackets, so no reader takes the summary's
- * text for the message that canary names.
- *
- * A step's agent requests are told by its canaries in their last message, or by a text of its `also` there, such as
- * the note a refusal's rewind leaves in place of what it set aside. A step with `namedAnywhere` is told by either
- * anywhere in the request: after a head-window reset, the messages since the reset render in the head, so a turn's own
- * message isn't last, and a reader's round after its first carries its wake notice only at the start. A step's `sub`,
- * `{ marker, canaries, also, replies }`, scripts a second agent, a subagent the first one starts, whose requests carry
- * `marker` in their system prompt. A reply's `error`, `{ status, type, message, headers }`, answers its request with
- * that provider error; a reply with `settle` waits for `releaseHeld()` (onHeld says which); and a call's `id` is the
- * tool id it's sent with.
- * @param {boolean} [opts.refuseMerges] every merge request is refused (W7's merges-refused: merges starving).
- * @param {boolean} [opts.rejectMerges] every merge request is rejected for its request, an HTTP 400
- *   invalid_request_error as membrane classifies one (W7's merges-rejected).
- */
 export async function startStandin({ configuration, rawDir = null, refuseMerges = false, rejectMerges = false }) {
   const config = { minCacheTokens: 0, ...configuration };
   const t0 = performance.now();
@@ -318,7 +308,6 @@ export async function startStandin({ configuration, rawDir = null, refuseMerges 
     return { kind: 'agent', agent };
   }
 
-  /** Each thinking block a binding model wouldn't take: minted for a request whose prefix this one doesn't share. */
   function unbound(body) {
     if (!config.binds) return [];
     const out = [];
@@ -330,7 +319,6 @@ export async function startStandin({ configuration, rawDir = null, refuseMerges 
     return out;
   }
   const dropsUnbound = (body) => body.thinking?.block_binding?.prefix_mismatch_behavior === 'drop_block';
-  /** The request as the model reads it: under the drop control, without the blocks it sets aside. */
   function asRead(body) {
     const drop = dropsUnbound(body) ? unbound(body) : [];
     if (!drop.length) return body;
@@ -349,7 +337,11 @@ export async function startStandin({ configuration, rawDir = null, refuseMerges 
     res.end(body);
   };
 
-  function sendMessage(res, body, record, { content, stop }) {
+  function sendMessage(res, body, record, answer) {
+    const fit = fitToMaxTokens(answer.content, body.max_tokens);
+    const content = fit.content;
+    const stop = fit.cut ? 'max_tokens' : answer.stop;
+    if (fit.cut) Object.assign(record.answer, { stop, chars: content.reduce((t, b) => t + (b.text || b.thinking || '').length, 0), ...(record.answer.toolUseIds ? { toolUseIds: content.filter((b) => b.type === 'tool_use').map((b) => b.id) } : {}) });
     const outputTokens = content.reduce((t, b) => t + blockTokens(b), 0) || 1;
     const usage = usageFor(asRead(body), stop === 'max_tokens' && body.max_tokens ? body.max_tokens : outputTokens);
     record.usage = usage;
@@ -409,13 +401,12 @@ export async function startStandin({ configuration, rawDir = null, refuseMerges 
     const words = parseInt(seed.slice(8, 16), 16);
     const summary = `[[s:M${seed.slice(0, 8)}]]`;
     const head = `${summary} Memory ${seed.slice(0, 8)}, carried ${read.canaries.length} canaries to ${read.canaries.at(-1)?.slice(2, -2) ?? 'none'}:`;
-    const maxChars = Math.floor((body.max_tokens || 16_000) * RATE.prose) - 32;
-    const memory = (chars) => `${head} ${padding(Math.min(chars, maxChars) - head.length - 1, words)}`;
+    const memory = (chars) => `${head} ${padding(chars - head.length - 1, words)}`;
     let content; let stop = 'end_turn';
     if (shape === 'refusal') { content = [{ type: 'text', text: 'I can\'t help with that.' }]; stop = 'refusal'; }
     else if (shape === 'empty') content = [{ type: 'text', text: '' }];
     else if (shape === 'thinking-only') content = [{ type: 'text', text: `<thinking>${padding(200, words)}</thinking>` }];
-    else if (shape === 'max-tokens') { content = [{ type: 'text', text: memory(maxChars) }]; stop = 'max_tokens'; }
+    else if (shape === 'max-tokens') content = [{ type: 'text', text: memory(Math.ceil(body.max_tokens * RATE.prose * 2)) }];
     else content = [{ type: 'text', text: memory(Math.floor(record.target * RATE.prose)) }];
     if (['summary', 'max-tokens'].includes(shape)) record.answer.summary = summary;
     record.answer.chars = content.reduce((t, b) => t + (b.text ?? b.thinking ?? '').length, 0);
@@ -445,6 +436,12 @@ export async function startStandin({ configuration, rawDir = null, refuseMerges 
     if (kind === 'unclassified') {
       record.answer = { shape: 'refused' };
       return sendError(res, 400, `stand-in: unclassified request ${id}: ${reason}`);
+    }
+    if (!Number.isInteger(body.max_tokens) || body.max_tokens < 1) {
+      record.refused = 'max_tokens';
+      record.answer = { shape: 'refused' };
+      if (kind === 'agent') answered[agent]++;
+      return sendError(res, 400, 'max_tokens: Field required');
     }
     const tooLong = countTokens(asRead(body));
     if (tooLong > config.windowTokens) {
@@ -495,19 +492,11 @@ export async function startStandin({ configuration, rawDir = null, refuseMerges 
 
   return {
     url: `http://127.0.0.1:${server.address().port}`,
-    /** The step whose input the driver is about to send: its canaries say which requests are
-     *  its agent's, its replies are served from it, and its bad answers join the queue the
-     *  next first attempts take, one each. */
     setStep(next) { step = next; answered.primary = 0; answered.sub = 0; badQueue.push(...(next?.badAnswers || [])); },
-    /** The virtual time in ms, which the cache model's lifetimes run on. */
     setClock(ms) { clock = ms; },
-    /** Called at every arrival with `{ id, seq, kind, step, at, clock }`. */
     onRequest(cb) { listeners.push(cb); },
-    /** Called with `{ id, agent, step }` when an agent request's reply says `settle`: its answer waits for `releaseHeld()`. */
     onHeld(cb) { heldListeners.push(cb); },
-    /** Answer the oldest held agent request. */
     releaseHeld() { held.shift()?.(); },
-    /** Stop the server and return the records in arrival order. */
     async close() {
       await new Promise((resolve) => { server.close(() => resolve()); for (const s of sockets) s.destroy(); });
       return records;

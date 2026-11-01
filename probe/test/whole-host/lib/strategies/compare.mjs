@@ -1,19 +1,12 @@
-/**
- * Comparing two runs' requests or records. Two runs of one key differ
- * by design in two places, and only those are masked:
- * - the image ledger's nonce in a tool image's ref, `img_<nonce>_<n>`: agent-framework makes
- *   it random per process, so a ref from before a restart never resolves to other bytes
- *   (`tool-image-ledger.ts`, `mintLedgerNonce`); the sequence number `<n>` is kept;
- * - the signature of every thinking block, which the stand-in mints over the request's
- *   content (standin.mjs, `bindingIdentity`), the nonce included.
- * Anything else that differs, keys' order included, is a difference.
- */
 
 const REF = /\bimg_[0-9a-z]+_(\d+)\b/g;
+const FORK = /\b(fork-[^\s"]*?-)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/g;
 
-/** A copy of `value` with what differs between runs by design masked. */
+// Two runs of one key differ only in agent-framework's per-process image-ref nonce, in the random UUID the host's
+// subagent module gives a fork's call when its own call isn't in context (subagent-module.ts), and in the stand-in's
+// thinking signatures, which hash the request ahead of them.
 export function maskRunVarying(value) {
-  if (typeof value === 'string') return value.replace(REF, 'img_*_$1');
+  if (typeof value === 'string') return value.replace(REF, 'img_*_$1').replace(FORK, '$1UUID');
   if (Array.isArray(value)) return value.map(maskRunVarying);
   if (!value || typeof value !== 'object') return value;
   const out = {};

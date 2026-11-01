@@ -5,37 +5,29 @@ import { checkCompile, digest, isUnreadable, normalizeMessage, readSummaries, re
 
 const PASSTHROUGH = ['PassthroughStrategy', 'WindowedPassthroughStrategy'];
 
-/** A library value as JSON holds it: Dates as their ISO text, Maps and Sets as arrays, undefined left out. */
 export function plain(value) {
   if (isUnreadable(value)) return value;
   return JSON.parse(JSON.stringify(value, (_k, v) => (v instanceof Map ? [...v.entries()] : v instanceof Set ? [...v] : v)) ?? 'null');
 }
 
-/** A plain value with every field whose name ends in `Ms` recorded as '*'. */
 export function untimed(value) {
   if (Array.isArray(value)) return value.map(untimed);
   if (!value || typeof value !== 'object') return value;
   return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, /Ms$/.test(k) ? '*' : untimed(v)]));
 }
 
-/** An error's class: its `name` where it names one, else its constructor's. */
 export function errorClass(error) {
   if (error && typeof error.name === 'string' && error.name !== 'Error') return error.name;
   return error?.constructor?.name ?? typeof error;
 }
 
-/** Whether the manager's strategy compresses: every strategy but the two passthroughs. */
 export function compresses(manager) {
   const strategy = readable(() => manager.getStrategy());
   return !isUnreadable(strategy) && !!strategy && !PASSTHROUGH.includes(strategy.constructor?.name);
 }
 
-/**
- * Content-addressed values for a process's lines: `put` returns a value's digest, exactly as the host held it, and
- * `take` hands over each digest's value once, the first time it's taken after the value was put. Nothing is masked
- * here: an image ref's nonce is per process, and only the run's record writer, which sees every boot, can name the
- * nonces alike across runs and keep one boot's apart from another's.
- */
+// Nothing is masked here: agent-framework's image-ref nonce is per process, so only the record writer, which sees
+// every boot, can name the nonces alike across runs.
 export function blobStore() {
   const sent = new Set();
   let fresh = new Map();
@@ -55,12 +47,6 @@ export function blobStore() {
   };
 }
 
-/**
- * What a compile that returned sent and kept, as the cm-fixture's recorder writes it (its trace.mjs `compiled`):
- * each message's sources from the compile's provenance and its content's digest, the system injections' digest, the
- * layout, the render stats (the compile's own, its select's, planVsActual and the calibration among them), and the
- * per-compile invariants run against the manager that compiled.
- */
 export function compiledLine(manager, budget, compiled, blobs) {
   const prov = compiled?.provenance?.messages;
   const entries = (compiled?.messages ?? []).map((m, i) => {
@@ -81,7 +67,6 @@ export function compiledLine(manager, budget, compiled, blobs) {
   };
 }
 
-/** What a compile that threw left: the error's class, its message's digest, and its own fields. */
 export function refusedLine(error, blobs) {
   const fields = {};
   for (const [k, v] of Object.entries(error ?? {})) if (k !== 'message' && k !== 'stack') fields[k] = v;
@@ -92,18 +77,12 @@ export function refusedLine(error, blobs) {
   };
 }
 
-/** The read W1's and W2's properties take, the store's highest summary level. It moves nothing. */
 export function stateOf(manager) {
   return { maxLevel: plain(readable(() => manager.getMaxSummaryLevel())) };
 }
 
-/**
- * The kv-unified receipt chain's head (context-manager's AutobiographicalStrategy keeps it as
- * `kvUnifiedReceipts.head`), null where the strategy keeps none: its sequence, its hash and its
- * parent's, membrane's request hash and the layout hash, and each change as [leaf id, its
- * representation's hash, level, the sequence it last changed at]. Its acceptance time and
- * submission id are left out: the one is wall time and the other is made fresh per send.
- */
+// context-manager keeps the kv-unified receipt chain's head at `kvUnifiedReceipts.head`. Its acceptance time is wall
+// time and its submission id is made fresh per send, so both are left out.
 export function receiptHeadOf(manager) {
   return plain(readable(() => {
     const head = manager.getStrategy().kvUnifiedReceipts?.head ?? null;
@@ -119,16 +98,6 @@ export function receiptHeadOf(manager) {
   }));
 }
 
-/**
- * What changed in an agent's store since `seen` (the last call's `seen`, or none): the stored
- * messages added, each as [id, its canaries], or [id, its canaries, { thinking: true }] where it
- * holds a thinking block, and any whose thinking came or went since, again with `{ thinking }`,
- * false where it went, so the record writer can tell a message sent without the thinking its
- * stored copy holds (a binding leaves it out); the summaries added or changed, each with its level,
- * source level, sources, parent and its content's digest (the content in `blobs`), and those
- * removed, by id; and the receipt head where it moved. `out` holds only what changed, and `changed`
- * says whether anything did.
- */
 export function storeDelta(manager, seen = { messages: new Map(), summaries: new Map(), head: 'null' }, blobs) {
   const out = {};
   const next = { messages: new Map(seen.messages), summaries: new Map(), head: seen.head };
@@ -164,10 +133,6 @@ export function storeDelta(manager, seen = { messages: new Map(), summaries: new
   return { out, seen: next, changed: Object.keys(out).length > 0 };
 }
 
-/**
- * The stored messages without their text: ids, order, participant, block kinds and tool ids, text sizes and digests,
- * the canaries the lane writes (standin.mjs `CANARY`) in the order the texts carry them, shards, metadata.
- */
 export function messagesOf(manager) {
   return plain(readable(() => manager.getAllMessages().map((m) => ({
     id: String(m.id),

@@ -2,27 +2,8 @@ import { FIXTURE_AGENT, assemblies, requestPairs, withJudged } from './checks.mj
 import { png } from './png.mjs';
 import { CHANNEL, READER, TOOL, continuation, prefix, products } from './script.mjs';
 
-/**
- * The context-manager characterization fixture's nine workloads (connectome-smoke `lib/cm-fixture/workloads.mjs` at
- * 10cb728), as a host's residents meet them: every step a channel turn, a host command, the panel, the web UI, a
- * restart, the stand-in model's answers or a read the checks make.
- * What only a direct call to context-manager made has left for its own suite.
- *
- * `steps(ctx)` is the run's script for the driver (driver.mjs, runScript), where `ctx` is `{ seed, configuration,
- * variant }`. `check(run, ctx)` reads the run's log entries and the stand-in's records, `{ log, records }`, and returns
- * the breaches of the one property the workload exists to check, `[{ step, message }]`. `from` says where a run
- * starts: null from an empty store, 'checkpoint' from its configuration's checkpoint (W2's end where the
- * configuration summarises, W1's where it doesn't). `standin` is what the run's stand-in starts with, and `recipe`
- * what the run's recipe adds to its configuration's.
- *
- * Every message a step writes carries a canary, `[[c:SEED.STEP.PART]]`: `in` the channel message, `rK` the agent's
- * k-th reply, `callK` the k-th call's result, `x` a marked message's poison, `arr` an arrival during a tool.
- */
-
-/**
- * Characters per message: the fixture's sizes, which were at 1/15 of the host's, times 15. A pasted `document` is about
- * six of a house configuration's 10,000-token message cap, so it's stored in six shards or more.
- */
+// A `document` is about six times the host's default 10,000-token message cap (framework-strategy.ts), so it's stored
+// in shards.
 const SIZES = {
   user: [450, 1800],
   call: [1200, 4500],
@@ -30,14 +11,14 @@ const SIZES = {
   reading: [9000, 12000],
   reply: [900, 3600],
   large: [45000, 60000],
+  // A reply the host's default reply ceiling (recipe-fit.ts, 16,384 tokens) holds by the stand-in's prose rate.
+  largeReply: [28000, 34000],
   document: [240000, 270000],
 };
 
 const PARTICIPANTS = ['Ash', 'Tavy', 'Wren'];
-/**
- * A budget no store fits, asked so agent-framework's preflight names the lowest an operator can set (the driver's
- * `edge`); the panel takes none at or below the response reserve.
- */
+// agent-framework's preflight refuses a budget no store fits and names its floor; the panel refuses one at or below
+// the response reserve.
 const edge = (ctx) => ctx.reserve + 1000;
 const WORDS = ('river stone lantern harbor quiet orchard ledger signal meadow copper window thread garden compass winter '
   + 'bridge morning letter answer kettle market island pencil shadow ribbon station velvet canyon basket').split(' ');
@@ -71,21 +52,11 @@ function prose(chars, seed) {
 
 export const canary = (seed, step, part) => `[[c:${seed}.${step}.${part}]]`;
 
-/** A 16×16 PNG whose tile colours follow from `seed`. */
 function image(seed) {
   let k = seed >>> 0;
   return png(16, 16, (m) => { k = (Math.imul(k, 1103515245) + 12345) >>> 0; return (k >>> 16) % m; });
 }
 
-/**
- * A run's step writer: `turn(step, o)` is one channel turn as a host drives a resident's: the message arrives, the
- * agent calls the fixture server's tool in `rounds` rounds of `calls` calls each (none with `calls: 0`), each result
- * comes back, and the agent replies. `o`: `user` (its text instead of prose), `size` (the user text's range),
- * `attach` (an image with the message), `result`
- * (the k-th call's tool input, given its canary), `callId` (the k-th call's own tool id), `thinking` (the first
- * round's thinking, in characters), `arrival` (`{ after: k }`: a message arrives while call k runs), `more` (any other
- * step fields).
- */
 function writer(ctx, workload) {
   const r = mulberry32(hash32(`${ctx.seed}:${workload}`));
   const between = ([lo, hi]) => lo + Math.floor(r() * (hi - lo + 1));
@@ -129,10 +100,7 @@ function writer(ctx, workload) {
   return { turn, other, c, id, between, size: between, SIZES };
 }
 
-/**
- * Knowledge sorts a message by its tools' names, which in a host are the fixture server's one tool, so the fixture's
- * phase plan comes down to how many calls a turn makes, in how many rounds.
- */
+// Knowledge sorts a message by its tools' names, which in a host are the fixture server's one tool.
 const PHASE_PLAN = [
   { calls: 1, rounds: 3 }, { calls: 1, rounds: 3 }, { calls: 1, rounds: 3 },
   { calls: 0 }, { calls: 0 }, { calls: 0 },
@@ -155,10 +123,7 @@ const READING_PLAN = [
 ];
 const readingTurn = (n) => READING_PLAN[(n - 1) % READING_PLAN.length];
 
-/**
- * The turn that turns the tool-result guard on, as an agent does: `toolsets--open` on its settings, then
- * `agent_settings`. Neither result carries a canary, so the step names its requests by what they say instead.
- */
+// An agent turns the tool-result guard on with `toolsets--open` on its settings, then `agent_settings`.
 function guardTurn(w, step) {
   const t = w.turn(step, { calls: 0 });
   const said = (k) => `${w.c(step, `r${k}`)} ${prose(200, `${w.id(step)}:r${k}`)}`;
@@ -173,14 +138,6 @@ function guardTurn(w, step) {
   };
 }
 
-/**
- * A knowledge subagent's run as one turn of the primary's (H2): the primary spawns it, synchronously, with a task; the
- * subagent works through `rounds`, each `{ calls }`, the tool inputs of one reply, and then reports; the primary
- * answers the report. The subagent's requests are told by the marker in the system prompt the spawn gives it. Its
- * whole run is one turn of the subagent, so only its first request compiles; the rest are continuation rounds. Each
- * of its replies waits until compression is idle, as the fixture settled between steps, so the background compression
- * its rounds start doesn't race them, and the run has one outcome (without it, two runs in eight took the other).
- */
 function subagentTurn(w, ctx, step, rounds) {
   const marker = `[[knowledge:${ctx.seed}]]`;
   const sid = w.id(step);
@@ -207,15 +164,8 @@ function subagentTurn(w, ctx, step, rounds) {
   };
 }
 
-/**
- * Under H4: the resident tunes the channel out, as it would with `tune_out` (its cadence a day, so no timer reads for
- * it during a run, and its wake budget 64, past which the coordinator ends the tune-out); then each held message is
- * addressed to the resident, which wakes the subconscious reader, and the reader reports it with `deliver_summary` and
- * ends its turn with `skip_reply` (a reader's plain prose has no destination, and the host asks it again). A reader's
- * request is named by the held message's canary anywhere in it, or by its wake notice, all a window cut to the edge
- * holds. `before` (by held message, from 1) is steps the driver takes before that message's turn; with `mayFail`,
- * a reader's turn may end exhausted or aborted, logged as turn-failed, as W8's turns may at the edge.
- */
+// agent-framework's coordinator ends a tune-out past its wake budget, and a reader's plain prose has no destination
+// (the host asks it again), so the reader reports with `deliver_summary` and ends with `skip_reply`.
 function tunedOut(w, steps, count, o = {}) {
   const t = w.turn('tune', { calls: 0 });
   steps.push({
@@ -264,10 +214,8 @@ function markdownPaste(seed, step, target) {
 const entries = (run, kind) => run.log.filter((e) => e.kind === kind);
 const readsOf = (run, op) => entries(run, 'read').filter((e) => e.op === op);
 
-/** Every block of an agent request's record, with its message's index and role. */
 const blocksOf = (record) => (record.messages ?? []).flatMap((m, i) => m.blocks.map((b) => ({ i, role: m.role, b })));
 
-/** A configuration that summarises: everything but a passthrough. */
 const summarises = (configuration) => configuration.summarises !== false;
 
 export const WORKLOADS = {
@@ -286,10 +234,6 @@ export const WORKLOADS = {
     products: (configuration) => products(configuration),
   },
 
-  /**
-   * W1 builds a store from empty over 70 turns of the phase plan's tool rounds. Under H4 the resident then tunes the
-   * channel out, and the reader reads six held messages, with an `/undo` before the fourth.
-   */
   W1: {
     from: null,
     turns: 70,
@@ -310,7 +254,6 @@ export const WORKLOADS = {
     },
   },
 
-  /** W2 builds a store from empty over 70 turns of reading-sized results, with a pasted document every tenth turn and an image every seventh. */
   W2: {
     from: null,
     turns: 70,
@@ -336,7 +279,6 @@ export const WORKLOADS = {
     },
   },
 
-  /** W4: four turns whose first round's call is led by signed thinking, each answered in its turn. */
   W4: {
     from: 'checkpoint',
     turns: 4,
@@ -361,11 +303,6 @@ export const WORKLOADS = {
     },
   },
 
-  /**
-   * W5: the agent turns the tool-result guard on, so every later round's results are added held and settled by an
-   * edit; then twelve turns, every fourth led by a large reply, every second answered by a large text, an image and
-   * text in one result.
-   */
   W5: {
     from: 'checkpoint',
     turns: 12,
@@ -382,22 +319,18 @@ export const WORKLOADS = {
             : { kind: 'prose', size: w.between(SIZES.result), canary: canaryText }),
           more: { reads: ['messages'] },
         });
-        if (n % 4 === 1) t.replies[0].text = `${w.c(n, 'r1')} ${prose(w.between(SIZES.large), `${w.id(n)}:large`)}`;
+        if (n % 4 === 1) t.replies[0].text = `${w.c(n, 'r1')} ${prose(w.between(SIZES.largeReply), `${w.id(n)}:large`)}`;
         steps.push(t);
       }
       return steps;
     },
     check(run, ctx) {
-      return toolBlocksLost(run, ctx);
+      return toolBlocksLost(run);
     },
   },
 
-  /**
-   * W6, by turn modulo four: 0, two calls in one round; 1, one id called in two rounds; 2, at turn 2, a call the
-   * fixture server never answers, which agent-framework answers with an error once the server's request timeout (the
-   * recipe's `requestTimeoutMs`) passes, and a plain round otherwise; 3, a round whose call message an operator then
-   * suppresses through the web UI, leaving its result stored.
-   */
+  // A call the fixture server never answers is answered with an error by agent-framework once the recipe's
+  // `requestTimeoutMs` passes.
   W6: {
     from: 'checkpoint',
     turns: 12,
@@ -425,26 +358,16 @@ export const WORKLOADS = {
       }
       return steps;
     },
-    /**
-     * Judged by check 11's `shape` invariant on each compile. The requests the stand-in receives can't show a breach:
-     * membrane repairs both shapes on the wire by design (`normalize-tool-pairs.ts`: a synthetic result for an
-     * unanswered call, an orphan result turned into text).
-     */
+    // Membrane repairs both shapes on the wire (normalize-tool-pairs.ts), so check 11's `shape` on the compiles judges.
     check() {
       return [];
     },
   },
 
-  /**
-   * W7: merges-refused and merges-rejected set the stand-in to refuse or reject every merge; fable-no-tools and
-   * no-tools run an agent permitted no tools from empty, whose 32 turns say more each, as its tool results would have
-   * (fable-no-tools with a Fable-family compression model, which defers every chunk when no tools are declared;
-   * no-tools its control).
-   */
   W7: {
     from: 'checkpoint',
     turns: 21,
-    property: 'failures: each merge the stand-in refuses raises one off-path refusal alert, and no other call raises one',
+    property: 'failures: at each step, the merges the stand-in refuses raise one off-path refusal alert each, and nothing else raises one',
     variants: ['merges-refused', 'merges-rejected', 'fable-no-tools', 'no-tools'],
     owns: (variant) => (variant === 'merges-refused' ? [{ check: 1, what: 'refusal-offpath' }] : []),
     fromEmpty: (variant) => variant === 'fable-no-tools' || variant === 'no-tools',
@@ -479,19 +402,20 @@ export const WORKLOADS = {
         const refused = calls.filter((r) => r.answer?.shape === 'refusal');
         const alerts = run.log.filter((e) => e.kind === 'ipc' && e.event?.type === 'ops:alert' && e.event.kind === 'refusal-offpath');
         if (!refused.length) return withJudged([{ step: null, message: 'couldn\'t judge: the stand-in refused no merge' }], 0);
-        if (alerts.length !== refused.length) out.push({ step: null, message: `${refused.length} refused merge(s) raised ${alerts.length} off-path refusal alert(s), where each raises one` });
+        const count = (list) => list.reduce((m, x) => m.set(x.step, (m.get(x.step) ?? 0) + 1), new Map());
+        const byStep = count(refused);
+        const alertsBy = count(alerts);
+        for (const step of new Set([...byStep.keys(), ...alertsBy.keys()])) {
+          const n = byStep.get(step) ?? 0;
+          const a = alertsBy.get(step) ?? 0;
+          if (n !== a) out.push({ step, message: `${n} refused merge(s) at this step raised ${a} off-path refusal alert(s), where each raises one and nothing else does` });
+        }
         return withJudged(out, refused.length);
       }
       return out;
     },
   },
 
-  /**
-   * W8: the budget cut at once through the panel to 0.6 at turn 5, and to the edge at turn 9: the lowest
-   * agent-framework's preflight allows, by asking for a budget no store fits (the driver's `edge`, which a cut to 0.6
-   * below the folded floor meets too); restored at turn 13.
-   * A turn may fail meanwhile. Under H4, the sixteen are held messages the reader reads, the cuts going to the reader.
-   */
   W8: {
     from: 'checkpoint',
     turns: 16,
@@ -523,15 +447,6 @@ export const WORKLOADS = {
     },
   },
 
-  /**
-   * W9: twenty turns, with after them: 2, three markdown pastes (adaptive configurations); 3, a restart with the
-   * harness's reload check; 4, the panel's pins; 5, the tail and (kv-stable) a prepared window through the panel;
-   * 6, a restart with the witnessed options; 7, a fork through the subagent tool; 8, a restart with a changed system
-   * prompt; before 9, three exchanges with no tool; 10, a pin; 11, a level pin; 13, an undo and a redo, each with a
-   * dry compile; 14, the unpin; 15, a head reset; before 16, the guard turned on, so 16's result is settled by an
-   * edit; 17, 16's message suppressed; 18, a message arriving while its call runs (native formatter only); 19, a
-   * restart with a larger head window.
-   */
   W9: {
     from: 'checkpoint',
     turns: 20,
@@ -611,18 +526,11 @@ export const WORKLOADS = {
       }
       return steps;
     },
-    /** Judged by check 12, the reload check, on step 3's restart; the restarts at 6, 8 and 19 change options on purpose. */
     check() {
       return [];
     },
   },
 
-  /**
-   * W11: pins at level 0, at max level 0, on a tool result, at max level 2 and at level 1 on single plain messages of
-   * the checkpoint's store, a document mark, and a level pin over turn 1, through a cut to 0.35 (or the lowest the
-   * preflight allows) and a restore; a turn may fail at the edge. Under H1, step 2's first request meets a provider
-   * error agent-framework retries.
-   */
   W11: {
     from: 'checkpoint',
     turns: 14,
@@ -667,12 +575,6 @@ export const WORKLOADS = {
   },
 };
 
-/**
- * W8's property for one agent's turns, numbered 1 to 16 with the restore before 13: each turn's outcome is its first
- * request assembly's (checks.mjs assemblies, so a refusal retried within the assembly reads as what it ended in). Turns
- * 1-4 must have compiled for the restore to be judged; where they didn't, the property can't be judged, and says so
- * rather than passing. Then turns 15 and 16 must compile.
- */
 function restoredWithin(run, agent, stepOf, noun) {
   const firstByStep = new Map();
   for (const a of assemblies(run.log, agent)) if (!firstByStep.has(a.step)) firstByStep.set(a.step, a);
@@ -682,16 +584,11 @@ function restoredWithin(run, agent, stepOf, noun) {
   return withJudged([15, 16].filter((n) => outcome(n) !== 'compiled').map((n) => ({ step: stepOf(n), message: `${noun} ${n}: ${outcome(n)} ${n - 13} turn(s) after the budget was restored` })), 2);
 }
 
-/**
- * W5's property over a run: each stored message holding tool blocks that a request's compile sent whole (`r:ID`, a
- * complete raw body) went out with every one of those blocks. Each compile is paired with the request it was sent as
- * (checks.mjs requestPairs); a continuation round compiles nothing. Judged: each such body in each paired request.
- */
 function toolBlocksLost(run) {
   const messages = readsOf(run, 'messages').at(-1)?.answer ?? [];
   const toolIds = new Map();
   for (const m of messages) {
-    const ids = m.blocks.filter((b) => b.type === 'tool_use' || b.type === 'tool_result').map((b) => b.id ?? b.toolUseId);
+    const ids = m.blocks.filter((b) => b.type === 'tool_use' || b.type === 'tool_result').map((b) => `${b.type}:${b.id ?? b.toolUseId}`);
     const key = m.bodyGroupId ?? m.id;
     if (ids.length) toolIds.set(key, [...(toolIds.get(key) ?? []), ...ids]);
   }
@@ -701,7 +598,7 @@ function toolBlocksLost(run) {
   const out = [];
   let judged = 0;
   for (const { line, request } of paired.pairs) {
-    const sent = new Set(blocksOf(request).filter((x) => x.b.type === 'tool_use' || x.b.type === 'tool_result').map((x) => x.b.toolUseId));
+    const sent = new Set(blocksOf(request).filter((x) => x.b.type === 'tool_use' || x.b.type === 'tool_result').map((x) => `${x.b.type}:${x.b.toolUseId}`));
     const whole = new Set((line.messages ?? []).flatMap((m) => m.sources ?? []).filter((s) => /^r:[^!]+$/.test(s)).map((s) => groupOf.get(s.slice(2))).filter(Boolean));
     for (const key of whole) {
       if (!toolIds.has(key)) continue;
@@ -713,10 +610,6 @@ function toolBlocksLost(run) {
   return withJudged(out, judged);
 }
 
-/**
- * The runs a check makes, CONFIGURATION/WORKLOAD[/VARIANT], from the fixture's: C7 is H1 in a host, and C4, C2, C9
- * and W11's store that refuses writes leave for context-manager's suite, since no host route reaches them.
- */
 export const RUNS = [
   'H1/continuation', 'H3/continuation',
   'H1/W1', 'H4/W1',
@@ -731,7 +624,6 @@ export const RUNS = [
   'C6h/W11', 'H1/W11',
 ];
 
-/** A run's seed: a number from its id, so its script is the same in every version and stable as the list grows. */
 export function seedOf(id) {
   return 100 + (hash32(id) % 900000);
 }
@@ -742,17 +634,6 @@ const merge = (a = {}, b = {}) => {
   return out;
 };
 
-/**
- * One run of the list, given the configurations (script.mjs) and the installed host's facts for its configuration
- * (driver.mjs, hostFacts): `{ id, workload, variant, seed, configuration, standin, from, steps, check, owns, products }`.
- * `from` is the checkpoint it continues, `CONFIGURATION/W2` (W1 for a configuration that doesn't summarise), or null
- * from empty; `configuration` is its configuration with the workload's recipe and what its steps need merged in;
- * `standin` is the stand-in's start;
- * `steps()` its script; `check({ log, records })` its property's breaches, with a non-enumerable `judged` count
- * (checks.mjs withJudged) where the property judges a run itself; `owns` the harness checks' flags, each
- * `{ check, what }`, that the workload makes by design and its property judges; `products` what its segments declare
- * for check 2 (the continuation's; none for the others).
- */
 export function runOf(id, configurations, facts, { prefixTurns = {} } = {}) {
   const [configName, workloadName, variant = null] = id.split('/');
   const base = configurations[configName];
@@ -787,7 +668,7 @@ export function runOf(id, configurations, facts, { prefixTurns = {} } = {}) {
     seed,
     configuration,
     standin: typeof workload.standin === 'function' ? workload.standin(variant) : {},
-    from: typeof workload.from === 'string' ? `${configName}/${workload.from}` : fromEmpty ? null : `${configName}/${base.summarises === false ? 'W1' : 'W2'}`,
+    from: WORKLOADS[workload.from] ? `${configName}/${workload.from}` : fromEmpty ? null : `${configName}/${base.summarises === false ? 'W1' : 'W2'}`,
     steps: () => workload.steps(ctx),
     check: (run) => workload.check(run, ctx),
     owns: typeof workload.owns === 'function' ? workload.owns(variant) : workload.owns ?? [],

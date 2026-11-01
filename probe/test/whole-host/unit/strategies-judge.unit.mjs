@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { judge } from '../lib/strategies/judge.mjs';
+import { judge, launchStreamBound } from '../lib/strategies/judge.mjs';
 import { configurations, continuation } from '../lib/strategies/script.mjs';
 import { asRun } from '../lib/strategies/lane.mjs';
 
@@ -75,7 +75,7 @@ test('a store that kept no summaries, where the configuration compresses, is a c
   const judged = await judge({ ...side(configurations().H1), readers: empty });
   const flag = judged.flags.filter((f) => f.check === 5 && f.what === 'no-summaries');
   assert.equal(flag.length, 1, 'one flag, keyed so an expected failure can name it');
-  assert.match(flag[0].message, /kept no summaries/);
+  assert.equal(flag[0].message, 'the store kept no summaries in agents/fixture, though the configuration compresses', 'the same message whichever copy of the store was read');
   const unreadable = { readStore: async () => { throw new Error('getSummary(L1-3) is null, though getSummariesInRange lists it'); }, audit };
   await assert.rejects(judge({ ...side(configurations().H1), readers: unreadable }), /getSummary/);
 });
@@ -86,4 +86,25 @@ test('a run is judged by its configuration\'s agent, or, where it judges its sub
   const log = [{ kind: 'compiles', lines: [{ kind: 'request', agent: 'fixture' }, { kind: 'dry', agent: 'spawn-x' }] }, { kind: 'compiles', lines: [{ kind: 'request', agent: 'spawn-knowledge-1-2' }] }];
   assert.deepEqual(judgedAgent({ ...configurations().H2 }, log), { agent: 'spawn-knowledge-1-2', namespace: 'subagent/spawn-knowledge-1-2', isolate: true });
   assert.throws(() => judgedAgent(configurations().H2, log.slice(0, 1)), /no compile line names a subagent/);
+});
+
+test('H2 is judged by its subagent: its own store, read in its own slot, its violations flagged, and held to the stream budget its launch notice states', async () => {
+  const configuration = configurations().H2;
+  const launch = { role: 'user', content: [{ type: 'text', text: "Launch of spawn 'knowledge-1':\n- Stream budget: 500,000 tokens (fixture's: 320,000 tokens).\n" }] };
+  const log = [{ kind: 'compiles', step: 'k', blobs: { l1: launch }, lines: [{ seq: 1, agent: 'knowledge-1', kind: 'request', assembly: 1, outcome: 'compiled', messages: [{ sources: ['r:1'], content: 'l1' }] }] }];
+  assert.equal(launchStreamBound(log, 'knowledge-1'), 500_000);
+  const asked = [];
+  const readers = { readStore: async (args) => { asked.push(args); return { ...store, violations: ['L1 L1-0: 2 leaves 1..3, 1 hole(s) e.g. 2'] }; }, audit: () => { throw new Error('the audit CLI can\'t open an isolated slot'); } };
+  const judged = await judge({ ...side(configuration, { log }), readers });
+  assert.deepEqual(asked.map((a) => [a.namespace, a.isolate]), [['subagent/knowledge-1', true]]);
+  assert.ok(judged.flags.some((f) => f.check === 5 && /violations: L1 L1-0/.test(f.message)));
+  assert.ok(!judged.flags.some((f) => f.what === 'no-launch-budget'));
+  const unstated = await judge({ ...side(configuration, { log: [{ ...log[0], blobs: { l1: { role: 'user', content: [{ type: 'text', text: 'hello' }] } } }] }), readers });
+  assert.ok(unstated.flags.some((f) => f.what === 'no-launch-budget'), 'with no stated budget its rounds can\'t be judged, and the run says so');
+});
+
+test('a failed H2 run that never reached its subagent is judged as the failed run it is', async () => {
+  const { readers } = counting();
+  const judged = await judge({ ...side(configurations().H2, { run: { ok: false, failure: { reason: 'the host exited' } } }), readers });
+  assert.ok(judged.flags.some((f) => f.check === 1 && f.step === 'the run' && /the host exited/.test(f.message)));
 });

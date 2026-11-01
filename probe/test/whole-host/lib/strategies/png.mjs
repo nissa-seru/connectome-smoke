@@ -1,10 +1,3 @@
-/**
- * The PNG a tool result's image is: 8-pixel tiles of colours `pick` chooses, as a base64
- * string. Its pixels go into stored (uncompressed) deflate blocks rather than through zlib,
- * so a seed gives the same bytes under every runtime and zlib version that runs the server;
- * a compressor's output can differ between them, and a record of the request would differ
- * with it.
- */
 const CRC_TABLE = Array.from({ length: 256 }, (_, n) => {
   let c = n;
   for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;

@@ -1,8 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { assemblies, budgets, compileInvariants, compileKinds, pairing, reloads, requestPairs, declaredProducts, everyTurnAnswers, wellFormed, windowsRaw, calibrationEdge, coverage, bookkeeping } from '../lib/strategies/checks.mjs';
+import { assemblies, bindingControl, budgets, compileInvariants, compileKinds, pairing, reloads, requestPairs, declaredProducts, everyTurnAnswers, wellFormed, windowsRaw, calibrationEdge, coverage, bookkeeping } from '../lib/strategies/checks.mjs';
 import { continuation, products, configurations, L3_PRODUCT } from '../lib/strategies/script.mjs';
-import { runOf } from '../lib/strategies/workloads.mjs';
+import { RUNS, runOf } from '../lib/strategies/workloads.mjs';
 
 const msg = (role, ...blocks) => ({ role, blocks });
 const text = (canaries) => ({ type: 'text', chars: 10, ...(canaries ? { canaries } : {}) });
@@ -60,6 +60,14 @@ test('check 3 flags roles out of turn and calls parted from their results, eithe
 const carrying = (...canaries) => ({ type: 'text', chars: 10, canaries });
 const summaryBlock = (...summaries) => ({ type: 'text', chars: 10, summaries });
 const turnStep = (id, replies = 1) => ({ id, segment: 's', kind: 'channel', canaries: [`[[c:${id}.in]]`], replies: Array.from({ length: replies }, () => ({ text: 'x' })) });
+
+test('check 6 without a store read still holds a request to the two turns before it, less what was suppressed', () => {
+  const script = [turnStep('a'), turnStep('b'), turnStep('c'), { id: 'x', segment: 's', kind: 'suppress', messages: [{ canary: '[[c:a.r1]]' }] }];
+  const req = (canaries) => ({ id: 'r', step: 'c', kind: 'agent', messages: [msg('user', carrying(...canaries))] });
+  assert.deepEqual(windowsRaw([req(['[[c:a.in]]', '[[c:b.in]]', '[[c:b.r1]]', '[[c:c.in]]'])], script, [], null), [], 'a.r1 was suppressed, so it isn\'t wanted');
+  const lacking = windowsRaw([req(['[[c:a.in]]', '[[c:b.in]]', '[[c:c.in]]'])], script, [], null);
+  assert.deepEqual(lacking.map((f) => f.message), ['the recent window lacks [[c:b.r1]]']);
+});
 
 test('check 6 flags a request that loses a raw message of the head the host reported, or lacks the two turns before it raw', () => {
   const script = [turnStep('a'), turnStep('b', 2), turnStep('c'), turnStep('d')];
@@ -157,9 +165,14 @@ test('check 5: a summary declares only what its request showed, a child by its n
   const l3store = { ...store, summaries: [...store.summaries, { id: 'L3-1', level: 3, sourceLevel: 2, sourceIds: ['L2-1'], number: '[[s:C4]]', covers: ['[[c:a.in]]', '[[c:a.r1]]', '[[c:b.in]]', '[[c:b.r1]]'] }] };
   assert.deepEqual(bookkeeping([shown('[[s:C4]]', [], ['[[s:C1]]', '[[s:C2]]'])], l3store), []);
   assert.equal(bookkeeping([shown('[[s:C4]]', [], ['[[s:C1]]'])], l3store).length, 1);
+  // A source the store read doesn't hold can't be judged: a flag, not a pass.
+  const holed = { ...store, messages: store.messages.filter((m) => m.id !== store.summaries.find((x) => x.number === '[[s:C1]]').sourceIds[0]) };
+  const unread = bookkeeping([shown('[[s:C1]]', ['[[c:a.in]]', '[[c:a.r1]]'])], holed);
+  assert.deepEqual(unread.map((f) => f.what), ['unread-source']);
+  assert.equal(unread.judged, 0);
 });
 
-test('K1: check 1 flags every operator alert the host raises, naming its kind and message', () => {
+test('K1: check 1 flags the operator alerts the host raises, naming each one\'s kind and message', () => {
   const alert = (step, kind, message) => ({ kind: 'ipc', step, event: { type: 'ops:alert', kind, agentName: 'fixture', message } });
   const flags = everyTurnAnswers([], [
     alert('c.debt', 'compression-quarantine', '1 span(s) in compression quarantine'),
@@ -171,6 +184,15 @@ test('K1: check 1 flags every operator alert the host raises, naming its kind an
   assert.match(flags[0].message, /compression-quarantine.*1 span\(s\) in compression quarantine/);
   assert.match(flags[1].message, /context-maintenance-failed.*the tick threw/);
   assert.deepEqual(flags.map((f) => f.what), ['compression-quarantine', 'context-maintenance-failed', 'mcpl-down'], 'K1b: each carries its kind');
+  // A step that may fail by design owns its failure and its context refusal, and nothing else.
+  const designed = [{ id: 'w.over', segment: 'w', mayFail: true }, { id: 'w.next', segment: 'w' }];
+  const owned = everyTurnAnswers([], [
+    { kind: 'ipc', step: 'w.over', event: { type: 'inference:failed' } },
+    alert('w.over', 'context-refusal', 'the context was refused'),
+    alert('w.over', 'mcpl-down', 'MCPL server unreachable'),
+    alert('w.next', 'context-refusal', 'the context was refused'),
+  ], designed);
+  assert.deepEqual(owned.map((f) => [f.step, f.what]), [['w.over', 'mcpl-down'], ['w.next', 'context-refusal']]);
 });
 
 // A checkpoint's health panel as connectome-host 0.15.0 reports the last live compile.
@@ -182,13 +204,6 @@ const panel = (name, { budget = 20_000, budgetMet = true, exhausted = false, hea
   } },
 });
 
-// An agent request as the stand-in records it (T18): its messages, each with its digest, their
-// tokens, its max tokens, the usage it answered with, and the tool_use ids its answer minted.
-// `opened` opens a turn, or restarts one with messages context-manager rendered afresh;
-// `continued` carries the request before it whole, then the round that request's answer opened.
-// The usage is all fresh input unless `cached` names how much of it the cache read: an opened
-// request's is all fresh unless given, and a continued one reads the request before it from the
-// cache, all of it unless given.
 const asked = (id, step, messageTokens, input, messages, toolUseIds, cached = 0) => ({ id, step, kind: 'agent', maxTokens: 2_048, usage: { input_tokens: input - cached, cache_read_input_tokens: cached, cache_creation_input_tokens: 0 }, messages, answer: { shape: 'reply', stop: toolUseIds.length ? 'tool_use' : 'end_turn', toolUseIds } });
 const wholeInput = (r) => r.usage.input_tokens + r.usage.cache_read_input_tokens + r.usage.cache_creation_input_tokens;
 const opened = (id, step, messageTokens, input = messageTokens + 8_000, calls = [], cached = 0) => asked(id, step, messageTokens, input, [{ role: 'user', digest: `in.${id}`, blocks: [text()] }], calls, cached);
@@ -197,16 +212,11 @@ const continued = (before, id, messageTokens, input = messageTokens + 8_000, cal
   { role: 'assistant', digest: `reply.${before.id}`, blocks: [text(), ...before.answer.toolUseIds.map(call)] },
   { role: 'user', digest: `results.${before.id}`, blocks: before.answer.toolUseIds.map((id) => result(id)) },
 ], calls, cached);
-// A run's log as the driver writes it: the host's stream events and the stand-in's arrivals.
 const started = { kind: 'ipc', event: { type: 'inference:started', agentName: 'fixture' } };
 const resumed = { kind: 'ipc', event: { type: 'inference:stream_resumed', agentName: 'fixture' } };
 const sent = (id) => ({ kind: 'request', request: { id, kind: 'agent' } });
-// The driver's log of connectome-host's `/budget` after a boot (D12): its header, then the agent's line.
 const budgetReport = (...lines) => ({ kind: 'budget-report', boot: 1, lines: ['--- Stream Token Budgets ---', ...lines], ms: 5 });
 const WINDOW_CLAUSE = '; its stream doesn\'t break at this budget mid-turn: for its size, only before a request its 1.0M window can\'t hold';
-// The harness module's compile lines for the requests `compiled` names, agent-framework's request
-// compiles, with each request marked by its turn's last canary, as requestPairs pairs them: a request
-// compiled opens a turn's canary, and the rounds after it in its step carry it. `[records, entry]`.
 const compiledAs = (records, compiled, agent = 'fixture') => {
   const turn = new Map();
   const canaryOf = (r) => `[[c:${r.step}.${r.id}]]`;
@@ -221,7 +231,6 @@ const compiledAs = (records, compiled, agent = 'fixture') => {
   const blobs = Object.fromEntries(sentFrom.map((r) => [`x.${r.id}`, { role: 'user', content: [{ type: 'text', text: `${canaryOf(r)} words` }] }]));
   return [marked, { kind: 'compiles', lines, blobs }];
 };
-// A turn of three rounds under a stream bound of 30,000: r2's input passes it, so r3 follows a round over it.
 const crossingAs = () => {
   const r1 = opened('r1', 'a', 15_000, 29_000, ['t1']);
   const r2 = continued(r1, 'r2', 16_000, 31_000, ['t2']);
@@ -234,7 +243,6 @@ const under = (report) => [...(report ? [report] : []), R1_COMPILED, sent('r1'),
 test('K2e: with the module\'s compile lines, a request is compiled when the next sent compile\'s last canary is its own, so a restart that sends what a continuation would is compiled', () => {
   const withCanary = (r, canary) => ({ ...r, messages: [...r.messages.slice(0, -1), { ...r.messages.at(-1), blocks: [{ type: 'text', canaries: [canary] }] }] });
   const r1 = withCanary(opened('r1', 'a', 15_000, 23_000, ['t1']), '[[c:a.in]]');
-  // r2 carries r1 and its round whole: by the records alone a continuation. r3 is a true continuation.
   const r2 = withCanary(continued(r1, 'r2', 19_000, 25_000, ['t2']), '[[c:a.call1]]');
   const r3 = withCanary(continued(r2, 'r3', 20_000, 26_000), '[[c:a.call2]]');
   const b = (id, canary) => ({ [id]: { role: 'user', content: [{ type: 'text', text: `${canary} words` }] } });
@@ -246,8 +254,6 @@ test('K2e: with the module\'s compile lines, a request is compiled when the next
   assert.deepEqual(Object.fromEntries(paired.kinds), { r1: 'compiled', r2: 'compiled', r3: 'continuation' }, 'a refused compile, retried in its assembly, and a dry compile take no request');
   assert.deepEqual(paired.unpaired.map((l) => l.seq), [5], 'a compile no request was sent from');
   assert.equal(compileKinds([r1], [{ kind: 'compiles', lines: [{ ...line(1, 1, 'x1'), agent: 'other' }], blobs: b('x1', '[[c:a.in]]') }]), null, 'no line for the agent: nothing to pair by');
-  // A new host process numbers its compiles and assemblies from 1 again, and two runs of the driver
-  // (the writer's extensions) each call their first boot 1: lines are taken in log order.
   for (const boot of [2, 1]) {
     const twoProcesses = [
       { kind: 'compiles', boot: 1, lines: [line(1, 1, 'x1')], blobs: b('x1', '[[c:a.in]]') },
@@ -285,13 +291,11 @@ test('K2d: a continuation under a report without that clause is held to the stre
 });
 
 test('K2d: with no report for the agent, only a continuation after a round over the stream bound is couldn\'t-judge', () => {
-  // None at all, the header alone, and a line for another agent only.
   for (const log of [under(null), under(budgetReport()), under(budgetReport('  other: 30.0k (last: 0, 0%)'))]) {
     const { flags } = budgets(crossing(), [turnStep('a')], log, { streamBound: 30_000, windowTokens: 1_000_000 });
     assert.deepEqual(flags.map((f) => f.request), ['r3'], JSON.stringify(log.map((e) => e.kind)));
     assert.match(flags[0].message, /couldn't judge/);
   }
-  // A report logged after the request doesn't govern it.
   const late = budgets(crossing(), [turnStep('a')], [R1_COMPILED, sent('r1'), sent('r2'), sent('r3'), budgetReport(`  fixture: 30.0k (last: 0, 0%)${WINDOW_CLAUSE}`), panel('s')], { streamBound: 30_000, windowTokens: 1_000_000 }).flags;
   assert.deepEqual(late.map((f) => f.request), ['r3']);
   assert.match(late[0].message, /couldn't judge/);
@@ -308,8 +312,6 @@ test('K2d: a report whose figure isn\'t the stream bound as the host formats it 
 
 test('K2b: a compiled request is held to the model\'s window by the stand-in\'s count of its whole input, every one of them, and context-manager\'s budgetMet flags nothing', () => {
   const script = [turnStep('a'), { ...turnStep('b'), segment: 't' }];
-  // A 30,000-token window: r1's whole input fits it exactly, r2's (a restart's compile) passes it,
-  // and r3's plan sits in context-manager's slack band, which budgetMet: false reports.
   const [records, lines] = compiledAs([opened('r1', 'a', 17_952, 30_000), opened('r2', 'a', 18_000, 31_000), opened('r3', 'b', 10_000, 18_000)], ['r1', 'r2', 'r3']);
   const log = [lines, panel('s'), panel('t', { budgetMet: false, exhausted: true })];
   const { flags, headroom } = budgets(records, script, log, { windowTokens: 30_000 });
@@ -318,15 +320,14 @@ test('K2b: a compiled request is held to the model\'s window by the stand-in\'s 
   assert.deepEqual(headroom.map((h) => [h.segment, h.kind, h.request, h.tokens, h.bound]), [['s', 'compiled', 'r2', 31_000, 30_000], ['t', 'compiled', 'r3', 18_000, 30_000]], 'the least headroom of each segment, against the window');
 });
 
-test('K2b: a continuation round is held to the stream bound, flagged only when the round before it was already over it', () => {
+test('K2b: a continuation round is held to the stream bound by its stream\'s fresh input before it, flagged only once that sum is over it', () => {
   const script = [turnStep('a')];
-  // The stream bound 30,000 for the test; agent-framework restarts once a round's input passes it.
   const r1 = opened('r1', 'a', 15_000, 29_000, ['t1']);
   const r2 = continued(r1, 'r2', 22_000, 31_000, ['t2']);
   const [records, lines] = compiledAs([r1, r2, continued(r2, 'r3', 23_000, 32_000)], ['r1']);
   const log = [lines, budgetReport('  fixture: 30.0k (last: 0, 0%)'), sent('r1'), sent('r2'), sent('r3'), panel('s')];
   const { flags, headroom } = budgets(records, script, log, { streamBound: 30_000, windowTokens: 1_000_000 });
-  assert.deepEqual(flags.map((f) => f.request), ['r3'], 'r2 may cross the bound, since r1 was under it; r3 follows a round over it');
+  assert.deepEqual(flags.map((f) => f.request), ['r3'], 'r2 may cross the bound, since r1\'s fresh 29,000 was under it; r3 follows r1\'s and r2\'s fresh 31,000');
   assert.match(flags[0].message, /31000.*30000/);
   assert.deepEqual(headroom.filter((h) => h.kind === 'continuation').map((h) => [h.request, h.tokens, h.bound]), [['r3', 32_000, 30_000]]);
   assert.equal(budgets(records, script, [lines, panel('s')], { windowTokens: 1_000_000 }).flags.length, 0, 'under agent-framework 0.28.0\'s default bound, 150,000, none is over');
@@ -335,20 +336,15 @@ test('K2b: a continuation round is held to the stream bound, flagged only when t
 
 test('K2b: a continuation is held to its stream\'s fresh input so far, as membrane sums it, not to the whole input of the request before it', () => {
   const script = [turnStep('a')];
-  // A warm restart's compile: 31,000 tokens whole, 2,000 of them read from the cache. Its fresh
-  // 29,000 is under the 30,000 bound, so agent-framework continues, and rightly.
   const w1 = opened('w1', 'a', 20_000, 31_000, ['t1'], 2_000);
   const [warm, warmLines] = compiledAs([w1, continued(w1, 'w2', 21_000, 32_000)], ['w1']);
   assert.deepEqual(budgets(warm, script, [warmLines, budgetReport('  fixture: 30.0k (last: 0, 0%)'), panel('s')], { streamBound: 30_000, windowTokens: 1_000_000 }).flags, []);
-  // Cache misses mid-stream: no request's whole input passes 30,000, but the fresh input summed over
-  // the stream does before x3 (20,000 + 15,000), so agent-framework should have restarted there.
   const x1 = opened('x1', 'a', 12_000, 20_000, ['t1']);
   const x2 = continued(x1, 'x2', 14_000, 25_000, ['t2'], 10_000);
   const [missed, missedLines] = compiledAs([x1, x2, continued(x2, 'x3', 15_000, 27_000)], ['x1']);
   const { flags } = budgets(missed, script, [missedLines, budgetReport('  fixture: 30.0k (last: 0, 0%)'), sent('x1'), sent('x2'), sent('x3'), panel('s')], { streamBound: 30_000, windowTokens: 1_000_000 });
   assert.deepEqual(flags.map((f) => f.request), ['x3']);
   assert.match(flags[0].message, /fresh input reached 35000 tokens, over the stream bound 30000/);
-  // A continuation's whole input is held to the window too.
   const wide = budgets(warm, script, [warmLines, budgetReport('  fixture: 300.0k (last: 0, 0%)'), panel('s')], { streamBound: 300_000, windowTokens: 31_500 }).flags;
   assert.deepEqual(wide.map((f) => f.request), ['w2']);
   assert.match(wide[0].message, /continuation round's whole input at 32000 tokens, over the model's 31500-token window/);
@@ -379,8 +375,6 @@ test('K2b: a request the stand-in answered with a provider error isn\'t judged, 
   const failed = { ...opened('r1', 'a', 20_000, 31_000, ['t1']), usage: undefined, answer: { shape: 'error', status: 529 } };
   const retry = opened('r2', 'a', 20_000, 29_000, ['t1']);
   const next = continued(retry, 'r3', 21_000, 30_000);
-  // agent-framework resends the refused request: the one compile is the failed request's, and the
-  // retry and the round after it pair as rounds of its turn.
   const [records, lines] = compiledAs([failed, retry, next], ['r1']);
   const { flags, judged } = budgets(records, script, [lines, budgetReport('  fixture: 30.0k (last: 0, 0%)'), sent('r1'), sent('r2'), sent('r3'), panel('s')], { streamBound: 30_000, windowTokens: 1_000_000 });
   assert.deepEqual(flags, [], 'the error\'s missing usage is no couldn\'t-judge');
@@ -407,6 +401,20 @@ test('K2b: a run with no compile line of the agent\'s, a compiled request with n
   const [two, twoLines] = compiledAs([opened('r1', 'a', 1_000), opened('r2', 'b', 1_000)], ['r1', 'r2']);
   assert.deepEqual(budgets(two, script, [twoLines, panel('s'), panel('t', { budget: 30_000 })], { windowTokens: 1_000_000 }).flags, [], 'a budget that moved between checkpoints bounds nothing the check reads');
   assert.equal(budgets([], [turnStep('a')], [panel('s')], { windowTokens: 1_000_000 }).flags.length, 1, 'a checkpoint whose segment made no agent request is a flag');
+});
+
+test('K2b: a continuation round with no usage recorded, or with no window given, is couldn\'t-judge, as a compiled request is', () => {
+  const script = [turnStep('a')];
+  const r1 = opened('r1', 'a', 10_000, 12_000, ['t1']);
+  const [records, lines] = compiledAs([r1, { ...continued(r1, 'r2', 11_000, 13_000), usage: undefined }], ['r1']);
+  const { flags, judged } = budgets(records, script, [lines, sent('r1'), sent('r2'), panel('s')], { windowTokens: 1_000_000 });
+  assert.deepEqual(flags.map((f) => f.request), ['r2']);
+  assert.match(flags[0].message, /couldn't judge this continuation round: the stand-in recorded no usage for it/);
+  assert.equal(judged, 1, 'the compiled request alone');
+  const [whole, wholeLines] = compiledAs([r1, continued(r1, 'r2', 11_000, 13_000)], ['r1']);
+  const windowless = budgets(whole, script, [wholeLines, sent('r1'), sent('r2'), panel('s')]).flags;
+  assert.deepEqual(windowless.map((f) => f.request), ['r1', 'r2']);
+  assert.match(windowless[1].message, /couldn't judge this continuation round: the check was given no window/);
 });
 
 test('requestPairs: each compiled assembly takes the next request carrying its last canary; a refusal retried in its assembly counts once; a subagent\'s requests pair only with its own lines', () => {
@@ -460,6 +468,13 @@ test('check 12: the dry compile after a restart matches the one before, with ima
   assert.deepEqual(changed.map((f) => [f.check, f.step]), [[12, 'r.restart']]);
   assert.match(changed[0].message, /differs from the one before at message 1 of 2 before and 2 after/);
   assert.match(reloads(run(dry(7, ['a']), dry(1, [], 'sys', 'refused')))[0].message, /refused \(OverBudgetError\), where before it compiled/);
+  const moved = dry(1, ['a', 'b']);
+  moved.messages[1] = { ...moved.messages[1], sources: ['r:m9'] };
+  const resourced = reloads(run(dry(7, ['a', 'b']), moved));
+  assert.equal(resourced.length, 1);
+  assert.match(resourced[0].message, /differs from the one before at message 1 of 2 before and 2 after \(sources \["r:m1"\] before, \["r:m9"\] after\)/, 'the same content from another stored message');
+  const resystemed = reloads(run(dry(7, ['a', 'b']), dry(1, ['a', 'b'], 'c')));
+  assert.deepEqual(resystemed.map((f) => f.message), ['after the restart the dry compile\'s system injections differ from the ones before']);
   const missing = reloads([{ kind: 'compiles', boot: 1, lines: [dry(7, ['a'])], blobs }, { kind: 'reload', step: 'r.restart', before: { boot: 1, seq: 7 }, after: { boot: 2, seq: null } }]);
   assert.match(missing[0].message, /couldn't judge the reload: the log holds no dry compile line after it/);
 });
@@ -564,6 +579,8 @@ test('K4: check 6 holds a segment\'s last request to the raw tail the host repor
   const folded = windowsRaw([req('folded', 'c', without('[[c:p.r1]]'))], script, log, store);
   assert.deepEqual(folded.map((f) => [f.check, f.request]), [[6, 'folded']], 'p.r1 is past the two turns before c, inside the reported tail');
   assert.match(folded[0].message, /tail.*p\.r1/);
+  const errored = { ...req('err', 'c', all), answer: { shape: 'error', status: 529 } };
+  assert.deepEqual(windowsRaw([errored, req('retry', 'c', all)], script, log, store), [], 'an error gave c no reply, so its retry is held to the tail before c.r1');
   const noTail = windowsRaw([req('ok', 'c', all)], script, [panel('s', { head: 1 })], store);
   assert.deepEqual(noTail.map((f) => f.message), ["no tail size was reported at segment s's checkpoint"]);
 });
@@ -580,12 +597,13 @@ test('K5: close-merge declares its long message stored in parts, from the store,
   assert.ok(!segment(declaredProducts([], script, wanted, null), 'close-merge').includes(LONG), 'with no store read, the store\'s product waits on none');
   const PLACEHOLDER = 'the tool round\'s image as its placeholder';
   const imageCall = script.find((s) => s.id === 'c.tool').replies[0].calls.find((c) => c.input.kind === 'image').input.canary;
-  const carryingResult = (images) => ({ id: 'r', step: 'c.par', kind: 'agent', messages: [msg('user', { type: 'tool_result', chars: 61, toolUseId: 't', canaries: [imageCall], ...(images ? { images } : {}) })] });
-  assert.ok(!segment(declaredProducts([carryingResult(0)], script, wanted, null), 'parallel').includes(PLACEHOLDER));
-  assert.ok(segment(declaredProducts([carryingResult(1)], script, wanted, null), 'parallel').includes(PLACEHOLDER), 'an image still in it isn\'t its placeholder');
+  const carryingResult = (images, placeholders) => ({ id: 'r', step: 'c.par', kind: 'agent', messages: [msg('user', { type: 'tool_result', chars: 61, toolUseId: 't', canaries: [imageCall], ...(images ? { images } : {}), ...(placeholders ? { placeholders } : {}) })] });
+  assert.ok(!segment(declaredProducts([carryingResult(0, 1)], script, wanted, null), 'parallel').includes(PLACEHOLDER));
+  assert.ok(segment(declaredProducts([carryingResult(1, 0)], script, wanted, null), 'parallel').includes(PLACEHOLDER), 'an image still in it isn\'t its placeholder');
+  assert.ok(segment(declaredProducts([carryingResult(0, 0)], script, wanted, null), 'parallel').includes(PLACEHOLDER), 'a result that lost its image and holds no placeholder isn\'t one either');
 });
 
-test('checks 4 and 6: a request the stand-in answered with an error gives its step no reply, so its retry needs none', () => {
+test('check 4: a request the stand-in answered with an error gives its step no reply, so its retry needs none', () => {
   const failed = { id: 'r3', step: 'c', kind: 'agent', answer: { shape: 'error', status: 529 }, messages: [msg('user', summaryBlock('[[s:C3]]')), msg('assistant', carrying('[[c:c.in]]'))] };
   const retry = { id: 'r4', step: 'c', kind: 'agent', answer: { shape: 'reply' }, messages: [msg('user', summaryBlock('[[s:C3]]')), msg('assistant', carrying('[[c:c.in]]'))] };
   assert.deepEqual(coverage([failed, retry], store).map((f) => f.request), [], 'the retry is held to what the step had stored, not to a reply the error never gave');
@@ -625,4 +643,39 @@ test('the continuation runs from its configuration\'s prefix, which is written f
     assert.equal(pre.from, null);
     assert.equal(pre.steps().filter((st) => st.kind === 'channel').length, turns);
   }
+  for (const id of RUNS) {
+    const from = runOf(id, configurations(), facts, lengths).from;
+    if (from) assert.doesNotThrow(() => runOf(from, configurations(), facts, lengths), `${id} starts from ${from}, a run that exists`);
+  }
+  assert.equal(runOf('H3/W4', configurations(), facts, lengths).from, 'H3/W1', 'a workload that starts from its configuration\'s checkpoint still does');
+});
+
+test('C15: on a binding model every agent request carries the drop control; a request without it is flagged, and only agent requests are judged', () => {
+  const control = { type: 'adaptive', block_binding: { prefix_mismatch_behavior: 'drop_block' } };
+  const records = [
+    { id: 'r1', step: 'a', kind: 'agent', thinking: control },
+    { id: 'r2', step: 'b', kind: 'agent', thinking: { type: 'adaptive' } },
+    { id: 'r3', step: 'b', kind: 'agent', thinking: null },
+    { id: 'r4', step: 'b', kind: 'summariser', thinking: null },
+  ];
+  const flags = bindingControl(records);
+  assert.equal(flags.judged, 3);
+  assert.deepEqual(flags.map((f) => [f.check, f.step, f.what, f.message.split(' ')[1]]), [[15, 'b', 'no-drop-control', 'r2'], [15, 'b', 'no-drop-control', 'r3']]);
+  assert.deepEqual([...bindingControl([records[0]])], []);
+});
+
+test('check 2: thinking-call and debt each pass when their segment produced what it declares, and debt fails a compression between the turn\'s rounds', () => {
+  const script = [{ id: 't.1', segment: 'thinking-call', kind: 'channel' }, { id: 'd.1', segment: 'debt', kind: 'channel' }];
+  const wanted = products(configurations().H1);
+  const thinkingWanted = { 'thinking-call': wanted['thinking-call'] };
+  const signed = { id: 'a1', seq: 1, step: 't.1', kind: 'agent', messages: [msg('user', carrying('[[c:t.1.in]]')), { role: 'assistant', blocks: [{ type: 'thinking', signature: 'fx1.abc' }] }] };
+  assert.deepEqual(declaredProducts([signed], script, thinkingWanted), []);
+  assert.deepEqual(declaredProducts([{ ...signed, messages: [signed.messages[0]] }], script, thinkingWanted), [{ segment: 'thinking-call', missing: [wanted['thinking-call'][0].name] }]);
+  const debtWanted = { debt: wanted.debt };
+  const agent = (seq) => ({ id: `d${seq}`, seq, step: 'd.1', kind: 'agent', messages: [], answer: { shape: 'reply' } });
+  const answered = (seq, shape) => ({ id: `s${seq}`, seq, step: 'd.1', kind: 'summariser', messages: [], answer: { shape } });
+  const parked = [agent(1), agent(2), answered(3, 'summary'), answered(4, 'thinking-only'), answered(5, 'empty'), answered(6, 'max-tokens')];
+  assert.deepEqual(declaredProducts(parked, script, debtWanted), []);
+  const between = [agent(1), answered(2, 'summary'), agent(3), answered(4, 'thinking-only'), answered(5, 'empty'), answered(6, 'max-tokens')];
+  assert.deepEqual(declaredProducts(between, script, debtWanted), [{ segment: 'debt', missing: [wanted.debt[0].name] }]);
 });

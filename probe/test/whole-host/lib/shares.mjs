@@ -1,11 +1,3 @@
-/**
- * `ids` in `n` shares balanced by `table`'s seconds (stack.json `seconds`: `{ runs, checkpoints }`, as
- * measured on GitHub's ubuntu24 runners), for CI's jobs: each run, longest first with its checkpoint,
- * goes to the share it adds least to, a share paying for a checkpoint once however many of its runs
- * continue it (`checkpointKey(id)`, null for a run from empty). A run or checkpoint with no recorded
- * seconds counts as the median of those recorded. Returns `[{ seconds, ids }]`, each share's ids in
- * list order; the same ids, table and n give the same shares.
- */
 export function shares(ids, n, table = {}, checkpointKey = () => null) {
   const median = (xs) => { const v = [...xs].sort((a, b) => a - b); return v.length ? v[Math.floor(v.length / 2)] : 1; };
   const runSeconds = (id) => table.runs?.[id] ?? median(Object.values(table.runs ?? {}));

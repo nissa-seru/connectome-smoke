@@ -10,13 +10,6 @@ import { products } from './script.mjs';
 
 const agentOf = (configuration) => configuration.agent?.name ?? FIXTURE_AGENT;
 
-/**
- * The agent a run is judged by: the configuration's own, its store at `agents/NAME`; or, for a
- * configuration whose compression happens in a subagent (`judges: 'subagent'`, H2's knowledge
- * subagent), the first agent other than its own that the run's compile lines name, its store
- * at `subagent/NAME` in a message slot of its own (agent-framework's `createEphemeralAgent`), and
- * its requests the stand-in's `sub` records.
- */
 export function judgedAgent(configuration, log = []) {
   const own = agentOf(configuration);
   if (configuration.judges !== 'subagent') return { agent: own, namespace: `agents/${own}`, isolate: false };
@@ -25,7 +18,21 @@ export function judgedAgent(configuration, log = []) {
   return { agent: name, namespace: `subagent/${name}`, isolate: true };
 }
 
-/** context-manager's own audit of a store's summary topology, from the side's install: 0 clean, 2 violations, anything else couldn't run. */
+export function launchStreamBound(log, agent) {
+  const blobs = Object.assign({}, ...log.filter((e) => e.kind === 'compiles').map((e) => e.blobs ?? {}));
+  for (const e of log) {
+    if (e.kind !== 'compiles') continue;
+    for (const l of e.lines ?? []) {
+      if (l.agent !== agent) continue;
+      for (const m of l.messages ?? []) {
+        const hit = /- Stream budget: ([\d,]+) tokens/.exec(JSON.stringify(blobs[m.content] ?? ''));
+        if (hit) return Number(hit[1].replace(/,/g, ''));
+      }
+    }
+  }
+  return null;
+}
+
 function auditTopology({ installDir, storePath, namespace }) {
   const script = join(installDir, 'node_modules', '@animalabs', 'context-manager', 'dist', 'scripts', 'audit-topology.js');
   const copy = mkdtempSync(join(tmpdir(), 'judge-audit-'));
@@ -38,43 +45,30 @@ function auditTopology({ installDir, storePath, namespace }) {
   }
 }
 
-/**
- * Judge one side's run from what it recorded: the stand-in's `records`, the driver's `log`,
- * the `script` it ran, and `storeCopy`, a copy of its final store's session directory (or
- * null). Returns `{ flags, missing, headroom, notes, judged }` for report.mjs's perCheckReport:
- * - a run that failed (`run.ok` false) is a check 1 flag at `the run`, naming its failure,
- *   and its store isn't read;
- * - where the run succeeded and the configuration keeps summaries, the store is read
- *   through context-manager's public API from `installDir` (read-store.mjs) for checks 4 to 6,
- *   and context-manager's `audit-topology` runs on a copy of it: violations are a check 5
- *   flag at `the run`. A subagent's store (judgedAgent) is read in its own message slot, which
- *   the audit's CLI can't open, so its violations are those the read's strategy reports;
- * - a store with no summaries, where the configuration keeps summaries, is a check 5 flag at
- *   `the run` (`what` `no-summaries`), and the store's other checks skip;
- * - a run that succeeded with no store copy, where the configuration keeps summaries, a store
- *   that can't be read otherwise, and an audit that couldn't run throw, since the side couldn't
- *   be judged.
- * `readers` replaces the store
- * read and the audit, for tests. `declared` is the products the run's segments declare (check 2):
- * the continuation's (workloads.mjs runOf `products`), by default; other workloads declare none.
- */
 export async function judge({ records, log, script, storeCopy, configuration, installDir, run, readers = {}, declared = products(configuration) }) {
   const read = readers.readStore ?? readStore;
   const audit = readers.audit ?? auditTopology;
   const flags = [];
   if (!run?.ok) flags.push({ check: 1, step: 'the run', message: `the run failed: ${run?.failure?.reason ?? run?.failure ?? 'no reason given'}` });
   let store = null;
-  const target = judgedAgent(configuration, log);
+  let target;
+  try {
+    target = judgedAgent(configuration, log);
+  } catch (e) {
+    if (run?.ok) throw e;
+    const own = agentOf(configuration);
+    target = { agent: own, namespace: `agents/${own}`, isolate: false };
+  }
+  const launched = target.isolate ? launchStreamBound(log, target.agent) : null;
+  if (target.isolate && launched === null) flags.push({ check: 3, step: 'the run', what: 'no-launch-budget', message: `couldn't judge ${target.agent}'s continuation rounds: no compile sent it a launch notice stating its stream budget` });
   if (run?.ok && configuration.summarises !== false && storeCopy) {
     const { namespace, isolate } = target;
-    // A configuration that compresses and kept no summaries is a finding about the run, such as a
-    // compression model that defers every chunk, so it's a flag and the store's other checks skip;
-    // any other failure to read the store means the run can't be judged.
     store = await read({ installDir, storePath: storeCopy, namespace, isolate }).catch((e) => {
       if (!/^no summaries in /.test(String(e?.message))) throw e;
-      flags.push({ check: 5, step: 'the run', what: 'no-summaries', message: `the store kept no summaries, though the configuration compresses: ${e.message}` });
+      flags.push({ check: 5, step: 'the run', what: 'no-summaries', message: `the store kept no summaries in ${namespace}, though the configuration compresses` });
       return null;
     });
+    // context-manager's audit-topology CLI can't open an isolated message slot, so a subagent's violations are its read's.
     const audited = isolate
       ? { status: store?.violations?.length ? 2 : 0, output: (store?.violations ?? []).join('\n') }
       : audit({ installDir, storePath: storeCopy, namespace });
@@ -83,7 +77,6 @@ export async function judge({ records, log, script, storeCopy, configuration, in
   } else if (configuration.summarises !== false && run?.ok) {
     throw new Error('the run succeeded but left no store copy to judge');
   }
-  // The stream bound is what the host gives the agent (asRun), else the recipe's own, else agent-framework's default.
-  const checked = runChecks({ records, log, script, products: declared, store, agent: target.agent, streamBound: configuration.streamBound ?? configuration.agent?.maxStreamTokens ?? STREAM_BOUND, windowTokens: configuration.windowTokens });
+  const checked = runChecks({ records, log, script, products: declared, store, agent: target.agent, streamBound: launched ?? configuration.streamBound ?? configuration.agent?.maxStreamTokens ?? STREAM_BOUND, windowTokens: configuration.windowTokens, binds: configuration.binds === true, adaptive: (configuration.agent?.strategy?.type ?? 'autobiographical') !== 'passthrough' && configuration.agent?.strategy?.adaptiveResolution !== false });
   return { flags: [...flags, ...checked.flags], missing: checked.missing, headroom: checked.headroom, notes: checked.notes, judged: checked.judged };
 }

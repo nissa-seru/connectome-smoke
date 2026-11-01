@@ -6,20 +6,18 @@ import { blobStore, compiledLine, messagesOf, plain, refusedLine, stateOf, store
 const CALLER = new AsyncLocalStorage();
 const WRAPPED = Symbol.for('connectome-host.whole-host.wrapped');
 const AGENT_COMPILES = ['compileWithInjections', 'compileContext'];
-const UNBOUNDED = { maxTokens: Number.POSITIVE_INFINITY, reserveForResponse: 0 };
+// context-manager's compile takes this budget when it's given none (context-manager.ts `compile`).
+const DEFAULT_BUDGET = { maxTokens: 100000, reserveForResponse: 4000 };
 
-/**
- * The whole-host harness's test module, loaded as a recipe extension of kind `module`: it records every compile the
- * host makes and answers the driver's reads over the control socket. It offers no tools and injects nothing.
- */
 export function register(api) {
-  api.registerModule(() => new HarnessModule(process.env.FIXTURE_CONTROL));
+  api.registerModule(() => new HarnessModule(process.env.FIXTURE_CONTROL, { record: process.env.FIXTURE_RECORD !== 'off' }));
 }
 
 export class HarnessModule {
-  constructor(controlPath) {
+  constructor(controlPath, { record = true } = {}) {
     this.name = 'whole-host-harness';
     this.controlPath = controlPath;
+    this.recording = record;
     this.framework = null;
     this.sock = null;
     this.lines = [];
@@ -29,6 +27,7 @@ export class HarnessModule {
     this.ticks = new WeakMap();
     this.agentOf = new WeakMap();
     this.seen = new Map();
+    this.managers = new Map();
   }
 
   async start() {}
@@ -59,16 +58,14 @@ export class HarnessModule {
     const primary = framework.getPrimaryAgentName();
     const agent = primary === null ? null : framework.getAgent(primary);
     if (!agent) throw new Error(`the whole-host harness module found no primary agent to record (getPrimaryAgentName() is ${JSON.stringify(primary)})`);
-    this.wrapAgentCompiles(Object.getPrototypeOf(agent));
-    this.wrapManagerCompile(Object.getPrototypeOf(agent.getContextManager()));
+    if (this.recording) {
+      this.wrapAgentCompiles(Object.getPrototypeOf(agent));
+      this.wrapManagerCompile(Object.getPrototypeOf(agent.getContextManager()));
+    }
     this.watchTicks(agent.getContextManager());
     this.connect();
   }
 
-  /**
-   * Runs each of the agent's own compiles, the ones a request is assembled from, inside a context that names the
-   * agent, its manager and the assembly, so the manager's compile can tell a request's compile from every other.
-   */
   wrapAgentCompiles(proto) {
     const module = this;
     for (const method of AGENT_COMPILES) {
@@ -101,6 +98,7 @@ export class HarnessModule {
         dry,
         budget: budget === undefined ? null : plain(budget),
       };
+      if (head.agent !== null) module.managers.set(head.agent, this);
       let result;
       try {
         result = await original.apply(this, args);
@@ -108,7 +106,7 @@ export class HarnessModule {
         module.record(head, () => refusedLine(error, module.blobs));
         throw error;
       }
-      module.record(head, () => compiledLine(this, budget ?? UNBOUNDED, result, module.blobs));
+      module.record(head, () => compiledLine(this, budget ?? DEFAULT_BUDGET, result, module.blobs));
       return result;
     };
     wrapped[WRAPPED] = true;
@@ -125,7 +123,6 @@ export class HarnessModule {
     this.lines.push(line);
   }
 
-  /** Counts the strategy's ticks in flight, its own drain's included, by an instance property on `tick`. */
   watchTicks(manager) {
     let strategy;
     try { strategy = manager.getStrategy(); } catch { return; }
@@ -183,19 +180,33 @@ export class HarnessModule {
     this.sock = sock;
   }
 
+  takeDelta(store, name, manager) {
+    const delta = storeDelta(manager, this.seen.get(name), this.blobs);
+    this.seen.set(name, delta.seen);
+    if (delta.changed) store[name] = delta.out;
+  }
+
   async answer(msg) {
     switch (msg.op) {
       case 'take': {
+        if (!this.recording) return { lines: [], store: {}, blobs: {} };
         const lines = this.lines;
         this.lines = [];
         const store = {};
+        const live = new Map();
         for (const record of this.framework.listAgents() ?? []) {
           const agent = this.framework.getAgent(record.name);
-          if (!agent) continue;
-          const delta = storeDelta(agent.getContextManager(), this.seen.get(record.name), this.blobs);
-          this.seen.set(record.name, delta.seen);
-          if (delta.changed) store[record.name] = delta.out;
+          if (agent) live.set(record.name, agent.getContextManager());
         }
+        // agent-framework deregisters an ephemeral agent at its run's end without closing its manager, so the
+        // last changes of one that compiled and has left are read from the manager kept from its compiles, once.
+        for (const [name, manager] of this.managers) {
+          if (live.get(name) === manager) continue;
+          this.takeDelta(store, name, manager);
+          this.managers.delete(name);
+          this.seen.delete(name);
+        }
+        for (const [name, manager] of live) this.takeDelta(store, name, manager);
         return { lines, store, blobs: this.blobs.take() };
       }
       case 'agents':

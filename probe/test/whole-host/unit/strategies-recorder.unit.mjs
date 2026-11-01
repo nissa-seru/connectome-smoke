@@ -1,8 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { blobStore, storeDelta } from '../lib/strategies/recorder.mjs';
-
-// A context manager as storeDelta reads one: its stored messages, no summaries, no receipt chain.
 const manager = (messages) => ({
   getAllMessages: () => messages,
   getSummariesInRange: () => [],

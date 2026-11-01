@@ -1,5 +1,3 @@
-// The lane (lib/strategies/lane.mjs): its version and how it names the stack a run used.
-// Each test names the requirement it pins.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
@@ -17,27 +15,31 @@ function tree(files) {
   return root;
 }
 
-test('N1: the lane version moves with every file under lib/strategies and lib/common.mjs, and with nothing else', { timeout: 30_000 }, () => {
+test('N1: the lane version moves with every file under lib and with run.mjs, and with nothing else', { timeout: 30_000 }, () => {
   const root = tree({
     'lib/strategies/driver.mjs': 'driver',
     'lib/strategies/script.mjs': 'script',
     'lib/common.mjs': 'common',
-    'lib/stores.mjs': 'stores',
-    'lanes/strategies.mjs': 'lane entry',
+    'lib/record.mjs': 'record',
+    'run.mjs': 'run',
+    'expected-failures.json': '[]',
+    'records/x.record': 'record',
     'README.md': 'readme',
-    'test/x.test.mjs': 'test',
+    'unit/x.unit.mjs': 'test',
   });
   try {
     const v = laneVersion(root);
     assert.match(v, /^[0-9a-f]{64}$/);
     assert.equal(laneVersion(root), v, 'the same files give the same version');
-    for (const [rel, text] of [['README.md', 'readme 2'], ['lanes/strategies.mjs', 'entry 2'], ['lib/stores.mjs', 'stores 2'], ['test/x.test.mjs', 'test 2'], ['test/y.test.mjs', 'new']]) {
+    for (const [rel, text] of [['README.md', 'readme 2'], ['expected-failures.json', '[1]'], ['records/x.record', 'record 2'], ['unit/x.unit.mjs', 'test 2'], ['unit/y.unit.mjs', 'new']]) {
       writeFileSync(join(root, rel), text);
       assert.equal(laneVersion(root), v, `${rel} is outside the lane`);
     }
     const moves = [
       ['a byte of a strategies file', () => writeFileSync(join(root, 'lib/strategies/script.mjs'), 'scripT'), () => writeFileSync(join(root, 'lib/strategies/script.mjs'), 'script')],
       ['lib/common.mjs', () => writeFileSync(join(root, 'lib/common.mjs'), 'common 2'), () => writeFileSync(join(root, 'lib/common.mjs'), 'common')],
+      ['lib/record.mjs', () => writeFileSync(join(root, 'lib/record.mjs'), 'record 2'), () => writeFileSync(join(root, 'lib/record.mjs'), 'record')],
+      ['run.mjs', () => writeFileSync(join(root, 'run.mjs'), 'run 2'), () => writeFileSync(join(root, 'run.mjs'), 'run')],
       ['a file added under lib/strategies', () => writeFileSync(join(root, 'lib/strategies/new.mjs'), ''), () => unlinkSync(join(root, 'lib/strategies/new.mjs'))],
       ['a file in a directory under lib/strategies', () => { mkdirSync(join(root, 'lib/strategies/sub')); writeFileSync(join(root, 'lib/strategies/sub/x.mjs'), 'x'); }, () => rmSync(join(root, 'lib/strategies/sub'), { recursive: true })],
       ['a file removed from lib/strategies', () => unlinkSync(join(root, 'lib/strategies/driver.mjs')), () => writeFileSync(join(root, 'lib/strategies/driver.mjs'), 'driver')],
@@ -53,8 +55,6 @@ test('N1: the lane version moves with every file under lib/strategies and lib/co
   } finally { rmSync(root, { recursive: true, force: true }); }
 });
 
-// An install as npm leaves it: each package's package.json under `install/`, and the
-// install's lockfile entry for each (`locked`, by path from `install/`; null leaves it out).
 const REGISTRY = 'https://registry.example.test/';
 const fromRegistry = (name, version) => ({ version, resolved: `${REGISTRY}${name}/-/${name.split('/')[1]}-${version}.tgz`, integrity: `sha512-registry-${version}` });
 function install(packages) {
@@ -113,7 +113,6 @@ test('N2: a package installed from a pack or a git spec is named by its version 
     assert.ok(g.startsWith('0.15.0') && g.includes(sha), g);
     const u = name(url);
     assert.ok(u.startsWith('0.15.0') && u.includes('sha512-from-a-url'), `a tarball from a URL outside the registry is named by its integrity: ${u}`);
-    // The registry's other packages are still named by version alone.
     assert.equal(stackVersions(pack.hostDir, { installDir: pack.installDir, registry: REGISTRY })['@animalabs/agent-framework'], '0.28.0');
   } finally { for (const s of [pack, otherPack, git, url]) rmSync(s.root, { recursive: true, force: true }); }
 });
@@ -131,8 +130,6 @@ test('N2: a package the install can\'t name by its content refuses, naming it an
   } finally { for (const s of [linked, unlisted, unlocked]) rmSync(s.root, { recursive: true, force: true }); }
 });
 
-
-
 test('a host checkout is named by its package.json and src/, wherever it sits, and by nothing else', () => {
   const tree = (files) => {
     const dir = mkdtempSync(join(tmpdir(), 'source-hash-'));
@@ -146,4 +143,18 @@ test('a host checkout is named by its package.json and src/, wherever it sits, a
   assert.notEqual(sourceHash(tree({ ...base, 'src/a.ts': 'a2' })), h, 'a source file changed');
   assert.notEqual(sourceHash(tree({ ...base, 'src/c.ts': 'c' })), h, 'a source file added');
   assert.notEqual(sourceHash(tree({ ...base, 'package.json': '{"version":"1.0.1"}' })), h, 'package.json changed');
+});
+
+test('a host that is the checkout itself is named by its version and its source, so two checkouts of one version name different stacks', { timeout: 30_000 }, () => {
+  const checkout = (source) => {
+    const root = tree({ 'package.json': JSON.stringify({ name: '@animalabs/connectome-host', version: '0.21.0' }), 'src/a.ts': source, 'package-lock.json': JSON.stringify({ lockfileVersion: 3, packages: { '': {} } }) });
+    return { root, host: stackVersions(root, { installDir: root, registry: REGISTRY })['@animalabs/connectome-host'] };
+  };
+  const a = checkout('a');
+  const b = checkout('b');
+  try {
+    assert.match(a.host, /^0\.21\.0 \(source [0-9a-f]{12}\)$/);
+    assert.notEqual(a.host, b.host);
+    assert.equal(checkout('a').host, a.host, 'the same source names the same host');
+  } finally { rmSync(a.root, { recursive: true, force: true }); rmSync(b.root, { recursive: true, force: true }); }
 });

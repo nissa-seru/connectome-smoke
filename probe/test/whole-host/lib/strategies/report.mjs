@@ -1,29 +1,10 @@
 import { existsSync, readFileSync } from 'node:fs';
-import { budgets, compileInvariants, ofSide, pairing, reloads, declaredProducts, everyTurnAnswers, wellFormed, windowsRaw, coverage, bookkeeping, calibrationEdge, FIXTURE_AGENT, STREAM_BOUND } from './checks.mjs';
+import { bindingControl, budgets, compileInvariants, ofSide, pairing, reloads, declaredProducts, everyTurnAnswers, wellFormed, windowsRaw, coverage, bookkeeping, calibrationEdge, FIXTURE_AGENT, STREAM_BOUND } from './checks.mjs';
 
-/**
- * Every check one side's run gives: its flags, the segments missing a declared product, each
- * segment's least budget headroom (checks.mjs budgets), notes (each boot whose budget report
- * said the agent's window, not its stream bound, governs its continuation rounds), and
- * `judged`: each check's count of
- * what it judged, `[{ check, name, judged }]`. Where a check applies to the run and judged none of
- * it, that's a couldn't-judge flag, never a pass: check 3's budgets, where the run's agent made a
- * request; checks 11 and 13, where it did (the module is always on in a judged run); check 12, where
- * the script has a restart with `reloadCheck`. The other checks' counts are reported only.
- * `store` is read-store.mjs's read of the run's final store copy, or null when the configuration
- * keeps no summaries to read. `agent` is the run's agent, whose panel and events the checks read;
- * `side` is which of the stand-in's records are that agent's requests (`primary`, or `sub` for a
- * subagent's), the fixture's agent's being the primary's; checks 4 and 6 judge only those.
- * `streamBound` its stream bound; `windowTokens` the stand-in's window.
- * Checks 4 and 6 apply where the agent made a request (4 with a store read; 6 at a scripted turn after the first, and
- * only for the primary: a subagent's turns aren't the script's, so its windows go uncounted there and
- * check 4 holds its requests to its store).
- */
-export function runChecks({ records, log, script, products, store, agent = FIXTURE_AGENT, side = agent === FIXTURE_AGENT ? 'primary' : 'sub', streamBound = STREAM_BOUND, windowTokens }) {
+export function runChecks({ records, log, script, products, store, agent = FIXTURE_AGENT, side = agent === FIXTURE_AGENT ? 'primary' : 'sub', streamBound = STREAM_BOUND, windowTokens, binds = false, adaptive = false }) {
   const own = ofSide(side);
   const budget = budgets(records, script, log, { agent, streamBound, windowTokens });
   const ownRequests = records.filter(own).length;
-  // Check 6 holds a request to the two scripted turns before its step's, so it applies to requests at a turn after the first.
   const laterTurns = new Set(script.filter((st) => Array.isArray(st.replies) && st.replies.length).slice(1).map((st) => st.id));
   const turnRequests = records.filter((r) => own(r) && laterTurns.has(r.step)).length;
   const missing = declaredProducts(records, script, products, store);
@@ -36,10 +17,11 @@ export function runChecks({ records, log, script, products, store, agent = FIXTU
     ...(store ? [{ check: 4, name: 'coverage', flags: coverage(records, store, script, log, { agent, side }), applies: ownRequests > 0 ? `a store was read and the run's agent made ${ownRequests} request(s)` : null }] : []),
     ...(store ? [{ check: 5, name: 'bookkeeping', flags: bookkeeping(records, store) }] : []),
     { check: 6, name: 'windows raw', flags: windowsRaw(records, script, log, store, { agent, side }), applies: side === 'primary' && turnRequests > 0 ? `the run's agent made ${turnRequests} request(s) at a scripted turn after the first` : null },
-    { check: 10, name: 'calibration edge', flags: calibrationEdge(log) },
+    { check: 10, name: 'calibration edge', flags: calibrationEdge(log), applies: adaptive && log.some((e) => e.kind === 'checkpoint') ? 'an adaptive configuration logged a checkpoint' : null },
     { check: 11, name: 'compile invariants', flags: compileInvariants(log), applies: budget.requests > 0 ? 'the run\'s agent made requests' : null },
     { check: 12, name: 'reloads', flags: reloads(log), applies: script.some((s) => s.reloadCheck) ? 'the script restarts with a reload check' : null },
     { check: 13, name: 'pairing', flags: pairing(records, log, agent), applies: budget.requests > 0 ? 'the run\'s agent made requests' : null },
+    ...(binds ? [{ check: 15, name: 'binding control', flags: bindingControl(records), applies: 'the configuration\'s model binds thinking' }] : []),
   ];
   const judged = parts.map((p) => ({ check: p.check, name: p.name, judged: p.judged ?? p.flags.judged ?? null }));
   const unjudged = parts.filter((p) => p.applies && (p.judged ?? p.flags.judged) === 0).map((p) => ({
@@ -47,27 +29,13 @@ export function runChecks({ records, log, script, products, store, agent = FIXTU
     message: `couldn't judge: check ${p.check} (${p.name}) judged nothing, though it applies (${p.applies})`,
   }));
   const flags = [...parts.flatMap((p) => p.flags), ...unjudged];
-  return { flags, missing, headroom: budget.headroom, notes: budget.notes, judged };
+  const unmarked = (store?.summaries ?? []).filter((s) => !s.number).map((s) => s.id);
+  const notes = [...budget.notes, ...(unmarked.length ? [`check 5 doesn't judge ${unmarked.length} stored summar${unmarked.length === 1 ? 'y' : 'ies'} with no stand-in mark, which context-manager wrote without a summariser request: ${unmarked.slice(0, 5).join(', ')}`] : [])];
+  return { flags, missing, headroom: budget.headroom, notes, judged };
 }
 
-// A flag's identity in an expected failure's key and in its failure name: its check, its step, and
-// what it names within them, such as an operator alert's kind.
 const key = (f) => `${f.check}|${f.step}|${f.what ?? ''}`;
 
-/**
- * The expected failures, from `path` (test/whole-host/expected-failures.json): none when the
- * file isn't there. Each entry is `{ configuration, check, step, what, match?, finding, reason }`
- * and covers the flags of one known finding (`finding`: a public issue where one exists, else
- * a short self-contained name) that a committed run meets: its check, step and `what`, the
- * kind of flag within its check, and, given `match`, a regular expression found in the flag's
- * detail (a check 11 violation's own words, such as "allowing L0") or, for a flag with no
- * detail, its message. An entry covers one kind of flag,
- * so one with no `what` is refused: a check whose flags name no kind can have no entry until
- * they do, since its entry would cover a new loss at that step as the old finding. Entries that
- * share a key each carry a different `match`, since one without would cover the others' flags.
- * Throws, naming the entry, on one that isn't of that shape, names a configuration not in
- * `names`, or repeats or overlaps another.
- */
 export function readExpected(path, names) {
   if (!existsSync(path)) return [];
   const entries = JSON.parse(readFileSync(path, 'utf-8'));
@@ -79,35 +47,22 @@ export function readExpected(path, names) {
     for (const field of ['configuration', 'step', 'finding', 'reason']) if (typeof e[field] !== 'string' || !e[field]) bad(`has no ${field}`);
     if (!Number.isInteger(e.check)) bad('has no check number');
     if (typeof e.what !== 'string' || !e.what) bad('has no what: an entry covers one kind of flag, so its check\'s flags must name their kind');
-    if (e.match !== undefined) {
-      if (typeof e.match !== 'string' || !e.match) bad('has a match that isn\'t text');
-      try { new RegExp(e.match); } catch (err) { bad(`has a match that isn't a regular expression: ${err.message}`); }
-    }
+    if (typeof e.match !== 'string' || !e.match) bad('has no match: an entry covers exactly one flag, by its whole detail (its message, where it has none), escaped and anchored');
+    if (!e.match.startsWith('^') || !e.match.endsWith('$') || e.match.endsWith('\\$')) bad('has a match that isn\'t anchored at both ends, so it could cover flags other than the one it names');
+    try { new RegExp(e.match); } catch (err) { bad(`has a match that isn't a regular expression: ${err.message}`); }
     if (!names.includes(e.configuration)) bad(`names a configuration this run has none of: ${e.configuration}`);
     const k = `${e.configuration}|${key(e)}`;
     const others = byKey.get(k) ?? [];
     if (others.some((o) => o.match === e.match)) bad(`repeats another entry's configuration, check, step, what and match`);
-    if (others.length && (e.match === undefined || others.some((o) => o.match === undefined))) bad('shares its configuration, check, step and what with another entry, and one of them has no match, so it would cover the other\'s flags');
     byKey.set(k, [...others, e]);
   });
   return entries;
 }
 
-/**
- * The per-check report: the candidate's flags and missing products. A calibration at a clamp edge makes the run invalid, and the first line says so.
- * `expected` holds the expected failures (expected-failures.json, readExpected): a flag of a
- * named finding a committed run meets, by its key (`check|step|what`) and its `match`, for its
- * configuration. A flag an entry covers doesn't count, and its line names the finding. An entry
- * no flag meets is a flag of its own, since the finding it names no longer shows: the change
- * that fixed it removes the entry.
- * Returns the verdict and lines with what they count: `invalid` (check 10's flags), `flags`
- * (the rest, entries no flag met among them), `expected` (the flags entries cover) and
- * `missing` (`{ segment, name }`, products the candidate lacks).
- */
 export function perCheckReport({ configuration, candidate, expected = [] }) {
   const invalid = candidate.flags.filter((f) => f.check === 10);
-  const entries = expected.filter((e) => e.configuration === configuration.name).map((e) => ({ e, re: e.match === undefined ? null : new RegExp(e.match) }));
-  const coverOf = (f) => entries.filter(({ e, re }) => key(e) === key(f) && (!re || re.test(f.detail ?? f.message ?? '')));
+  const entries = expected.filter((e) => e.configuration === configuration.name).map((e) => ({ e, re: new RegExp(e.match) }));
+  const coverOf = (f) => entries.filter(({ e, re }) => key(e) === key(f) && re.test(f.detail ?? f.message ?? ''));
   const counted = candidate.flags.filter((f) => f.check !== 10);
   const covered = [];
   const flags = [];
@@ -115,12 +70,13 @@ export function perCheckReport({ configuration, candidate, expected = [] }) {
   for (const f of counted) {
     const by = coverOf(f);
     if (!by.length) { flags.push(f); continue; }
+    if (by.length > 1) flags.push({ check: f.check, step: f.step, what: f.what, message: `expected-failures.json's entries for ${by.map((x) => x.e.finding).join(' and ')} both cover this flag, so neither can tell whether its own finding still shows: give them matches that don't overlap (${f.detail ?? f.message})` });
     covered.push({ f, finding: [...new Set(by.map((x) => x.e.finding))].join('; ') });
     for (const x of by) met.add(x);
   }
   for (const x of entries) {
     const { e } = x;
-    if (!met.has(x)) flags.push({ check: e.check, step: e.step, what: e.what, message: `expected-failures.json expects a flag here for ${e.finding}${e.match ? ` matching /${e.match}/` : ''}, and the run raised none: if ${e.finding} is fixed, the change that fixed it removes the entry` });
+    if (!met.has(x)) flags.push({ check: e.check, step: e.step, what: e.what, message: `expected-failures.json expects a flag here for ${e.finding} matching /${e.match}/, and the run raised none: if ${e.finding} is fixed, the change that fixed it removes the entry` });
   }
   const missing = candidate.missing.flatMap((m) => m.missing.map((name) => ({ segment: m.segment, name })));
   const verdict = invalid.length ? 'invalid' : flags.length || missing.length ? 'flags' : 'pass';

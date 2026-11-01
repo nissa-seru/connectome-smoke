@@ -1,7 +1,6 @@
 import { createServer } from 'node:net';
 import { rmSync } from 'node:fs';
 
-/** Calls `onMessage` with each line of `stream` that parses as JSON. */
 export function lineReader(stream, onMessage) {
   let buf = '';
   stream.setEncoding('utf-8');
@@ -19,38 +18,6 @@ export function lineReader(stream, onMessage) {
   });
 }
 
-/**
- * The driver's end of the fixture's control socket, listening at `path`. Two
- * peers connect to it, and the newest connection of each takes its requests:
- * - `'server'`, the fixture's MCPL server (mcpl-server.mjs). The lane's recipe
- *   runs it with FIXTURE_CONTROL set to `path`, FIXTURE_CHANNELS to its channel
- *   ids (comma-separated; bidirectional, and every publish to them is
- *   delivered), and FIXTURE_BOOT to the boot's ordinal, which keeps published
- *   message ids apart across a run's restarts.
- * - `'clock'`, the host's `Date` preload (virtual-date.mjs), which the host
- *   runs with FIXTURE_CONTROL set to `path` and FIXTURE_EPOCH_MS to the time
- *   its clock starts at.
- *
- * - `generation(peer)` counts the connections that peer has made.
- * - `waitConnected(peer, { since, timeoutMs })` resolves once a connection of
- *   that peer newer than generation `since` is open.
- * - `hostCommand(params, { timeoutMs })` sends `host/command` with `params`
- *   through the server and resolves with the host's answer whole.
- * - `deliver({ channelId, messageId, author: { id, name }, topic, text, at },
- *   { timeoutMs })` has the server send it as `channels/incoming`, stamped
- *   with `at` (ms), and resolves with the host's acceptance. It rejects when
- *   the host refuses the message.
- * - `advance(at, { timeoutMs })` sets the host's virtual time to `at` (ms),
- *   and resolves once the host reads it. A time earlier than the clock's is
- *   refused.
- * - `release(canary, { timeoutMs })` has the server answer the tool call it
- *   holds for `canary` (a call whose arguments say `hold: true`).
- * - `onNotice(cb)` calls `cb({ peer, notice, ... })` with each notice a peer
- *   sends unasked: the server's `held` (`{ canary }`) when it holds a call.
- * Each rejects on the peer's or the host's error (with its `code`), when no
- * connection of its peer is open, when that connection closes first, or at
- * `timeoutMs`.
- */
 export async function listenForPeers(path) {
   rmSync(path, { force: true });
   const sockets = new Set();
@@ -58,6 +25,7 @@ export async function listenForPeers(path) {
   const waiters = new Set();
   const current = new Map();
   const generations = new Map();
+  const closings = new Map();
   const noticeListeners = [];
   let nextId = 1;
 
@@ -92,6 +60,7 @@ export async function listenForPeers(path) {
     sock.on('error', () => {});
     sock.on('close', () => {
       sockets.delete(sock);
+      if (conn.peer) closings.set(conn.peer, (closings.get(conn.peer) ?? 0) + 1);
       if (current.get(conn.peer) === conn) current.delete(conn.peer);
       for (const [id, p] of pending) {
         if (p.conn === conn) settle(id, () => p.reject(new Error(`the fixture ${conn.peer}'s connection closed while ${p.label} was pending`)));
@@ -113,6 +82,7 @@ export async function listenForPeers(path) {
 
   return {
     generation(peer) { return generations.get(peer) ?? 0; },
+    closed(peer) { return closings.get(peer) ?? 0; },
     waitConnected(peer, { since = 0, timeoutMs = 30_000 } = {}) {
       if ((generations.get(peer) ?? 0) > since && current.has(peer)) return Promise.resolve(generations.get(peer));
       return new Promise((resolve, reject) => {

@@ -6,36 +6,20 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 
-/** What the lane's version covers: every file that shapes a checkpoint or its judging. */
-export const LANE_PATHS = ['lib/strategies', 'lib/common.mjs'];
+export const LANE_PATHS = ['lib', 'run.mjs'];
 
-/** The expected failures (report.mjs readExpected): flags of named findings a committed run meets. */
 export const EXPECTED_FAILURES = join(ROOT, 'expected-failures.json');
 
-/** The stack packages a run names, as the host's install resolves them. */
 export const KEY_PACKAGES = ['connectome-host', 'agent-framework', 'context-manager', 'membrane', 'chronicle'].map((p) => `@animalabs/${p}`);
 
-/**
- * The configuration as a run uses it, with what the host resolves for it (hostFacts): the
- * stand-in's window, the model's as the host knows it (`model-limits.ts`), unless the
- * configuration names its own; and the stream bound the host gives the agent, which the
- * checks hold continuations to. A model the host knows no window for needs the
- * configuration to name one.
- */
 export function asRun(configuration, facts) {
   const windowTokens = configuration.windowTokens ?? facts.window;
   if (typeof windowTokens !== 'number') throw new Error(`the host knows no window for ${configuration.agent?.model}; name the configuration's windowTokens`);
   return { ...configuration, windowTokens, ...(typeof facts.streamBound === 'number' ? { streamBound: facts.streamBound } : {}) };
 }
 
-/** Where a run from empty starts, in virtual time. */
 export const EPOCH = Date.UTC(2026, 0, 5, 9, 0, 0);
 
-
-/**
- * The lane's version: the sha256 of every file under LANE_PATHS, each with its path
- * relative to the repository root, in path order.
- */
 export function laneVersion(root = ROOT) {
   const files = [];
   const walk = (rel) => {
@@ -52,11 +36,6 @@ export function laneVersion(root = ROOT) {
   return h.digest('hex');
 }
 
-/**
- * A checkout's content, for naming a host that isn't an installed package: the sha256 of
- * `package.json` and every file under `src/`, each with its path relative to `dir`, in path
- * order, as laneVersion hashes the lane.
- */
 export function sourceHash(dir) {
   const files = ['package.json'];
   const walk = (rel) => {
@@ -75,23 +54,12 @@ export function sourceHash(dir) {
   return h.digest('hex');
 }
 
-/** The registry npm installs from, as `npm config` gives it in `cwd`. */
 const npmRegistry = (cwd) => {
   const r = spawnSync('npm', ['config', 'get', 'registry'], { cwd, encoding: 'utf-8' });
   if (r.status !== 0 || !r.stdout.trim()) throw new Error(`npm config get registry failed in ${cwd}: ${(r.stderr ?? '').trim()}`);
   return r.stdout.trim();
 };
 
-/**
- * What a store's key names for each KEY_PACKAGES, as resolved from `hostDir` upward, and
- * bun's version. A package the install at `installDir` took from `registry` is named by
- * its version; any other by its version and its content, as the install's lockfile records
- * it (a pack's integrity, a git spec's commit), so an unbumped tree never takes a release's
- * name. A host that is the install's own root (a checkout of connectome-host, installed with
- * `npm ci`) is named by its version and a hash of its `src/` and `package.json` (sourceHash).
- * One it can't name by content (a linked directory, a package its lockfile doesn't list)
- * throws, naming it.
- */
 export function stackVersions(hostDir, { installDir, registry } = {}) {
   if (!installDir) throw new Error('stackVersions needs the install directory, whose lockfile names what was installed');
   const lockPath = join(installDir, 'package-lock.json');

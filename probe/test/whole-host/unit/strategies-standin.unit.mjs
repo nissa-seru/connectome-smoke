@@ -2,10 +2,6 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { startStandin } from '../lib/strategies/standin.mjs';
 
-// Requests shaped as connectome-host 0.15.0 sends them (fixture-build capture-1): an agent request
-// streams, with a string system prompt and the turn's canary in the last user message among host
-// notes; a summariser request doesn't stream, has no system prompt, and ends with the instruction
-// after `Context Manager: `, in the same message as the slice's last canary.
 const TOOLS = [{ name: 'time--now', description: 'now', input_schema: { type: 'object', properties: {} } }];
 const NOTE = '[host note: this message arrived over IPC and carries no channel locus.]';
 const CHAT = 'Write the memory of events since the most recent memory system notification. Speak in the first person from your own perspective. Target ~200 tokens. Output only the memory body.';
@@ -13,6 +9,10 @@ const MERGE = 'You have just reviewed the slices of recent experience above (raw
 const WITNESSED = 'Write the memory of this slice of the log. This part of the record predates your own first turn. Target ~200 tokens.';
 const READING = 'You have just been reading a substantial body of text — approximately 4000 tokens total in this piece, of which what you just read is a portion. Target ~200 tokens.';
 const READING_MERGE = 'You have just re-experienced the portions of text you read above (raw passages from a larger piece), in chronological order. They cover a contiguous stretch of a substantial body of text you have been reading — approximately 9000 tokens in total across all of it. The portions above cover the stretch you are now consolidating at L2.\n\nReflect across the stretch. Target ~200 tokens.';
+// Knowledge's other three openings, as context-manager's knowledge.ts writes them (leadSuffix empty).
+const SYNTHESIS = 'Capture the reasoning and conclusions from this discussion. What connections were drawn? What hypotheses were formed or rejected? What decisions were made about what to investigate next? Preserve the logic chain.  Aim for about 200 tokens.';
+const LESSON = 'Record what knowledge was captured. What lessons were created or updated? What was the evidence basis? Note any confidence gaps or unresolved questions.  Aim for about 200 tokens.';
+const SUBAGENT = 'Summarize the subagent work. What tasks were dispatched, what did each return, and what was the coordinator\'s synthesis of the results? Collapse dispatch/wait mechanics.  Aim for about 200 tokens.';
 const FRONTDESK = 'Starting from my last message, please describe everything that has happened. Aim for about 200 tokens. Describe it as you would to yourself, as if you are remembering what has happened.';
 const KNOWLEDGE = 'Summarize the research performed. What was searched for, what sources were consulted, and what was found? Aim for about 200 tokens.';
 
@@ -50,7 +50,6 @@ async function post(url, body, path = '/v1/messages') {
   if (!type.includes('event-stream')) return { status: res.status, json: await res.json() };
   const raw = await res.text();
   const events = raw.split('\n\n').filter(Boolean).map((chunk) => JSON.parse(chunk.split('\n').find((l) => l.startsWith('data: ')).slice(6)));
-  // Rebuild the message the stream carries, as a client does.
   const start = events.find((e) => e.type === 'message_start').message;
   const blocks = [];
   for (const e of events) {
@@ -70,7 +69,6 @@ async function post(url, body, path = '/v1/messages') {
 
 const textOf = (msg) => msg.content.filter((b) => b.type === 'text').map((b) => b.text).join('');
 
-/** Resolves once the stand-in has seen `n` arrivals. */
 function arrivals(standin) {
   const seen = [];
   let waiters = [];
@@ -151,19 +149,17 @@ test('T1/T2: a request with no canary of the step, with max_tokens 0, or past th
 test('T1: each compression instruction context-manager sends is a summariser request, though its message carries the slice\'s canaries', () => withStandin({}, async (s) => {
   const { seen } = arrivals(s);
   s.setStep(step('k', []));
-  for (const instruction of [CHAT, MERGE, WITNESSED, READING, READING_MERGE, KNOWLEDGE, FRONTDESK]) {
+  for (const instruction of [CHAT, MERGE, WITNESSED, READING, READING_MERGE, KNOWLEDGE, SYNTHESIS, LESSON, SUBAGENT, FRONTDESK]) {
     const r = await post(s.url, summariserBody({ canaries: ['[[c:k.in]]'], instruction }));
     assert.equal(r.status, 200, instruction.slice(0, 40));
     assert.equal(seen.at(-1).kind, 'summariser', instruction.slice(0, 40));
   }
-  // The retry lines context-manager appends keep the request a summariser's.
   await post(s.url, summariserBody({ instruction: `${CHAT}\n\nWrite the memory as plain text directly in your response — do not call any tools for this.` }));
   assert.equal(seen.at(-1).kind, 'summariser');
   await post(s.url, summariserBody({ instruction: 'Please consolidate these 3 L1 summaries (2 synthesis, 1 research) into a single cohesive memory. Aim for about 200 tokens.' }));
-  // Each record says what level the request asks for, and whether it's a retry.
   const records = await s.close();
-  assert.deepEqual(records.map((r) => r.level), [1, 2, 1, 1, 2, 1, 1, 1, 2]);
-  assert.deepEqual(records.map((r) => r.retry), [false, false, false, false, false, false, false, true, false]);
+  assert.deepEqual(records.map((r) => r.level), [1, 2, 1, 1, 2, 1, 1, 1, 1, 1, 1, 2]);
+  assert.deepEqual(records.map((r) => r.retry), [false, false, false, false, false, false, false, false, false, false, true, false]);
 }));
 
 test('T4/T5: a summary answer opens with an id that is a function of what its request carries, then untagged padding to the target its instruction states, and the record lists what each call was sent', async () => {
@@ -176,7 +172,6 @@ test('T4/T5: a summary answer opens with an id that is a function of what its re
     const a = summariserBody({ canaries: ['[[c:p.1]]'], textChars: 4000, instruction: CHAT.replace('~200', '~60') });
     const b = summariserBody({ canaries: ['[[c:p.2]]', '[[c:p.3]]'], summaries: ['[[s:M0000aaaa]]'], textChars: 400 });
     const [small, big] = [await post(one.url, a), await post(one.url, b)];
-    // The other stand-in meets them in the other order, and answers each the same.
     const [big2, small2] = [await post(other.url, b), await post(other.url, a)];
     const [x, y] = [textOf(small.json), textOf(big.json)];
     assert.match(x, /^\[\[s:M[0-9a-f]{8}\]\] Memory [0-9a-f]{8}, carried 1 canaries to c:p\.1: /);
@@ -185,7 +180,6 @@ test('T4/T5: a summary answer opens with an id that is a function of what its re
     assert.notEqual(idOf(x), idOf(y));
     assert.equal(textOf(small2.json), x);
     assert.equal(textOf(big2.json), y);
-    // The same canaries at another target are another summary.
     const retargeted = await post(one.url, summariserBody({ canaries: ['[[c:p.1]]'], textChars: 4000, instruction: CHAT.replace('~200', '~61') }));
     assert.notEqual(idOf(textOf(retargeted.json)), idOf(x));
     assert.equal(/<|>/.test(x + y), false);
@@ -208,11 +202,19 @@ test('T1/T4: a compression instruction that states no target is refused as uncla
   assert.equal(r.status, 400);
   assert.match(r.json.error.message, /no target/);
 }));
-test('T4: a summary answer never runs past what max_tokens allows', () => withStandin({}, async (s) => {
-  s.setStep(step('m', []));
-  const r = await post(s.url, summariserBody({ canaries: ['[[c:m.1]]'], textChars: 40_000, max_tokens: 100 }));
-  assert.ok(r.json.usage.output_tokens <= 100, String(r.json.usage.output_tokens));
-  assert.equal(r.json.stop_reason, 'end_turn');
+test('T4: an answer never runs past what max_tokens allows: one that would is cut there, with a max_tokens stop, as a provider cuts it', () => withStandin({}, async (s) => {
+  s.setStep(step('m', [{ text: `[[c:m.r1]] ${prose(4_000)}` }]));
+  const summary = await post(s.url, summariserBody({ canaries: ['[[c:m.1]]'], textChars: 40_000, max_tokens: 100 }));
+  assert.ok(summary.json.usage.output_tokens <= 100, String(summary.json.usage.output_tokens));
+  assert.equal(summary.json.stop_reason, 'max_tokens');
+  const reply = (await post(s.url, agentBody({ canary: '[[c:m.in]]', stream: false, max_tokens: 50 }))).json;
+  assert.ok(reply.usage.output_tokens <= 50, String(reply.usage.output_tokens));
+  assert.equal(reply.stop_reason, 'max_tokens');
+  assert.equal(reply.content[0].text.slice(0, 11), '[[c:m.r1]] ', 'the answer is its own beginning, cut');
+  const fits = await post(s.url, summariserBody({ canaries: ['[[c:m.2]]'], max_tokens: 16_000 }));
+  assert.equal(fits.json.stop_reason, 'end_turn', 'an answer within the ceiling ends as it would');
+  const none = await post(s.url, { ...summariserBody({ canaries: ['[[c:m.3]]'] }), max_tokens: undefined });
+  assert.equal(none.status, 400, 'a request without max_tokens is refused, as the API refuses it');
 }));
 
 test('T6: a step\'s bad answers go one each, in order, to the next first attempts, from that step on; a retry is answered well', () => withStandin({}, async (s) => {
@@ -221,7 +223,6 @@ test('T6: a step\'s bad answers go one each, in order, to the next first attempt
   const got = [];
   got.push((await post(s.url, summariserBody({}))).json);
   got.push((await post(s.url, retry(CHAT))).json);
-  // The step after it still serves the rest.
   s.setStep(step('bad.cp', []));
   for (let i = 0; i < 3; i++) got.push((await post(s.url, summariserBody({}))).json);
   assert.match(textOf(got[0]), /^<thinking>[\s\S]*<\/thinking>$/);
@@ -325,12 +326,10 @@ test('T12: a marked prefix is written, read back byte for byte while live on the
   const second = await ask(history());
   assert.equal(second.cache_read_input_tokens, first.cache_creation_input_tokens);
   assert.equal(second.cache_creation_input_tokens, 0);
-  // The read refreshed it: still live 4 minutes on, 8 after the write.
   s.setClock(8 * 60_000);
   assert.equal((await ask(history())).cache_read_input_tokens, first.cache_creation_input_tokens);
   s.setClock(14 * 60_000);
   assert.equal((await ask(history())).cache_read_input_tokens, 0);
-  // An hour's marker lives past five minutes; a changed byte before the marker reads nothing.
   await ask(history('1h'));
   s.setClock(40 * 60_000);
   const hour = await ask(history('1h'));
@@ -380,6 +379,66 @@ test('T13: when the model binds thinking, a block whose request changed is refus
     });
   }
 });
+
+test('T25: each request\'s record carries its head, everything it sends but its messages, field by field, so a change in any of them shows', async () => {
+  const s = await startStandin({ configuration: { windowTokens: 50_000 } });
+  let records = null;
+  try {
+    s.setStep({ ...step('t', [{ text: 'a' }, { text: 'b' }, { text: 'c' }, { text: 'd' }, { text: 'e' }, { text: 'f' }]), canaries: ['[[c:t.in]]'] });
+    const base = agentBody({ canary: '[[c:t.in]]', stream: false });
+    const variants = [
+      base,
+      base,
+      { ...base, tools: base.tools.map((t, i) => (i === 0 ? { ...t, description: `${t.description} (changed)` } : t)) },
+      { ...base, system: [{ type: 'text', text: base.system, cache_control: { type: 'ephemeral', ttl: '1h' } }] },
+      { ...base, thinking: { type: 'adaptive', block_binding: { prefix_mismatch_behavior: 'drop_block' } } },
+      { ...base, tool_choice: { type: 'auto' }, metadata: { user_id: 'u' } },
+    ];
+    for (const v of variants) assert.equal((await post(s.url, v)).status, 200);
+    records = await s.close();
+  } finally { if (!records) await s.close(); }
+  const [same, again, tool, system, thinking, more] = records;
+  assert.deepEqual(same.head, again.head, 'the same body, the same head');
+  assert.deepEqual(same.head.tools.map((t) => t.name), ['time--now']);
+  assert.notEqual(tool.head.tools[0].sha, same.head.tools[0].sha, 'a tool\'s description moves its definition\'s digest');
+  assert.deepEqual(system.head.system, [{ text: same.head.system[0].text, cache: '1h' }], 'a system block keeps its text and its marker');
+  assert.deepEqual(thinking.head.thinking, { type: 'adaptive', block_binding: { prefix_mismatch_behavior: 'drop_block' } });
+  assert.deepEqual(more.head.toolChoice, { type: 'auto' });
+  assert.equal(same.head.rest, null, 'nothing else on the body');
+  assert.match(more.head.rest, /^[0-9a-f]{16}$/, 'a field no part names is still digested');
+});
+
+test('T26: a reply marked settle waits until releaseHeld, after onHeld names its request; an ordinary reply is answered at once', async () => {
+  const s = await startStandin({ configuration: { windowTokens: 50_000 } });
+  try {
+    const heldSeen = [];
+    s.onHeld((h) => heldSeen.push(h));
+    s.setStep({ ...step('q', [{ text: '[[c:q.r1]] held', settle: true }, { text: '[[c:q.r2]] plain' }]), canaries: ['[[c:q.in]]'] });
+    let answered = null;
+    const first = post(s.url, agentBody({ canary: '[[c:q.in]]', stream: false })).then((r) => { answered = r; return r; });
+    for (const until = Date.now() + 5000; !heldSeen.length;) {
+      if (Date.now() > until) assert.fail('onHeld named no request within 5 s');
+      await new Promise((r) => setTimeout(r, 10));
+    }
+    assert.deepEqual(Object.keys(heldSeen[0]).sort(), ['agent', 'id', 'step']);
+    assert.equal(heldSeen[0].step, 'q');
+    const second = await post(s.url, agentBody({ canary: '[[c:q.in]]', stream: false }));
+    assert.equal(textOf(second.json), '[[c:q.r2]] plain', 'the next request is answered while the first is held');
+    assert.equal(answered, null, 'the held one is still waiting');
+    s.releaseHeld();
+    assert.equal(textOf((await first).json), '[[c:q.r1]] held');
+  } finally { await s.close(); }
+});
+
+test('T27: a summary\'s id comes from what its request carries as sets (target, canaries, recalled summaries), not its wording, order or repeats', () => withStandin({}, async (s) => {
+  s.setStep(step('i', []));
+  const idOf = async (body) => textOf((await post(s.url, body)).json).match(/^\[\[s:M[0-9a-f]{8}\]\]/)[0];
+  const base = await idOf(summariserBody({ canaries: ['[[c:i.1]]', '[[c:i.2]]'] }));
+  assert.equal(await idOf(summariserBody({ canaries: ['[[c:i.2]]', '[[c:i.1]]', '[[c:i.2]]'] })), base, 'order and repeats leave it');
+  assert.equal(await idOf(summariserBody({ canaries: ['[[c:i.1]]', '[[c:i.2]]'], instruction: CHAT.replace('Speak in the first person', 'Use the first person'), textChars: 900 })), base, 'rewording and longer text leave it');
+  assert.notEqual(await idOf(summariserBody({ canaries: ['[[c:i.1]]', '[[c:i.2]]'], summaries: ['[[s:M0123abcd]]'] })), base, 'a recalled summary moves it');
+  assert.notEqual(await idOf(summariserBody({ canaries: ['[[c:i.1]]', '[[c:i.3]]'] })), base, 'another canary moves it');
+}));
 
 test('T13b: a model that thinks leads every reply with signed thinking minted for its own request, and a scripted reply\'s thinking stands', async () => {
   await withStandin({ binds: true, thinks: true }, async (s) => {

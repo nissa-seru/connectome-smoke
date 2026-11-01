@@ -1,61 +1,17 @@
 import { createHash } from 'node:crypto';
 
-/**
- * The configurations the runs use, the continuation (workloads.mjs, `continuation`), and what
- * each of its segments exists to produce.
- *
- * Every step has an `id`, its `segment` and a `kind` the driver executes (lib/strategies/driver.mjs).
- * A turn is a `channel` step: a message on the fixture server's channel `CHANNEL`, from
- * `participant`, under `topic`, as residents get their turns, with IPC kept for commands.
- * A step that makes the agent run carries `replies`, one per agent request the turn
- * makes, in order (a tool round is two requests in one stream, which ends in one speech), and
- * `canaries`, the canaries whose appearance in a request's last message makes it this step's
- * agent request.
- * Every message the script writes carries a canary naming its step: the input `[[c:ID.in]]`,
- * the k-th reply `[[c:ID.rK]]`, the k-th call's result `[[c:ID.callK]]`.
- */
-
 export const TOOL = 'mcpl--fixture--result';
 export const CHANNEL = 'chat';
-/** The marker in the H4 subconscious reader's system prompt. */
 export const READER = '[[reader]]';
 const PARTICIPANTS = ['Ash', 'Tavy', 'Wren'];
 const MINUTE = 60_000;
 
-/**
- * The configurations, each with the recipe patch the driver applies to the lane's recipe
- * (`agent`), the stand-in's view of the model (`binds`), and which segments it runs. They
- * run at residents' sizes: the budget, the reply's max tokens, the stream bound and every
- * strategy size are left to the host, which resolves them for the model as it does for a
- * recipe that leaves them out (`recipe-fit.ts`, `framework-agent-config.ts`). The stand-in's
- * window is the host's own for the model (`model-limits.ts`), which the lane reads through
- * hostFacts. The model is the host's own default (connectome-host `src/recipe.ts`,
- * `claude-opus-4-6`), which most shipped recipes run.
- */
-export function configurations({ model = 'claude-opus-4-6' } = {}) {
-  const agent = { model, cacheKeepalive: { enabled: false } };
+// A recipe that leaves the strategy unset gets autobiographical, adaptive and kv-unified with the standard block
+// (connectome-host framework-strategy.ts), and on claude-opus-5-5 the host passes agent-framework `thinkingBinding`
+// and the drop control (anima-research/connectome-host#500).
+export function configurations() {
+  const agent = { model: 'claude-opus-4-6', cacheKeepalive: { enabled: false } };
   const run = (name, more, summarises = true) => ({ name, agent: { ...agent, ...more.agent }, ...(more.modules ? { modules: more.modules } : {}), ...(more.subconscious ? { subconscious: more.subconscious } : {}), ...(more.judges ? { judges: more.judges } : {}), maintenanceIntervalMs: 0, binds: false, summarises });
-  return {
-    ...configurationsAsResidentsRun(run),
-  };
-}
-
-/**
- * The workloads' configurations (workloads.mjs), as a host's recipe makes each:
- * - H1: the strategy left to the host, which makes it autobiographical, adaptive and kv-unified with its standard block
- *   (`framework-strategy.ts:162-187`): the fixture's H1 for this model, and its C7 too;
- * - H1b: H1 on `claude-opus-5-5`, whose signed thinking binds to the request it was minted in, as a resident on an
- *   account that enforces the binding runs it (anima-research/connectome-host#500): the host passes agent-framework
- *   its `thinkingBinding` and the drop control, and every reply leads with signed thinking;
- * - H2: H1 with the subagent module on, whose knowledge subagent the workloads run inside a spawn, so the judge
- *   judges that subagent (judge.mjs judgedAgent);
- * - H3: a passthrough;
- * - H4: H1 with a persistent subconscious reader, agent-framework's WindowedPassthrough strategy, which reads what
- *   the resident's tune-out holds (`READER` in its system prompt tells its requests apart);
- * - C3h, C5h, C6h, C8h: the fixture's C3, C5, C6 and C8 at the host's defaults: classic autobiographical
- *   (`adaptiveResolution: false`), then adaptive with flat-profile, kv-stable and oldest-first folding.
- */
-function configurationsAsResidentsRun(run) {
   return {
     H1: run('H1', {}),
     H1b: { ...run('H1b', { agent: { model: 'claude-opus-5-5' } }), binds: true, thinks: true },
@@ -69,12 +25,9 @@ function configurationsAsResidentsRun(run) {
   };
 }
 
-// ---------------------------------------------------------------- text
-
 const WORDS = ('river stone lantern harbor quiet orchard ledger signal meadow copper window thread garden compass winter '
   + 'bridge morning letter answer kettle market island pencil shadow ribbon station velvet canyon basket').split(' ');
 
-/** A deterministic pseudo-random sequence seeded by a string. */
 function rng(seed) {
   let k = parseInt(createHash('sha256').update(seed).digest('hex').slice(0, 8), 16) || 1;
   return () => { k = (k * 1103515245 + 12345) % 2147483648; return k / 2147483648; };
@@ -92,8 +45,6 @@ function prose(chars, seed) {
 }
 
 const canary = (id, part) => `[[c:${id}.${part}]]`;
-
-// ---------------------------------------------------------------- steps
 
 function turn(id, segment, { chars, replyChars = 2400, calls = [], rounds = null, thinking = null, more = {} }) {
   const r = rng(`${id}:sizes`);
@@ -125,7 +76,6 @@ function turn(id, segment, { chars, replyChars = 2400, calls = [], rounds = null
 const advance = (id, segment, ms) => ({ id, segment, kind: 'advance', ms });
 const checkpoint = (id, segment, more = {}) => ({ id, segment, kind: 'checkpoint', name: segment, ...more });
 
-/** close-merge's L3 product, by name. */
 export const L3_PRODUCT = 'an L3 merge request';
 
 export function prefix(turns) {
@@ -145,10 +95,6 @@ export function prefix(turns) {
   return steps;
 }
 
-/**
- * The continuation, about a dozen turns from a stored store. Each segment ends
- * at a checkpoint, and `products` says what each exists to produce (declaredProducts).
- */
 export function continuation() {
   const steps = [{ id: 'c.name', segment: 'name', kind: 'command', command: '/session rename fixture' }];
   const seg = (name, list) => { steps.push(...list, checkpoint(`c.${name}.cp`, name)); };
@@ -170,10 +116,7 @@ export function continuation() {
     advance('c.think.adv', 'thinking-call', 4 * MINUTE),
     turn('c.think', 'thinking-call', { chars: 4500, thinking: 9000, calls: [{ kind: 'prose', size: 12_000 }] }),
   ]);
-  // A tool turn of several rounds, each result closing a chunk, so the compressions those
-  // closes start park at agent-framework's provider gate until the turn ends, as residents'
-  // do through a long turn, and the later rounds' compiles meet that debt. Its compressions
-  // carry the three bad answers.
+  // The compressions a long tool turn's closes start park at agent-framework's provider gate until the turn ends.
   seg('debt', [
     advance('c.debt.adv', 'debt', 4 * MINUTE),
     turn('c.debt', 'debt', {
@@ -186,10 +129,6 @@ export function continuation() {
   return steps;
 }
 
-/**
- * What each continuation segment exists to produce, per configuration. A product is checked
- * from the stand-in's records (check 2); a segment whose product is missing names it.
- */
 export function products(configuration) {
   const summarises = configuration.summarises !== false;
   const steps = continuation();
@@ -209,7 +148,7 @@ export function products(configuration) {
     ],
     parallel: [
       { name: 'a request carrying the three results', test: (r) => r.kind === 'agent' && resultsIn(r.messages.at(-1)) === 3 },
-      { name: 'the tool round\'s image as its placeholder', test: (r) => r.kind === 'agent' && r.messages.some((m) => m.blocks.some((b) => b.type === 'tool_result' && (b.canaries || []).includes(imageCall) && !b.images)) },
+      { name: 'the tool round\'s image as its placeholder', test: (r) => r.kind === 'agent' && r.messages.some((m) => m.blocks.some((b) => b.type === 'tool_result' && (b.canaries || []).includes(imageCall) && !b.images && b.placeholders > 0)) },
     ],
     'thinking-call': [
       { name: 'the call\'s request carrying the reply\'s thinking', test: (r) => r.kind === 'agent' && r.messages.some((m) => m.role === 'assistant' && m.blocks.some((b) => b.type === 'thinking' && typeof b.signature === 'string' && b.signature.startsWith('fx1.'))) },
@@ -227,13 +166,11 @@ export function products(configuration) {
 
 const resultsIn = (message) => (message?.blocks || []).filter((b) => b.type === 'tool_result').length;
 
-/** The store holds the message carrying `input` as two or more messages of one body group. */
 function storedInParts(store, input) {
   const first = store.messages.find((m) => m.canaries.includes(input));
   return Boolean(first?.bodyGroupId) && store.messages.filter((m) => m.bodyGroupId === first.bodyGroupId).length >= 2;
 }
 
-/** No summariser request came between a segment's first and last agent requests. */
 function parkedThrough(records) {
   const agents = records.filter((x) => x.kind === 'agent').map((x) => x.seq);
   if (agents.length < 2) return false;

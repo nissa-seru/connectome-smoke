@@ -1,10 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { checkCompile } from '../lib/strategies/invariants.mjs';
-
-// checkCompile over constructed compiles: each of check 11's invariants breaks in each of the forms it names, on a
-// store and a compile built to break it, and stays quiet on its control. A store of four messages: a user's text,
-// the agent's call t1, its result, and the agent's text.
 const text = (t) => ({ type: 'text', text: t });
 const call = (id) => ({ type: 'tool_use', id, name: 'look', input: {} });
 const result = (id) => ({ type: 'tool_result', toolUseId: id, content: 'seen' });
@@ -18,7 +14,6 @@ const STORE = [
 ];
 const byId = new Map(STORE.map((m) => [m.id, m]));
 
-/** A context manager as checkCompile reads one. */
 const manager = ({ messages = STORE, summaries = {}, pins = [], config = {}, stats = null } = {}) => ({
   getAllMessages: () => messages,
   getSummary: (id) => (summaries[id] ? { id, level: 1, sourceLevel: 0, ...summaries[id] } : null),
@@ -27,10 +22,6 @@ const manager = ({ messages = STORE, summaries = {}, pins = [], config = {}, sta
   listPins: () => pins,
 });
 
-/**
- * A compile of `sent`, each `r:ID` (a stored message raw, its content as stored or `content` given), or `s:ID@LEVEL`
- * (a summary): `[compiled, messages]` as the module hands them to checkCompile.
- */
 function compile(sent, { tokens = 100 } = {}) {
   const messages = [];
   const compiled = { messages: [], renderStats: { total: { tokens } } };
@@ -115,4 +106,51 @@ test('pins: a summary sent over a pinned message at a level the pin doesn\'t all
   const pinned = (level) => manager({ summaries: { S: { sourceIds: ['1', '2'] } }, pins: [{ id: 'p1', firstMessageId: '1', lastMessageId: '2', level }] });
   assert.deepEqual(named(check(pinned(0), ['s:S@1', 'r:3', 'r:4'])).filter(([inv]) => inv === 'pins'), [['pins', 'summary S at L1 covers 1, inside pin p1 allowing L0']]);
   assert.deepEqual(check(pinned(1), ['s:S@1', 'r:3', 'r:4']).filter((v) => v.invariant === 'pins'), []);
+});
+
+test('unreadable: a store, pins or stats read that fails is a violation naming the read, never a compile judged clean', () => {
+  const failing = (what) => () => { throw new Error(`${what} failed`); };
+  assert.deepEqual(named(check({ ...manager(), getAllMessages: failing('store') }, ['r:1'])), [['unreadable', 'getAllMessages: store failed; no invariant was judged']]);
+  assert.deepEqual(named(check({ ...manager(), listPins: failing('pins') }, ['r:1', 'r:2', 'r:3', 'r:4'])), [['unreadable', 'listPins: pins failed; pins weren\'t judged']]);
+  const [compiled, messages] = compile(['r:1', 'r:2', 'r:3', 'r:4']);
+  delete compiled.renderStats;
+  assert.deepEqual(named(checkCompile({ ...manager(), getRenderStats: failing('stats') }, BUDGET, compiled, messages)), [['unreadable', 'getRenderStats: stats failed; budget wasn\'t judged']]);
+});
+const shard = (id, sequence, index, words, group = 'g1') => ({ ...stored(id, sequence, 'user', [text(words)]), bodyGroupId: group, shardIndex: index });
+
+test('coverage is per shard: one shard\'s summary doesn\'t cover the other, and a partial raw copy holds only the shards whose text it carries', () => {
+  const sharded = [...STORE, shard('5', 5, 0, 'first half'), shard('6', 6, 1, 'second half')];
+  for (const m of sharded) byId.set(m.id, m);
+  try {
+    const m = manager({ messages: sharded, summaries: { S: { sourceIds: ['5'] } } });
+    assert.deepEqual(named(check(m, ['r:1', 'r:2', 'r:3', 'r:4', 's:S@1'])), [['coverage', '1 stored bodies in no message sent: 5 (shards 6)']]);
+    assert.deepEqual(check(m, ['r:1', 'r:2', 'r:3', 'r:4', 's:S@1', ['r:5!shards', [text('second half')]]]), [], 'the partial copy carries the second shard');
+    assert.deepEqual(named(check(manager({ messages: sharded }), ['r:1', 'r:2', 'r:3', 'r:4', ['r:5!shards', [text('first half')]]])), [['coverage', '1 stored bodies in no message sent: 5 (shards 6)']]);
+    assert.deepEqual(check(manager({ messages: sharded }), ['r:1', 'r:2', 'r:3', 'r:4', 'r:5']), [], 'a whole raw copy holds every shard');
+  } finally {
+    for (const m of sharded) if (!STORE.includes(m)) byId.delete(m.id);
+  }
+});
+
+test('a raw copy context-manager marks altered (`!content`) but not partial carries every shard: covered, and beside a summary of one of them', () => {
+  const sharded = [...STORE, shard('5', 5, 0, 'first half'), shard('6', 6, 1, 'second half')];
+  for (const m of sharded) byId.set(m.id, m);
+  try {
+    assert.deepEqual(check(manager({ messages: sharded }), ['r:1', 'r:2', 'r:3', 'r:4', ['r:5!content', [text('first half, altered')]]]), []);
+    const m = manager({ messages: sharded, summaries: { S: { sourceIds: ['6'] } } });
+    assert.deepEqual(named(check(m, ['r:1', 'r:2', 'r:3', 'r:4', ['r:5!content', [text('first half, altered')]], 's:S@1'])), [['beside-sources', '1 stored messages sent raw beside a summary of them: 6 raw beside S']]);
+  } finally {
+    for (const m of sharded) if (!STORE.includes(m)) byId.delete(m.id);
+  }
+});
+
+test('bodies are context-manager\'s: two ingestions of one text, sharing a group id, are two bodies, so the second sent nowhere is a lost body', () => {
+  const twice = [...STORE, shard('5', 5, 0, 'doc a'), shard('6', 6, 1, 'doc b'), shard('7', 7, 0, 'doc a'), shard('8', 8, 1, 'doc b')];
+  for (const m of twice) byId.set(m.id, m);
+  try {
+    assert.deepEqual(named(check(manager({ messages: twice }), ['r:1', 'r:2', 'r:3', 'r:4', 'r:5'])), [['coverage', '1 stored bodies in no message sent: 7']]);
+    assert.deepEqual(check(manager({ messages: twice }), ['r:1', 'r:2', 'r:3', 'r:4', 'r:5', 'r:7']), []);
+  } finally {
+    for (const m of twice) if (!STORE.includes(m)) byId.delete(m.id);
+  }
 });
