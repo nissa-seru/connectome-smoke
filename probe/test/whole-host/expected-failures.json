@@ -4,168 +4,168 @@
     "check": 11,
     "step": "375550.1",
     "what": "fixture:request:shape",
-    "finding": "D1",
-    "reason": "D1: a passthrough strategy's window cuts a call from its result, so message 0 is a result whose call is stored but not carried (Oscar-1005's register; Desmond-2579's J60270)"
+    "finding": "passthrough-window-cuts-call-from-result",
+    "reason": "A passthrough strategy's window cuts a call from its result, so the first message sent is a result whose call is stored but not carried."
   },
   {
     "configuration": "C3h/W7/fable-no-tools",
     "check": 5,
     "step": "the run",
     "what": "no-summaries",
-    "finding": "D41",
-    "reason": "D41: a Fable-family compression model with an empty declared tool list defers every L1, so a no-tools agent never compresses (Oscar-1005's register; J58176 in the fixture, J60283 here)"
+    "finding": "no-tools-fable-family-never-compresses",
+    "reason": "With a Fable-family compression model and an empty declared tool list, every L1 is deferred, so an agent permitted no tools never compresses."
   },
   {
     "configuration": "H4/W8/unenforced",
     "check": 11,
     "step": "485515.h10",
     "what": "Subconscious:request:shape",
-    "finding": "D1",
-    "reason": "D1: a passthrough strategy's window cuts a call from its result, so message 0 is a result whose call is stored but not carried (Oscar-1005's register; Desmond-2579's J60270)"
+    "finding": "anima-research/context-manager#370",
+    "reason": "The windowed reader's window cuts a call from its result, so the first message sent is a result whose call is stored but not carried."
   },
   {
     "configuration": "H4/W8/unenforced",
     "check": 11,
     "step": "485515.h11",
     "what": "Subconscious:request:shape",
-    "finding": "D1",
-    "reason": "D1: a passthrough strategy's window cuts a call from its result, so message 0 is a result whose call is stored but not carried (Oscar-1005's register; Desmond-2579's J60270)"
+    "finding": "anima-research/context-manager#370",
+    "reason": "The windowed reader's window cuts a call from its result, so the first message sent is a result whose call is stored but not carried."
   },
   {
     "configuration": "H4/W8/unenforced",
     "check": 11,
     "step": "485515.h12",
     "what": "Subconscious:request:shape",
-    "finding": "D1",
-    "reason": "D1: a passthrough strategy's window cuts a call from its result, so message 0 is a result whose call is stored but not carried (Oscar-1005's register; Desmond-2579's J60270)"
+    "finding": "anima-research/context-manager#370",
+    "reason": "The windowed reader's window cuts a call from its result, so the first message sent is a result whose call is stored but not carried."
   },
   {
     "configuration": "H4/W8/unenforced",
     "check": 11,
     "step": "485515.h13",
     "what": "Subconscious:request:shape",
-    "finding": "D1",
-    "reason": "D1: a passthrough strategy's window cuts a call from its result, so message 0 is a result whose call is stored but not carried (Oscar-1005's register; Desmond-2579's J60270)"
+    "finding": "anima-research/context-manager#370",
+    "reason": "The windowed reader's window cuts a call from its result, so the first message sent is a result whose call is stored but not carried."
   },
   {
     "configuration": "H4/W8/unenforced",
     "check": 11,
     "step": "485515.h14",
     "what": "Subconscious:request:shape",
-    "finding": "D1",
-    "reason": "D1: a passthrough strategy's window cuts a call from its result, so message 0 is a result whose call is stored but not carried (Oscar-1005's register; Desmond-2579's J60270)"
+    "finding": "anima-research/context-manager#370",
+    "reason": "The windowed reader's window cuts a call from its result, so the first message sent is a result whose call is stored but not carried."
   },
   {
     "configuration": "H4/W8/unenforced",
     "check": 11,
     "step": "485515.h15",
     "what": "Subconscious:request:shape",
-    "finding": "D1",
-    "reason": "D1: a passthrough strategy's window cuts a call from its result, so message 0 is a result whose call is stored but not carried (Oscar-1005's register; Desmond-2579's J60270)"
+    "finding": "anima-research/context-manager#370",
+    "reason": "The windowed reader's window cuts a call from its result, so the first message sent is a result whose call is stored but not carried."
   },
   {
     "configuration": "H4/W8/unenforced",
     "check": 11,
     "step": "485515.h16",
     "what": "Subconscious:request:shape",
-    "finding": "D1",
-    "reason": "D1: a passthrough strategy's window cuts a call from its result, so message 0 is a result whose call is stored but not carried (Oscar-1005's register; Desmond-2579's J60270)"
+    "finding": "anima-research/context-manager#370",
+    "reason": "The windowed reader's window cuts a call from its result, so the first message sent is a result whose call is stored but not carried."
   },
   {
     "configuration": "H3/W9",
     "check": 11,
     "step": "321741.1",
     "what": "fixture:request:shape",
-    "finding": "D1",
-    "reason": "D1: a passthrough strategy's window cuts a call from its result, so message 0 is a result whose call is stored but not carried (Oscar-1005's register; Desmond-2579's J60270)"
+    "finding": "passthrough-window-cuts-call-from-result",
+    "reason": "A passthrough strategy's window cuts a call from its result, so the first message sent is a result whose call is stored but not carried."
   },
   {
     "configuration": "H3/W9",
     "check": 11,
     "step": "321741.12",
     "what": "fixture:request:shape",
-    "finding": "D1",
-    "reason": "D1: a passthrough strategy's window cuts a call from its result, so message 0 is a result whose call is stored but not carried (Oscar-1005's register; Desmond-2579's J60270)"
+    "finding": "passthrough-window-cuts-call-from-result",
+    "reason": "A passthrough strategy's window cuts a call from its result, so the first message sent is a result whose call is stored but not carried."
   },
   {
     "configuration": "H3/W9",
     "check": 11,
     "step": "321741.13",
     "what": "fixture:request:shape",
-    "finding": "D1",
-    "reason": "D1: a passthrough strategy's window cuts a call from its result, so message 0 is a result whose call is stored but not carried (Oscar-1005's register; Desmond-2579's J60270)"
+    "finding": "passthrough-window-cuts-call-from-result",
+    "reason": "A passthrough strategy's window cuts a call from its result, so the first message sent is a result whose call is stored but not carried."
   },
   {
     "configuration": "H3/W9",
     "check": 11,
     "step": "321741.14",
     "what": "fixture:dry:shape",
-    "finding": "D1",
-    "reason": "D1: a passthrough strategy's window cuts a call from its result, so message 0 is a result whose call is stored but not carried (Oscar-1005's register; Desmond-2579's J60270)"
+    "finding": "passthrough-window-cuts-call-from-result",
+    "reason": "A passthrough strategy's window cuts a call from its result, so the first message sent is a result whose call is stored but not carried."
   },
   {
     "configuration": "H3/W9",
     "check": 11,
     "step": "321741.15",
     "what": "fixture:request:shape",
-    "finding": "D1",
-    "reason": "D1: a passthrough strategy's window cuts a call from its result, so message 0 is a result whose call is stored but not carried (Oscar-1005's register; Desmond-2579's J60270)"
+    "finding": "passthrough-window-cuts-call-from-result",
+    "reason": "A passthrough strategy's window cuts a call from its result, so the first message sent is a result whose call is stored but not carried."
   },
   {
     "configuration": "H3/W9",
     "check": 11,
     "step": "321741.16",
     "what": "fixture:request:shape",
-    "finding": "D1",
-    "reason": "D1: a passthrough strategy's window cuts a call from its result, so message 0 is a result whose call is stored but not carried (Oscar-1005's register; Desmond-2579's J60270)"
+    "finding": "passthrough-window-cuts-call-from-result",
+    "reason": "A passthrough strategy's window cuts a call from its result, so the first message sent is a result whose call is stored but not carried."
   },
   {
     "configuration": "H3/W9",
     "check": 11,
     "step": "321741.16g",
     "what": "fixture:request:shape",
-    "finding": "D1",
-    "reason": "D1: a passthrough strategy's window cuts a call from its result, so message 0 is a result whose call is stored but not carried (Oscar-1005's register; Desmond-2579's J60270)"
+    "finding": "passthrough-window-cuts-call-from-result",
+    "reason": "A passthrough strategy's window cuts a call from its result, so the first message sent is a result whose call is stored but not carried."
   },
   {
     "configuration": "H3/W9",
     "check": 11,
     "step": "321741.2",
     "what": "fixture:request:shape",
-    "finding": "D1",
-    "reason": "D1: a passthrough strategy's window cuts a call from its result, so message 0 is a result whose call is stored but not carried (Oscar-1005's register; Desmond-2579's J60270)"
+    "finding": "passthrough-window-cuts-call-from-result",
+    "reason": "A passthrough strategy's window cuts a call from its result, so the first message sent is a result whose call is stored but not carried."
   },
   {
     "configuration": "H3/W9",
     "check": 11,
     "step": "321741.9",
     "what": "fixture:request:shape",
-    "finding": "D1",
-    "reason": "D1: a passthrough strategy's window cuts a call from its result, so message 0 is a result whose call is stored but not carried (Oscar-1005's register; Desmond-2579's J60270)"
+    "finding": "passthrough-window-cuts-call-from-result",
+    "reason": "A passthrough strategy's window cuts a call from its result, so the first message sent is a result whose call is stored but not carried."
   },
   {
     "configuration": "H3/W9",
     "check": 11,
     "step": "321741.9a",
     "what": "fixture:request:shape",
-    "finding": "D1",
-    "reason": "D1: a passthrough strategy's window cuts a call from its result, so message 0 is a result whose call is stored but not carried (Oscar-1005's register; Desmond-2579's J60270)"
+    "finding": "passthrough-window-cuts-call-from-result",
+    "reason": "A passthrough strategy's window cuts a call from its result, so the first message sent is a result whose call is stored but not carried."
   },
   {
     "configuration": "C3h/W9",
     "check": 4,
     "step": "555806.11",
     "what": "more-than-once",
-    "finding": "D3",
-    "reason": "D3: a message pinned raw also goes out inside the L1 over it when the pin follows the L1 (Oscar-1005's register; host route: the panel's pin-add, J60253, J60283)"
+    "finding": "raw-pin-sent-beside-covering-summary",
+    "reason": "A message pinned raw after an L1 summary covers it is also sent inside that summary."
   },
   {
     "configuration": "C3h/W9",
     "check": 11,
     "step": "555806.11",
     "what": "fixture:request:beside-sources",
-    "finding": "D3",
-    "reason": "D3: a message pinned raw also goes out inside the L1 over it when the pin follows the L1 (Oscar-1005's register; host route: the panel's pin-add, J60253, J60283)"
+    "finding": "raw-pin-sent-beside-covering-summary",
+    "reason": "A message pinned raw after an L1 summary covers it is also sent inside that summary."
   },
   {
     "configuration": "C3h/W9",
@@ -173,24 +173,24 @@
     "step": "555806.11",
     "what": "fixture:request:pins",
     "match": "allowing L0$",
-    "finding": "D3",
-    "reason": "D3: a message pinned raw also goes out inside the L1 over it when the pin follows the L1 (Oscar-1005's register; host route: the panel's pin-add, J60253, J60283)"
+    "finding": "raw-pin-sent-beside-covering-summary",
+    "reason": "A message pinned raw after an L1 summary covers it is also sent inside that summary."
   },
   {
     "configuration": "C3h/W9",
     "check": 4,
     "step": "555806.12",
     "what": "more-than-once",
-    "finding": "D3, D39",
-    "reason": "D3 and D39 at one step: a raw pin and a level pin, each set after a summary over its range, both send content twice (Oscar-1005's register; J60283, J60284)"
+    "finding": "raw-pin-sent-beside-covering-summary, level-pin-under-covering-summary",
+    "reason": "A raw pin and a level pin, each set after a summary covers its range, both send content twice."
   },
   {
     "configuration": "C3h/W9",
     "check": 11,
     "step": "555806.12",
     "what": "fixture:request:beside-sources",
-    "finding": "D3, D39",
-    "reason": "D3 and D39 at one step: a raw pin and a level pin, each set after a summary over its range, both send content twice (Oscar-1005's register; J60283, J60284)"
+    "finding": "raw-pin-sent-beside-covering-summary, level-pin-under-covering-summary",
+    "reason": "A raw pin and a level pin, each set after a summary covers its range, both send content twice."
   },
   {
     "configuration": "C3h/W9",
@@ -198,8 +198,8 @@
     "step": "555806.12",
     "what": "fixture:request:pins",
     "match": "allowing L0$",
-    "finding": "D3",
-    "reason": "D3: a message pinned raw also goes out inside the L1 over it when the pin follows the L1 (Oscar-1005's register; host route: the panel's pin-add, J60253, J60283)"
+    "finding": "raw-pin-sent-beside-covering-summary",
+    "reason": "A message pinned raw after an L1 summary covers it is also sent inside that summary."
   },
   {
     "configuration": "C3h/W9",
@@ -207,24 +207,24 @@
     "step": "555806.12",
     "what": "fixture:request:pins",
     "match": "allowing L[1-9]",
-    "finding": "D39",
-    "reason": "D39: a level pin set after a higher summary covers its range sends the pinned part beside the summary over it (Oscar-1005's register; Desmond-2579's J60284)"
+    "finding": "level-pin-under-covering-summary",
+    "reason": "A level pin set after a higher summary covers its range sends the pinned part beside the summary over it."
   },
   {
     "configuration": "C3h/W9",
     "check": 4,
     "step": "555806.13",
     "what": "more-than-once",
-    "finding": "D3, D39",
-    "reason": "D3 and D39 at one step: a raw pin and a level pin, each set after a summary over its range, both send content twice (Oscar-1005's register; J60283, J60284)"
+    "finding": "raw-pin-sent-beside-covering-summary, level-pin-under-covering-summary",
+    "reason": "A raw pin and a level pin, each set after a summary covers its range, both send content twice."
   },
   {
     "configuration": "C3h/W9",
     "check": 11,
     "step": "555806.13",
     "what": "fixture:request:beside-sources",
-    "finding": "D3, D39",
-    "reason": "D3 and D39 at one step: a raw pin and a level pin, each set after a summary over its range, both send content twice (Oscar-1005's register; J60283, J60284)"
+    "finding": "raw-pin-sent-beside-covering-summary, level-pin-under-covering-summary",
+    "reason": "A raw pin and a level pin, each set after a summary covers its range, both send content twice."
   },
   {
     "configuration": "C3h/W9",
@@ -232,8 +232,8 @@
     "step": "555806.13",
     "what": "fixture:request:pins",
     "match": "allowing L0$",
-    "finding": "D3",
-    "reason": "D3: a message pinned raw also goes out inside the L1 over it when the pin follows the L1 (Oscar-1005's register; host route: the panel's pin-add, J60253, J60283)"
+    "finding": "raw-pin-sent-beside-covering-summary",
+    "reason": "A message pinned raw after an L1 summary covers it is also sent inside that summary."
   },
   {
     "configuration": "C3h/W9",
@@ -241,24 +241,24 @@
     "step": "555806.13",
     "what": "fixture:request:pins",
     "match": "allowing L[1-9]",
-    "finding": "D39",
-    "reason": "D39: a level pin set after a higher summary covers its range sends the pinned part beside the summary over it (Oscar-1005's register; Desmond-2579's J60284)"
+    "finding": "level-pin-under-covering-summary",
+    "reason": "A level pin set after a higher summary covers its range sends the pinned part beside the summary over it."
   },
   {
     "configuration": "C3h/W9",
     "check": 4,
     "step": "555806.14",
     "what": "more-than-once",
-    "finding": "D3, D39",
-    "reason": "D3 and D39 at one step: a raw pin and a level pin, each set after a summary over its range, both send content twice (Oscar-1005's register; J60283, J60284)"
+    "finding": "raw-pin-sent-beside-covering-summary, level-pin-under-covering-summary",
+    "reason": "A raw pin and a level pin, each set after a summary covers its range, both send content twice."
   },
   {
     "configuration": "C3h/W9",
     "check": 11,
     "step": "555806.14",
     "what": "fixture:dry:beside-sources",
-    "finding": "D3, D39",
-    "reason": "D3 and D39 at one step: a raw pin and a level pin, each set after a summary over its range, both send content twice (Oscar-1005's register; J60283, J60284)"
+    "finding": "raw-pin-sent-beside-covering-summary, level-pin-under-covering-summary",
+    "reason": "A raw pin and a level pin, each set after a summary covers its range, both send content twice."
   },
   {
     "configuration": "C3h/W9",
@@ -266,8 +266,8 @@
     "step": "555806.14",
     "what": "fixture:dry:pins",
     "match": "allowing L0$",
-    "finding": "D3",
-    "reason": "D3: a message pinned raw also goes out inside the L1 over it when the pin follows the L1 (Oscar-1005's register; host route: the panel's pin-add, J60253, J60283)"
+    "finding": "raw-pin-sent-beside-covering-summary",
+    "reason": "A message pinned raw after an L1 summary covers it is also sent inside that summary."
   },
   {
     "configuration": "C3h/W9",
@@ -275,16 +275,16 @@
     "step": "555806.14",
     "what": "fixture:dry:pins",
     "match": "allowing L[1-9]",
-    "finding": "D39",
-    "reason": "D39: a level pin set after a higher summary covers its range sends the pinned part beside the summary over it (Oscar-1005's register; Desmond-2579's J60284)"
+    "finding": "level-pin-under-covering-summary",
+    "reason": "A level pin set after a higher summary covers its range sends the pinned part beside the summary over it."
   },
   {
     "configuration": "C3h/W9",
     "check": 11,
     "step": "555806.14",
     "what": "fixture:request:beside-sources",
-    "finding": "D3, D39",
-    "reason": "D3 and D39 at one step: a raw pin and a level pin, each set after a summary over its range, both send content twice (Oscar-1005's register; J60283, J60284)"
+    "finding": "raw-pin-sent-beside-covering-summary, level-pin-under-covering-summary",
+    "reason": "A raw pin and a level pin, each set after a summary covers its range, both send content twice."
   },
   {
     "configuration": "C3h/W9",
@@ -292,8 +292,8 @@
     "step": "555806.14",
     "what": "fixture:request:pins",
     "match": "allowing L0$",
-    "finding": "D3",
-    "reason": "D3: a message pinned raw also goes out inside the L1 over it when the pin follows the L1 (Oscar-1005's register; host route: the panel's pin-add, J60253, J60283)"
+    "finding": "raw-pin-sent-beside-covering-summary",
+    "reason": "A message pinned raw after an L1 summary covers it is also sent inside that summary."
   },
   {
     "configuration": "C3h/W9",
@@ -301,24 +301,24 @@
     "step": "555806.14",
     "what": "fixture:request:pins",
     "match": "allowing L[1-9]",
-    "finding": "D39",
-    "reason": "D39: a level pin set after a higher summary covers its range sends the pinned part beside the summary over it (Oscar-1005's register; Desmond-2579's J60284)"
+    "finding": "level-pin-under-covering-summary",
+    "reason": "A level pin set after a higher summary covers its range sends the pinned part beside the summary over it."
   },
   {
     "configuration": "C3h/W9",
     "check": 4,
     "step": "555806.15",
     "what": "more-than-once",
-    "finding": "D39",
-    "reason": "D39: a level pin set after a higher summary covers its range sends the pinned part beside the summary over it (Oscar-1005's register; Desmond-2579's J60284)"
+    "finding": "level-pin-under-covering-summary",
+    "reason": "A level pin set after a higher summary covers its range sends the pinned part beside the summary over it."
   },
   {
     "configuration": "C3h/W9",
     "check": 11,
     "step": "555806.15",
     "what": "fixture:request:beside-sources",
-    "finding": "D39",
-    "reason": "D39: a level pin set after a higher summary covers its range sends the pinned part beside the summary over it (Oscar-1005's register; Desmond-2579's J60284)"
+    "finding": "level-pin-under-covering-summary",
+    "reason": "A level pin set after a higher summary covers its range sends the pinned part beside the summary over it."
   },
   {
     "configuration": "C3h/W9",
@@ -326,16 +326,16 @@
     "step": "555806.15",
     "what": "fixture:request:pins",
     "match": "allowing L[1-9]",
-    "finding": "D39",
-    "reason": "D39: a level pin set after a higher summary covers its range sends the pinned part beside the summary over it (Oscar-1005's register; Desmond-2579's J60284)"
+    "finding": "level-pin-under-covering-summary",
+    "reason": "A level pin set after a higher summary covers its range sends the pinned part beside the summary over it."
   },
   {
     "configuration": "C3h/W9",
     "check": 11,
     "step": "555806.16",
     "what": "fixture:request:beside-sources",
-    "finding": "D39",
-    "reason": "D39: a level pin set after a higher summary covers its range sends the pinned part beside the summary over it (Oscar-1005's register; Desmond-2579's J60284)"
+    "finding": "level-pin-under-covering-summary",
+    "reason": "A level pin set after a higher summary covers its range sends the pinned part beside the summary over it."
   },
   {
     "configuration": "C3h/W9",
@@ -343,24 +343,24 @@
     "step": "555806.16",
     "what": "fixture:request:pins",
     "match": "allowing L[1-9]",
-    "finding": "D39",
-    "reason": "D39: a level pin set after a higher summary covers its range sends the pinned part beside the summary over it (Oscar-1005's register; Desmond-2579's J60284)"
+    "finding": "level-pin-under-covering-summary",
+    "reason": "A level pin set after a higher summary covers its range sends the pinned part beside the summary over it."
   },
   {
     "configuration": "C3h/W9",
     "check": 4,
     "step": "555806.16g",
     "what": "more-than-once",
-    "finding": "D39",
-    "reason": "D39: a level pin set after a higher summary covers its range sends the pinned part beside the summary over it (Oscar-1005's register; Desmond-2579's J60284)"
+    "finding": "level-pin-under-covering-summary",
+    "reason": "A level pin set after a higher summary covers its range sends the pinned part beside the summary over it."
   },
   {
     "configuration": "C3h/W9",
     "check": 11,
     "step": "555806.16g",
     "what": "fixture:request:beside-sources",
-    "finding": "D39",
-    "reason": "D39: a level pin set after a higher summary covers its range sends the pinned part beside the summary over it (Oscar-1005's register; Desmond-2579's J60284)"
+    "finding": "level-pin-under-covering-summary",
+    "reason": "A level pin set after a higher summary covers its range sends the pinned part beside the summary over it."
   },
   {
     "configuration": "C3h/W9",
@@ -368,24 +368,24 @@
     "step": "555806.16g",
     "what": "fixture:request:pins",
     "match": "allowing L[1-9]",
-    "finding": "D39",
-    "reason": "D39: a level pin set after a higher summary covers its range sends the pinned part beside the summary over it (Oscar-1005's register; Desmond-2579's J60284)"
+    "finding": "level-pin-under-covering-summary",
+    "reason": "A level pin set after a higher summary covers its range sends the pinned part beside the summary over it."
   },
   {
     "configuration": "C3h/W9",
     "check": 4,
     "step": "555806.17",
     "what": "more-than-once",
-    "finding": "D39",
-    "reason": "D39: a level pin set after a higher summary covers its range sends the pinned part beside the summary over it (Oscar-1005's register; Desmond-2579's J60284)"
+    "finding": "level-pin-under-covering-summary",
+    "reason": "A level pin set after a higher summary covers its range sends the pinned part beside the summary over it."
   },
   {
     "configuration": "C3h/W9",
     "check": 11,
     "step": "555806.17",
     "what": "fixture:request:beside-sources",
-    "finding": "D39",
-    "reason": "D39: a level pin set after a higher summary covers its range sends the pinned part beside the summary over it (Oscar-1005's register; Desmond-2579's J60284)"
+    "finding": "level-pin-under-covering-summary",
+    "reason": "A level pin set after a higher summary covers its range sends the pinned part beside the summary over it."
   },
   {
     "configuration": "C3h/W9",
@@ -393,16 +393,16 @@
     "step": "555806.17",
     "what": "fixture:request:pins",
     "match": "allowing L[1-9]",
-    "finding": "D39",
-    "reason": "D39: a level pin set after a higher summary covers its range sends the pinned part beside the summary over it (Oscar-1005's register; Desmond-2579's J60284)"
+    "finding": "level-pin-under-covering-summary",
+    "reason": "A level pin set after a higher summary covers its range sends the pinned part beside the summary over it."
   },
   {
     "configuration": "C3h/W9",
     "check": 11,
     "step": "555806.17.suppress",
     "what": "fixture:dry:beside-sources",
-    "finding": "D39",
-    "reason": "D39: a level pin set after a higher summary covers its range sends the pinned part beside the summary over it (Oscar-1005's register; Desmond-2579's J60284)"
+    "finding": "level-pin-under-covering-summary",
+    "reason": "A level pin set after a higher summary covers its range sends the pinned part beside the summary over it."
   },
   {
     "configuration": "C3h/W9",
@@ -410,24 +410,24 @@
     "step": "555806.17.suppress",
     "what": "fixture:dry:pins",
     "match": "allowing L[1-9]",
-    "finding": "D39",
-    "reason": "D39: a level pin set after a higher summary covers its range sends the pinned part beside the summary over it (Oscar-1005's register; Desmond-2579's J60284)"
+    "finding": "level-pin-under-covering-summary",
+    "reason": "A level pin set after a higher summary covers its range sends the pinned part beside the summary over it."
   },
   {
     "configuration": "C3h/W9",
     "check": 4,
     "step": "555806.18",
     "what": "more-than-once",
-    "finding": "D39",
-    "reason": "D39: a level pin set after a higher summary covers its range sends the pinned part beside the summary over it (Oscar-1005's register; Desmond-2579's J60284)"
+    "finding": "level-pin-under-covering-summary",
+    "reason": "A level pin set after a higher summary covers its range sends the pinned part beside the summary over it."
   },
   {
     "configuration": "C3h/W9",
     "check": 11,
     "step": "555806.18",
     "what": "fixture:request:beside-sources",
-    "finding": "D39",
-    "reason": "D39: a level pin set after a higher summary covers its range sends the pinned part beside the summary over it (Oscar-1005's register; Desmond-2579's J60284)"
+    "finding": "level-pin-under-covering-summary",
+    "reason": "A level pin set after a higher summary covers its range sends the pinned part beside the summary over it."
   },
   {
     "configuration": "C3h/W9",
@@ -435,24 +435,24 @@
     "step": "555806.18",
     "what": "fixture:request:pins",
     "match": "allowing L[1-9]",
-    "finding": "D39",
-    "reason": "D39: a level pin set after a higher summary covers its range sends the pinned part beside the summary over it (Oscar-1005's register; Desmond-2579's J60284)"
+    "finding": "level-pin-under-covering-summary",
+    "reason": "A level pin set after a higher summary covers its range sends the pinned part beside the summary over it."
   },
   {
     "configuration": "C3h/W9",
     "check": 4,
     "step": "555806.19",
     "what": "more-than-once",
-    "finding": "D39",
-    "reason": "D39: a level pin set after a higher summary covers its range sends the pinned part beside the summary over it (Oscar-1005's register; Desmond-2579's J60284)"
+    "finding": "level-pin-under-covering-summary",
+    "reason": "A level pin set after a higher summary covers its range sends the pinned part beside the summary over it."
   },
   {
     "configuration": "C3h/W9",
     "check": 11,
     "step": "555806.19",
     "what": "fixture:request:beside-sources",
-    "finding": "D39",
-    "reason": "D39: a level pin set after a higher summary covers its range sends the pinned part beside the summary over it (Oscar-1005's register; Desmond-2579's J60284)"
+    "finding": "level-pin-under-covering-summary",
+    "reason": "A level pin set after a higher summary covers its range sends the pinned part beside the summary over it."
   },
   {
     "configuration": "C3h/W9",
@@ -460,24 +460,24 @@
     "step": "555806.19",
     "what": "fixture:request:pins",
     "match": "allowing L[1-9]",
-    "finding": "D39",
-    "reason": "D39: a level pin set after a higher summary covers its range sends the pinned part beside the summary over it (Oscar-1005's register; Desmond-2579's J60284)"
+    "finding": "level-pin-under-covering-summary",
+    "reason": "A level pin set after a higher summary covers its range sends the pinned part beside the summary over it."
   },
   {
     "configuration": "C3h/W9",
     "check": 4,
     "step": "555806.20",
     "what": "more-than-once",
-    "finding": "D39",
-    "reason": "D39: a level pin set after a higher summary covers its range sends the pinned part beside the summary over it (Oscar-1005's register; Desmond-2579's J60284)"
+    "finding": "level-pin-under-covering-summary",
+    "reason": "A level pin set after a higher summary covers its range sends the pinned part beside the summary over it."
   },
   {
     "configuration": "C3h/W9",
     "check": 11,
     "step": "555806.20",
     "what": "fixture:request:beside-sources",
-    "finding": "D39",
-    "reason": "D39: a level pin set after a higher summary covers its range sends the pinned part beside the summary over it (Oscar-1005's register; Desmond-2579's J60284)"
+    "finding": "level-pin-under-covering-summary",
+    "reason": "A level pin set after a higher summary covers its range sends the pinned part beside the summary over it."
   },
   {
     "configuration": "C3h/W9",
@@ -485,24 +485,24 @@
     "step": "555806.20",
     "what": "fixture:request:pins",
     "match": "allowing L[1-9]",
-    "finding": "D39",
-    "reason": "D39: a level pin set after a higher summary covers its range sends the pinned part beside the summary over it (Oscar-1005's register; Desmond-2579's J60284)"
+    "finding": "level-pin-under-covering-summary",
+    "reason": "A level pin set after a higher summary covers its range sends the pinned part beside the summary over it."
   },
   {
     "configuration": "C6h/W9",
     "check": 4,
     "step": "405389.11",
     "what": "more-than-once",
-    "finding": "D3",
-    "reason": "D3: a message pinned raw also goes out inside the L1 over it when the pin follows the L1 (Oscar-1005's register; host route: the panel's pin-add, J60253, J60283)"
+    "finding": "raw-pin-sent-beside-covering-summary",
+    "reason": "A message pinned raw after an L1 summary covers it is also sent inside that summary."
   },
   {
     "configuration": "C6h/W9",
     "check": 11,
     "step": "405389.11",
     "what": "fixture:request:beside-sources",
-    "finding": "D3",
-    "reason": "D3: a message pinned raw also goes out inside the L1 over it when the pin follows the L1 (Oscar-1005's register; host route: the panel's pin-add, J60253, J60283)"
+    "finding": "raw-pin-sent-beside-covering-summary",
+    "reason": "A message pinned raw after an L1 summary covers it is also sent inside that summary."
   },
   {
     "configuration": "C6h/W9",
@@ -510,24 +510,24 @@
     "step": "405389.11",
     "what": "fixture:request:pins",
     "match": "allowing L0$",
-    "finding": "D3",
-    "reason": "D3: a message pinned raw also goes out inside the L1 over it when the pin follows the L1 (Oscar-1005's register; host route: the panel's pin-add, J60253, J60283)"
+    "finding": "raw-pin-sent-beside-covering-summary",
+    "reason": "A message pinned raw after an L1 summary covers it is also sent inside that summary."
   },
   {
     "configuration": "C6h/W9",
     "check": 4,
     "step": "405389.12",
     "what": "more-than-once",
-    "finding": "D3",
-    "reason": "D3: a message pinned raw also goes out inside the L1 over it when the pin follows the L1 (Oscar-1005's register; host route: the panel's pin-add, J60253, J60283)"
+    "finding": "raw-pin-sent-beside-covering-summary",
+    "reason": "A message pinned raw after an L1 summary covers it is also sent inside that summary."
   },
   {
     "configuration": "C6h/W9",
     "check": 11,
     "step": "405389.12",
     "what": "fixture:request:beside-sources",
-    "finding": "D3",
-    "reason": "D3: a message pinned raw also goes out inside the L1 over it when the pin follows the L1 (Oscar-1005's register; host route: the panel's pin-add, J60253, J60283)"
+    "finding": "raw-pin-sent-beside-covering-summary",
+    "reason": "A message pinned raw after an L1 summary covers it is also sent inside that summary."
   },
   {
     "configuration": "C6h/W9",
@@ -535,24 +535,24 @@
     "step": "405389.12",
     "what": "fixture:request:pins",
     "match": "allowing L0$",
-    "finding": "D3",
-    "reason": "D3: a message pinned raw also goes out inside the L1 over it when the pin follows the L1 (Oscar-1005's register; host route: the panel's pin-add, J60253, J60283)"
+    "finding": "raw-pin-sent-beside-covering-summary",
+    "reason": "A message pinned raw after an L1 summary covers it is also sent inside that summary."
   },
   {
     "configuration": "C6h/W9",
     "check": 4,
     "step": "405389.13",
     "what": "more-than-once",
-    "finding": "D3",
-    "reason": "D3: a message pinned raw also goes out inside the L1 over it when the pin follows the L1 (Oscar-1005's register; host route: the panel's pin-add, J60253, J60283)"
+    "finding": "raw-pin-sent-beside-covering-summary",
+    "reason": "A message pinned raw after an L1 summary covers it is also sent inside that summary."
   },
   {
     "configuration": "C6h/W9",
     "check": 11,
     "step": "405389.13",
     "what": "fixture:request:beside-sources",
-    "finding": "D3",
-    "reason": "D3: a message pinned raw also goes out inside the L1 over it when the pin follows the L1 (Oscar-1005's register; host route: the panel's pin-add, J60253, J60283)"
+    "finding": "raw-pin-sent-beside-covering-summary",
+    "reason": "A message pinned raw after an L1 summary covers it is also sent inside that summary."
   },
   {
     "configuration": "C6h/W9",
@@ -560,24 +560,24 @@
     "step": "405389.13",
     "what": "fixture:request:pins",
     "match": "allowing L0$",
-    "finding": "D3",
-    "reason": "D3: a message pinned raw also goes out inside the L1 over it when the pin follows the L1 (Oscar-1005's register; host route: the panel's pin-add, J60253, J60283)"
+    "finding": "raw-pin-sent-beside-covering-summary",
+    "reason": "A message pinned raw after an L1 summary covers it is also sent inside that summary."
   },
   {
     "configuration": "C6h/W9",
     "check": 4,
     "step": "405389.14",
     "what": "more-than-once",
-    "finding": "D3",
-    "reason": "D3: a message pinned raw also goes out inside the L1 over it when the pin follows the L1 (Oscar-1005's register; host route: the panel's pin-add, J60253, J60283)"
+    "finding": "raw-pin-sent-beside-covering-summary",
+    "reason": "A message pinned raw after an L1 summary covers it is also sent inside that summary."
   },
   {
     "configuration": "C6h/W9",
     "check": 11,
     "step": "405389.14",
     "what": "fixture:dry:beside-sources",
-    "finding": "D3",
-    "reason": "D3: a message pinned raw also goes out inside the L1 over it when the pin follows the L1 (Oscar-1005's register; host route: the panel's pin-add, J60253, J60283)"
+    "finding": "raw-pin-sent-beside-covering-summary",
+    "reason": "A message pinned raw after an L1 summary covers it is also sent inside that summary."
   },
   {
     "configuration": "C6h/W9",
@@ -585,16 +585,16 @@
     "step": "405389.14",
     "what": "fixture:dry:pins",
     "match": "allowing L0$",
-    "finding": "D3",
-    "reason": "D3: a message pinned raw also goes out inside the L1 over it when the pin follows the L1 (Oscar-1005's register; host route: the panel's pin-add, J60253, J60283)"
+    "finding": "raw-pin-sent-beside-covering-summary",
+    "reason": "A message pinned raw after an L1 summary covers it is also sent inside that summary."
   },
   {
     "configuration": "C6h/W9",
     "check": 11,
     "step": "405389.14",
     "what": "fixture:request:beside-sources",
-    "finding": "D3",
-    "reason": "D3: a message pinned raw also goes out inside the L1 over it when the pin follows the L1 (Oscar-1005's register; host route: the panel's pin-add, J60253, J60283)"
+    "finding": "raw-pin-sent-beside-covering-summary",
+    "reason": "A message pinned raw after an L1 summary covers it is also sent inside that summary."
   },
   {
     "configuration": "C6h/W9",
@@ -602,24 +602,24 @@
     "step": "405389.14",
     "what": "fixture:request:pins",
     "match": "allowing L0$",
-    "finding": "D3",
-    "reason": "D3: a message pinned raw also goes out inside the L1 over it when the pin follows the L1 (Oscar-1005's register; host route: the panel's pin-add, J60253, J60283)"
+    "finding": "raw-pin-sent-beside-covering-summary",
+    "reason": "A message pinned raw after an L1 summary covers it is also sent inside that summary."
   },
   {
     "configuration": "H1/W9",
     "check": 4,
     "step": "648143.11",
     "what": "more-than-once",
-    "finding": "D3",
-    "reason": "D3: a message pinned raw also goes out inside the L1 over it when the pin follows the L1 (Oscar-1005's register; host route: the panel's pin-add, J60253, J60283)"
+    "finding": "raw-pin-sent-beside-covering-summary",
+    "reason": "A message pinned raw after an L1 summary covers it is also sent inside that summary."
   },
   {
     "configuration": "H1/W9",
     "check": 11,
     "step": "648143.11",
     "what": "fixture:request:beside-sources",
-    "finding": "D3",
-    "reason": "D3: a message pinned raw also goes out inside the L1 over it when the pin follows the L1 (Oscar-1005's register; host route: the panel's pin-add, J60253, J60283)"
+    "finding": "raw-pin-sent-beside-covering-summary",
+    "reason": "A message pinned raw after an L1 summary covers it is also sent inside that summary."
   },
   {
     "configuration": "H1/W9",
@@ -627,24 +627,24 @@
     "step": "648143.11",
     "what": "fixture:request:pins",
     "match": "allowing L0$",
-    "finding": "D3",
-    "reason": "D3: a message pinned raw also goes out inside the L1 over it when the pin follows the L1 (Oscar-1005's register; host route: the panel's pin-add, J60253, J60283)"
+    "finding": "raw-pin-sent-beside-covering-summary",
+    "reason": "A message pinned raw after an L1 summary covers it is also sent inside that summary."
   },
   {
     "configuration": "H1/W9",
     "check": 4,
     "step": "648143.12",
     "what": "more-than-once",
-    "finding": "D3",
-    "reason": "D3: a message pinned raw also goes out inside the L1 over it when the pin follows the L1 (Oscar-1005's register; host route: the panel's pin-add, J60253, J60283)"
+    "finding": "raw-pin-sent-beside-covering-summary",
+    "reason": "A message pinned raw after an L1 summary covers it is also sent inside that summary."
   },
   {
     "configuration": "H1/W9",
     "check": 11,
     "step": "648143.12",
     "what": "fixture:request:beside-sources",
-    "finding": "D3",
-    "reason": "D3: a message pinned raw also goes out inside the L1 over it when the pin follows the L1 (Oscar-1005's register; host route: the panel's pin-add, J60253, J60283)"
+    "finding": "raw-pin-sent-beside-covering-summary",
+    "reason": "A message pinned raw after an L1 summary covers it is also sent inside that summary."
   },
   {
     "configuration": "H1/W9",
@@ -652,24 +652,24 @@
     "step": "648143.12",
     "what": "fixture:request:pins",
     "match": "allowing L0$",
-    "finding": "D3",
-    "reason": "D3: a message pinned raw also goes out inside the L1 over it when the pin follows the L1 (Oscar-1005's register; host route: the panel's pin-add, J60253, J60283)"
+    "finding": "raw-pin-sent-beside-covering-summary",
+    "reason": "A message pinned raw after an L1 summary covers it is also sent inside that summary."
   },
   {
     "configuration": "H1/W9",
     "check": 4,
     "step": "648143.13",
     "what": "more-than-once",
-    "finding": "D3",
-    "reason": "D3: a message pinned raw also goes out inside the L1 over it when the pin follows the L1 (Oscar-1005's register; host route: the panel's pin-add, J60253, J60283)"
+    "finding": "raw-pin-sent-beside-covering-summary",
+    "reason": "A message pinned raw after an L1 summary covers it is also sent inside that summary."
   },
   {
     "configuration": "H1/W9",
     "check": 11,
     "step": "648143.13",
     "what": "fixture:request:beside-sources",
-    "finding": "D3",
-    "reason": "D3: a message pinned raw also goes out inside the L1 over it when the pin follows the L1 (Oscar-1005's register; host route: the panel's pin-add, J60253, J60283)"
+    "finding": "raw-pin-sent-beside-covering-summary",
+    "reason": "A message pinned raw after an L1 summary covers it is also sent inside that summary."
   },
   {
     "configuration": "H1/W9",
@@ -677,24 +677,24 @@
     "step": "648143.13",
     "what": "fixture:request:pins",
     "match": "allowing L0$",
-    "finding": "D3",
-    "reason": "D3: a message pinned raw also goes out inside the L1 over it when the pin follows the L1 (Oscar-1005's register; host route: the panel's pin-add, J60253, J60283)"
+    "finding": "raw-pin-sent-beside-covering-summary",
+    "reason": "A message pinned raw after an L1 summary covers it is also sent inside that summary."
   },
   {
     "configuration": "H1/W9",
     "check": 4,
     "step": "648143.14",
     "what": "more-than-once",
-    "finding": "D3",
-    "reason": "D3: a message pinned raw also goes out inside the L1 over it when the pin follows the L1 (Oscar-1005's register; host route: the panel's pin-add, J60253, J60283)"
+    "finding": "raw-pin-sent-beside-covering-summary",
+    "reason": "A message pinned raw after an L1 summary covers it is also sent inside that summary."
   },
   {
     "configuration": "H1/W9",
     "check": 11,
     "step": "648143.14",
     "what": "fixture:dry:beside-sources",
-    "finding": "D3",
-    "reason": "D3: a message pinned raw also goes out inside the L1 over it when the pin follows the L1 (Oscar-1005's register; host route: the panel's pin-add, J60253, J60283)"
+    "finding": "raw-pin-sent-beside-covering-summary",
+    "reason": "A message pinned raw after an L1 summary covers it is also sent inside that summary."
   },
   {
     "configuration": "H1/W9",
@@ -702,16 +702,16 @@
     "step": "648143.14",
     "what": "fixture:dry:pins",
     "match": "allowing L0$",
-    "finding": "D3",
-    "reason": "D3: a message pinned raw also goes out inside the L1 over it when the pin follows the L1 (Oscar-1005's register; host route: the panel's pin-add, J60253, J60283)"
+    "finding": "raw-pin-sent-beside-covering-summary",
+    "reason": "A message pinned raw after an L1 summary covers it is also sent inside that summary."
   },
   {
     "configuration": "H1/W9",
     "check": 11,
     "step": "648143.14",
     "what": "fixture:request:beside-sources",
-    "finding": "D3",
-    "reason": "D3: a message pinned raw also goes out inside the L1 over it when the pin follows the L1 (Oscar-1005's register; host route: the panel's pin-add, J60253, J60283)"
+    "finding": "raw-pin-sent-beside-covering-summary",
+    "reason": "A message pinned raw after an L1 summary covers it is also sent inside that summary."
   },
   {
     "configuration": "H1/W9",
@@ -719,32 +719,32 @@
     "step": "648143.14",
     "what": "fixture:request:pins",
     "match": "allowing L0$",
-    "finding": "D3",
-    "reason": "D3: a message pinned raw also goes out inside the L1 over it when the pin follows the L1 (Oscar-1005's register; host route: the panel's pin-add, J60253, J60283)"
+    "finding": "raw-pin-sent-beside-covering-summary",
+    "reason": "A message pinned raw after an L1 summary covers it is also sent inside that summary."
   },
   {
     "configuration": "C6h/W11",
     "check": 4,
     "step": "773012.11",
     "what": "more-than-once",
-    "finding": "D3, D39",
-    "reason": "D3 and D39 at one step: a raw pin and a level pin, each set after a summary over its range, both send content twice (Oscar-1005's register; J60283, J60284)"
+    "finding": "raw-pin-sent-beside-covering-summary, level-pin-under-covering-summary",
+    "reason": "A raw pin and a level pin, each set after a summary covers its range, both send content twice."
   },
   {
     "configuration": "C6h/W11",
     "check": 11,
     "step": "773012.11",
     "what": "fixture:request:beside-sources",
-    "finding": "D3, D39",
-    "reason": "D3 and D39 at one step: a raw pin and a level pin, each set after a summary over its range, both send content twice (Oscar-1005's register; J60283, J60284)"
+    "finding": "raw-pin-sent-beside-covering-summary, level-pin-under-covering-summary",
+    "reason": "A raw pin and a level pin, each set after a summary covers its range, both send content twice."
   },
   {
     "configuration": "C6h/W11",
     "check": 11,
     "step": "773012.11",
     "what": "fixture:request:coverage",
-    "finding": "D39",
-    "reason": "D39: a level pin set after a higher summary covers its range sends the pinned part beside the summary over it (Oscar-1005's register; Desmond-2579's J60284)"
+    "finding": "level-pin-under-covering-summary",
+    "reason": "A level pin set after a higher summary covers its range sends the pinned part beside the summary over it."
   },
   {
     "configuration": "C6h/W11",
@@ -752,8 +752,8 @@
     "step": "773012.11",
     "what": "fixture:request:pins",
     "match": "allowing L0$",
-    "finding": "D3",
-    "reason": "D3: a message pinned raw also goes out inside the L1 over it when the pin follows the L1 (Oscar-1005's register; host route: the panel's pin-add, J60253, J60283)"
+    "finding": "raw-pin-sent-beside-covering-summary",
+    "reason": "A message pinned raw after an L1 summary covers it is also sent inside that summary."
   },
   {
     "configuration": "C6h/W11",
@@ -761,32 +761,32 @@
     "step": "773012.11",
     "what": "fixture:request:pins",
     "match": "allowing L[1-9]",
-    "finding": "D39",
-    "reason": "D39: a level pin set after a higher summary covers its range sends the pinned part beside the summary over it (Oscar-1005's register; Desmond-2579's J60284)"
+    "finding": "level-pin-under-covering-summary",
+    "reason": "A level pin set after a higher summary covers its range sends the pinned part beside the summary over it."
   },
   {
     "configuration": "C6h/W11",
     "check": 4,
     "step": "773012.12",
     "what": "more-than-once",
-    "finding": "D3, D39",
-    "reason": "D3 and D39 at one step: a raw pin and a level pin, each set after a summary over its range, both send content twice (Oscar-1005's register; J60283, J60284)"
+    "finding": "raw-pin-sent-beside-covering-summary, level-pin-under-covering-summary",
+    "reason": "A raw pin and a level pin, each set after a summary covers its range, both send content twice."
   },
   {
     "configuration": "C6h/W11",
     "check": 11,
     "step": "773012.12",
     "what": "fixture:request:beside-sources",
-    "finding": "D3, D39",
-    "reason": "D3 and D39 at one step: a raw pin and a level pin, each set after a summary over its range, both send content twice (Oscar-1005's register; J60283, J60284)"
+    "finding": "raw-pin-sent-beside-covering-summary, level-pin-under-covering-summary",
+    "reason": "A raw pin and a level pin, each set after a summary covers its range, both send content twice."
   },
   {
     "configuration": "C6h/W11",
     "check": 11,
     "step": "773012.12",
     "what": "fixture:request:coverage",
-    "finding": "D39",
-    "reason": "D39: a level pin set after a higher summary covers its range sends the pinned part beside the summary over it (Oscar-1005's register; Desmond-2579's J60284)"
+    "finding": "level-pin-under-covering-summary",
+    "reason": "A level pin set after a higher summary covers its range sends the pinned part beside the summary over it."
   },
   {
     "configuration": "C6h/W11",
@@ -794,8 +794,8 @@
     "step": "773012.12",
     "what": "fixture:request:pins",
     "match": "allowing L0$",
-    "finding": "D3",
-    "reason": "D3: a message pinned raw also goes out inside the L1 over it when the pin follows the L1 (Oscar-1005's register; host route: the panel's pin-add, J60253, J60283)"
+    "finding": "raw-pin-sent-beside-covering-summary",
+    "reason": "A message pinned raw after an L1 summary covers it is also sent inside that summary."
   },
   {
     "configuration": "C6h/W11",
@@ -803,32 +803,32 @@
     "step": "773012.12",
     "what": "fixture:request:pins",
     "match": "allowing L[1-9]",
-    "finding": "D39",
-    "reason": "D39: a level pin set after a higher summary covers its range sends the pinned part beside the summary over it (Oscar-1005's register; Desmond-2579's J60284)"
+    "finding": "level-pin-under-covering-summary",
+    "reason": "A level pin set after a higher summary covers its range sends the pinned part beside the summary over it."
   },
   {
     "configuration": "C6h/W11",
     "check": 4,
     "step": "773012.13",
     "what": "more-than-once",
-    "finding": "D3, D39",
-    "reason": "D3 and D39 at one step: a raw pin and a level pin, each set after a summary over its range, both send content twice (Oscar-1005's register; J60283, J60284)"
+    "finding": "raw-pin-sent-beside-covering-summary, level-pin-under-covering-summary",
+    "reason": "A raw pin and a level pin, each set after a summary covers its range, both send content twice."
   },
   {
     "configuration": "C6h/W11",
     "check": 11,
     "step": "773012.13",
     "what": "fixture:request:beside-sources",
-    "finding": "D3, D39",
-    "reason": "D3 and D39 at one step: a raw pin and a level pin, each set after a summary over its range, both send content twice (Oscar-1005's register; J60283, J60284)"
+    "finding": "raw-pin-sent-beside-covering-summary, level-pin-under-covering-summary",
+    "reason": "A raw pin and a level pin, each set after a summary covers its range, both send content twice."
   },
   {
     "configuration": "C6h/W11",
     "check": 11,
     "step": "773012.13",
     "what": "fixture:request:coverage",
-    "finding": "D39",
-    "reason": "D39: a level pin set after a higher summary covers its range sends the pinned part beside the summary over it (Oscar-1005's register; Desmond-2579's J60284)"
+    "finding": "level-pin-under-covering-summary",
+    "reason": "A level pin set after a higher summary covers its range sends the pinned part beside the summary over it."
   },
   {
     "configuration": "C6h/W11",
@@ -836,8 +836,8 @@
     "step": "773012.13",
     "what": "fixture:request:pins",
     "match": "allowing L0$",
-    "finding": "D3",
-    "reason": "D3: a message pinned raw also goes out inside the L1 over it when the pin follows the L1 (Oscar-1005's register; host route: the panel's pin-add, J60253, J60283)"
+    "finding": "raw-pin-sent-beside-covering-summary",
+    "reason": "A message pinned raw after an L1 summary covers it is also sent inside that summary."
   },
   {
     "configuration": "C6h/W11",
@@ -845,32 +845,32 @@
     "step": "773012.13",
     "what": "fixture:request:pins",
     "match": "allowing L[1-9]",
-    "finding": "D39",
-    "reason": "D39: a level pin set after a higher summary covers its range sends the pinned part beside the summary over it (Oscar-1005's register; Desmond-2579's J60284)"
+    "finding": "level-pin-under-covering-summary",
+    "reason": "A level pin set after a higher summary covers its range sends the pinned part beside the summary over it."
   },
   {
     "configuration": "C6h/W11",
     "check": 4,
     "step": "773012.14",
     "what": "more-than-once",
-    "finding": "D3, D39",
-    "reason": "D3 and D39 at one step: a raw pin and a level pin, each set after a summary over its range, both send content twice (Oscar-1005's register; J60283, J60284)"
+    "finding": "raw-pin-sent-beside-covering-summary, level-pin-under-covering-summary",
+    "reason": "A raw pin and a level pin, each set after a summary covers its range, both send content twice."
   },
   {
     "configuration": "C6h/W11",
     "check": 11,
     "step": "773012.14",
     "what": "fixture:request:beside-sources",
-    "finding": "D3, D39",
-    "reason": "D3 and D39 at one step: a raw pin and a level pin, each set after a summary over its range, both send content twice (Oscar-1005's register; J60283, J60284)"
+    "finding": "raw-pin-sent-beside-covering-summary, level-pin-under-covering-summary",
+    "reason": "A raw pin and a level pin, each set after a summary covers its range, both send content twice."
   },
   {
     "configuration": "C6h/W11",
     "check": 11,
     "step": "773012.14",
     "what": "fixture:request:coverage",
-    "finding": "D39",
-    "reason": "D39: a level pin set after a higher summary covers its range sends the pinned part beside the summary over it (Oscar-1005's register; Desmond-2579's J60284)"
+    "finding": "level-pin-under-covering-summary",
+    "reason": "A level pin set after a higher summary covers its range sends the pinned part beside the summary over it."
   },
   {
     "configuration": "C6h/W11",
@@ -878,8 +878,8 @@
     "step": "773012.14",
     "what": "fixture:request:pins",
     "match": "allowing L0$",
-    "finding": "D3",
-    "reason": "D3: a message pinned raw also goes out inside the L1 over it when the pin follows the L1 (Oscar-1005's register; host route: the panel's pin-add, J60253, J60283)"
+    "finding": "raw-pin-sent-beside-covering-summary",
+    "reason": "A message pinned raw after an L1 summary covers it is also sent inside that summary."
   },
   {
     "configuration": "C6h/W11",
@@ -887,24 +887,24 @@
     "step": "773012.14",
     "what": "fixture:request:pins",
     "match": "allowing L[1-9]",
-    "finding": "D39",
-    "reason": "D39: a level pin set after a higher summary covers its range sends the pinned part beside the summary over it (Oscar-1005's register; Desmond-2579's J60284)"
+    "finding": "level-pin-under-covering-summary",
+    "reason": "A level pin set after a higher summary covers its range sends the pinned part beside the summary over it."
   },
   {
     "configuration": "C6h/W11",
     "check": 4,
     "step": "773012.3",
     "what": "more-than-once",
-    "finding": "D3",
-    "reason": "D3: a message pinned raw also goes out inside the L1 over it when the pin follows the L1 (Oscar-1005's register; host route: the panel's pin-add, J60253, J60283)"
+    "finding": "raw-pin-sent-beside-covering-summary",
+    "reason": "A message pinned raw after an L1 summary covers it is also sent inside that summary."
   },
   {
     "configuration": "C6h/W11",
     "check": 11,
     "step": "773012.3",
     "what": "fixture:request:beside-sources",
-    "finding": "D3",
-    "reason": "D3: a message pinned raw also goes out inside the L1 over it when the pin follows the L1 (Oscar-1005's register; host route: the panel's pin-add, J60253, J60283)"
+    "finding": "raw-pin-sent-beside-covering-summary",
+    "reason": "A message pinned raw after an L1 summary covers it is also sent inside that summary."
   },
   {
     "configuration": "C6h/W11",
@@ -912,24 +912,24 @@
     "step": "773012.3",
     "what": "fixture:request:pins",
     "match": "allowing L0$",
-    "finding": "D3",
-    "reason": "D3: a message pinned raw also goes out inside the L1 over it when the pin follows the L1 (Oscar-1005's register; host route: the panel's pin-add, J60253, J60283)"
+    "finding": "raw-pin-sent-beside-covering-summary",
+    "reason": "A message pinned raw after an L1 summary covers it is also sent inside that summary."
   },
   {
     "configuration": "C6h/W11",
     "check": 4,
     "step": "773012.4",
     "what": "more-than-once",
-    "finding": "D3",
-    "reason": "D3: a message pinned raw also goes out inside the L1 over it when the pin follows the L1 (Oscar-1005's register; host route: the panel's pin-add, J60253, J60283)"
+    "finding": "raw-pin-sent-beside-covering-summary",
+    "reason": "A message pinned raw after an L1 summary covers it is also sent inside that summary."
   },
   {
     "configuration": "C6h/W11",
     "check": 11,
     "step": "773012.4",
     "what": "fixture:request:beside-sources",
-    "finding": "D3",
-    "reason": "D3: a message pinned raw also goes out inside the L1 over it when the pin follows the L1 (Oscar-1005's register; host route: the panel's pin-add, J60253, J60283)"
+    "finding": "raw-pin-sent-beside-covering-summary",
+    "reason": "A message pinned raw after an L1 summary covers it is also sent inside that summary."
   },
   {
     "configuration": "C6h/W11",
@@ -937,32 +937,32 @@
     "step": "773012.4",
     "what": "fixture:request:pins",
     "match": "allowing L0$",
-    "finding": "D3",
-    "reason": "D3: a message pinned raw also goes out inside the L1 over it when the pin follows the L1 (Oscar-1005's register; host route: the panel's pin-add, J60253, J60283)"
+    "finding": "raw-pin-sent-beside-covering-summary",
+    "reason": "A message pinned raw after an L1 summary covers it is also sent inside that summary."
   },
   {
     "configuration": "C6h/W11",
     "check": 4,
     "step": "773012.5",
     "what": "more-than-once",
-    "finding": "D3, D39",
-    "reason": "D3 and D39 at one step: a raw pin and a level pin, each set after a summary over its range, both send content twice (Oscar-1005's register; J60283, J60284)"
+    "finding": "raw-pin-sent-beside-covering-summary, level-pin-under-covering-summary",
+    "reason": "A raw pin and a level pin, each set after a summary covers its range, both send content twice."
   },
   {
     "configuration": "C6h/W11",
     "check": 11,
     "step": "773012.5",
     "what": "fixture:request:beside-sources",
-    "finding": "D3, D39",
-    "reason": "D3 and D39 at one step: a raw pin and a level pin, each set after a summary over its range, both send content twice (Oscar-1005's register; J60283, J60284)"
+    "finding": "raw-pin-sent-beside-covering-summary, level-pin-under-covering-summary",
+    "reason": "A raw pin and a level pin, each set after a summary covers its range, both send content twice."
   },
   {
     "configuration": "C6h/W11",
     "check": 11,
     "step": "773012.5",
     "what": "fixture:request:coverage",
-    "finding": "D39",
-    "reason": "D39: a level pin set after a higher summary covers its range sends the pinned part beside the summary over it (Oscar-1005's register; Desmond-2579's J60284)"
+    "finding": "level-pin-under-covering-summary",
+    "reason": "A level pin set after a higher summary covers its range sends the pinned part beside the summary over it."
   },
   {
     "configuration": "C6h/W11",
@@ -970,8 +970,8 @@
     "step": "773012.5",
     "what": "fixture:request:pins",
     "match": "allowing L0$",
-    "finding": "D3",
-    "reason": "D3: a message pinned raw also goes out inside the L1 over it when the pin follows the L1 (Oscar-1005's register; host route: the panel's pin-add, J60253, J60283)"
+    "finding": "raw-pin-sent-beside-covering-summary",
+    "reason": "A message pinned raw after an L1 summary covers it is also sent inside that summary."
   },
   {
     "configuration": "C6h/W11",
@@ -979,32 +979,32 @@
     "step": "773012.5",
     "what": "fixture:request:pins",
     "match": "allowing L[1-9]",
-    "finding": "D39",
-    "reason": "D39: a level pin set after a higher summary covers its range sends the pinned part beside the summary over it (Oscar-1005's register; Desmond-2579's J60284)"
+    "finding": "level-pin-under-covering-summary",
+    "reason": "A level pin set after a higher summary covers its range sends the pinned part beside the summary over it."
   },
   {
     "configuration": "C6h/W11",
     "check": 4,
     "step": "773012.6",
     "what": "more-than-once",
-    "finding": "D3, D39",
-    "reason": "D3 and D39 at one step: a raw pin and a level pin, each set after a summary over its range, both send content twice (Oscar-1005's register; J60283, J60284)"
+    "finding": "raw-pin-sent-beside-covering-summary, level-pin-under-covering-summary",
+    "reason": "A raw pin and a level pin, each set after a summary covers its range, both send content twice."
   },
   {
     "configuration": "C6h/W11",
     "check": 11,
     "step": "773012.6",
     "what": "fixture:request:beside-sources",
-    "finding": "D3, D39",
-    "reason": "D3 and D39 at one step: a raw pin and a level pin, each set after a summary over its range, both send content twice (Oscar-1005's register; J60283, J60284)"
+    "finding": "raw-pin-sent-beside-covering-summary, level-pin-under-covering-summary",
+    "reason": "A raw pin and a level pin, each set after a summary covers its range, both send content twice."
   },
   {
     "configuration": "C6h/W11",
     "check": 11,
     "step": "773012.6",
     "what": "fixture:request:coverage",
-    "finding": "D39",
-    "reason": "D39: a level pin set after a higher summary covers its range sends the pinned part beside the summary over it (Oscar-1005's register; Desmond-2579's J60284)"
+    "finding": "level-pin-under-covering-summary",
+    "reason": "A level pin set after a higher summary covers its range sends the pinned part beside the summary over it."
   },
   {
     "configuration": "C6h/W11",
@@ -1012,8 +1012,8 @@
     "step": "773012.6",
     "what": "fixture:request:pins",
     "match": "allowing L0$",
-    "finding": "D3",
-    "reason": "D3: a message pinned raw also goes out inside the L1 over it when the pin follows the L1 (Oscar-1005's register; host route: the panel's pin-add, J60253, J60283)"
+    "finding": "raw-pin-sent-beside-covering-summary",
+    "reason": "A message pinned raw after an L1 summary covers it is also sent inside that summary."
   },
   {
     "configuration": "C6h/W11",
@@ -1021,32 +1021,32 @@
     "step": "773012.6",
     "what": "fixture:request:pins",
     "match": "allowing L[1-9]",
-    "finding": "D39",
-    "reason": "D39: a level pin set after a higher summary covers its range sends the pinned part beside the summary over it (Oscar-1005's register; Desmond-2579's J60284)"
+    "finding": "level-pin-under-covering-summary",
+    "reason": "A level pin set after a higher summary covers its range sends the pinned part beside the summary over it."
   },
   {
     "configuration": "C6h/W11",
     "check": 4,
     "step": "773012.7",
     "what": "more-than-once",
-    "finding": "D3, D39",
-    "reason": "D3 and D39 at one step: a raw pin and a level pin, each set after a summary over its range, both send content twice (Oscar-1005's register; J60283, J60284)"
+    "finding": "raw-pin-sent-beside-covering-summary, level-pin-under-covering-summary",
+    "reason": "A raw pin and a level pin, each set after a summary covers its range, both send content twice."
   },
   {
     "configuration": "C6h/W11",
     "check": 11,
     "step": "773012.7",
     "what": "fixture:request:beside-sources",
-    "finding": "D3, D39",
-    "reason": "D3 and D39 at one step: a raw pin and a level pin, each set after a summary over its range, both send content twice (Oscar-1005's register; J60283, J60284)"
+    "finding": "raw-pin-sent-beside-covering-summary, level-pin-under-covering-summary",
+    "reason": "A raw pin and a level pin, each set after a summary covers its range, both send content twice."
   },
   {
     "configuration": "C6h/W11",
     "check": 11,
     "step": "773012.7",
     "what": "fixture:request:coverage",
-    "finding": "D39",
-    "reason": "D39: a level pin set after a higher summary covers its range sends the pinned part beside the summary over it (Oscar-1005's register; Desmond-2579's J60284)"
+    "finding": "level-pin-under-covering-summary",
+    "reason": "A level pin set after a higher summary covers its range sends the pinned part beside the summary over it."
   },
   {
     "configuration": "C6h/W11",
@@ -1054,8 +1054,8 @@
     "step": "773012.7",
     "what": "fixture:request:pins",
     "match": "allowing L0$",
-    "finding": "D3",
-    "reason": "D3: a message pinned raw also goes out inside the L1 over it when the pin follows the L1 (Oscar-1005's register; host route: the panel's pin-add, J60253, J60283)"
+    "finding": "raw-pin-sent-beside-covering-summary",
+    "reason": "A message pinned raw after an L1 summary covers it is also sent inside that summary."
   },
   {
     "configuration": "C6h/W11",
@@ -1063,32 +1063,32 @@
     "step": "773012.7",
     "what": "fixture:request:pins",
     "match": "allowing L[1-9]",
-    "finding": "D39",
-    "reason": "D39: a level pin set after a higher summary covers its range sends the pinned part beside the summary over it (Oscar-1005's register; Desmond-2579's J60284)"
+    "finding": "level-pin-under-covering-summary",
+    "reason": "A level pin set after a higher summary covers its range sends the pinned part beside the summary over it."
   },
   {
     "configuration": "C6h/W11",
     "check": 4,
     "step": "773012.8",
     "what": "more-than-once",
-    "finding": "D3, D39",
-    "reason": "D3 and D39 at one step: a raw pin and a level pin, each set after a summary over its range, both send content twice (Oscar-1005's register; J60283, J60284)"
+    "finding": "raw-pin-sent-beside-covering-summary, level-pin-under-covering-summary",
+    "reason": "A raw pin and a level pin, each set after a summary covers its range, both send content twice."
   },
   {
     "configuration": "C6h/W11",
     "check": 11,
     "step": "773012.8",
     "what": "fixture:request:beside-sources",
-    "finding": "D3, D39",
-    "reason": "D3 and D39 at one step: a raw pin and a level pin, each set after a summary over its range, both send content twice (Oscar-1005's register; J60283, J60284)"
+    "finding": "raw-pin-sent-beside-covering-summary, level-pin-under-covering-summary",
+    "reason": "A raw pin and a level pin, each set after a summary covers its range, both send content twice."
   },
   {
     "configuration": "C6h/W11",
     "check": 11,
     "step": "773012.8",
     "what": "fixture:request:coverage",
-    "finding": "D39",
-    "reason": "D39: a level pin set after a higher summary covers its range sends the pinned part beside the summary over it (Oscar-1005's register; Desmond-2579's J60284)"
+    "finding": "level-pin-under-covering-summary",
+    "reason": "A level pin set after a higher summary covers its range sends the pinned part beside the summary over it."
   },
   {
     "configuration": "C6h/W11",
@@ -1096,8 +1096,8 @@
     "step": "773012.8",
     "what": "fixture:request:pins",
     "match": "allowing L0$",
-    "finding": "D3",
-    "reason": "D3: a message pinned raw also goes out inside the L1 over it when the pin follows the L1 (Oscar-1005's register; host route: the panel's pin-add, J60253, J60283)"
+    "finding": "raw-pin-sent-beside-covering-summary",
+    "reason": "A message pinned raw after an L1 summary covers it is also sent inside that summary."
   },
   {
     "configuration": "C6h/W11",
@@ -1105,32 +1105,32 @@
     "step": "773012.8",
     "what": "fixture:request:pins",
     "match": "allowing L[1-9]",
-    "finding": "D39",
-    "reason": "D39: a level pin set after a higher summary covers its range sends the pinned part beside the summary over it (Oscar-1005's register; Desmond-2579's J60284)"
+    "finding": "level-pin-under-covering-summary",
+    "reason": "A level pin set after a higher summary covers its range sends the pinned part beside the summary over it."
   },
   {
     "configuration": "C6h/W11",
     "check": 4,
     "step": "773012.9",
     "what": "more-than-once",
-    "finding": "D3, D39",
-    "reason": "D3 and D39 at one step: a raw pin and a level pin, each set after a summary over its range, both send content twice (Oscar-1005's register; J60283, J60284)"
+    "finding": "raw-pin-sent-beside-covering-summary, level-pin-under-covering-summary",
+    "reason": "A raw pin and a level pin, each set after a summary covers its range, both send content twice."
   },
   {
     "configuration": "C6h/W11",
     "check": 11,
     "step": "773012.9",
     "what": "fixture:request:beside-sources",
-    "finding": "D3, D39",
-    "reason": "D3 and D39 at one step: a raw pin and a level pin, each set after a summary over its range, both send content twice (Oscar-1005's register; J60283, J60284)"
+    "finding": "raw-pin-sent-beside-covering-summary, level-pin-under-covering-summary",
+    "reason": "A raw pin and a level pin, each set after a summary covers its range, both send content twice."
   },
   {
     "configuration": "C6h/W11",
     "check": 11,
     "step": "773012.9",
     "what": "fixture:request:coverage",
-    "finding": "D39",
-    "reason": "D39: a level pin set after a higher summary covers its range sends the pinned part beside the summary over it (Oscar-1005's register; Desmond-2579's J60284)"
+    "finding": "level-pin-under-covering-summary",
+    "reason": "A level pin set after a higher summary covers its range sends the pinned part beside the summary over it."
   },
   {
     "configuration": "C6h/W11",
@@ -1138,8 +1138,8 @@
     "step": "773012.9",
     "what": "fixture:request:pins",
     "match": "allowing L0$",
-    "finding": "D3",
-    "reason": "D3: a message pinned raw also goes out inside the L1 over it when the pin follows the L1 (Oscar-1005's register; host route: the panel's pin-add, J60253, J60283)"
+    "finding": "raw-pin-sent-beside-covering-summary",
+    "reason": "A message pinned raw after an L1 summary covers it is also sent inside that summary."
   },
   {
     "configuration": "C6h/W11",
@@ -1147,32 +1147,32 @@
     "step": "773012.9",
     "what": "fixture:request:pins",
     "match": "allowing L[1-9]",
-    "finding": "D39",
-    "reason": "D39: a level pin set after a higher summary covers its range sends the pinned part beside the summary over it (Oscar-1005's register; Desmond-2579's J60284)"
+    "finding": "level-pin-under-covering-summary",
+    "reason": "A level pin set after a higher summary covers its range sends the pinned part beside the summary over it."
   },
   {
     "configuration": "H1/W11",
     "check": 4,
     "step": "232330.11",
     "what": "more-than-once",
-    "finding": "D3, D39",
-    "reason": "D3 and D39 at one step: a raw pin and a level pin, each set after a summary over its range, both send content twice (Oscar-1005's register; J60283, J60284)"
+    "finding": "raw-pin-sent-beside-covering-summary, level-pin-under-covering-summary",
+    "reason": "A raw pin and a level pin, each set after a summary covers its range, both send content twice."
   },
   {
     "configuration": "H1/W11",
     "check": 11,
     "step": "232330.11",
     "what": "fixture:request:beside-sources",
-    "finding": "D3, D39",
-    "reason": "D3 and D39 at one step: a raw pin and a level pin, each set after a summary over its range, both send content twice (Oscar-1005's register; J60283, J60284)"
+    "finding": "raw-pin-sent-beside-covering-summary, level-pin-under-covering-summary",
+    "reason": "A raw pin and a level pin, each set after a summary covers its range, both send content twice."
   },
   {
     "configuration": "H1/W11",
     "check": 11,
     "step": "232330.11",
     "what": "fixture:request:coverage",
-    "finding": "D39",
-    "reason": "D39: a level pin set after a higher summary covers its range sends the pinned part beside the summary over it (Oscar-1005's register; Desmond-2579's J60284)"
+    "finding": "level-pin-under-covering-summary",
+    "reason": "A level pin set after a higher summary covers its range sends the pinned part beside the summary over it."
   },
   {
     "configuration": "H1/W11",
@@ -1180,8 +1180,8 @@
     "step": "232330.11",
     "what": "fixture:request:pins",
     "match": "allowing L0$",
-    "finding": "D3",
-    "reason": "D3: a message pinned raw also goes out inside the L1 over it when the pin follows the L1 (Oscar-1005's register; host route: the panel's pin-add, J60253, J60283)"
+    "finding": "raw-pin-sent-beside-covering-summary",
+    "reason": "A message pinned raw after an L1 summary covers it is also sent inside that summary."
   },
   {
     "configuration": "H1/W11",
@@ -1189,32 +1189,32 @@
     "step": "232330.11",
     "what": "fixture:request:pins",
     "match": "allowing L[1-9]",
-    "finding": "D39",
-    "reason": "D39: a level pin set after a higher summary covers its range sends the pinned part beside the summary over it (Oscar-1005's register; Desmond-2579's J60284)"
+    "finding": "level-pin-under-covering-summary",
+    "reason": "A level pin set after a higher summary covers its range sends the pinned part beside the summary over it."
   },
   {
     "configuration": "H1/W11",
     "check": 4,
     "step": "232330.12",
     "what": "more-than-once",
-    "finding": "D3, D39",
-    "reason": "D3 and D39 at one step: a raw pin and a level pin, each set after a summary over its range, both send content twice (Oscar-1005's register; J60283, J60284)"
+    "finding": "raw-pin-sent-beside-covering-summary, level-pin-under-covering-summary",
+    "reason": "A raw pin and a level pin, each set after a summary covers its range, both send content twice."
   },
   {
     "configuration": "H1/W11",
     "check": 11,
     "step": "232330.12",
     "what": "fixture:request:beside-sources",
-    "finding": "D3, D39",
-    "reason": "D3 and D39 at one step: a raw pin and a level pin, each set after a summary over its range, both send content twice (Oscar-1005's register; J60283, J60284)"
+    "finding": "raw-pin-sent-beside-covering-summary, level-pin-under-covering-summary",
+    "reason": "A raw pin and a level pin, each set after a summary covers its range, both send content twice."
   },
   {
     "configuration": "H1/W11",
     "check": 11,
     "step": "232330.12",
     "what": "fixture:request:coverage",
-    "finding": "D39",
-    "reason": "D39: a level pin set after a higher summary covers its range sends the pinned part beside the summary over it (Oscar-1005's register; Desmond-2579's J60284)"
+    "finding": "level-pin-under-covering-summary",
+    "reason": "A level pin set after a higher summary covers its range sends the pinned part beside the summary over it."
   },
   {
     "configuration": "H1/W11",
@@ -1222,8 +1222,8 @@
     "step": "232330.12",
     "what": "fixture:request:pins",
     "match": "allowing L0$",
-    "finding": "D3",
-    "reason": "D3: a message pinned raw also goes out inside the L1 over it when the pin follows the L1 (Oscar-1005's register; host route: the panel's pin-add, J60253, J60283)"
+    "finding": "raw-pin-sent-beside-covering-summary",
+    "reason": "A message pinned raw after an L1 summary covers it is also sent inside that summary."
   },
   {
     "configuration": "H1/W11",
@@ -1231,32 +1231,32 @@
     "step": "232330.12",
     "what": "fixture:request:pins",
     "match": "allowing L[1-9]",
-    "finding": "D39",
-    "reason": "D39: a level pin set after a higher summary covers its range sends the pinned part beside the summary over it (Oscar-1005's register; Desmond-2579's J60284)"
+    "finding": "level-pin-under-covering-summary",
+    "reason": "A level pin set after a higher summary covers its range sends the pinned part beside the summary over it."
   },
   {
     "configuration": "H1/W11",
     "check": 4,
     "step": "232330.13",
     "what": "more-than-once",
-    "finding": "D3, D39",
-    "reason": "D3 and D39 at one step: a raw pin and a level pin, each set after a summary over its range, both send content twice (Oscar-1005's register; J60283, J60284)"
+    "finding": "raw-pin-sent-beside-covering-summary, level-pin-under-covering-summary",
+    "reason": "A raw pin and a level pin, each set after a summary covers its range, both send content twice."
   },
   {
     "configuration": "H1/W11",
     "check": 11,
     "step": "232330.13",
     "what": "fixture:request:beside-sources",
-    "finding": "D3, D39",
-    "reason": "D3 and D39 at one step: a raw pin and a level pin, each set after a summary over its range, both send content twice (Oscar-1005's register; J60283, J60284)"
+    "finding": "raw-pin-sent-beside-covering-summary, level-pin-under-covering-summary",
+    "reason": "A raw pin and a level pin, each set after a summary covers its range, both send content twice."
   },
   {
     "configuration": "H1/W11",
     "check": 11,
     "step": "232330.13",
     "what": "fixture:request:coverage",
-    "finding": "D39",
-    "reason": "D39: a level pin set after a higher summary covers its range sends the pinned part beside the summary over it (Oscar-1005's register; Desmond-2579's J60284)"
+    "finding": "level-pin-under-covering-summary",
+    "reason": "A level pin set after a higher summary covers its range sends the pinned part beside the summary over it."
   },
   {
     "configuration": "H1/W11",
@@ -1264,8 +1264,8 @@
     "step": "232330.13",
     "what": "fixture:request:pins",
     "match": "allowing L0$",
-    "finding": "D3",
-    "reason": "D3: a message pinned raw also goes out inside the L1 over it when the pin follows the L1 (Oscar-1005's register; host route: the panel's pin-add, J60253, J60283)"
+    "finding": "raw-pin-sent-beside-covering-summary",
+    "reason": "A message pinned raw after an L1 summary covers it is also sent inside that summary."
   },
   {
     "configuration": "H1/W11",
@@ -1273,32 +1273,32 @@
     "step": "232330.13",
     "what": "fixture:request:pins",
     "match": "allowing L[1-9]",
-    "finding": "D39",
-    "reason": "D39: a level pin set after a higher summary covers its range sends the pinned part beside the summary over it (Oscar-1005's register; Desmond-2579's J60284)"
+    "finding": "level-pin-under-covering-summary",
+    "reason": "A level pin set after a higher summary covers its range sends the pinned part beside the summary over it."
   },
   {
     "configuration": "H1/W11",
     "check": 4,
     "step": "232330.14",
     "what": "more-than-once",
-    "finding": "D3, D39",
-    "reason": "D3 and D39 at one step: a raw pin and a level pin, each set after a summary over its range, both send content twice (Oscar-1005's register; J60283, J60284)"
+    "finding": "raw-pin-sent-beside-covering-summary, level-pin-under-covering-summary",
+    "reason": "A raw pin and a level pin, each set after a summary covers its range, both send content twice."
   },
   {
     "configuration": "H1/W11",
     "check": 11,
     "step": "232330.14",
     "what": "fixture:request:beside-sources",
-    "finding": "D3, D39",
-    "reason": "D3 and D39 at one step: a raw pin and a level pin, each set after a summary over its range, both send content twice (Oscar-1005's register; J60283, J60284)"
+    "finding": "raw-pin-sent-beside-covering-summary, level-pin-under-covering-summary",
+    "reason": "A raw pin and a level pin, each set after a summary covers its range, both send content twice."
   },
   {
     "configuration": "H1/W11",
     "check": 11,
     "step": "232330.14",
     "what": "fixture:request:coverage",
-    "finding": "D39",
-    "reason": "D39: a level pin set after a higher summary covers its range sends the pinned part beside the summary over it (Oscar-1005's register; Desmond-2579's J60284)"
+    "finding": "level-pin-under-covering-summary",
+    "reason": "A level pin set after a higher summary covers its range sends the pinned part beside the summary over it."
   },
   {
     "configuration": "H1/W11",
@@ -1306,8 +1306,8 @@
     "step": "232330.14",
     "what": "fixture:request:pins",
     "match": "allowing L0$",
-    "finding": "D3",
-    "reason": "D3: a message pinned raw also goes out inside the L1 over it when the pin follows the L1 (Oscar-1005's register; host route: the panel's pin-add, J60253, J60283)"
+    "finding": "raw-pin-sent-beside-covering-summary",
+    "reason": "A message pinned raw after an L1 summary covers it is also sent inside that summary."
   },
   {
     "configuration": "H1/W11",
@@ -1315,24 +1315,24 @@
     "step": "232330.14",
     "what": "fixture:request:pins",
     "match": "allowing L[1-9]",
-    "finding": "D39",
-    "reason": "D39: a level pin set after a higher summary covers its range sends the pinned part beside the summary over it (Oscar-1005's register; Desmond-2579's J60284)"
+    "finding": "level-pin-under-covering-summary",
+    "reason": "A level pin set after a higher summary covers its range sends the pinned part beside the summary over it."
   },
   {
     "configuration": "H1/W11",
     "check": 4,
     "step": "232330.3",
     "what": "more-than-once",
-    "finding": "D3",
-    "reason": "D3: a message pinned raw also goes out inside the L1 over it when the pin follows the L1 (Oscar-1005's register; host route: the panel's pin-add, J60253, J60283)"
+    "finding": "raw-pin-sent-beside-covering-summary",
+    "reason": "A message pinned raw after an L1 summary covers it is also sent inside that summary."
   },
   {
     "configuration": "H1/W11",
     "check": 11,
     "step": "232330.3",
     "what": "fixture:request:beside-sources",
-    "finding": "D3",
-    "reason": "D3: a message pinned raw also goes out inside the L1 over it when the pin follows the L1 (Oscar-1005's register; host route: the panel's pin-add, J60253, J60283)"
+    "finding": "raw-pin-sent-beside-covering-summary",
+    "reason": "A message pinned raw after an L1 summary covers it is also sent inside that summary."
   },
   {
     "configuration": "H1/W11",
@@ -1340,24 +1340,24 @@
     "step": "232330.3",
     "what": "fixture:request:pins",
     "match": "allowing L0$",
-    "finding": "D3",
-    "reason": "D3: a message pinned raw also goes out inside the L1 over it when the pin follows the L1 (Oscar-1005's register; host route: the panel's pin-add, J60253, J60283)"
+    "finding": "raw-pin-sent-beside-covering-summary",
+    "reason": "A message pinned raw after an L1 summary covers it is also sent inside that summary."
   },
   {
     "configuration": "H1/W11",
     "check": 4,
     "step": "232330.4",
     "what": "more-than-once",
-    "finding": "D3",
-    "reason": "D3: a message pinned raw also goes out inside the L1 over it when the pin follows the L1 (Oscar-1005's register; host route: the panel's pin-add, J60253, J60283)"
+    "finding": "raw-pin-sent-beside-covering-summary",
+    "reason": "A message pinned raw after an L1 summary covers it is also sent inside that summary."
   },
   {
     "configuration": "H1/W11",
     "check": 11,
     "step": "232330.4",
     "what": "fixture:request:beside-sources",
-    "finding": "D3",
-    "reason": "D3: a message pinned raw also goes out inside the L1 over it when the pin follows the L1 (Oscar-1005's register; host route: the panel's pin-add, J60253, J60283)"
+    "finding": "raw-pin-sent-beside-covering-summary",
+    "reason": "A message pinned raw after an L1 summary covers it is also sent inside that summary."
   },
   {
     "configuration": "H1/W11",
@@ -1365,32 +1365,32 @@
     "step": "232330.4",
     "what": "fixture:request:pins",
     "match": "allowing L0$",
-    "finding": "D3",
-    "reason": "D3: a message pinned raw also goes out inside the L1 over it when the pin follows the L1 (Oscar-1005's register; host route: the panel's pin-add, J60253, J60283)"
+    "finding": "raw-pin-sent-beside-covering-summary",
+    "reason": "A message pinned raw after an L1 summary covers it is also sent inside that summary."
   },
   {
     "configuration": "H1/W11",
     "check": 4,
     "step": "232330.5",
     "what": "more-than-once",
-    "finding": "D3, D39",
-    "reason": "D3 and D39 at one step: a raw pin and a level pin, each set after a summary over its range, both send content twice (Oscar-1005's register; J60283, J60284)"
+    "finding": "raw-pin-sent-beside-covering-summary, level-pin-under-covering-summary",
+    "reason": "A raw pin and a level pin, each set after a summary covers its range, both send content twice."
   },
   {
     "configuration": "H1/W11",
     "check": 11,
     "step": "232330.5",
     "what": "fixture:request:beside-sources",
-    "finding": "D3, D39",
-    "reason": "D3 and D39 at one step: a raw pin and a level pin, each set after a summary over its range, both send content twice (Oscar-1005's register; J60283, J60284)"
+    "finding": "raw-pin-sent-beside-covering-summary, level-pin-under-covering-summary",
+    "reason": "A raw pin and a level pin, each set after a summary covers its range, both send content twice."
   },
   {
     "configuration": "H1/W11",
     "check": 11,
     "step": "232330.5",
     "what": "fixture:request:coverage",
-    "finding": "D39",
-    "reason": "D39: a level pin set after a higher summary covers its range sends the pinned part beside the summary over it (Oscar-1005's register; Desmond-2579's J60284)"
+    "finding": "level-pin-under-covering-summary",
+    "reason": "A level pin set after a higher summary covers its range sends the pinned part beside the summary over it."
   },
   {
     "configuration": "H1/W11",
@@ -1398,8 +1398,8 @@
     "step": "232330.5",
     "what": "fixture:request:pins",
     "match": "allowing L0$",
-    "finding": "D3",
-    "reason": "D3: a message pinned raw also goes out inside the L1 over it when the pin follows the L1 (Oscar-1005's register; host route: the panel's pin-add, J60253, J60283)"
+    "finding": "raw-pin-sent-beside-covering-summary",
+    "reason": "A message pinned raw after an L1 summary covers it is also sent inside that summary."
   },
   {
     "configuration": "H1/W11",
@@ -1407,32 +1407,32 @@
     "step": "232330.5",
     "what": "fixture:request:pins",
     "match": "allowing L[1-9]",
-    "finding": "D39",
-    "reason": "D39: a level pin set after a higher summary covers its range sends the pinned part beside the summary over it (Oscar-1005's register; Desmond-2579's J60284)"
+    "finding": "level-pin-under-covering-summary",
+    "reason": "A level pin set after a higher summary covers its range sends the pinned part beside the summary over it."
   },
   {
     "configuration": "H1/W11",
     "check": 4,
     "step": "232330.6",
     "what": "more-than-once",
-    "finding": "D3, D39",
-    "reason": "D3 and D39 at one step: a raw pin and a level pin, each set after a summary over its range, both send content twice (Oscar-1005's register; J60283, J60284)"
+    "finding": "raw-pin-sent-beside-covering-summary, level-pin-under-covering-summary",
+    "reason": "A raw pin and a level pin, each set after a summary covers its range, both send content twice."
   },
   {
     "configuration": "H1/W11",
     "check": 11,
     "step": "232330.6",
     "what": "fixture:request:beside-sources",
-    "finding": "D3, D39",
-    "reason": "D3 and D39 at one step: a raw pin and a level pin, each set after a summary over its range, both send content twice (Oscar-1005's register; J60283, J60284)"
+    "finding": "raw-pin-sent-beside-covering-summary, level-pin-under-covering-summary",
+    "reason": "A raw pin and a level pin, each set after a summary covers its range, both send content twice."
   },
   {
     "configuration": "H1/W11",
     "check": 11,
     "step": "232330.6",
     "what": "fixture:request:coverage",
-    "finding": "D39",
-    "reason": "D39: a level pin set after a higher summary covers its range sends the pinned part beside the summary over it (Oscar-1005's register; Desmond-2579's J60284)"
+    "finding": "level-pin-under-covering-summary",
+    "reason": "A level pin set after a higher summary covers its range sends the pinned part beside the summary over it."
   },
   {
     "configuration": "H1/W11",
@@ -1440,8 +1440,8 @@
     "step": "232330.6",
     "what": "fixture:request:pins",
     "match": "allowing L0$",
-    "finding": "D3",
-    "reason": "D3: a message pinned raw also goes out inside the L1 over it when the pin follows the L1 (Oscar-1005's register; host route: the panel's pin-add, J60253, J60283)"
+    "finding": "raw-pin-sent-beside-covering-summary",
+    "reason": "A message pinned raw after an L1 summary covers it is also sent inside that summary."
   },
   {
     "configuration": "H1/W11",
@@ -1449,32 +1449,32 @@
     "step": "232330.6",
     "what": "fixture:request:pins",
     "match": "allowing L[1-9]",
-    "finding": "D39",
-    "reason": "D39: a level pin set after a higher summary covers its range sends the pinned part beside the summary over it (Oscar-1005's register; Desmond-2579's J60284)"
+    "finding": "level-pin-under-covering-summary",
+    "reason": "A level pin set after a higher summary covers its range sends the pinned part beside the summary over it."
   },
   {
     "configuration": "H1/W11",
     "check": 4,
     "step": "232330.7",
     "what": "more-than-once",
-    "finding": "D3, D39",
-    "reason": "D3 and D39 at one step: a raw pin and a level pin, each set after a summary over its range, both send content twice (Oscar-1005's register; J60283, J60284)"
+    "finding": "raw-pin-sent-beside-covering-summary, level-pin-under-covering-summary",
+    "reason": "A raw pin and a level pin, each set after a summary covers its range, both send content twice."
   },
   {
     "configuration": "H1/W11",
     "check": 11,
     "step": "232330.7",
     "what": "fixture:request:beside-sources",
-    "finding": "D3, D39",
-    "reason": "D3 and D39 at one step: a raw pin and a level pin, each set after a summary over its range, both send content twice (Oscar-1005's register; J60283, J60284)"
+    "finding": "raw-pin-sent-beside-covering-summary, level-pin-under-covering-summary",
+    "reason": "A raw pin and a level pin, each set after a summary covers its range, both send content twice."
   },
   {
     "configuration": "H1/W11",
     "check": 11,
     "step": "232330.7",
     "what": "fixture:request:coverage",
-    "finding": "D39",
-    "reason": "D39: a level pin set after a higher summary covers its range sends the pinned part beside the summary over it (Oscar-1005's register; Desmond-2579's J60284)"
+    "finding": "level-pin-under-covering-summary",
+    "reason": "A level pin set after a higher summary covers its range sends the pinned part beside the summary over it."
   },
   {
     "configuration": "H1/W11",
@@ -1482,8 +1482,8 @@
     "step": "232330.7",
     "what": "fixture:request:pins",
     "match": "allowing L0$",
-    "finding": "D3",
-    "reason": "D3: a message pinned raw also goes out inside the L1 over it when the pin follows the L1 (Oscar-1005's register; host route: the panel's pin-add, J60253, J60283)"
+    "finding": "raw-pin-sent-beside-covering-summary",
+    "reason": "A message pinned raw after an L1 summary covers it is also sent inside that summary."
   },
   {
     "configuration": "H1/W11",
@@ -1491,32 +1491,32 @@
     "step": "232330.7",
     "what": "fixture:request:pins",
     "match": "allowing L[1-9]",
-    "finding": "D39",
-    "reason": "D39: a level pin set after a higher summary covers its range sends the pinned part beside the summary over it (Oscar-1005's register; Desmond-2579's J60284)"
+    "finding": "level-pin-under-covering-summary",
+    "reason": "A level pin set after a higher summary covers its range sends the pinned part beside the summary over it."
   },
   {
     "configuration": "H1/W11",
     "check": 4,
     "step": "232330.8",
     "what": "more-than-once",
-    "finding": "D3, D39",
-    "reason": "D3 and D39 at one step: a raw pin and a level pin, each set after a summary over its range, both send content twice (Oscar-1005's register; J60283, J60284)"
+    "finding": "raw-pin-sent-beside-covering-summary, level-pin-under-covering-summary",
+    "reason": "A raw pin and a level pin, each set after a summary covers its range, both send content twice."
   },
   {
     "configuration": "H1/W11",
     "check": 11,
     "step": "232330.8",
     "what": "fixture:request:beside-sources",
-    "finding": "D3, D39",
-    "reason": "D3 and D39 at one step: a raw pin and a level pin, each set after a summary over its range, both send content twice (Oscar-1005's register; J60283, J60284)"
+    "finding": "raw-pin-sent-beside-covering-summary, level-pin-under-covering-summary",
+    "reason": "A raw pin and a level pin, each set after a summary covers its range, both send content twice."
   },
   {
     "configuration": "H1/W11",
     "check": 11,
     "step": "232330.8",
     "what": "fixture:request:coverage",
-    "finding": "D39",
-    "reason": "D39: a level pin set after a higher summary covers its range sends the pinned part beside the summary over it (Oscar-1005's register; Desmond-2579's J60284)"
+    "finding": "level-pin-under-covering-summary",
+    "reason": "A level pin set after a higher summary covers its range sends the pinned part beside the summary over it."
   },
   {
     "configuration": "H1/W11",
@@ -1524,8 +1524,8 @@
     "step": "232330.8",
     "what": "fixture:request:pins",
     "match": "allowing L0$",
-    "finding": "D3",
-    "reason": "D3: a message pinned raw also goes out inside the L1 over it when the pin follows the L1 (Oscar-1005's register; host route: the panel's pin-add, J60253, J60283)"
+    "finding": "raw-pin-sent-beside-covering-summary",
+    "reason": "A message pinned raw after an L1 summary covers it is also sent inside that summary."
   },
   {
     "configuration": "H1/W11",
@@ -1533,32 +1533,32 @@
     "step": "232330.8",
     "what": "fixture:request:pins",
     "match": "allowing L[1-9]",
-    "finding": "D39",
-    "reason": "D39: a level pin set after a higher summary covers its range sends the pinned part beside the summary over it (Oscar-1005's register; Desmond-2579's J60284)"
+    "finding": "level-pin-under-covering-summary",
+    "reason": "A level pin set after a higher summary covers its range sends the pinned part beside the summary over it."
   },
   {
     "configuration": "H1/W11",
     "check": 4,
     "step": "232330.9",
     "what": "more-than-once",
-    "finding": "D3, D39",
-    "reason": "D3 and D39 at one step: a raw pin and a level pin, each set after a summary over its range, both send content twice (Oscar-1005's register; J60283, J60284)"
+    "finding": "raw-pin-sent-beside-covering-summary, level-pin-under-covering-summary",
+    "reason": "A raw pin and a level pin, each set after a summary covers its range, both send content twice."
   },
   {
     "configuration": "H1/W11",
     "check": 11,
     "step": "232330.9",
     "what": "fixture:request:beside-sources",
-    "finding": "D3, D39",
-    "reason": "D3 and D39 at one step: a raw pin and a level pin, each set after a summary over its range, both send content twice (Oscar-1005's register; J60283, J60284)"
+    "finding": "raw-pin-sent-beside-covering-summary, level-pin-under-covering-summary",
+    "reason": "A raw pin and a level pin, each set after a summary covers its range, both send content twice."
   },
   {
     "configuration": "H1/W11",
     "check": 11,
     "step": "232330.9",
     "what": "fixture:request:coverage",
-    "finding": "D39",
-    "reason": "D39: a level pin set after a higher summary covers its range sends the pinned part beside the summary over it (Oscar-1005's register; Desmond-2579's J60284)"
+    "finding": "level-pin-under-covering-summary",
+    "reason": "A level pin set after a higher summary covers its range sends the pinned part beside the summary over it."
   },
   {
     "configuration": "H1/W11",
@@ -1566,8 +1566,8 @@
     "step": "232330.9",
     "what": "fixture:request:pins",
     "match": "allowing L0$",
-    "finding": "D3",
-    "reason": "D3: a message pinned raw also goes out inside the L1 over it when the pin follows the L1 (Oscar-1005's register; host route: the panel's pin-add, J60253, J60283)"
+    "finding": "raw-pin-sent-beside-covering-summary",
+    "reason": "A message pinned raw after an L1 summary covers it is also sent inside that summary."
   },
   {
     "configuration": "H1/W11",
@@ -1575,7 +1575,7 @@
     "step": "232330.9",
     "what": "fixture:request:pins",
     "match": "allowing L[1-9]",
-    "finding": "D39",
-    "reason": "D39: a level pin set after a higher summary covers its range sends the pinned part beside the summary over it (Oscar-1005's register; Desmond-2579's J60284)"
+    "finding": "level-pin-under-covering-summary",
+    "reason": "A level pin set after a higher summary covers its range sends the pinned part beside the summary over it."
   }
 ]

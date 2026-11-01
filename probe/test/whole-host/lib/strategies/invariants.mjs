@@ -205,7 +205,7 @@ export function checkCompile(manager, budget, compiled, messages, { compresses: 
   // A passthrough (a configuration that doesn't compress) sends every message from its window's start as stored, so a
   // result whose call lies before that start goes out as stored, and a pair the store holds apart goes out apart. Its
   // promise is narrower: no request opens with a result whose call the store holds before the request's start, and no
-  // message of a pair inside the request's own span is left out of it (Oscar-1005, #300707, #300798).
+  // message of a pair inside the request's own span is left out of it.
   const callOf = new Map(), answered = new Map(), lastCall = new Map();
   for (const m of inOrder) {
     blocks(m).forEach((b, k) => {

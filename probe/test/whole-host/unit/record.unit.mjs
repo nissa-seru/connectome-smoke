@@ -39,7 +39,8 @@ const records = [{ id: 'r9', kind: 'summariser', step: 'p.2', messages: [{ block
 
 test('a record names messages by their canaries, writes each compile as what changed, and keeps the stack\'s texts once', () => {
   const r = renderRecord({ header, log, records, end: { ok: true } }).split('\n');
-  const body = r.slice(r.indexOf('step p.name'), r.indexOf('templates'));
+  // The call's body hash is pinned by its own test below; here it's only its form.
+  const body = r.slice(r.indexOf('step p.name'), r.indexOf('templates')).map((l) => l.replace(/, body [0-9a-f]{8}$/, ', body HASH'));
   assert.deepEqual(body, [
     'step p.name',
     '  action /session rename fixture',
@@ -48,7 +49,7 @@ test('a record names messages by their canaries, writes each compile as what cha
     'step p.2',
     '  compile + p.1.r1 [T:user-clock-#-#-utc](12,10) p.2.in ^ 4',
     '  compile + p.2.call1 ^ 5',
-    '  call p.1.in p.1.r1 -> summary',
+    '  call p.1.in p.1.r1 -> summary, body HASH',
     'step p.3',
     '  wrote L1(p.1.in-p.1.r1) [T:summary-l1-bda55950]',
     '  compile -2 + [T:user-clock-#-#-utc](12,20)',
@@ -68,4 +69,26 @@ test('a record names messages by their canaries, writes each compile as what cha
 test('two runs whose image nonces differ write the same record', () => {
   const other = JSON.parse(JSON.stringify(log).replaceAll('k7x3q2', 'a1b2c3').replaceAll('zz9yy8', 'q0q0q0'));
   assert.equal(renderRecord({ header, log: other, records, end: { ok: true } }), renderRecord({ header, log, records, end: { ok: true } }));
+});
+
+test('a summariser call shows its own words as templates, and its body hash moves when anything else it sends does', () => {
+  const asked = (texts, digest = 'd1', more = {}) => [{ id: 'r9', kind: 'summariser', step: 'p.2', model: 'm', maxTokens: 16000, system: { sha256: 'e3', chars: 0 }, tools: ['t'], texts,
+    messages: [{ role: 'user', digest, blocks: [{ canaries: ['[[c:p.1.in]]'] }, { canaries: ['[[c:p.1.r1]]'] }, {}] }], answer: { shape: 'summary' }, ...more }];
+  const recordOf = (recs) => renderRecord({ header, log, records: recs, end: { ok: true } });
+  const callOf = (recs) => recordOf(recs).split('\n').find((l) => l.startsWith('  call '));
+  const plain = callOf(asked(['Summarise in about 400 tokens, phase: research.']));
+  assert.match(plain, /^  call p\.1\.in p\.1\.r1 \[T:call-summarise-in-about\]\(400\) -> summary, body [0-9a-f]{8}$/);
+  const reworded = recordOf(asked(['Summarise in about 400 tokens, phase: .']));
+  assert.notEqual(reworded, recordOf(asked(['Summarise in about 400 tokens, phase: research.'])), 'a change to its words');
+  assert.ok(reworded.split('\n').includes('T:call-summarise-in-about = Summarise in about # tokens, phase: .'), 'and the words show in its template');
+  assert.notEqual(callOf(asked(['Summarise in about 400 tokens, phase: research.'], 'd2')), plain, 'a change to a carried message\'s content');
+  assert.notEqual(callOf(asked(['Summarise in about 400 tokens, phase: research.'], 'd1', { maxTokens: 8000 })), plain, 'a change to its limits');
+  assert.equal(callOf(asked(['Summarise in about 400 tokens, phase: research.'])), plain, 'the same request, the same line');
+});
+
+test('a summary a summariser call carries is named as the store names it, not written out again', () => {
+  const recs = [{ id: 'r9', kind: 'summariser', step: 'p.2', texts: ['a: [[s:M0000beef]] Memory beef, what happened first', 'Merge these.'],
+    messages: [{ role: 'user', digest: 'd1', blocks: [{}, {}] }], answer: { shape: 'summary' } }];
+  const line = renderRecord({ header, log, records: recs, end: { ok: true } }).split('\n').find((l) => l.startsWith('  call '));
+  assert.match(line, /^  call - S\(M0000beef\) \[T:call-merge-these\] -> summary, body [0-9a-f]{8}$/, 'a mark the store didn\'t report is named by the mark');
 });

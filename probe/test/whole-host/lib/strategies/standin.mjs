@@ -214,6 +214,11 @@ function normalise(body) {
  *  round by it (checks.mjs, requestKinds). */
 const digestOf = (m) => sha(JSON.stringify(maskRunVarying(unmarked({ role: m.role, content: blocksOf(m.content) })))).slice(0, 16);
 
+/** A summariser request's own words: each text block that carries no canary (its instruction, and
+ *  any framing the strategy adds), in order, with what differs between runs masked, so the run's
+ *  record can show a change to what a summariser is asked (record.mjs). */
+const summariserTexts = (body) => (body.messages || []).flatMap((m) => blocksOf(m.content).filter((b) => b.type === 'text' && !(b.text || '').match(CANARY)).map((b) => maskRunVarying(b.text || '')));
+
 /**
  * Start the stand-in for Anthropic's Messages API on a free loopback port.
  *
@@ -416,6 +421,7 @@ export async function startStandin({ configuration, rawDir = null, refuseMerges 
     const id = `r${seq}`;
     const { kind, agent, reason } = classify(body);
     const record = { id, seq, at: Math.round(performance.now() - t0), clock, step: step?.id ?? null, kind, ...(agent ? { agent } : {}), ...(reason ? { reason } : {}), ...(body ? { ...normalise(body), messageTokens: messageTokens(body) } : {}) };
+    if (kind === 'summariser' && body) record.texts = summariserTexts(body);
     records.push(record);
     if (rawDir) writeFileSync(join(rawDir, `${id}.json`), raw);
     for (const cb of listeners) cb({ id, seq, kind, step: record.step, at: record.at, clock });

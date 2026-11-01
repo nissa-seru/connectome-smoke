@@ -1,5 +1,5 @@
 /**
- * Comparing two runs' requests or records (lane-requirements N12). Two runs of one key differ
+ * Comparing two runs' requests or records. Two runs of one key differ
  * by design in two places, and only those are masked:
  * - the image ledger's nonce in a tool image's ref, `img_<nonce>_<n>`: agent-framework makes
  *   it random per process, so a ref from before a restart never resolves to other bytes

@@ -5,7 +5,7 @@ import { CHANNEL, READER, TOOL } from './script.mjs';
 /**
  * The context-manager characterization fixture's nine workloads (connectome-smoke `lib/cm-fixture/workloads.mjs` at
  * 10cb728), as a host's residents meet them: every step a channel turn, a host command, the panel, the web UI, a
- * restart, the stand-in model's answers or a read the checks make (`reach-v2.md` §2, room-203 #315093 to #315561).
+ * restart, the stand-in model's answers or a read the checks make.
  * What only a direct call to context-manager made has left for its own suite.
  *
  * `steps(ctx)` is the run's script for the driver (driver.mjs, runScript), where `ctx` is `{ seed, configuration,
@@ -179,7 +179,7 @@ function guardTurn(w, step) {
  * answers the report. The subagent's requests are told by the marker in the system prompt the spawn gives it. Its
  * whole run is one turn of the subagent, so only its first request compiles; the rest are continuation rounds. Each
  * of its replies waits until compression is idle, as the fixture settled between steps, so the background compression
- * its rounds start doesn't race them, and the run has one outcome (J60304: two in eight without).
+ * its rounds start doesn't race them, and the run has one outcome (without it, two runs in eight took the other).
  */
 function subagentTurn(w, ctx, step, rounds) {
   const marker = `[[knowledge:${ctx.seed}]]`;
@@ -423,7 +423,8 @@ export const WORKLOADS = {
   /**
    * W7: merges-refused and merges-rejected set the stand-in to refuse or reject every merge; fable-no-tools and
    * no-tools run an agent permitted no tools from empty, whose 32 turns say more each, as its tool results would have
-   * (fable-no-tools with a Fable-family compression model: D41's run, no-tools its control).
+   * (fable-no-tools with a Fable-family compression model, which defers every chunk when no tools are declared;
+   * no-tools its control).
    */
   W7: {
     from: 'checkpoint',
@@ -698,8 +699,8 @@ function toolBlocksLost(run) {
 }
 
 /**
- * The runs a check makes, CONFIGURATION/WORKLOAD[/VARIANT], from the fixture's (room-203 #315555, #315561): C7 is H1 in
- * a host, and C4, C2, C9 and W11's store that refuses writes leave for context-manager's suite (reach-v2 §1).
+ * The runs a check makes, CONFIGURATION/WORKLOAD[/VARIANT], from the fixture's: C7 is H1 in a host, and C4, C2, C9
+ * and W11's store that refuses writes leave for context-manager's suite, since no host route reaches them.
  */
 export const RUNS = [
   'H1/W1', 'H4/W1',

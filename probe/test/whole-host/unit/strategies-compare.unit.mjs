@@ -1,5 +1,5 @@
-// The strategy fixture's comparison across runs (lib/strategies/compare.mjs). Each test names
-// the requirement it pins (cm-fixture-build/lane-requirements.md).
+// The strategy fixture's comparison across runs (lib/strategies/compare.mjs). Each test's name
+// says the requirement it pins.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { maskRunVarying, sameAcrossRuns } from '../lib/strategies/compare.mjs';

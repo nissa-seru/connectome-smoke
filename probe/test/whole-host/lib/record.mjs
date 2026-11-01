@@ -26,8 +26,14 @@ import { createHash } from 'node:crypto';
  *     its text's hash (`L2[T:summary-l2-0a1b2c3d]`). The line
  *     ends `^ N,M` with the places, in the whole list the compile sent, of the messages
  *     carrying a cache marker.
- *   - `call CARRIED -> SHAPE` for each request to the summariser, with the canaries of the
- *     messages it carried.
+ *   - `call CARRIED [T:...] -> SHAPE, body HASH` for each request to the summariser: the
+ *     canaries of the messages it carried, its own words (each text block that carries no
+ *     canary, such as its instruction) as templates with their numbers, and each summary it
+ *     carries by its name (or `S(MARK)` where the store didn't report it), the shape the stand-in
+ *     answered, and a hash of everything else it sent (model, limits, system, tools, each
+ *     message's content as the stand-in's masked digest, and cache markers). So the record
+ *     changes whenever anything a summariser request sends changes, and a change to its words
+ *     shows as words.
  *   - `action COMMAND` for each host command the driver sent.
  *   - `wrote NAME [T:...]` for each summary the batch's store added or changed, and
  *     `removed NAMES` for those it removed. A summary is named by its level and the first
@@ -50,6 +56,8 @@ import { createHash } from 'node:crypto';
 export const LONG_TEXT_BYTES = 2048;
 
 const CANARY = /\[\[c:([A-Za-z0-9._-]+)\]\]/;
+// The stand-in's mark on a summary it wrote (standin.mjs SUMMARY), which a summary's text carries.
+const MARK = /\[\[s:M[0-9a-f]{8}\]\]/g;
 const REF = /\bimg_([0-9a-z]+)_(\d+)\b/g;
 const canonical = (v) => JSON.stringify(v, (k, x) => (x && typeof x === 'object' && !Array.isArray(x) ? Object.fromEntries(Object.entries(x).sort(([a], [b]) => (a < b ? -1 : 1))) : x));
 const longText = (s) => {
@@ -140,6 +148,18 @@ export function renderRecord({ header, log, records, end }) {
     const text = nameNonces(textOf(value?.content ?? value ?? ''));
     return template('summary', text, `summary-l${sm.level}-${createHash('sha256').update(text).digest('hex').slice(0, 8)}`);
   };
+  // Each summary's name by the stand-in's mark its text carries, for the summaries a summariser call carries.
+  let marks = null;
+  const markName = () => {
+    if (!marks) {
+      marks = new Map();
+      for (const sm of summaries.values()) {
+        const value = blobs.get(sm.content);
+        for (const m of textOf(value?.content ?? value ?? '').match(MARK) ?? []) if (!marks.has(m)) marks.set(m, summaryName(sm.id, sm.level));
+      }
+    }
+    return marks;
+  };
   // A stored message's name: the canary its text carries, else its template and its numbers.
   const item = (m) => {
     const value = blobs.get(m.content);
@@ -211,7 +231,20 @@ export function renderRecord({ header, log, records, end }) {
       totals.calls++;
       seen(e.step);
       const carried = [...new Set(r.messages.flatMap((m) => m.blocks.flatMap((b) => b.canaries ?? [])).map((c) => CANARY.exec(c)?.[1] ?? c))];
-      at(e.step).push(`  call ${carried.length ? carried.join(' ') : '-'} -> ${r.answer?.shape ?? 'none'}`);
+      const words = (r.texts ?? []).map((t) => {
+        const text = nameNonces(t);
+        // A summary it carries is named as the store names it (its text is the `wrote` line's template).
+        const marked = text.match(MARK);
+        if (marked) return marked.map((m) => markName().get(m) ?? `S(${m.slice(4, -2)})`).join('+');
+        const numbers = text.match(/\d+/g) ?? [];
+        return `[${template('call', text.replace(/\d+/g, '#'))}]${numbers.length ? `(${numbers.join(',')})` : ''}`;
+      });
+      const sent = canonical({
+        model: r.model, maxTokens: r.maxTokens, stream: r.stream, thinking: r.thinking, system: r.system, tools: r.tools,
+        messages: r.messages.map((m) => ({ role: m.role, digest: m.digest, cache: m.blocks.map((b) => b.cache ?? null) })),
+      });
+      const body = createHash('sha256').update(sent ?? '').digest('hex').slice(0, 8);
+      at(e.step).push(`  call ${[carried.length ? carried.join(' ') : '-', ...words].join(' ')} -> ${r.answer?.shape ?? 'none'}, body ${body}`);
     }
     if (e.kind === 'compiles') {
       for (const [agent, st] of Object.entries(e.store ?? {})) {

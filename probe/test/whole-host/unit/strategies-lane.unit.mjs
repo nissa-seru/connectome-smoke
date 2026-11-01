@@ -214,7 +214,7 @@ test('N4: pruning keeps each trial\'s newest two, so a write of another trial ne
     writeFileSync(join(root, name, 'entry.json'), JSON.stringify({ complete: true, lane: 'L', configurationName: 'default', trialTurns, writtenAt: at(hoursAgo) }));
   };
   try {
-    // Greta-2425's P1 (room-203 #251172): the lane's own entry first, then two of another trial.
+    // Pruning keeps the lane's own entry first, then two of another trial.
     entry('lanes', lanes, 3);
     entry('probe-1', probes, 2);
     entry('probe-2', probes, 1);

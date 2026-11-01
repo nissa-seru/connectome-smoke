@@ -61,7 +61,7 @@ export function configurations({ model = 'claude-opus-4-6' } = {}) {
 }
 
 /**
- * The workloads' configurations (workloads.mjs), as a host's recipe makes each (room-203 #315555, #315561):
+ * The workloads' configurations (workloads.mjs), as a host's recipe makes each:
  * - H1: the strategy left to the host, which makes it autobiographical, adaptive and kv-unified with its standard block
  *   (`framework-strategy.ts:162-187`): the fixture's H1 for this model, and its C7 too;
  * - H2: H1 with the subagent module on, whose knowledge subagent the workloads run inside a spawn, so the judge

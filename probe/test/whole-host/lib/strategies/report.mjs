@@ -58,10 +58,11 @@ const key = (f) => `${f.check}|${f.step}|${f.what ?? ''}`;
 /**
  * The expected failures, from `path` (test/whole-host/expected-failures.json): none when the
  * file isn't there. Each entry is `{ configuration, check, step, what, match?, finding, reason }`
- * and covers the flags of one known finding (a register entry, such as D1) that a committed run
- * meets: its check, step and `what`, the kind of flag within its check, and, given `match`, a
- * regular expression found in the flag's detail (a check 11 violation's own words, such as
- * "allowing L0") or, for a flag with no detail, its message. An entry covers one kind of flag,
+ * and covers the flags of one known finding (`finding`: a public issue where one exists, else
+ * a short self-contained name) that a committed run meets: its check, step and `what`, the
+ * kind of flag within its check, and, given `match`, a regular expression found in the flag's
+ * detail (a check 11 violation's own words, such as "allowing L0") or, for a flag with no
+ * detail, its message. An entry covers one kind of flag,
  * so one with no `what` is refused: a check whose flags name no kind can have no entry until
  * they do, since its entry would cover a new loss at that step as the old finding. Entries that
  * share a key each carry a different `match`, since one without would cover the others' flags.

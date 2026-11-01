@@ -44,7 +44,7 @@ export const EPOCH = Date.UTC(2026, 0, 5, 9, 0, 0);
 
 const DAY = 24 * 60 * 60_000;
 
-/** Beth-2389's judge (judge.mjs) and the length trial's turns (script.mjs, TRIAL), loaded when first needed. */
+/** The judge (judge.mjs) and the length trial's turns (script.mjs, TRIAL), loaded when first needed. */
 const judging = async () => (await import('./judge.mjs')).judge;
 const loadTrial = async () => (await import('./script.mjs')).TRIAL;
 
@@ -204,7 +204,7 @@ const sessionOf = (copy) => copy?.sessions?.[0] ?? null;
 /**
  * Write the deep store for `configuration` under the cache root from the host at `hostDir`
  * (its stack resolving from `installDir`), unless a complete entry for its key is there by
- * the time this writer holds the key's lock. `judge` is Beth-2389's: it judges a run from
+ * the time this writer holds the key's lock. `judge` (judge.mjs) judges a run from
  * what it recorded, and its flags over the written prefix are the write's hard checks.
  * `trial` is the length trial's `{ min, step, bound }`, in prefix turns. Left out, `judge` is
  * judge.mjs's and `trial` script.mjs's TRIAL.
