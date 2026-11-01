@@ -10,5 +10,8 @@ HOST=$(cd ../connectome-host && pwd)
 rm -rf "$HOST/test/whole-host" && cp -r probe/test/whole-host "$HOST/test/whole-host"
 cd "$HOST"
 s=$(date +%s); npm ci --ignore-scripts --no-audit --no-fund --loglevel=error > "$E/ci.log" 2>&1; echo "ci $? $(( $(date +%s) - s )) s" >> "$E/times.txt"
-s=$(date +%s); node test/whole-host/run.mjs --shard "${SHARD:-1/1}" ${RUNS:+--runs "$RUNS"} --workdir "${RUNNER_TEMP:-${TMPDIR:-/tmp}}/wh" --out "$E/out" > "$E/run.log" 2>&1; echo "run $? $(( $(date +%s) - s )) s" >> "$E/times.txt"
+T=${RUNNER_TEMP:-${TMPDIR:-/tmp}}
+s=$(date +%s); node test/whole-host/run.mjs --shard "${SHARD:-1/1}" ${RUNS:+--runs "$RUNS"} --workdir "$T/wh" --out "$T/out" > "$E/run.log" 2>&1; echo "run $? $(( $(date +%s) - s )) s" >> "$E/times.txt"
+# What comes back is what judges: each run's record and report, and run.json (logs stay on the runner).
+mkdir -p "$E/out" && (cd "$T/out" && cp run.json "$E/out/" && for d in */; do mkdir -p "$E/out/$d"; cp "$d"*.record "$d"report.txt "$E/out/$d" 2>/dev/null; done)
 cat "$E/times.txt"
