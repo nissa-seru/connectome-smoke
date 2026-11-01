@@ -1,6 +1,5 @@
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { writeFileSync } from 'node:fs';
 import { CANARY, SUMMARY } from './standin.mjs';
 
 /**
@@ -14,14 +13,14 @@ import { CANARY, SUMMARY } from './standin.mjs';
  * summary number its content starts with, and the canaries of every message it covers, read
  * down through its sources; and the strategy's topology violations as it opened the store, each
  * a line as context-manager's audit-topology prints it (the audit opens a store with the same
- * strategy options). A strategy that compressed (`expectSummaries`) and yields no summary, or a
- * summary whose number or sources can't be read, is an error, never "none".
+ * strategy options). It's read only for a configuration that compresses, so a store that yields
+ * no summary, or a summary whose number or sources can't be read, is an error, never "none".
  * `isolate` opens the namespace's own message slot (`{namespace}/messages`), as agent-framework
  * opens an ephemeral agent's context, a subagent's among them, where the shared slot holds the
  * other agents' messages; audit-topology's CLI has no such option, so `violations` is the audit
  * there.
  */
-export async function readStore({ installDir, storePath, namespace, isolate = false, expectSummaries = true }) {
+export async function readStore({ installDir, storePath, namespace, isolate = false }) {
   const cmEntry = join(installDir, 'node_modules', '@animalabs', 'context-manager', 'dist', 'src', 'index.js');
   const { ContextManager, AutobiographicalStrategy } = await import(pathToFileURL(cmEntry).href);
   // Opened audit-only, as context-manager's own audit-topology opens a store: no chunking at
@@ -39,7 +38,7 @@ export async function readStore({ installDir, storePath, namespace, isolate = fa
       ...(m.bodyGroupId ? { bodyGroupId: m.bodyGroupId, shardIndex: m.shardIndex } : {}),
     }));
     const ids = cm.getSummariesInRange({}).map((s) => s.id);
-    if (expectSummaries && ids.length === 0) throw new Error(`no summaries in ${namespace} at ${storePath}, from a configuration that compresses`);
+    if (ids.length === 0) throw new Error(`no summaries in ${namespace} at ${storePath}, from a configuration that compresses`);
     const entries = new Map();
     for (const id of ids) {
       const s = cm.getSummary(id);
@@ -70,10 +69,4 @@ export async function readStore({ installDir, storePath, namespace, isolate = fa
   } finally {
     await cm.close();
   }
-}
-
-if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
-  const arg = (name) => { const i = process.argv.indexOf(`--${name}`); return i > 0 ? process.argv[i + 1] : undefined; };
-  const out = await readStore({ installDir: arg('install'), storePath: arg('store'), namespace: arg('namespace'), isolate: process.argv.includes('--isolate'), expectSummaries: arg('expect-summaries') !== 'false' });
-  writeFileSync(arg('out'), JSON.stringify(out, null, 1));
 }

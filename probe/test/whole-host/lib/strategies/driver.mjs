@@ -60,24 +60,21 @@ const COMMANDS = {
 const WEBUI_LISTENING = /\[webui\] listening on (https?:\/\/\S+)/;
 
 /**
- * What the installed host says of itself that the lane depends on: whether it
- * takes a top-level `maintenanceIntervalMs`; the window it knows for the
- * configuration's model (`model-limits.ts`), which the stand-in takes as the
+ * What the installed host says of itself that the lane depends on: the window it
+ * knows for the configuration's model (`model-limits.ts`), which the stand-in takes as the
  * model's window; and the stream bound it gives the agent for the lane's recipe
  * (`buildFrameworkAgentConfig`), which the checks hold continuations to.
  * Evaluated with bun from the host's source.
  */
 export function hostFacts({ hostDir, configuration }) {
-  const recipe = laneRecipe({ configuration, facts: { takesMaintenanceInterval: false }, control: '', channels: [], boot: 0 });
+  const recipe = laneRecipe({ configuration, control: '', channels: [], boot: 0 });
   const model = recipe.agent.model;
   const src = (f) => JSON.stringify(join(hostDir, 'src', f));
   const code = [
-    `const { unknownRecipeKeys } = await import(${src('recipe.ts')});`,
     `const { getDefaultModelLimits } = await import(${src('model-limits.ts')});`,
     `const { buildFrameworkAgentConfig } = await import(${src('framework-agent-config.ts')});`,
     `const agentConfig = buildFrameworkAgentConfig(${JSON.stringify(recipe)}, ${JSON.stringify(recipe.agent.name)}, ${JSON.stringify(model)}, undefined);`,
     'console.log(JSON.stringify({',
-    '  takesMaintenanceInterval: unknownRecipeKeys({ maintenanceIntervalMs: 0 }).length === 0,',
     `  window: getDefaultModelLimits(${JSON.stringify(model)})?.maxContextTokens ?? null,`,
     '  streamBound: agentConfig.maxStreamTokens ?? null,',
     '  budget: agentConfig.contextBudgetTokens ?? null,',
@@ -95,13 +92,13 @@ export function hostFacts({ hostDir, configuration }) {
 
 const BASE_AGENT = { name: 'fixture', provider: 'anthropic', systemPrompt: 'You are the strategy fixture\'s agent.' };
 
-/** The lane's recipe for one boot, from the configuration and the installed host's facts. */
-export function laneRecipe({ configuration, facts, control, channels, boot }) {
+/** The lane's recipe for one boot, from the configuration. */
+export function laneRecipe({ configuration, control, channels, boot }) {
   const agent = { ...BASE_AGENT, ...configuration.agent };
   return {
     name: `Strategy fixture (${configuration.name})`,
     agent,
-    ...(facts.takesMaintenanceInterval && configuration.maintenanceIntervalMs !== undefined ? { maintenanceIntervalMs: configuration.maintenanceIntervalMs } : {}),
+    ...(configuration.maintenanceIntervalMs !== undefined ? { maintenanceIntervalMs: configuration.maintenanceIntervalMs } : {}),
     mcpServers: {
       fixture: {
         command: process.execPath,
@@ -133,7 +130,8 @@ const BUDGET_HEADER = '--- Stream Token Budgets ---';
  * How a settle reads one `maintain` answer (agent-framework's host-command reply), given the
  * `progress` the pass before it read (null for a settle's first pass). Settled: the answer is
  * ok, every agent is ready, and the host is drained with no write deferred (`hostMode`); an
- * answer with no deferred-write count is judged on the rest, and `deferredWritesReported` says so.
+ * answer with no deferred-write count isn't settled, so a host that stops reporting it fails
+ * the settle.
  * In flight: an agent's compression or merge is running (`progress.pending`, context-manager's
  * pendingCompression), a turn is alive, or a wake is parked on admission. Moved: this pass's
  * progress (each agent's chunks compressed, summary counts, queue lengths and pending text, and
@@ -149,10 +147,8 @@ export function readSettle(answer, previous) {
     }),
     deferredWrites: host.deferredWrites,
   });
-  const deferredWritesReported = typeof host.deferredWrites === 'number';
   return {
-    settled: answer?.ok === true && agents.every((a) => a.ready === true) && host.drained === true && (!deferredWritesReported || host.deferredWrites === 0),
-    deferredWritesReported,
+    settled: answer?.ok === true && agents.every((a) => a.ready === true) && host.drained === true && host.deferredWrites === 0,
     inFlight: agents.some((a) => a.progress?.pending === true) || (host.activeTurnAgents ?? []).length > 0 || (host.parkedAdmissions ?? 0) > 0,
     moved: progress !== previous,
     progress,
@@ -295,7 +291,7 @@ export async function runScript({ steps, configuration, standin, hostDir, facts,
   async function boot() {
     const b = { n: ++boots, events: [], stopping: false };
     const started = performance.now();
-    const recipe = laneRecipe({ configuration: recipeOf, facts, control, channels, boot: b.n });
+    const recipe = laneRecipe({ configuration: recipeOf, control, channels, boot: b.n });
     const recipePath = join(work, `recipe-${b.n}.json`);
     writeFileSync(recipePath, JSON.stringify(recipe, null, 2));
     const sockPath = join(tmpdir(), `${runName}-${b.n}.sock`);
@@ -399,7 +395,7 @@ export async function runScript({ steps, configuration, standin, hostDir, facts,
       const { drained, deferredWrites, activeTurnAgents = [] } = answer?.hostMode ?? {};
       log('settle', { phase: 'pass', pass, ms: Math.round(performance.now() - t), ok: answer?.ok, ran: answer?.maintenance?.ran, runId: answer?.maintenance?.history?.[0]?.id ?? null, agents, drained, deferredWrites, activeTurnAgents, inFlight: read.inFlight, moved: read.moved, ...(ticking.length ? { ticking } : {}) });
       if (read.settled) {
-        log('settle', { phase: 'end', settled: true, passes: pass, ms: Math.round(performance.now() - started), deferredWritesReported: read.deferredWritesReported });
+        log('settle', { phase: 'end', settled: true, passes: pass, ms: Math.round(performance.now() - started) });
         await takeCompiles();
         return pass;
       }
@@ -567,7 +563,6 @@ export async function runScript({ steps, configuration, standin, hostDir, facts,
   }
 
   async function moduleRead(op, params) {
-    if (typeof ctl.moduleRequest !== 'function') throw new RunFailure(`the test module's ${op} read isn't available on the control socket`);
     return unlessFailed(ctl.moduleRequest(op, params, { timeoutMs: COMMAND_MS }));
   }
 

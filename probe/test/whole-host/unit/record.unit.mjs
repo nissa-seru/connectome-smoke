@@ -40,7 +40,7 @@ const records = [{ id: 'r9', kind: 'summariser', step: 'p.2', messages: [{ block
 test('a record names messages by their canaries, writes each compile as what changed, and keeps the stack\'s texts once', () => {
   const r = renderRecord({ header, log, records, end: { ok: true } }).split('\n');
   // The call's body hash is pinned by its own test below; here it's only its form.
-  const body = r.slice(r.indexOf('step p.name'), r.indexOf('templates')).map((l) => l.replace(/, body [0-9a-f]{8}$/, ', body HASH'));
+  const body = r.slice(r.indexOf('step p.name')).filter(Boolean).map((l) => l.replace(/, body [0-9a-f]{8}$/, ', body HASH'));
   assert.deepEqual(body, [
     'step p.name',
     '  action /session rename fixture',
@@ -60,10 +60,29 @@ test('a record names messages by their canaries, writes each compile as what cha
     'receipt fixture #5 changes L1(p.1.in-p.1.r1)/sum/1/5 #6/raw/0/5',
     'totals {"actions":1,"calls":1,"compiles":5,"dry":0,"other":0,"refused":1,"written":1}',
   ]);
-  const templates = r.slice(r.indexOf('templates') + 1).filter(Boolean);
+  assert.equal(r.indexOf('templates'), 3, 'the texts block comes first, after the header');
+  const templates = r.slice(r.indexOf('templates') + 1, r.indexOf('step p.name'));
+  assert.ok(templates.every((l) => l.startsWith('T:') || l.startsWith('  ')), 'and holds only the texts');
   assert.ok(templates.includes('T:user-clock-#-#-utc = Clock: #:# UTC'), 'numbers written as #, their values on the line');
   assert.ok(templates.includes('T:user-ref-img-na-#-then = ref img_na_# then ref img_nb_#'), 'each nonce named by the order it first appears');
   assert.ok(templates.includes('T:summary-l1-bda55950 = what happened first'));
+});
+
+test('texts that share a key are named by their words, whatever order they first appear in', () => {
+  const recs = (texts) => texts.map((t, i) => ({ id: `r${i}`, kind: 'summariser', step: 'p.2', texts: [t], messages: [{ role: 'user', digest: 'd1', blocks: [{}] }], answer: { shape: 'summary' } }));
+  const withCalls = (n) => [...log.slice(0, 5), ...Array.from({ length: n }, (_, i) => ({ kind: 'request', step: 'p.2', request: { id: `r${i}`, kind: 'summariser' } })), ...log.slice(6)];
+  const texts = ['You have just reviewed the slices above.', 'You have just been reading a body of text.', 'You have just reviewed the memories above.\nWrite one.'];
+  const named = (order) => {
+    const r = renderRecord({ header, log: withCalls(3), records: recs(order.map((i) => texts[i])), end: { ok: true } }).split('\n');
+    return r.slice(r.indexOf('templates') + 1, r.indexOf('step p.name')).filter((l) => /^T:call-|^  /.test(l));
+  };
+  assert.deepEqual(named([0, 1, 2]), [
+    'T:call-you-have-just-been = You have just been reading a body of text.',
+    'T:call-you-have-just-reviewed-the-memories = You have just reviewed the memories above.',
+    '  Write one.',
+    'T:call-you-have-just-reviewed-the-slices = You have just reviewed the slices above.',
+  ], 'each key taken one word past what it shares with the others; a later line indented');
+  assert.deepEqual(named([2, 1, 0]), named([0, 1, 2]), 'the order they first appear in changes no name');
 });
 
 test('two runs whose image nonces differ write the same record', () => {

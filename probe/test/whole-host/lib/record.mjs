@@ -43,10 +43,13 @@ import { createHash } from 'node:crypto';
  *   its sequence, and each leaf its last request changed, by name, with its representation's
  *   kind, its level and the sequence it last changed at. The head's hashes are left out:
  *   they take in image refs' per-process nonces, so they differ between runs.
- * - `totals`, then `templates`: each text the stack wrote, once, keyed by its role and its
- *   first words with numbers as `#` (a summary by its hash), so a change to its words changes
- *   one line. Two texts with one key take `.2`, `.3` in the order they first appear. A text
- *   over LONG_TEXT_BYTES is written as `{ sha256, bytes, head, tail }`.
+ * - `totals`.
+ * The `templates` block comes first, after the header: each text the stack wrote, once, keyed by
+ * its role and its first words with numbers as `#` (a summary by its hash), so a change to its
+ * words changes one line. Texts that share a key are told apart by their words, each key taken
+ * one word past what it shares with the others, never by the order they first appear
+ * (nameTemplates). A text's later lines are indented two spaces. A text over LONG_TEXT_BYTES is
+ * written as `{ sha256, bytes, head, tail }`.
  *
  * Image refs carry agent-framework's per-process ledger nonce (`img_<nonce>_<n>`), which
  * differs between runs by design and between the boots of one run. Each nonce is named by
@@ -106,18 +109,19 @@ export function renderRecord({ header, log, records, end }) {
     return `img_${nonces.get(nonce)}_${n}`;
   });
 
-  // Templates, by role and first words, numbers as #.
-  const templates = new Map();
-  const byKey = new Map();
+  // Templates, by role and first words, numbers as #. A reference is a placeholder until the
+  // run is rendered, when each template is named from the set of texts alone (nameTemplates),
+  // so no name depends on the order the texts first appear.
+  const templates = [];
+  const slot = new Map();
   const slug = (s) => String(s).toLowerCase().replace(/\d+/g, '#').replace(/[^a-z#]+/g, '-').replace(/^-+|-+$/g, '');
-  const template = (role, text, key = `${slug(role)}-${slug(text.split(/\s+/).slice(0, 3).join(' ')).slice(0, 40) || 'empty'}`) => {
+  const template = (role, text, key = null) => {
     const shaped = longText(nameNonces(text));
-    const texts = byKey.get(key) ?? [];
-    let i = texts.indexOf(shaped);
-    if (i === -1) { texts.push(shaped); byKey.set(key, texts); i = texts.length - 1; }
-    const id = `T:${key}${i === 0 ? '' : `.${i + 1}`}`;
-    templates.set(id, shaped);
-    return id;
+    const words = key ? null : text.split(/\s+/);
+    const base = key ?? `${slug(role)}-${slug(words.slice(0, 3).join(' ')).slice(0, 40) || 'empty'}`;
+    const k = `${base}\u0000${shaped}`;
+    if (!slot.has(k)) { slot.set(k, templates.length); templates.push({ base, role, words, shaped }); }
+    return `\u0001${slot.get(k)}\u0001`;
   };
 
   // Where each stored message sits among those the run's compiles sent, by its stored id.
@@ -290,7 +294,43 @@ export function renderRecord({ header, log, records, end }) {
     lines.push(`receipt ${agent} #${head.sequence}${changes.length ? ` changes ${changes.join(' ')}` : ''}`);
   }
   lines.push(`totals ${canonical(totals)}`);
-  lines.push('templates');
-  for (const [id, text] of [...templates.entries()].sort(([a], [b]) => (a < b ? -1 : 1))) lines.push(`${id} = ${text}`);
-  return `${lines.join('\n')}\n`;
+  const names = nameTemplates(templates, slug);
+  const head = lines.findIndex((l) => !l.startsWith('#'));
+  const block = ['templates', ...templates.map((t, i) => [names[i], t.shaped]).sort(([a], [b]) => (a < b ? -1 : 1))
+    .map(([name, text]) => `T:${name} = ${text.split('\n').join('\n  ')}`)];
+  lines.splice(head < 0 ? lines.length : head, 0, ...block);
+  return `${lines.join('\n').replace(/\u0001(\d+)\u0001/g, (_, i) => `T:${names[i]}`)}\n`;
+}
+
+/**
+ * Each template's name, from the set of texts alone: its key (its role and first three words,
+ * or the hash key its caller gives) where no other text has that key; else, for texts named by
+ * their words, the key taken one word past the longest run of words it shares with any other text
+ * under that key; else, and wherever names would still collide, the key and the text's hash.
+ */
+function nameTemplates(templates, slug) {
+  const names = templates.map((t) => t.base);
+  const groups = new Map();
+  templates.forEach((t, i) => groups.set(t.base, [...(groups.get(t.base) ?? []), i]));
+  const hashed = (i) => `${templates[i].base}-${createHash('sha256').update(templates[i].shaped).digest('hex').slice(0, 8)}`;
+  for (const group of groups.values()) {
+    if (group.length === 1) continue;
+    for (const i of group) {
+      const { role, words } = templates[i];
+      if (!words) { names[i] = hashed(i); continue; }
+      const shared = (j) => {
+        const other = templates[j].words ?? [];
+        let n = 0;
+        while (n < words.length && n < other.length && slug(words[n]) === slug(other[n])) n++;
+        return n;
+      };
+      const n = Math.max(3, ...group.filter((j) => j !== i).map((j) => shared(j) + 1));
+      const name = `${slug(role)}-${slug(words.slice(0, n).join(' '))}`;
+      names[i] = n <= words.length && name.length <= 96 ? name : hashed(i);
+    }
+    const count = new Map();
+    for (const i of group) count.set(names[i], (count.get(names[i]) ?? 0) + 1);
+    for (const i of group) if (count.get(names[i]) > 1) names[i] = hashed(i);
+  }
+  return names;
 }

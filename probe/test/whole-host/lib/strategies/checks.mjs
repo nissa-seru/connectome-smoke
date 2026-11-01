@@ -222,7 +222,7 @@ export function assemblies(log = [], agent = FIXTURE_AGENT) {
  * request whose last canary is the next such compile's last canary was sent from it, and any other
  * is a continuation round, which compiles nothing. agent-framework restarts a stream by compiling
  * again, and a passthrough's restart sends what a continuation would have, so the requests alone
- * (requestKinds) read a restart as a continuation. Returns `{ pairs, continuations, unpaired }`:
+ * would read a restart as a continuation. Returns `{ pairs, continuations, unpaired }`:
  * `pairs` `[{ line, request }]` in order, `continuations` the requests no compile was sent as, and
  * `unpaired` the compiles no request took; null where the log has no compile line for `agent`, as
  * with the module off. The stand-in tells a second agent's requests (a subagent's, the reader's)
@@ -265,49 +265,6 @@ export function compileKinds(records, log = [], agent = FIXTURE_AGENT) {
   for (const { request } of paired.pairs) kinds.set(request.id, 'compiled');
   for (const r of paired.continuations) kinds.set(r.id, 'continuation');
   return { kinds, unpaired: paired.unpaired };
-}
-
-/**
- * Which agent requests were compiled and which were a turn's continuation rounds, read from the
- * requests themselves (the stand-in's records), so the same records give the same kinds whatever
- * order the host's events and the requests arrived in. agent-framework 0.28.0's stream events
- * carry no id the request also carries, and a continuation's request leaves before its
- * `inference:stream_resumed` (`provideToolResults`, then `emitTrace`).
- * - A step's first agent request opens its turn: `compiled`. The driver sends each step's input
- *   after the turn before has ended.
- * - A later one is a `continuation` when it carries the step's previous agent request whole, each
- *   message by its digest (standin.mjs, T18), then the assistant's message carrying exactly the
- *   tool_use ids the stand-in answered that request with, at least one, then only the user's (the
- *   results, and any message injected mid-turn).
- * - Any other later one is `compiled`: a restart's compile, which context-manager renders afresh,
- *   or a request after one the stand-in refused or answered without a tool call.
- * - null where its record, or the step's previous request's, carries no digests: the check can't
- *   judge it.
- */
-export function requestKinds(records) {
-  const kinds = new Map();
-  const previous = new Map();
-  const digests = (r) => (r.messages?.length && r.messages.every((m) => typeof m.digest === 'string') ? r.messages.map((m) => m.digest) : null);
-  for (const r of records) {
-    if (r.kind !== 'agent') continue;
-    const before = previous.get(r.step);
-    previous.set(r.step, r);
-    const mine = digests(r);
-    if (mine === null) { kinds.set(r.id, null); continue; }
-    if (!before) { kinds.set(r.id, 'compiled'); continue; }
-    const theirs = digests(before);
-    if (theirs === null) { kinds.set(r.id, null); continue; }
-    const n = theirs.length;
-    const minted = before.answer?.toolUseIds ?? [];
-    const round = r.messages[n];
-    const calls = round?.role === 'assistant' ? round.blocks.filter((b) => b.type === 'tool_use').map((b) => b.toolUseId) : null;
-    const continues = mine.length > n + 1
-      && theirs.every((d, i) => d === mine[i])
-      && minted.length > 0 && calls !== null && calls.length === minted.length && calls.every((id, i) => id === minted[i])
-      && r.messages.slice(n + 1).every((m) => m.role === 'user');
-    kinds.set(r.id, continues ? 'continuation' : 'compiled');
-  }
-  return kinds;
 }
 
 /** A request's whole input as the stand-in's usage reported it: new input, cache read and cache write. */
@@ -377,9 +334,8 @@ function streamFreshBefore(agentRequests, r, kinds) {
  * whether or not the segment ends at a checkpoint: a workload's steps have none. The run's agent
  * is the primary, or the second agent `agent` names (a subagent, the reader), by the stand-in's
  * records' `agent`.
- * - A compiled request (its turn's first, or a restart's: compileKinds where the run's log has the
- *   harness module's compile lines, else requestKinds) is flagged when the
- *   stand-in's count of its whole input (system prompt, tools and messages, its usage) exceeds
+ * - A compiled request (its turn's first, or a restart's, as the harness module's compile lines say:
+ *   compileKinds) is flagged when the stand-in's count of its whole input (system prompt, tools and messages, its usage) exceeds
  *   the model's window (`windowTokens`), the limit a provider refuses on. Whether
  *   context-manager kept its own count within the plannable budget is the compile invariants'
  *   `budget` check (compileInvariants), which reads context-manager's count: the stand-in's token
@@ -407,8 +363,11 @@ function streamFreshBefore(agentRequests, r, kinds) {
  * `planVsActual.budgetMet` and `exhausted` aren't read: `budgetMet` is false whenever the plan
  * sits between context-manager's soft target and its plannable budget (picker.ts), and neither
  * says the compile went over.
- * A request its records don't classify, one with no usage recorded, and a segment that made no
- * agent request are flags, never passes. A request the stand-in answered with a provider error
+ * A run whose log holds no request compile line of the agent's, though it made requests, can't be
+ * judged: nothing then tells a compiled request from a continuation round, so the check flags it,
+ * naming the agent, and judges none (`judged` null, so the report counts it as unknown rather than
+ * as nothing judged). A request with no usage recorded, and a segment that made no agent request,
+ * are flags too, never passes. A request the stand-in answered with a provider error
  * isn't judged: no usage comes back for it, and the retry agent-framework makes is judged instead. Returns
  * `{ flags, headroom, notes, judged, requests }`, headroom being each segment's least, per kind of
  * request: `{ segment, kind, request, tokens, bound }`; `judged` the requests held to a bound and
@@ -418,13 +377,17 @@ export function budgets(records, script, log = [], { agent = FIXTURE_AGENT, stre
   const flags = [];
   const headroom = [];
   let judged = 0;
-  const kinds = compileKinds(records, log, agent)?.kinds ?? requestKinds(records);
+  const paired = compileKinds(records, log, agent);
+  const kinds = paired?.kinds ?? new Map();
   const reports = budgetReports(log, agent);
   const windowBoots = new Set();
   // The primary's requests, or a second agent's where `agent` names it (requestPairs' `side`).
   const side = agent === FIXTURE_AGENT ? 'primary' : 'sub';
   const own = records.filter((r) => r.kind === 'agent' && (r.agent ?? 'primary') === side);
   const agentRequests = own;
+  if (!paired && own.length) {
+    return { flags: [{ check: 3, step: 'the run', what: 'no-compile-lines', message: `couldn't judge ${agent}'s ${own.length} request(s): the log holds no request compile line of ${agent}'s, so nothing tells a compiled request from a continuation round` }], headroom: [], notes: [], judged: null, requests: own.length };
+  }
   const bySegment = segmentAgents(own, script, side);
   for (const e of log) {
     if (e.kind === 'checkpoint' && !bySegment.has(e.name)) flags.push({ check: 3, step: e.step ?? e.name, message: `segment ${e.name} made no agent request` });
@@ -438,9 +401,7 @@ export function budgets(records, script, log = [], { agent = FIXTURE_AGENT, stre
       // A request the stand-in answered with a provider error was refused before any count: no
       // usage comes back for it, and agent-framework's retry is the request that reaches the window.
       if (r.answer?.shape === 'error') continue;
-      const kind = kinds.get(r.id) ?? null;
-      if (kind === null) { flags.push({ check: 3, step: r.step, request: r.id, message: 'couldn\'t judge whether it was compiled or a continuation round: the stand-in recorded no message digests for it or for its step\'s request before it' }); continue; }
-      if (kind === 'compiled') {
+      if (kinds.get(r.id) === 'compiled') {
         const whole = inputOf(r);
         if (whole === null || windowTokens === undefined) { flags.push({ check: 3, step: r.step, request: r.id, message: whole === null ? 'couldn\'t judge it: the stand-in recorded no usage for it' : 'couldn\'t judge it: the check was given no window' }); continue; }
         judged++;

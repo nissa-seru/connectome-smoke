@@ -247,12 +247,12 @@ async function checkpointOf(from) {
 }
 
 /**
- * A workload's run: its checkpoint, if it has one, copied, then the run under the candidate,
- * judged by the harness's checks and by its workload's own property (check 14), with the
- * expected failures applied. `harnessModule` false runs it without the test module, for the
- * self-check.
+ * A workload's run driven, not judged: its checkpoint, if it has one, copied, then the run
+ * under the candidate. Resolves `{ job, d, scratch, storeDir }`, or `{ couldnt }` with its
+ * reason. `harnessModule` false drives it without the test module, for the self-check, which
+ * compares only what the stand-in received.
  */
-async function workloadRun(id, { harnessModule = true, rawDir = null, dir }) {
+async function driven(id, { harnessModule = true, rawDir = null, dir }) {
   const job = runOf(id, all, hostFacts({ hostDir: candidate.hostDir, configuration: all[id.split('/')[0]] }));
   if (!harnessModule) job.configuration = { ...job.configuration, harnessModule: false };
   let epoch = EPOCH;
@@ -262,12 +262,21 @@ async function workloadRun(id, { harnessModule = true, rawDir = null, dir }) {
   const storeDir = join(scratch, 'store');
   if (job.from) {
     const cp = await checkpointOf(job.from);
-    if (cp.failed) return { outcome: 'couldnt-run', reason: `its checkpoint ${job.from} failed: ${cp.failed}` };
+    if (cp.failed) return { couldnt: `its checkpoint ${job.from} failed: ${cp.failed}` };
     cpSync(cp.storeDir, storeDir, { recursive: true });
     epoch = cp.clockEnd + 24 * 60 * 60_000;
   }
-  let d;
-  try { d = await drive(job, candidate, { storeDir, epoch, dir, scratch, rawDir }); } catch (e) { return { outcome: 'couldnt-run', reason: String(e?.message ?? e).slice(0, 2000) }; }
+  try { return { job, d: await drive(job, candidate, { storeDir, epoch, dir, scratch, rawDir }), scratch, storeDir }; } catch (e) { return { couldnt: String(e?.message ?? e).slice(0, 2000) }; }
+}
+
+/**
+ * A workload's run (driven), judged by the harness's checks and by its workload's own
+ * property (check 14), with the expected failures applied.
+ */
+async function workloadRun(id, { rawDir = null, dir }) {
+  const run = await driven(id, { rawDir, dir });
+  if (run.couldnt) return { outcome: 'couldnt-run', reason: run.couldnt };
+  const { job, d, scratch, storeDir } = run;
   const copy = join(scratch, 'judged-store');
   cpSync(storeDir, copy, { recursive: true });
   const sessions = existsSync(join(copy, 'sessions')) ? readdirSync(join(copy, 'sessions')).map((s) => join(copy, 'sessions', s)) : [];
@@ -329,9 +338,8 @@ for (const id of names) {
   let selfCheck = null;
   if (flag('self-check') && r.outcome !== 'couldnt-run') {
     const withoutDir = join(out, `${slug(id)}.without-module`);
-    const without = await workloadRun(id, { harnessModule: false, dir: withoutDir, rawDir: join(withoutDir, 'raw') });
-    const raw = (d) => join(d, 'raw');
-    selfCheck = without.outcome === 'couldnt-run' ? { outcome: 'couldnt-run', reason: without.reason } : sameRequests(raw(dir), raw(withoutDir));
+    const without = await driven(id, { harnessModule: false, dir: withoutDir, rawDir: join(withoutDir, 'raw') });
+    selfCheck = without.couldnt ? { outcome: 'couldnt-run', reason: without.couldnt } : sameRequests(join(dir, 'raw'), join(withoutDir, 'raw'));
     console.log(`${LABEL} ${id}: self-check: ${selfCheck.outcome === 'same' ? `the stand-in received the same ${selfCheck.requests} requests without the test module` : selfCheck.outcome === 'couldnt-run' ? `the run without the test module couldn't run: ${selfCheck.reason}` : `request ${selfCheck.at} differs without the test module: ${selfCheck.detail}`}`);
   }
   results.push({ run: id, outcome: r.outcome, reason: r.reason, failures: r.failures, record, ...(selfCheck ? { selfCheck } : {}) });

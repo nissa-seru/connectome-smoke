@@ -128,9 +128,6 @@ export function countTokens(body) {
   return elements(body).reduce((t, e) => t + e.tokens, 0);
 }
 
-/** A request's messages' tokens by the token model, without its system prompt or tools. */
-export const messageTokens = (body) => countTokens({ model: body.model, messages: body.messages });
-
 /** Every text a request carries, tool results' included, in order. */
 function texts(body) {
   const out = [];
@@ -210,8 +207,7 @@ function normalise(body) {
 
 /** A message's digest (T18): its role and content without cache markers, with what differs between
  *  runs by design masked (compare.mjs), so a message carried unchanged has one digest in every
- *  request that carries it, and in another run of the same key. check 3 reads a continuation
- *  round by it (checks.mjs, requestKinds). */
+ *  request that carries it, and in another run of the same key. */
 const digestOf = (m) => sha(JSON.stringify(maskRunVarying(unmarked({ role: m.role, content: blocksOf(m.content) })))).slice(0, 16);
 
 /** A summariser request's own words: each text block that carries no canary (its instruction, and
@@ -420,7 +416,7 @@ export async function startStandin({ configuration, rawDir = null, refuseMerges 
     const seq = records.length + 1;
     const id = `r${seq}`;
     const { kind, agent, reason } = classify(body);
-    const record = { id, seq, at: Math.round(performance.now() - t0), clock, step: step?.id ?? null, kind, ...(agent ? { agent } : {}), ...(reason ? { reason } : {}), ...(body ? { ...normalise(body), messageTokens: messageTokens(body) } : {}) };
+    const record = { id, seq, at: Math.round(performance.now() - t0), clock, step: step?.id ?? null, kind, ...(agent ? { agent } : {}), ...(reason ? { reason } : {}), ...(body ? normalise(body) : {}) };
     if (kind === 'summariser' && body) record.texts = summariserTexts(body);
     records.push(record);
     if (rawDir) writeFileSync(join(rawDir, `${id}.json`), raw);

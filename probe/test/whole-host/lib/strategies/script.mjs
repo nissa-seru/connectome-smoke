@@ -31,9 +31,6 @@ const MINUTE = 60_000;
  * window is the host's own for the model (`model-limits.ts`), which the lane reads through
  * hostFacts. The model is the host's own default (connectome-host `src/recipe.ts`,
  * `claude-opus-4-6`), which most shipped recipes run.
- * `maintenanceIntervalMs` goes at the recipe's top level only for a host that takes the key
- * (the driver asks the installed host's `unknownRecipeKeys`): connectome-host 0.15.0 refuses a
- * recipe with a key it doesn't know, and passing it through is the host change still to come.
  */
 export function configurations({ model = 'claude-opus-4-6' } = {}) {
   const agent = { model, cacheKeepalive: { enabled: false } };

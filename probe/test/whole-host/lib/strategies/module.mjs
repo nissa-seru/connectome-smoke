@@ -208,14 +208,8 @@ export class HarnessModule {
         }
         return out;
       }
-      case 'state': {
-        // Its summaries' content goes in the answer's own blobs, never through the compile batches'
-        // store: taking from that would hand a value pending for the next `take` to this read's log
-        // entry, and the batches, which the record writer and the checks read, would lack it.
-        const manager = this.managerOf(msg.agent);
-        const own = blobStore();
-        return { ...stateOf(manager, this.ticksInFlight(manager), own), blobs: own.take() };
-      }
+      case 'state':
+        return stateOf(this.managerOf(msg.agent));
       case 'messages':
         return messagesOf(this.managerOf(msg.agent));
       case 'dry-compile': {

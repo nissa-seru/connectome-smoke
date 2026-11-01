@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { assemblies, budgets, compileInvariants, compileKinds, pairing, reloads, requestPairs, requestKinds, declaredProducts, everyTurnAnswers, wellFormed, windowsRaw, calibrationEdge, coverage, bookkeeping } from '../lib/strategies/checks.mjs';
+import { assemblies, budgets, compileInvariants, compileKinds, pairing, reloads, requestPairs, declaredProducts, everyTurnAnswers, wellFormed, windowsRaw, calibrationEdge, coverage, bookkeeping } from '../lib/strategies/checks.mjs';
 import { continuation, products, configurations, L3_PRODUCT } from '../lib/strategies/script.mjs';
 
 const msg = (role, ...blocks) => ({ role, blocks });
@@ -181,14 +181,14 @@ const panel = (name, { budget = 20_000, budgetMet = true, exhausted = false, hea
   } },
 });
 
-// An agent request as the stand-in records it (T16, T18): its messages, each with its digest, their
+// An agent request as the stand-in records it (T18): its messages, each with its digest, their
 // tokens, its max tokens, the usage it answered with, and the tool_use ids its answer minted.
 // `opened` opens a turn, or restarts one with messages context-manager rendered afresh;
 // `continued` carries the request before it whole, then the round that request's answer opened.
 // The usage is all fresh input unless `cached` names how much of it the cache read: an opened
 // request's is all fresh unless given, and a continued one reads the request before it from the
 // cache, all of it unless given.
-const asked = (id, step, messageTokens, input, messages, toolUseIds, cached = 0) => ({ id, step, kind: 'agent', messageTokens, maxTokens: 2_048, usage: { input_tokens: input - cached, cache_read_input_tokens: cached, cache_creation_input_tokens: 0 }, messages, answer: { shape: 'reply', stop: toolUseIds.length ? 'tool_use' : 'end_turn', toolUseIds } });
+const asked = (id, step, messageTokens, input, messages, toolUseIds, cached = 0) => ({ id, step, kind: 'agent', maxTokens: 2_048, usage: { input_tokens: input - cached, cache_read_input_tokens: cached, cache_creation_input_tokens: 0 }, messages, answer: { shape: 'reply', stop: toolUseIds.length ? 'tool_use' : 'end_turn', toolUseIds } });
 const wholeInput = (r) => r.usage.input_tokens + r.usage.cache_read_input_tokens + r.usage.cache_creation_input_tokens;
 const opened = (id, step, messageTokens, input = messageTokens + 8_000, calls = [], cached = 0) => asked(id, step, messageTokens, input, [{ role: 'user', digest: `in.${id}`, blocks: [text()] }], calls, cached);
 const continued = (before, id, messageTokens, input = messageTokens + 8_000, calls = [], cached = wholeInput(before)) => asked(id, before.step, messageTokens, input, [
@@ -203,50 +203,32 @@ const sent = (id) => ({ kind: 'request', request: { id, kind: 'agent' } });
 // The driver's log of connectome-host's `/budget` after a boot (D12): its header, then the agent's line.
 const budgetReport = (...lines) => ({ kind: 'budget-report', boot: 1, lines: ['--- Stream Token Budgets ---', ...lines], ms: 5 });
 const WINDOW_CLAUSE = '; its stream doesn\'t break at this budget mid-turn: for its size, only before a request its 1.0M window can\'t hold';
+// The harness module's compile lines for the requests `compiled` names, agent-framework's request
+// compiles, with each request marked by its turn's last canary, as requestPairs pairs them: a request
+// compiled opens a turn's canary, and the rounds after it in its step carry it. `[records, entry]`.
+const compiledAs = (records, compiled, agent = 'fixture') => {
+  const turn = new Map();
+  const canaryOf = (r) => `[[c:${r.step}.${r.id}]]`;
+  const marked = records.map((r) => {
+    const key = `${r.agent ?? 'primary'}|${r.step}`;
+    if (compiled.includes(r.id)) turn.set(key, canaryOf(r));
+    const canary = turn.get(key);
+    return canary ? { ...r, messages: [...r.messages.slice(0, -1), { ...r.messages.at(-1), blocks: [...r.messages.at(-1).blocks, text([canary])] }] } : r;
+  });
+  const sentFrom = records.filter((r) => compiled.includes(r.id));
+  const lines = sentFrom.map((r, i) => ({ seq: i + 1, agent, kind: 'request', assembly: i + 1, outcome: 'compiled', messages: [{ sources: ['r:1'], content: `x.${r.id}` }] }));
+  const blobs = Object.fromEntries(sentFrom.map((r) => [`x.${r.id}`, { role: 'user', content: [{ type: 'text', text: `${canaryOf(r)} words` }] }]));
+  return [marked, { kind: 'compiles', lines, blobs }];
+};
 // A turn of three rounds under a stream bound of 30,000: r2's input passes it, so r3 follows a round over it.
-const crossing = () => {
+const crossingAs = () => {
   const r1 = opened('r1', 'a', 15_000, 29_000, ['t1']);
   const r2 = continued(r1, 'r2', 16_000, 31_000, ['t2']);
-  return [r1, r2, continued(r2, 'r3', 17_000, 32_000)];
+  return compiledAs([r1, r2, continued(r2, 'r3', 17_000, 32_000)], ['r1']);
 };
-const under = (report) => [...(report ? [report] : []), sent('r1'), sent('r2'), sent('r3'), panel('s')];
-
-test('K2c: a step\'s first request is compiled, and a later one is a continuation only when it carries the request before it whole, then that request\'s own tool round', () => {
-  const a1 = opened('a1', 'a', 1_000, undefined, ['t1']);
-  const a2 = continued(a1, 'a2', 1_100, undefined, ['t2', 't3']);
-  const a3 = continued(a2, 'a3', 1_200);
-  // A restart: context-manager renders afresh, so the messages before the round differ.
-  const b1 = opened('b1', 'b', 1_000, undefined, ['u1']);
-  const b2 = continued(b1, 'b2', 1_100);
-  b2.messages[0] = { ...b2.messages[0], digest: 'rendered afresh' };
-  // The assistant's message carries ids the stand-in didn't answer the request before with.
-  const c1 = opened('c1', 'c', 1_000, undefined, ['v1']);
-  const c2 = continued(c1, 'c2', 1_100);
-  c2.messages[1] = { ...c2.messages[1], blocks: [text(), call('v9')] };
-  // Something other than the user's follows the round.
-  const d1 = opened('d1', 'd', 1_000, undefined, ['w1']);
-  const d2 = continued(d1, 'd2', 1_100);
-  d2.messages.push({ role: 'assistant', digest: 'more', blocks: [text()] }, { role: 'user', digest: 'again', blocks: [text()] });
-  // An answer with no tool call, and a refusal, open no round to continue.
-  const e1 = opened('e1', 'e', 1_000);
-  const e2 = continued(e1, 'e2', 1_100);
-  const f1 = { ...opened('f1', 'f', 1_000), answer: { shape: 'refused' } };
-  const f2 = continued({ ...f1, answer: { toolUseIds: ['z1'] } }, 'f2', 1_100);
-  // A step's first request, though it arrives just after step a's a2 and carries a2 and its round.
-  const g1 = { ...continued(a2, 'g1', 1_300), step: 'g' };
-  const kinds = requestKinds([a1, a2, g1, a3, b1, b2, c1, c2, d1, d2, e1, e2, f1, f2]);
-  assert.deepEqual(Object.fromEntries(kinds), {
-    a1: 'compiled', a2: 'continuation', a3: 'continuation',
-    b1: 'compiled', b2: 'compiled', c1: 'compiled', c2: 'compiled', d1: 'compiled', d2: 'compiled',
-    e1: 'compiled', e2: 'compiled', f1: 'compiled', f2: 'compiled', g1: 'compiled',
-  });
-  // A record without digests, its own or the request before it's, can't be classified.
-  const bare = (r) => ({ ...r, messages: r.messages.map(({ digest, ...m }) => m) });
-  const h1 = opened('h1', 'h', 1_000, undefined, ['x1']);
-  const h2 = continued(h1, 'h2', 1_100);
-  assert.deepEqual(Object.fromEntries(requestKinds([bare(h1), h2])), { h1: null, h2: null });
-  assert.deepEqual(Object.fromEntries(requestKinds([h1, bare(h2)])), { h1: 'compiled', h2: null });
-});
+const crossing = () => crossingAs()[0];
+const R1_COMPILED = crossingAs()[1];
+const under = (report) => [...(report ? [report] : []), R1_COMPILED, sent('r1'), sent('r2'), sent('r3'), panel('s')];
 
 test('K2e: with the module\'s compile lines, a request is compiled when the next sent compile\'s last canary is its own, so a restart that sends what a continuation would is compiled', () => {
   const withCanary = (r, canary) => ({ ...r, messages: [...r.messages.slice(0, -1), { ...r.messages.at(-1), blocks: [{ type: 'text', canaries: [canary] }] }] });
@@ -259,11 +241,10 @@ test('K2e: with the module\'s compile lines, a request is compiled when the next
   const log = [
     { kind: 'compiles', lines: [line(1, 1, 'x1'), line(2, 2, 'x2', 'refused'), line(3, 2, 'x2'), { ...line(4, 3, 'x9'), kind: 'dry' }, line(5, 4, 'x5')], blobs: { ...b('x1', '[[c:a.in]]'), ...b('x2', '[[c:a.call1]]'), ...b('x9', '[[c:a.call2]]'), ...b('x5', '[[c:z.in]]') } },
   ];
-  assert.deepEqual(Object.fromEntries(requestKinds([r1, r2, r3])), { r1: 'compiled', r2: 'continuation', r3: 'continuation' }, 'the records alone read the restart as a continuation');
   const paired = compileKinds([r1, r2, r3], log);
   assert.deepEqual(Object.fromEntries(paired.kinds), { r1: 'compiled', r2: 'compiled', r3: 'continuation' }, 'a refused compile, retried in its assembly, and a dry compile take no request');
   assert.deepEqual(paired.unpaired.map((l) => l.seq), [5], 'a compile no request was sent from');
-  assert.equal(compileKinds([r1], [{ kind: 'compiles', lines: [{ ...line(1, 1, 'x1'), agent: 'other' }], blobs: b('x1', '[[c:a.in]]') }]), null, 'no line for the agent: the records decide');
+  assert.equal(compileKinds([r1], [{ kind: 'compiles', lines: [{ ...line(1, 1, 'x1'), agent: 'other' }], blobs: b('x1', '[[c:a.in]]') }]), null, 'no line for the agent: nothing to pair by');
   // A new host process numbers its compiles and assemblies from 1 again, and two runs of the driver
   // (the writer's extensions) each call their first boot 1: lines are taken in log order.
   for (const boot of [2, 1]) {
@@ -273,23 +254,6 @@ test('K2e: with the module\'s compile lines, a request is compiled when the next
     ];
     assert.deepEqual(Object.fromEntries(compileKinds([r1, r2], twoProcesses).kinds), { r1: 'compiled', r2: 'compiled' }, `each process's assembly 1 is its own (second boot numbered ${boot})`);
   }
-});
-
-test('K2c: the same records give the same kinds and verdicts whether each stream event is logged before its request, after it, or not at all', () => {
-  const script = [turnStep('a')];
-  // r2 and r3 are under the stream bound, and judged as continuations against it.
-  const r1 = opened('r1', 'a', 15_000, 23_000, ['t1']);
-  const r2 = continued(r1, 'r2', 19_000, 25_000, ['t2']);
-  const r3 = continued(r2, 'r3', 20_000, 26_000);
-  const records = [r1, r2, r3];
-  const first = [started, sent('r1'), resumed, sent('r2'), resumed, sent('r3'), panel('s')];
-  const late = [sent('r1'), started, sent('r2'), resumed, sent('r3'), resumed, panel('s')];
-  const none = [sent('r1'), sent('r2'), sent('r3'), panel('s')];
-  const [a, b, c] = [first, late, none].map((log) => budgets(records, script, log, { windowTokens: 1_000_000 }));
-  assert.deepEqual(a.flags, []);
-  assert.deepEqual(b, a, 'each event after its request');
-  assert.deepEqual(c, a, 'no stream event at all');
-  assert.deepEqual(a.headroom.map((h) => [h.kind, h.request]), [['compiled', 'r1'], ['continuation', 'r3']]);
 });
 
 test('K2d: a continuation under a report that the window governs the agent\'s stream, at the stand-in\'s window, isn\'t held to the stream bound, and a note says so', () => {
@@ -327,7 +291,7 @@ test('K2d: with no report for the agent, only a continuation after a round over 
     assert.match(flags[0].message, /couldn't judge/);
   }
   // A report logged after the request doesn't govern it.
-  const late = budgets(crossing(), [turnStep('a')], [sent('r1'), sent('r2'), sent('r3'), budgetReport(`  fixture: 30.0k (last: 0, 0%)${WINDOW_CLAUSE}`), panel('s')], { streamBound: 30_000, windowTokens: 1_000_000 }).flags;
+  const late = budgets(crossing(), [turnStep('a')], [R1_COMPILED, sent('r1'), sent('r2'), sent('r3'), budgetReport(`  fixture: 30.0k (last: 0, 0%)${WINDOW_CLAUSE}`), panel('s')], { streamBound: 30_000, windowTokens: 1_000_000 }).flags;
   assert.deepEqual(late.map((f) => f.request), ['r3']);
   assert.match(late[0].message, /couldn't judge/);
 });
@@ -345,8 +309,8 @@ test('K2b: a compiled request is held to the model\'s window by the stand-in\'s 
   const script = [turnStep('a'), { ...turnStep('b'), segment: 't' }];
   // A 30,000-token window: r1's whole input fits it exactly, r2's (a restart's compile) passes it,
   // and r3's plan sits in context-manager's slack band, which budgetMet: false reports.
-  const records = [opened('r1', 'a', 17_952, 30_000), opened('r2', 'a', 18_000, 31_000), opened('r3', 'b', 10_000, 18_000)];
-  const log = [panel('s'), panel('t', { budgetMet: false, exhausted: true })];
+  const [records, lines] = compiledAs([opened('r1', 'a', 17_952, 30_000), opened('r2', 'a', 18_000, 31_000), opened('r3', 'b', 10_000, 18_000)], ['r1', 'r2', 'r3']);
+  const log = [lines, panel('s'), panel('t', { budgetMet: false, exhausted: true })];
   const { flags, headroom } = budgets(records, script, log, { windowTokens: 30_000 });
   assert.deepEqual(flags.map((f) => [f.check, f.step, f.request]), [[3, 'a', 'r2']]);
   assert.match(flags[0].message, /31000.*30000-token window/);
@@ -358,14 +322,14 @@ test('K2b: a continuation round is held to the stream bound, flagged only when t
   // The stream bound 30,000 for the test; agent-framework restarts once a round's input passes it.
   const r1 = opened('r1', 'a', 15_000, 29_000, ['t1']);
   const r2 = continued(r1, 'r2', 22_000, 31_000, ['t2']);
-  const records = [r1, r2, continued(r2, 'r3', 23_000, 32_000)];
-  const log = [budgetReport('  fixture: 30.0k (last: 0, 0%)'), sent('r1'), sent('r2'), sent('r3'), panel('s')];
+  const [records, lines] = compiledAs([r1, r2, continued(r2, 'r3', 23_000, 32_000)], ['r1']);
+  const log = [lines, budgetReport('  fixture: 30.0k (last: 0, 0%)'), sent('r1'), sent('r2'), sent('r3'), panel('s')];
   const { flags, headroom } = budgets(records, script, log, { streamBound: 30_000, windowTokens: 1_000_000 });
   assert.deepEqual(flags.map((f) => f.request), ['r3'], 'r2 may cross the bound, since r1 was under it; r3 follows a round over it');
   assert.match(flags[0].message, /31000.*30000/);
   assert.deepEqual(headroom.filter((h) => h.kind === 'continuation').map((h) => [h.request, h.tokens, h.bound]), [['r3', 32_000, 30_000]]);
-  assert.equal(budgets(records, script, [panel('s')], { windowTokens: 1_000_000 }).flags.length, 0, 'under agent-framework 0.28.0\'s default bound, 150,000, none is over');
-  assert.deepEqual(budgets(records, script, [panel('s', { budgetMet: false })], { windowTokens: 1_000_000 }).flags, [], 'context-manager\'s budgetMet is no flag');
+  assert.equal(budgets(records, script, [lines, panel('s')], { windowTokens: 1_000_000 }).flags.length, 0, 'under agent-framework 0.28.0\'s default bound, 150,000, none is over');
+  assert.deepEqual(budgets(records, script, [lines, panel('s', { budgetMet: false })], { windowTokens: 1_000_000 }).flags, [], 'context-manager\'s budgetMet is no flag');
 });
 
 test('K2b: a continuation is held to its stream\'s fresh input so far, as membrane sums it, not to the whole input of the request before it', () => {
@@ -373,18 +337,18 @@ test('K2b: a continuation is held to its stream\'s fresh input so far, as membra
   // A warm restart's compile: 31,000 tokens whole, 2,000 of them read from the cache. Its fresh
   // 29,000 is under the 30,000 bound, so agent-framework continues, and rightly.
   const w1 = opened('w1', 'a', 20_000, 31_000, ['t1'], 2_000);
-  const warm = [w1, continued(w1, 'w2', 21_000, 32_000)];
-  assert.deepEqual(budgets(warm, script, [budgetReport('  fixture: 30.0k (last: 0, 0%)'), panel('s')], { streamBound: 30_000, windowTokens: 1_000_000 }).flags, []);
+  const [warm, warmLines] = compiledAs([w1, continued(w1, 'w2', 21_000, 32_000)], ['w1']);
+  assert.deepEqual(budgets(warm, script, [warmLines, budgetReport('  fixture: 30.0k (last: 0, 0%)'), panel('s')], { streamBound: 30_000, windowTokens: 1_000_000 }).flags, []);
   // Cache misses mid-stream: no request's whole input passes 30,000, but the fresh input summed over
   // the stream does before x3 (20,000 + 15,000), so agent-framework should have restarted there.
   const x1 = opened('x1', 'a', 12_000, 20_000, ['t1']);
   const x2 = continued(x1, 'x2', 14_000, 25_000, ['t2'], 10_000);
-  const missed = [x1, x2, continued(x2, 'x3', 15_000, 27_000)];
-  const { flags } = budgets(missed, script, [budgetReport('  fixture: 30.0k (last: 0, 0%)'), sent('x1'), sent('x2'), sent('x3'), panel('s')], { streamBound: 30_000, windowTokens: 1_000_000 });
+  const [missed, missedLines] = compiledAs([x1, x2, continued(x2, 'x3', 15_000, 27_000)], ['x1']);
+  const { flags } = budgets(missed, script, [missedLines, budgetReport('  fixture: 30.0k (last: 0, 0%)'), sent('x1'), sent('x2'), sent('x3'), panel('s')], { streamBound: 30_000, windowTokens: 1_000_000 });
   assert.deepEqual(flags.map((f) => f.request), ['x3']);
   assert.match(flags[0].message, /fresh input reached 35000 tokens, over the stream bound 30000/);
   // A continuation's whole input is held to the window too.
-  const wide = budgets(warm, script, [budgetReport('  fixture: 300.0k (last: 0, 0%)'), panel('s')], { streamBound: 300_000, windowTokens: 31_500 }).flags;
+  const wide = budgets(warm, script, [warmLines, budgetReport('  fixture: 300.0k (last: 0, 0%)'), panel('s')], { streamBound: 300_000, windowTokens: 31_500 }).flags;
   assert.deepEqual(wide.map((f) => f.request), ['w2']);
   assert.match(wide[0].message, /continuation round's whole input at 32000 tokens, over the model's 31500-token window/);
 });
@@ -396,13 +360,15 @@ test('K2b: for a second agent, check 3 judges its own requests (the stand-in\'s 
   const s3 = sub(continued(s2, 's3', 2_200, 12_000));
   const p1 = { ...opened('p1', 'b', 1_000, 9_000), agent: 'primary' };
   const script = [turnStep('a'), turnStep('b')];
-  const log = [sent('s1'), sent('s2'), sent('s3'), sent('p1')];
-  const forSub = budgets([s1, s2, s3, p1], script, log, { agent: 'knowledge-1', streamBound: 100_000, windowTokens: 1_000_000 });
+  const [subMarked, subLines] = compiledAs([s1, s2, s3, p1], ['s1'], 'knowledge-1');
+  const [records, primaryLines] = compiledAs(subMarked, ['p1']);
+  const log = [subLines, primaryLines, sent('s1'), sent('s2'), sent('s3'), sent('p1')];
+  const forSub = budgets(records, script, log, { agent: 'knowledge-1', streamBound: 100_000, windowTokens: 1_000_000 });
   assert.deepEqual(forSub.flags, []);
   assert.equal(forSub.requests, 3);
   assert.equal(forSub.judged, 3, 'the subagent\'s compiled request and its two continuation rounds');
   assert.deepEqual(forSub.headroom.map((h) => [h.kind, h.request]), [['compiled', 's1'], ['continuation', 's3']]);
-  const forPrimary = budgets([s1, s2, s3, p1], script, log, { streamBound: 100_000, windowTokens: 1_000_000 });
+  const forPrimary = budgets(records, script, log, { streamBound: 100_000, windowTokens: 1_000_000 });
   assert.equal(forPrimary.requests, 1);
   assert.equal(forPrimary.judged, 1);
 });
@@ -412,24 +378,33 @@ test('K2b: a request the stand-in answered with a provider error isn\'t judged, 
   const failed = { ...opened('r1', 'a', 20_000, 31_000, ['t1']), usage: undefined, answer: { shape: 'error', status: 529 } };
   const retry = opened('r2', 'a', 20_000, 29_000, ['t1']);
   const next = continued(retry, 'r3', 21_000, 30_000);
-  const { flags, judged } = budgets([failed, retry, next], script, [budgetReport('  fixture: 30.0k (last: 0, 0%)'), sent('r1'), sent('r2'), sent('r3'), panel('s')], { streamBound: 30_000, windowTokens: 1_000_000 });
+  // agent-framework resends the refused request: the one compile is the failed request's, and the
+  // retry and the round after it pair as rounds of its turn.
+  const [records, lines] = compiledAs([failed, retry, next], ['r1']);
+  const { flags, judged } = budgets(records, script, [lines, budgetReport('  fixture: 30.0k (last: 0, 0%)'), sent('r1'), sent('r2'), sent('r3'), panel('s')], { streamBound: 30_000, windowTokens: 1_000_000 });
   assert.deepEqual(flags, [], 'the error\'s missing usage is no couldn\'t-judge');
   assert.equal(judged, 2, 'the retry and its continuation');
 });
 
-test('K2b: a request its records don\'t classify, a compiled request with no usage, a check given no window, and a segment with no agent request each say the check couldn\'t judge', () => {
+test('K2b: a run with no compile line of the agent\'s, a compiled request with no usage, a check given no window, and a segment with no agent request each say the check couldn\'t judge', () => {
   const script = [turnStep('a'), { ...turnStep('b'), segment: 't' }];
-  const undigested = { ...opened('r1', 'a', 1_000), messages: [{ role: 'user', blocks: [text()] }] };
-  const unclassified = budgets([undigested], [turnStep('a')], [panel('s')], { windowTokens: 1_000_000 }).flags;
-  assert.deepEqual(unclassified.map((f) => f.request), ['r1']);
-  assert.match(unclassified[0].message, /couldn't judge/);
-  const unused = budgets([{ ...opened('r1', 'a', 1_000), usage: undefined }], [turnStep('a')], [panel('s')], { windowTokens: 1_000_000 }).flags;
+  const lineless = budgets([opened('r1', 'a', 1_000)], [turnStep('a')], [panel('s')], { windowTokens: 1_000_000 });
+  assert.deepEqual(lineless.flags.map((f) => [f.check, f.step, f.what]), [[3, 'the run', 'no-compile-lines']]);
+  assert.match(lineless.flags[0].message, /couldn't judge fixture's 1 request\(s\): the log holds no request compile line of fixture's/);
+  assert.equal(lineless.judged, null, 'judged none, and counted as unknown rather than as nothing judged');
+  const primaryLine = compiledAs([opened('p1', 'a', 1_000)], ['p1'])[1];
+  const subLineless = budgets([{ ...opened('s1', 'a', 1_000), agent: 'sub' }], [turnStep('a')], [primaryLine, panel('s')], { agent: 'knowledge-1', windowTokens: 1_000_000 }).flags;
+  assert.match(subLineless[0].message, /couldn't judge knowledge-1's 1 request\(s\)/, 'the primary\'s lines don\'t stand for a second agent\'s');
+  const [unusedRecords, unusedLines] = compiledAs([{ ...opened('r1', 'a', 1_000), usage: undefined }], ['r1']);
+  const unused = budgets(unusedRecords, [turnStep('a')], [unusedLines, panel('s')], { windowTokens: 1_000_000 }).flags;
   assert.deepEqual(unused.map((f) => f.request), ['r1']);
   assert.match(unused[0].message, /couldn't judge.*no usage/);
-  const windowless = budgets([opened('r1', 'a', 1_000)], [turnStep('a')], [panel('s')]).flags;
+  const [one, oneLine] = compiledAs([opened('r1', 'a', 1_000)], ['r1']);
+  const windowless = budgets(one, [turnStep('a')], [oneLine, panel('s')]).flags;
   assert.deepEqual(windowless.map((f) => f.request), ['r1']);
   assert.match(windowless[0].message, /couldn't judge.*no window/);
-  assert.deepEqual(budgets([opened('r1', 'a', 1_000), opened('r2', 'b', 1_000)], script, [panel('s'), panel('t', { budget: 30_000 })], { windowTokens: 1_000_000 }).flags, [], 'a budget that moved between checkpoints bounds nothing the check reads');
+  const [two, twoLines] = compiledAs([opened('r1', 'a', 1_000), opened('r2', 'b', 1_000)], ['r1', 'r2']);
+  assert.deepEqual(budgets(two, script, [twoLines, panel('s'), panel('t', { budget: 30_000 })], { windowTokens: 1_000_000 }).flags, [], 'a budget that moved between checkpoints bounds nothing the check reads');
   assert.equal(budgets([], [turnStep('a')], [panel('s')], { windowTokens: 1_000_000 }).flags.length, 1, 'a checkpoint whose segment made no agent request is a flag');
 });
 

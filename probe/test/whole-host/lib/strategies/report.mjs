@@ -3,12 +3,12 @@ import { budgets, compileInvariants, ofSide, pairing, reloads, declaredProducts,
 
 /**
  * Every check one side's run gives: its flags, the segments missing a declared product, each
- * segment's least budget headroom (checks.mjs budgets), notes (each settle at which the host
- * reported no deferred-write count, and each boot whose budget report said the agent's window,
- * not its stream bound, governs its continuation rounds), and `judged`: each check's count of
+ * segment's least budget headroom (checks.mjs budgets), notes (each boot whose budget report
+ * said the agent's window, not its stream bound, governs its continuation rounds), and
+ * `judged`: each check's count of
  * what it judged, `[{ check, name, judged }]`. Where a check applies to the run and judged none of
  * it, that's a couldn't-judge flag, never a pass: check 3's budgets, where the run's agent made a
- * request; checks 11 and 13, where it did with the test module on (`moduleOn`); check 12, where
+ * request; checks 11 and 13, where it did (the module is always on in a judged run); check 12, where
  * the script has a restart with `reloadCheck`. The other checks' counts are reported only.
  * `store` is read-store.mjs's read of the run's final store copy, or null when the configuration
  * keeps no summaries to read. `agent` is the run's agent, whose panel and events the checks read;
@@ -19,7 +19,7 @@ import { budgets, compileInvariants, ofSide, pairing, reloads, declaredProducts,
  * only for the primary: a subagent's turns aren't the script's, so its windows go uncounted there and
  * check 4 holds its requests to its store).
  */
-export function runChecks({ records, log, script, products, store, agent = FIXTURE_AGENT, side = agent === FIXTURE_AGENT ? 'primary' : 'sub', streamBound = STREAM_BOUND, windowTokens, moduleOn = true }) {
+export function runChecks({ records, log, script, products, store, agent = FIXTURE_AGENT, side = agent === FIXTURE_AGENT ? 'primary' : 'sub', streamBound = STREAM_BOUND, windowTokens }) {
   const own = ofSide(side);
   const budget = budgets(records, script, log, { agent, streamBound, windowTokens });
   const ownRequests = records.filter(own).length;
@@ -34,9 +34,9 @@ export function runChecks({ records, log, script, products, store, agent = FIXTU
     ...(store ? [{ check: 5, name: 'bookkeeping', flags: bookkeeping(records, store) }] : []),
     { check: 6, name: 'windows raw', flags: windowsRaw(records, script, log, store, { agent, side }), applies: side === 'primary' && turnRequests > 0 ? `the run's agent made ${turnRequests} request(s) at a scripted turn after the first` : null },
     { check: 10, name: 'calibration edge', flags: calibrationEdge(log) },
-    { check: 11, name: 'compile invariants', flags: compileInvariants(log), applies: moduleOn && budget.requests > 0 ? 'the test module was on and the run\'s agent made requests' : null },
+    { check: 11, name: 'compile invariants', flags: compileInvariants(log), applies: budget.requests > 0 ? 'the run\'s agent made requests' : null },
     { check: 12, name: 'reloads', flags: reloads(log), applies: script.some((s) => s.reloadCheck) ? 'the script restarts with a reload check' : null },
-    { check: 13, name: 'pairing', flags: pairing(records, log, agent), applies: moduleOn && budget.requests > 0 ? 'the test module was on and the run\'s agent made requests' : null },
+    { check: 13, name: 'pairing', flags: pairing(records, log, agent), applies: budget.requests > 0 ? 'the run\'s agent made requests' : null },
   ];
   const judged = parts.map((p) => ({ check: p.check, name: p.name, judged: p.judged ?? p.flags.judged ?? null }));
   const unjudged = parts.filter((p) => p.applies && (p.judged ?? p.flags.judged) === 0).map((p) => ({
@@ -44,11 +44,7 @@ export function runChecks({ records, log, script, products, store, agent = FIXTU
     message: `couldn't judge: check ${p.check} (${p.name}) judged nothing, though it applies (${p.applies})`,
   }));
   const flags = [...parts.flatMap((p) => p.flags), ...unjudged];
-  const notes = [
-    ...log.filter((e) => e.kind === 'settle' && e.phase === 'end' && e.deferredWritesReported === false).map((e) => `the host reported no deferred-write count at ${e.step}'s settle`),
-    ...budget.notes,
-  ];
-  return { flags, missing: declaredProducts(records, script, products, store), headroom: budget.headroom, notes, judged };
+  return { flags, missing: declaredProducts(records, script, products, store), headroom: budget.headroom, notes: budget.notes, judged };
 }
 
 // A flag's identity in an expected failure's key and in its failure name: its check, its step, and
@@ -105,7 +101,7 @@ export function readExpected(path, names) {
  * (the rest, entries no flag met among them), `expected` (the flags entries cover) and
  * `missing` (`{ segment, name }`, products the candidate lacks).
  */
-export function perCheckReport({ configuration, candidate, timing = {}, expected = [] }) {
+export function perCheckReport({ configuration, candidate, expected = [] }) {
   const invalid = candidate.flags.filter((f) => f.check === 10);
   const entries = expected.filter((e) => e.configuration === configuration.name).map((e) => ({ e, re: e.match === undefined ? null : new RegExp(e.match) }));
   const coverOf = (f) => entries.filter(({ e, re }) => key(e) === key(f) && (!re || re.test(f.detail ?? f.message ?? '')));
@@ -125,15 +121,10 @@ export function perCheckReport({ configuration, candidate, timing = {}, expected
   }
   const missing = candidate.missing.flatMap((m) => m.missing.map((name) => ({ segment: m.segment, name })));
   const verdict = invalid.length ? 'invalid' : flags.length || missing.length ? 'flags' : 'pass';
-  const when = [
-    timing.wallMs !== undefined ? `${(timing.wallMs / 1000).toFixed(1)} s` : null,
-    timing.load !== undefined ? `load ${timing.load}` : null,
-    timing.timerLive ? 'the 5 s maintenance timer was live' : null,
-  ].filter(Boolean).join(', ');
   const lines = [];
   if (invalid.length) lines.push(`INVALID: ${invalid[0].message}${invalid.length > 1 ? ` (and ${invalid.length - 1} more)` : ''}. Its folds are clamped folds, not a store's.`);
   const findings = [...new Set(covered.map((c) => c.finding))];
-  lines.push(`${configuration.name}: ${verdict === 'pass' ? 'no flags' : `${flags.length} flag(s), ${missing.length} missing product(s)`}${covered.length ? `, ${covered.length} expected (${findings.join(', ')})` : ''}${when ? ` (${when})` : ''}.`);
+  lines.push(`${configuration.name}: ${verdict === 'pass' ? 'no flags' : `${flags.length} flag(s), ${missing.length} missing product(s)`}${covered.length ? `, ${covered.length} expected (${findings.join(', ')})` : ''}.`);
   for (const f of flags) lines.push(`- check ${f.check} at ${f.step}${f.request ? ` (${f.request})` : ''}: ${f.message}`);
   for (const { f, finding } of covered) lines.push(`- check ${f.check} at ${f.step}${f.request ? ` (${f.request})` : ''}: ${f.message} [expected: ${finding}]`);
   for (const m of missing) lines.push(`- check 2, ${m.segment}: missing ${m.name}`);

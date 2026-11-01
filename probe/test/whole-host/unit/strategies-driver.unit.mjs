@@ -52,14 +52,9 @@ test('D12: `/budget`\'s output is whole once it holds the agent\'s own line, or 
   assert.equal(budgetReportDone(['Unknown command: /budget'], 'fixture'), true, 'a host without the report doesn\'t hold the run');
 });
 
-test('R7b: an answer with no deferred-write count doesn\'t hold the settle, and the reading says the count wasn\'t reported', () => {
+test('R7b: an answer with no deferred-write count isn\'t settled, so a host that stops reporting it fails the settle', () => {
   const unreported = answer();
   delete unreported.hostMode.deferredWrites;
-  const read = readSettle(unreported, null);
-  assert.equal(read.settled, true);
-  assert.equal(read.deferredWritesReported, false);
-  assert.equal(readSettle(answer(), null).deferredWritesReported, true);
-  const notReady = answer({ ready: false, pending: true });
-  delete notReady.hostMode.deferredWrites;
-  assert.equal(readSettle(notReady, null).settled, false, 'the rest of the answer still decides');
+  assert.equal(readSettle(unreported, null).settled, false);
+  assert.equal(readSettle(answer(), null).settled, true);
 });

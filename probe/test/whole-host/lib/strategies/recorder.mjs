@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { maskRunVarying } from './compare.mjs';
 import { CANARY } from './standin.mjs';
-import { checkBookkeeping, checkCompile, digest, isUnreadable, normalizeMessage, readSummaries, readable, sourceStrings } from './invariants.mjs';
+import { checkCompile, digest, isUnreadable, normalizeMessage, readSummaries, readable, sourceStrings } from './invariants.mjs';
 
 const PASSTHROUGH = ['PassthroughStrategy', 'WindowedPassthroughStrategy'];
 
@@ -92,21 +92,9 @@ export function refusedLine(error, blobs) {
   };
 }
 
-/** The reads a workload's checks and the step records take, none of which moves anything. */
-export function stateOf(manager, ticksInFlight, blobs) {
-  const summaries = readSummaries(manager);
-  return {
-    ready: plain(readable(() => manager.isReady())),
-    waiting: plain(readable(() => manager.getWaitingWork())),
-    pending: plain(readable(() => manager.getPendingWork())),
-    progress: untimed(plain(readable(() => manager.getStrategy().getProgressSnapshot()))),
-    maxLevel: plain(readable(() => manager.getMaxSummaryLevel())),
-    branch: plain(readable(() => manager.currentBranch().name)),
-    ticksInFlight,
-    summaries: isUnreadable(summaries) ? summaries : [...summaries.values()].map((s) => ({ ...s, content: blobs.put(s.content ?? null) })),
-    receiptHead: receiptHeadOf(manager),
-    violations: isUnreadable(summaries) ? [] : checkBookkeeping(summaries),
-  };
+/** The read W1's and W2's properties take, the store's highest summary level. It moves nothing. */
+export function stateOf(manager) {
+  return { maxLevel: plain(readable(() => manager.getMaxSummaryLevel())) };
 }
 
 /**

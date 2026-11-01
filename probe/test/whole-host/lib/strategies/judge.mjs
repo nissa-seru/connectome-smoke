@@ -41,7 +41,7 @@ function auditTopology({ installDir, storePath, namespace }) {
 /**
  * Judge one side's run from what it recorded: the stand-in's `records`, the driver's `log`,
  * the `script` it ran, and `storeCopy`, a copy of its final store's session directory (or
- * null). Returns `{ flags, missing, headroom, timing }` for report.mjs's perCheckReport:
+ * null). Returns `{ flags, missing, headroom, notes, judged }` for report.mjs's perCheckReport:
  * - a run that failed (`run.ok` false) is a check 1 flag at `the run`, naming its failure,
  *   and its store isn't read;
  * - where the run succeeded and the configuration keeps summaries, the store is read
@@ -54,7 +54,7 @@ function auditTopology({ installDir, storePath, namespace }) {
  * - a run that succeeded with no store copy, where the configuration keeps summaries, a store
  *   that can't be read otherwise, and an audit that couldn't run throw, since the side couldn't
  *   be judged.
- * `timing` gives the store read's and the audit's milliseconds. `readers` replaces the store
+ * `readers` replaces the store
  * read and the audit, for tests. `declared` is the products the run's segments declare (check 2):
  * the continuation's (workloads.mjs runOf `products`), by default; other workloads declare none.
  */
@@ -62,13 +62,11 @@ export async function judge({ records, log, script, storeCopy, configuration, in
   const read = readers.readStore ?? readStore;
   const audit = readers.audit ?? auditTopology;
   const flags = [];
-  const timing = {};
   if (!run?.ok) flags.push({ check: 1, step: 'the run', message: `the run failed: ${run?.failure?.reason ?? run?.failure ?? 'no reason given'}` });
   let store = null;
   const target = judgedAgent(configuration, log);
   if (run?.ok && configuration.summarises !== false && storeCopy) {
     const { namespace, isolate } = target;
-    let t = performance.now();
     // A configuration that compresses and kept no summaries is a finding about the run, such as a
     // compression model that defers every chunk, so it's a flag and the store's other checks skip;
     // any other failure to read the store means the run can't be judged.
@@ -77,18 +75,15 @@ export async function judge({ records, log, script, storeCopy, configuration, in
       flags.push({ check: 5, step: 'the run', what: 'no-summaries', message: `the store kept no summaries, though the configuration compresses: ${e.message}` });
       return null;
     });
-    timing.readMs = Math.round(performance.now() - t);
-    t = performance.now();
     const audited = isolate
       ? { status: store?.violations?.length ? 2 : 0, output: (store?.violations ?? []).join('\n') }
       : audit({ installDir, storePath: storeCopy, namespace });
-    timing.auditMs = Math.round(performance.now() - t);
     if (audited.status === 2) flags.push({ check: 5, step: 'the run', message: `audit-topology found violations: ${audited.output.trim().slice(0, 600)}` });
     else if (audited.status !== 0) throw new Error(`audit-topology couldn't run (exit ${audited.status}): ${audited.output.trim().slice(0, 600)}`);
   } else if (configuration.summarises !== false && run?.ok) {
     throw new Error('the run succeeded but left no store copy to judge');
   }
   // The stream bound is what the host gives the agent (asRun), else the recipe's own, else agent-framework's default.
-  const checked = runChecks({ records, log, script, products: declared, store, agent: target.agent, streamBound: configuration.streamBound ?? configuration.agent?.maxStreamTokens ?? STREAM_BOUND, windowTokens: configuration.windowTokens, moduleOn: configuration.harnessModule !== false });
-  return { flags: [...flags, ...checked.flags], missing: checked.missing, headroom: checked.headroom, notes: checked.notes, judged: checked.judged, timing };
+  const checked = runChecks({ records, log, script, products: declared, store, agent: target.agent, streamBound: configuration.streamBound ?? configuration.agent?.maxStreamTokens ?? STREAM_BOUND, windowTokens: configuration.windowTokens });
+  return { flags: [...flags, ...checked.flags], missing: checked.missing, headroom: checked.headroom, notes: checked.notes, judged: checked.judged };
 }

@@ -430,24 +430,3 @@ test('T18: each message in a record has a digest, the same wherever it is carrie
   } finally { if (!records) await standin.close(); }
 });
 
-test('T16: each request\'s record counts its messages\' tokens apart from its system prompt and tools, the same every time for the same messages', async () => {
-  const standin = await startStandin({ configuration: { windowTokens: 50_000 } });
-  let records = null;
-  try {
-    standin.setStep(step('m', [{ text: 'a' }, { text: 'b' }, { text: 'c' }, { text: 'd' }]));
-    const body = agentBody({ canary: '[[c:m.in]]' });
-    const longerSystem = { ...body, system: `${body.system} ${prose(4000, 5)}`, tools: [...TOOLS, { name: 'more', description: prose(800, 6), input_schema: { type: 'object', properties: {} } }] };
-    const moreMessages = agentBody({ canary: '[[c:m.in]]', history: [{ role: 'user', content: [{ type: 'text', text: prose(3000, 4) }] }, { role: 'assistant', content: [{ type: 'text', text: 'ok' }] }] });
-    await post(standin.url, body);
-    await post(standin.url, longerSystem);
-    await post(standin.url, body);
-    await post(standin.url, moreMessages);
-    records = await standin.close();
-    const [one, two, three, four] = records;
-    assert.ok(Number.isInteger(one.messageTokens) && one.messageTokens > 0);
-    assert.equal(two.messageTokens, one.messageTokens, 'a longer system prompt and more tools leave it as it was');
-    assert.equal(three.messageTokens, one.messageTokens, 'the same messages count the same');
-    assert.ok(four.messageTokens > one.messageTokens + 900, `${one.messageTokens} → ${four.messageTokens}`);
-    assert.ok(one.usage.input_tokens + one.usage.cache_read_input_tokens + one.usage.cache_creation_input_tokens > one.messageTokens, 'the whole request counts more');
-  } finally { if (!records) await standin.close(); }
-});

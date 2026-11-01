@@ -288,18 +288,4 @@ export function checkCompile(manager, budget, compiled, messages, { compresses: 
   return dedupe(out);
 }
 
-/** At each level, no two summaries share a source. */
-export function checkBookkeeping(summaries) {
-  const out = [];
-  const owner = new Map();
-  for (const s of summaries.values()) {
-    for (const src of s.sources) {
-      const key = `${s.level}:${src}`;
-      if (owner.has(key)) out.push({ invariant: 'bookkeeping', detail: `L${s.level} summaries ${owner.get(key)} and ${s.id} share source ${src}` });
-      else owner.set(key, s.id);
-    }
-  }
-  return dedupe(out);
-}
-
 const dedupe = (violations) => [...new Map(violations.map((v) => [`${v.invariant}|${v.detail}`, v])).values()];
