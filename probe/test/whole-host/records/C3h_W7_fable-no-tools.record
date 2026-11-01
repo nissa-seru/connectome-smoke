@@ -8,9 +8,9 @@ T:user-delivered-plain-speech = [delivered] plain speech → chat
 T:user-routing-your-plain = [routing] Your plain speech now lands in chat. Other channels need an explicit send tool.
 T:user-the-local-time = The local time at the start of this session is #-#-#T#:#:#.#+#:# [UTC].
 heads
-H:9eff4c48 = model claude-opus-4-6, max_tokens 16384, stream true, system [T:system-you-are-the], tools -
+H:148aa17f = model claude-opus-4-6, max_tokens 16384, stream true, system [T:system-you-are-the], tools -, headers beta - version 2023-06-01
 step 2057.1
-  compile [T:user-clock-monday-#-#-#](2026,01,05,09,00) [T:user-the-local-time](2026,01,05,09,00,00,000,00,00) 2057.1.in [T:user-routing-your-plain] ^ 4, head H:9eff4c48, body e557c77c
+  compile [T:user-clock-monday-#-#-#](2026,01,05,09,00) [T:user-the-local-time](2026,01,05,09,00,00,000,00,00) 2057.1.in [T:user-routing-your-plain] ^ 4, head H:148aa17f, body e557c77c
 step 2057.2
   compile + 2057.1.r1 [T:user-delivered-plain-speech] 2057.2.in ^ 4, body 566629e7
 step 2057.3

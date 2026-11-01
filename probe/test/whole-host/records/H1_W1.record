@@ -110,10 +110,10 @@ T:user-delivered-plain-speech = [delivered] plain speech → chat
 T:user-routing-your-plain = [routing] Your plain speech now lands in chat. Other channels need an explicit send tool.
 T:user-the-local-time = The local time at the start of this session is #-#-#T#:#:#.#+#:# [UTC].
 heads
-H:3daee927 = model claude-opus-4-6, max_tokens 16384, stream true, system [T:system-you-are-the], tools time--now:c75ffd8b toolsets--open:93971848 toolsets--act:31eaf5be toolsets--look:89df00cf toolsets--close:012524d9 mcpl--fixture--result:51a802b9 channel_list:79d10259 channel_open:4cf9e8f9 channel_decline:36d64388 channel_close:064c8388 channel_publish:489a8faa think:90ff8920 journal:3ea69d86 skip_reply:9b9848e9 drafts:a31a7b43
-H:fae19486 = model claude-opus-4-6, max_tokens 16000, stream false, system -, tools time--now:c75ffd8b toolsets--open:93971848 toolsets--act:31eaf5be toolsets--look:89df00cf toolsets--close:012524d9 mcpl--fixture--result:51a802b9 channel_list:79d10259 channel_open:4cf9e8f9 channel_decline:36d64388 channel_close:064c8388 channel_publish:489a8faa think:90ff8920 journal:3ea69d86 skip_reply:9b9848e9 drafts:a31a7b43 agent_settings:68414208
+H:af3002d9 = model claude-opus-4-6, max_tokens 16000, stream false, system -, tools time--now:c75ffd8b toolsets--open:93971848 toolsets--act:31eaf5be toolsets--look:89df00cf toolsets--close:012524d9 mcpl--fixture--result:51a802b9 channel_list:79d10259 channel_open:4cf9e8f9 channel_decline:36d64388 channel_close:064c8388 channel_publish:489a8faa think:90ff8920 journal:3ea69d86 skip_reply:9b9848e9 drafts:a31a7b43 agent_settings:68414208, headers beta - version 2023-06-01
+H:c57a01ca = model claude-opus-4-6, max_tokens 16384, stream true, system [T:system-you-are-the], tools time--now:c75ffd8b toolsets--open:93971848 toolsets--act:31eaf5be toolsets--look:89df00cf toolsets--close:012524d9 mcpl--fixture--result:51a802b9 channel_list:79d10259 channel_open:4cf9e8f9 channel_decline:36d64388 channel_close:064c8388 channel_publish:489a8faa think:90ff8920 journal:3ea69d86 skip_reply:9b9848e9 drafts:a31a7b43, headers beta - version 2023-06-01
 step 527191.1
-  compile [T:user-clock-monday-#-#-#](2026,01,05,09,00) [T:user-the-local-time](2026,01,05,09,00,00,000,00,00) 527191.1.in [T:user-routing-your-plain] ^ 4, head H:3daee927, body 569d8559
+  compile [T:user-clock-monday-#-#-#](2026,01,05,09,00) [T:user-the-local-time](2026,01,05,09,00,00,000,00,00) 527191.1.in [T:user-routing-your-plain] ^ 4, head H:c57a01ca, body 569d8559
   round + 527191.1.r1 527191.1.call1, body 6364af7c
   round + 527191.1.r2 527191.1.call2, body 198affee
   round + 527191.1.r3 527191.1.call3, body 1461f8c2
@@ -156,7 +156,7 @@ step 527191.11
   round + 527191.11.r1 527191.11.call1, body a53398c0
   round + 527191.11.r2 527191.11.call2, body ae3fefa5
   round + 527191.11.r3 527191.11.call3, body 61a08639
-  call 527191.1.in 527191.1.r1 527191.1.call1 527191.1.r2 527191.1.call2 [T:call-user-clock-monday](2026,01,05,09,00) [T:call-empty] [T:call-the-local-time](2026,01,05,09,00,00,000,00,00) [T:call-empty] [T:call-empty] [T:call-routing-your-plain] [T:call-context-manager-system] [T:call-context-manager-write](2000) -> summary, head H:fae19486, body 02f35059
+  call 527191.1.in 527191.1.r1 527191.1.call1 527191.1.r2 527191.1.call2 [T:call-user-clock-monday](2026,01,05,09,00) [T:call-empty] [T:call-the-local-time](2026,01,05,09,00,00,000,00,00) [T:call-empty] [T:call-empty] [T:call-routing-your-plain] [T:call-context-manager-system] [T:call-context-manager-write](2000) -> summary, head H:af3002d9, body 02f35059
   wrote L1(527191.1.r1-527191.1.call2) [T:summary-l1-c6936888]
 step 527191.12
   compile + 527191.11.r1-527191.11.r4 [T:user-delivered-plain-speech] 527191.12.in ^ 8,10,15,81, body 6df88d01

@@ -153,11 +153,11 @@ T:user-the-local-time = The local time at the start of this session is #-#-#T#:#
 T:user-tune-out-wake-chat = [Tune-out wake: chat — # addressed message]
 T:user-tunedout-chat-cadenceseconds-#-backlogca = {"tunedOut":"chat","cadenceSeconds":#,"backlogCap":#,"maxWakes":#}
 heads
-H:81607724 = model claude-opus-4-6, max_tokens 16384, stream true, system [T:system-reader-you-read], tools deliver_summary:0784d01d cancel_tuneout:096fb17a note_disposition:e504153d speak_in_channel:abaf99b8 think:90ff8920 skip_reply:9b9848e9
-H:abe0a5ed = model claude-opus-4-6, max_tokens 16384, stream true, system [T:system-you-are-the], tools time--now:c75ffd8b toolsets--open:93971848 toolsets--act:31eaf5be toolsets--look:89df00cf toolsets--close:012524d9 mcpl--fixture--result:51a802b9 channel_list:79d10259 channel_open:4cf9e8f9 channel_decline:36d64388 channel_close:064c8388 channel_publish:489a8faa think:90ff8920 journal:3ea69d86 skip_reply:9b9848e9 drafts:a31a7b43 tune_out:2227f0ff focus:5da619ef
-H:d99d4529 = model claude-opus-4-6, max_tokens 16000, stream false, system -, tools time--now:c75ffd8b toolsets--open:93971848 toolsets--act:31eaf5be toolsets--look:89df00cf toolsets--close:012524d9 mcpl--fixture--result:51a802b9 channel_list:79d10259 channel_open:4cf9e8f9 channel_decline:36d64388 channel_close:064c8388 channel_publish:489a8faa think:90ff8920 journal:3ea69d86 skip_reply:9b9848e9 drafts:a31a7b43 tune_out:2227f0ff focus:5da619ef agent_settings:68414208
+H:080f8946 = model claude-opus-4-6, max_tokens 16000, stream false, system -, tools time--now:c75ffd8b toolsets--open:93971848 toolsets--act:31eaf5be toolsets--look:89df00cf toolsets--close:012524d9 mcpl--fixture--result:51a802b9 channel_list:79d10259 channel_open:4cf9e8f9 channel_decline:36d64388 channel_close:064c8388 channel_publish:489a8faa think:90ff8920 journal:3ea69d86 skip_reply:9b9848e9 drafts:a31a7b43 tune_out:2227f0ff focus:5da619ef agent_settings:68414208, headers beta - version 2023-06-01
+H:bfd1f2b6 = model claude-opus-4-6, max_tokens 16384, stream true, system [T:system-you-are-the], tools time--now:c75ffd8b toolsets--open:93971848 toolsets--act:31eaf5be toolsets--look:89df00cf toolsets--close:012524d9 mcpl--fixture--result:51a802b9 channel_list:79d10259 channel_open:4cf9e8f9 channel_decline:36d64388 channel_close:064c8388 channel_publish:489a8faa think:90ff8920 journal:3ea69d86 skip_reply:9b9848e9 drafts:a31a7b43 tune_out:2227f0ff focus:5da619ef, headers beta - version 2023-06-01
+H:d50b9eda = model claude-opus-4-6, max_tokens 16384, stream true, system [T:system-reader-you-read], tools deliver_summary:0784d01d cancel_tuneout:096fb17a note_disposition:e504153d speak_in_channel:abaf99b8 think:90ff8920 skip_reply:9b9848e9, headers beta - version 2023-06-01
 step 485515.tune
-  compile [T:user-clock-monday-#-#-#](2026,01,05,09,00) [T:user-the-local-time](2026,01,05,09,00,00,000,00,00) 734507.1.in [T:user-routing-your-plain] L2(734507.1.r1-734507.5.call1) L2(734507.1.r1-734507.5.call1) L2(734507.5.r2-734507.9.in) L2(734507.5.r2-734507.9.in) L2(734507.9.r1-734507.12.call2) L2(734507.9.r1-734507.12.call2) L2(734507.12.r3-734507.17.r3) L2(734507.12.r3-734507.17.r3) L2(734507.18.in-734507.19.in) L2(734507.18.in-734507.19.in) L2(734507.19.r1-734507.23.r3) L2(734507.19.r1-734507.23.r3) L2(734507.24.in-734507.29.in) L2(734507.24.in-734507.29.in) L2(734507.29.r1-734507.31.call1) L2(734507.29.r1-734507.31.call1) L2(734507.31.r2-734507.35.call1) L2(734507.31.r2-734507.35.call1) L2(734507.35.r2-734507.39.in) L2(734507.35.r2-734507.39.in) L2(734507.39.r1-734507.42.call2) L2(734507.39.r1-734507.42.call2) L2(734507.42.r3-734507.47.r3) L2(734507.42.r3-734507.47.r3) L1(734507.48.in-734507.48.r2) L1(734507.48.in-734507.48.r2) L1(734507.49.in) L1(734507.49.in) L1(-) L1(-) L1(-) L1(-) L1(-) L1(-) [T:user-kettle-meadow-lantern]!shards L2(734507.49.r1-734507.53.r3) L2(734507.49.r1-734507.53.r3) L2(734507.54.in-734507.59.in) L2(734507.54.in-734507.59.in) L1(-) L1(-) L1(-) L1(-) L1(-) L1(-) [T:user-harbor-bridge-letter]!shards 734507.59.r1 [T:user-delivered-plain-speech] 734507.60.in-734507.60.r1 [T:user-delivered-plain-speech] 734507.61.in-734507.61.call1 L2(734507.61.r2-734507.65.call1) L2(734507.61.r2-734507.65.call1) 734507.65.r2 [T:user-delivered-plain-speech] 734507.66.in-734507.66.r1 [T:user-delivered-plain-speech] 734507.67.in-734507.67.r3 [T:user-delivered-plain-speech] 734507.68.in-734507.68.r2 [T:user-delivered-plain-speech] 734507.69.in 734507.69.r1 [T:user-delivered-plain-speech] 734507.70.in-734507.70.r1 [T:user-delivered-plain-speech] [T:user-clock-tuesday-#-#-#](2026,01,06,09,00) 485515.tune.in ^ 39,50,75,85, head H:abe0a5ed, body 7ee7e393
+  compile [T:user-clock-monday-#-#-#](2026,01,05,09,00) [T:user-the-local-time](2026,01,05,09,00,00,000,00,00) 734507.1.in [T:user-routing-your-plain] L2(734507.1.r1-734507.5.call1) L2(734507.1.r1-734507.5.call1) L2(734507.5.r2-734507.9.in) L2(734507.5.r2-734507.9.in) L2(734507.9.r1-734507.12.call2) L2(734507.9.r1-734507.12.call2) L2(734507.12.r3-734507.17.r3) L2(734507.12.r3-734507.17.r3) L2(734507.18.in-734507.19.in) L2(734507.18.in-734507.19.in) L2(734507.19.r1-734507.23.r3) L2(734507.19.r1-734507.23.r3) L2(734507.24.in-734507.29.in) L2(734507.24.in-734507.29.in) L2(734507.29.r1-734507.31.call1) L2(734507.29.r1-734507.31.call1) L2(734507.31.r2-734507.35.call1) L2(734507.31.r2-734507.35.call1) L2(734507.35.r2-734507.39.in) L2(734507.35.r2-734507.39.in) L2(734507.39.r1-734507.42.call2) L2(734507.39.r1-734507.42.call2) L2(734507.42.r3-734507.47.r3) L2(734507.42.r3-734507.47.r3) L1(734507.48.in-734507.48.r2) L1(734507.48.in-734507.48.r2) L1(734507.49.in) L1(734507.49.in) L1(-) L1(-) L1(-) L1(-) L1(-) L1(-) [T:user-kettle-meadow-lantern]!shards L2(734507.49.r1-734507.53.r3) L2(734507.49.r1-734507.53.r3) L2(734507.54.in-734507.59.in) L2(734507.54.in-734507.59.in) L1(-) L1(-) L1(-) L1(-) L1(-) L1(-) [T:user-harbor-bridge-letter]!shards 734507.59.r1 [T:user-delivered-plain-speech] 734507.60.in-734507.60.r1 [T:user-delivered-plain-speech] 734507.61.in-734507.61.call1 L2(734507.61.r2-734507.65.call1) L2(734507.61.r2-734507.65.call1) 734507.65.r2 [T:user-delivered-plain-speech] 734507.66.in-734507.66.r1 [T:user-delivered-plain-speech] 734507.67.in-734507.67.r3 [T:user-delivered-plain-speech] 734507.68.in-734507.68.r2 [T:user-delivered-plain-speech] 734507.69.in 734507.69.r1 [T:user-delivered-plain-speech] 734507.70.in-734507.70.r1 [T:user-delivered-plain-speech] [T:user-clock-tuesday-#-#-#](2026,01,06,09,00) 485515.tune.in ^ 39,50,75,85, head H:bfd1f2b6, body 7ee7e393
   round + 485515.tune.r1, body 939def42
   wrote L1(734507.1.r1-734507.1.call2) [T:summary-l1-6a8bca9a]
   wrote L1(734507.1.r3-734507.2.call1) [T:summary-l1-6a445364]
@@ -282,7 +282,7 @@ step 485515.tune
   wrote L2(734507.61.r2-734507.65.call1) [T:summary-l2-903e0315]
   wrote L1(734507.65.r2-734507.67.call1) [T:summary-l1-8c05220a]
 step 485515.h1
-  compile [Subconscious] 485515.tune.r1 [T:user-tunedout-chat-cadenceseconds-#-backlogca](86400,200,64) 485515.tune.r2 [T:user-delivered-plain-speech] 485515.h1.in [T:user-tune-out-wake-chat](1) [T:user-prose-routing-output-mode] ^ 7, head H:81607724, body 2c7566f3
+  compile [Subconscious] 485515.tune.r1 [T:user-tunedout-chat-cadenceseconds-#-backlogca](86400,200,64) 485515.tune.r2 [T:user-delivered-plain-speech] 485515.h1.in [T:user-tune-out-wake-chat](1) [T:user-prose-routing-output-mode] ^ 7, head H:d50b9eda, body 2c7566f3
   round [Subconscious] =, body 59c224d7
 step 485515.h2
   compile [Subconscious] + 485515.h1.read [T:user-delivered-true] [T:subconscious-skip-reply] [T:user-skipped-true-note-turn-ended-nothing] 485515.h2.in [T:user-tune-out-wake-chat](1) ^ 7,14, body 830d7e83
@@ -295,7 +295,7 @@ step 485515.h4
   round [Subconscious] =, body 80f13d1b
 step 485515.h5
   compile [Subconscious] + 485515.h4.read [T:user-delivered-true] [T:subconscious-skip-reply] [T:user-skipped-true-note-turn-ended-nothing] 485515.h5.in [T:user-tune-out-wake-chat](1) ^ 28,35, body 8bebf3e8
-  call 734507.1.in 734507.67.r2 734507.67.call2 734507.67.r3 [T:call-user-clock-monday](2026,01,05,09,00) [T:call-empty] [T:call-the-local-time](2026,01,05,09,00,00,000,00,00) [T:call-empty] [T:call-empty] [T:call-routing-your-plain] [T:call-context-manager-cm](3,44) L3(734507.1.r1-734507.23.r3) [T:call-context-manager-cm](3,85) L3(734507.24.in-734507.47.r3) [T:call-context-manager-cm](2,101) L2(734507.48.in-734507.49.in) [T:call-context-manager-cm](2,102) L2(734507.49.r1-734507.53.r3) [T:call-context-manager-cm](2,106) L2(734507.54.in-734507.59.in) [T:call-context-manager-cm](2,119) L2(734507.59.r1-734507.61.call1) [T:call-context-manager-cm](2,120) L2(734507.61.r2-734507.65.call1) [T:call-context-manager-cm](1,121) L1(734507.65.r2-734507.67.call1) [T:call-context-manager-system] [T:call-user-delivered-plain] [T:call-context-manager-write](2000) -> summary, head H:d99d4529, body a27de7e4
+  call 734507.1.in 734507.67.r2 734507.67.call2 734507.67.r3 [T:call-user-clock-monday](2026,01,05,09,00) [T:call-empty] [T:call-the-local-time](2026,01,05,09,00,00,000,00,00) [T:call-empty] [T:call-empty] [T:call-routing-your-plain] [T:call-context-manager-cm](3,44) L3(734507.1.r1-734507.23.r3) [T:call-context-manager-cm](3,85) L3(734507.24.in-734507.47.r3) [T:call-context-manager-cm](2,101) L2(734507.48.in-734507.49.in) [T:call-context-manager-cm](2,102) L2(734507.49.r1-734507.53.r3) [T:call-context-manager-cm](2,106) L2(734507.54.in-734507.59.in) [T:call-context-manager-cm](2,119) L2(734507.59.r1-734507.61.call1) [T:call-context-manager-cm](2,120) L2(734507.61.r2-734507.65.call1) [T:call-context-manager-cm](1,121) L1(734507.65.r2-734507.67.call1) [T:call-context-manager-system] [T:call-user-delivered-plain] [T:call-context-manager-write](2000) -> summary, head H:080f8946, body a27de7e4
   round [Subconscious] =, body ecdc9377
   wrote L1(734507.67.r2-734507.67.r3) [T:summary-l1-4760376b]
 step 485515.h6
@@ -308,37 +308,29 @@ step 485515.h8
   compile [Subconscious] + 485515.h7.read [T:user-delivered-true] [T:subconscious-skip-reply] [T:user-skipped-true-note-turn-ended-nothing] 485515.h8.in [T:user-tune-out-wake-chat](1) ^ 49,56, body 273e0be0
   round [Subconscious] =, body 056e561a
 step 485515.h9
-  round [Subconscious] =, body 873a9289
+  compile [Subconscious] -55 ^ 1, body 873a9289
   round [Subconscious] =, body 8c7bdf4c
-  compile [Subconscious] -55 ^ 1
 step 485515.h10
-  round [Subconscious] + 485515.h10.in, body 15ed48f5
+  compile [Subconscious] [T:user-delivered-true] [T:subconscious-skip-reply] [T:user-skipped-true-note-turn-ended-nothing] 485515.h10.in [T:user-tune-out-wake-chat](1) ^ 5, body 15ed48f5
   round [Subconscious] =, body a27c8e64
-  compile [Subconscious] [T:user-delivered-true] [T:subconscious-skip-reply] [T:user-skipped-true-note-turn-ended-nothing] 485515.h10.in [T:user-tune-out-wake-chat](1) ^ 5
 step 485515.h11
-  round [Subconscious] + 485515.h11.in, body 76e5abe7
+  compile [Subconscious] [T:user-delivered-true] [T:subconscious-skip-reply] [T:user-skipped-true-note-turn-ended-nothing] 485515.h11.in [T:user-tune-out-wake-chat](1) ^ 5, body 76e5abe7
   round [Subconscious] =, body 8ae1e1d9
-  compile [Subconscious] [T:user-delivered-true] [T:subconscious-skip-reply] [T:user-skipped-true-note-turn-ended-nothing] 485515.h11.in [T:user-tune-out-wake-chat](1) ^ 5
 step 485515.h12
-  round [Subconscious] + 485515.h12.in, body 51043c66
+  compile [Subconscious] [T:user-delivered-true] [T:subconscious-skip-reply] [T:user-skipped-true-note-turn-ended-nothing] 485515.h12.in [T:user-tune-out-wake-chat](1) ^ 5, body 51043c66
   round [Subconscious] =, body 10784e90
-  compile [Subconscious] [T:user-delivered-true] [T:subconscious-skip-reply] [T:user-skipped-true-note-turn-ended-nothing] 485515.h12.in [T:user-tune-out-wake-chat](1) ^ 5
 step 485515.h13
-  round [Subconscious] + 485515.h12.read 485515.h13.in, body 5a64b32b
+  compile [Subconscious] + 485515.h12.read [T:user-delivered-true] [T:subconscious-skip-reply] [T:user-skipped-true-note-turn-ended-nothing] 485515.h13.in [T:user-tune-out-wake-chat](1) ^ 5,12, body 5a64b32b
   round [Subconscious] =, body d6c5f5eb
-  compile [Subconscious] + 485515.h12.read [T:user-delivered-true] [T:subconscious-skip-reply] [T:user-skipped-true-note-turn-ended-nothing] 485515.h13.in [T:user-tune-out-wake-chat](1) ^ 5,12
 step 485515.h14
-  round [Subconscious] + 485515.h13.read 485515.h14.in, body 27ad50b6
+  compile [Subconscious] + 485515.h13.read [T:user-delivered-true] [T:subconscious-skip-reply] [T:user-skipped-true-note-turn-ended-nothing] 485515.h14.in [T:user-tune-out-wake-chat](1) ^ 12,19, body 27ad50b6
   round [Subconscious] =, body e7578e77
-  compile [Subconscious] + 485515.h13.read [T:user-delivered-true] [T:subconscious-skip-reply] [T:user-skipped-true-note-turn-ended-nothing] 485515.h14.in [T:user-tune-out-wake-chat](1) ^ 12,19
 step 485515.h15
-  round [Subconscious] + 485515.h14.read 485515.h15.in, body 4a3b076f
+  compile [Subconscious] + 485515.h14.read [T:user-delivered-true] [T:subconscious-skip-reply] [T:user-skipped-true-note-turn-ended-nothing] 485515.h15.in [T:user-tune-out-wake-chat](1) ^ 19,26, body 4a3b076f
   round [Subconscious] =, body db4a27fc
-  compile [Subconscious] + 485515.h14.read [T:user-delivered-true] [T:subconscious-skip-reply] [T:user-skipped-true-note-turn-ended-nothing] 485515.h15.in [T:user-tune-out-wake-chat](1) ^ 19,26
 step 485515.h16
-  round [Subconscious] + 485515.h15.read 485515.h16.in, body 97c1ba00
+  compile [Subconscious] + 485515.h15.read [T:user-delivered-true] [T:subconscious-skip-reply] [T:user-skipped-true-note-turn-ended-nothing] 485515.h16.in [T:user-tune-out-wake-chat](1) ^ 26,33, body 97c1ba00
   round [Subconscious] =, body 06835743
-  compile [Subconscious] + 485515.h15.read [T:user-delivered-true] [T:subconscious-skip-reply] [T:user-skipped-true-note-turn-ended-nothing] 485515.h16.in [T:user-tune-out-wake-chat](1) ^ 26,33
 end ok
 receipt fixture #71 changes 734507.48.in/summary/1/71 734507.48.r1/summary/1/71 734507.48.call1/summary/1/71 734507.48.r2/summary/1/71 #1075/summary/1/71 734507.49.in/summary/1/71 #1091/summary/1/71 #1092/summary/1/71 #1094/summary/1/71 #1095/summary/1/71 #1097/summary/1/71 #1099/summary/1/71 #1100/summary/1/71 #1101/summary/1/71 #1103/summary/1/71 #1104/summary/1/71 #1106/summary/1/71 #1108/summary/1/71 #1110/summary/1/71 #1111/summary/1/71 #1113/raw/0/71 #1114/raw/0/71 #1117/raw/0/71 #1118/raw/0/71 734507.61.r2/summary/2/71 734507.61.call2/summary/2/71 734507.61.r3/summary/2/71 #1459/summary/2/71 734507.62.in/summary/2/71 734507.62.r1/summary/2/71 734507.62.call1/summary/2/71 734507.62.r2/summary/2/71 734507.62.call2/summary/2/71 734507.62.r3/summary/2/71 #1481/summary/2/71 734507.63.in/summary/2/71 734507.63.r1/summary/2/71 734507.63.call1/summary/2/71 734507.63.r2/summary/2/71 734507.63.call2/summary/2/71 734507.63.r3/summary/2/71 #1501/summary/2/71 734507.64.in/summary/2/71 734507.64.r1/summary/2/71 734507.64.call1/summary/2/71 734507.64.r2/summary/2/71 #1527/summary/2/71 734507.65.in/summary/2/71 734507.65.r1/summary/2/71 734507.65.call1/summary/2/71 734507.70.r1/raw/0/71 #1692/raw/0/71 #1696/raw/0/71 485515.tune.in/raw/0/71
-totals {"actions":0,"calls":1,"compiles":17,"dry":0,"other":0,"refused":0,"rounds":25,"written":123}
+totals {"actions":0,"calls":1,"compiles":17,"dry":0,"other":0,"refused":0,"rounds":17,"written":123}
