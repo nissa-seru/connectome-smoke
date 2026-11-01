@@ -1,0 +1,226 @@
+# whole-host record C3h/W8/unenforced
+# checkpoint v0.21.0, C3h/W2: connectome-host 0.21.0 (source 54321fd3af80), agent-framework 0.32.0, context-manager 0.24.0, membrane 0.8.0, chronicle 0.5.1, bun 1.4.4
+# candidate: connectome-host 0.21.0, agent-framework 0.32.0, context-manager 0.24.0, membrane 0.8.0, chronicle 0.5.1, bun 1.4.4
+step 680755.1
+  call 757235.1.in 757235.63.r2 757235.63.call2 757235.63.r3 -> summary
+  call 757235.1.in 757235.64.in 757235.64.r1 757235.64.call1 757235.64.r2 -> summary
+  wrote L1(757235.1.r1-757235.1.call2) [T:summary-l1-f3c6a076]
+  wrote L1(757235.1.r3-757235.2.call1) [T:summary-l1-ea07de35]
+  wrote L1(757235.2.r2-757235.2.r3) [T:summary-l1-a91e29b3]
+  wrote L1(757235.3.in-757235.3.call2) [T:summary-l1-f22937bc]
+  wrote L1(757235.3.r3-757235.4.call1) [T:summary-l1-686a466e]
+  wrote L1(757235.4.r2-757235.5.call1) [T:summary-l1-cddeee60]
+  wrote L2(757235.1.r1-757235.5.call1) [T:summary-l2-5f0498b0]
+  wrote L1(757235.5.r2-757235.7.call1) [T:summary-l1-c6f87137]
+  wrote L1(757235.7.r2-757235.7.r3) [T:summary-l1-2ce04b32]
+  wrote L1(757235.8.in-757235.8.r2) [T:summary-l1-07674b07]
+  wrote L1(757235.9.in-757235.9.r1) [T:summary-l1-18a437e1]
+  wrote L1(757235.10.in-757235.11.call1) [T:summary-l1-6a7182df]
+  wrote L1(757235.11.r2-757235.11.r3) [T:summary-l1-0ae1503b]
+  wrote L1(757235.12.in-757235.12.call2) [T:summary-l1-817a22e7]
+  wrote L1(757235.12.r3-757235.13.call1) [T:summary-l1-8da705ae]
+  wrote L2(757235.5.r2-757235.11.r3) [T:summary-l2-da2361c2]
+  wrote L1(757235.13.r2-757235.13.r3) [T:summary-l1-73b10c6e]
+  wrote L1(757235.14.in-757235.14.r2) [T:summary-l1-d9f4854f]
+  wrote L1(757235.15.in-757235.15.call1) [T:summary-l1-ad747225]
+  wrote L1(757235.15.r2-757235.17.call1) [T:summary-l1-2ce43f16]
+  wrote L2(757235.12.in-757235.17.call1) [T:summary-l2-8dbee804]
+  wrote L1(757235.17.r2-757235.17.r3) [T:summary-l1-c10f8353]
+  wrote L1(757235.18.in-757235.18.r2) [T:summary-l1-fbfb26fc]
+  wrote L1(757235.19.in-757235.19.r1) [T:summary-l1-07e56019]
+  wrote L1(757235.20.in-757235.21.call1) [T:summary-l1-31173ce2]
+  wrote L1(757235.21.r2-757235.21.r3) [T:summary-l1-016898aa]
+  wrote L1(757235.22.in-757235.22.call2) [T:summary-l1-841c694b]
+  wrote L1(757235.22.r3-757235.23.call1) [T:summary-l1-0d064571]
+  wrote L2(757235.17.r2-757235.22.call2) [T:summary-l2-2ef15045]
+  wrote L1(757235.23.r2-757235.23.r3) [T:summary-l1-21accf63]
+  wrote L1(757235.24.in-757235.24.r2) [T:summary-l1-3ba3411e]
+  wrote L1(757235.25.in-757235.25.call1) [T:summary-l1-8699c7b8]
+  wrote L1(757235.25.r2-757235.27.call1) [T:summary-l1-ab0ca6a6]
+  wrote L1(757235.27.r2-757235.27.r3) [T:summary-l1-93645a72]
+  wrote L2(757235.22.r3-757235.27.r3) [T:summary-l2-2a59a859]
+  wrote L1(757235.28.in-757235.28.r2) [T:summary-l1-50cce5e1]
+  wrote L1(757235.29.in-757235.29.r1) [T:summary-l1-c82888c6]
+  wrote L1(757235.30.in-757235.31.call1) [T:summary-l1-442d5019]
+  wrote L1(757235.31.r2-757235.31.r3) [T:summary-l1-e919e4b8]
+  wrote L1(757235.32.in-757235.32.call2) [T:summary-l1-f6ca2a58]
+  wrote L1(757235.32.r3-757235.33.call1) [T:summary-l1-cdad54aa]
+  wrote L2(757235.28.in-757235.33.call1) [T:summary-l2-f8049448]
+  wrote L3(757235.1.r1-757235.33.call1) [T:summary-l3-10cf9cfd]
+  wrote L1(757235.33.r2-757235.33.r3) [T:summary-l1-3af94e03]
+  wrote L1(757235.34.in-757235.34.r2) [T:summary-l1-79087883]
+  wrote L1(757235.35.in-757235.35.call1) [T:summary-l1-7ebaeb7d]
+  wrote L1(757235.35.r2-757235.37.call1) [T:summary-l1-9b3a576d]
+  wrote L1(757235.37.r2-757235.37.r3) [T:summary-l1-adc2ac6b]
+  wrote L1(757235.38.in-757235.38.r2) [T:summary-l1-86fef659]
+  wrote L1(757235.39.in-757235.39.r1) [T:summary-l1-28902fa8]
+  wrote L1(757235.40.in-757235.41.call1) [T:summary-l1-6e3e3d9b]
+  wrote L1(757235.41.r2-757235.41.r3) [T:summary-l1-55980128]
+  wrote L1(757235.42.in-757235.42.call2) [T:summary-l1-1861e4fb]
+  wrote L1(757235.42.r3-757235.43.call1) [T:summary-l1-142fbafa]
+  wrote L1(757235.43.r2-757235.43.r3) [T:summary-l1-4726604c]
+  wrote L1(757235.44.in-757235.44.r2) [T:summary-l1-671915a3]
+  wrote L2(757235.33.r2-757235.38.r2) [T:summary-l2-16a78ed7]
+  wrote L2(757235.39.in-757235.43.r3) [T:summary-l2-cd97df3d]
+  wrote L1(757235.45.in-757235.45.call1) [T:summary-l1-5b90a716]
+  wrote L1(757235.45.r2-757235.47.call1) [T:summary-l1-86f6818f]
+  wrote L1(757235.47.r2-757235.47.r3) [T:summary-l1-bd3ff7be]
+  wrote L1(757235.48.in-757235.48.r2) [T:summary-l1-7ba138ed]
+  wrote L1(757235.49.in-757235.49.r1) [T:summary-l1-90be6666]
+  wrote L1(757235.50.in-757235.51.call1) [T:summary-l1-9a0efc66]
+  wrote L1(757235.51.r2-757235.51.r3) [T:summary-l1-0a6cd89b]
+  wrote L1(757235.52.in-757235.52.call2) [T:summary-l1-b39afd5c]
+  wrote L1(757235.52.r3-757235.53.call1) [T:summary-l1-beec8c17]
+  wrote L2(757235.44.in-757235.49.r1) [T:summary-l2-736494b4]
+  wrote L1(757235.53.r2-757235.53.r3) [T:summary-l1-d7bea46c]
+  wrote L1(757235.54.in-757235.54.r2) [T:summary-l1-dde6045b]
+  wrote L1(757235.55.in-757235.55.call1) [T:summary-l1-670ab40f]
+  wrote L2(757235.50.in-757235.54.r2) [T:summary-l2-9b954151]
+  wrote L1(757235.55.r2-757235.57.call1) [T:summary-l1-3159e308]
+  wrote L1(757235.57.r2-757235.57.r3) [T:summary-l1-29adf43e]
+  wrote L1(757235.58.in-757235.58.r2) [T:summary-l1-b053647b]
+  wrote L1(757235.59.in-757235.59.r1) [T:summary-l1-aa8869f7]
+  wrote L1(757235.60.in-757235.61.call1) [T:summary-l1-5b964ea5]
+  wrote L1(757235.61.r2-757235.61.r3) [T:summary-l1-5740ee02]
+  wrote L1(757235.62.in-757235.62.call2) [T:summary-l1-b4c2dada]
+  wrote L1(757235.62.r3-757235.63.call1) [T:summary-l1-df941240]
+  wrote L2(757235.55.in-757235.61.call1) [T:summary-l2-89664339]
+  wrote L1(757235.63.r2-757235.63.r3) [T:summary-l1-3e6413d5]
+  wrote L1(757235.64.in-757235.64.r2) [T:summary-l1-2956b7d9]
+  compile [T:user-clock-monday-#-#-#](2026,01,05,09,00) [T:user-the-local-time](2026,01,05,09,00,00,000,00,00) 757235.1.in [T:user-routing-your-plain] L3(757235.1.r1-757235.33.call1) L3(757235.1.r1-757235.33.call1) L2(757235.33.r2-757235.38.r2) L2(757235.33.r2-757235.38.r2) L2(757235.39.in-757235.43.r3) L2(757235.39.in-757235.43.r3) L2(757235.44.in-757235.49.r1) L2(757235.44.in-757235.49.r1) L2(757235.50.in-757235.54.r2) L2(757235.50.in-757235.54.r2) L2(757235.55.in-757235.61.call1) L2(757235.55.in-757235.61.call1) L1(757235.61.r2-757235.61.r3) L1(757235.61.r2-757235.61.r3) L1(757235.62.in-757235.62.call2) L1(757235.62.in-757235.62.call2) L1(757235.62.r3-757235.63.call1) L1(757235.62.r3-757235.63.call1) 757235.63.r2-757235.63.r3 [T:user-delivered-plain-speech] 757235.64.in-757235.64.r2 [T:user-delivered-plain-speech] 757235.65.in-757235.65.r2 [T:user-delivered-plain-speech] 757235.66.in-757235.66.r1 [T:user-delivered-plain-speech] 757235.67.in-757235.67.r3 [T:user-delivered-plain-speech] 757235.68.in-757235.68.r2 [T:user-delivered-plain-speech] 757235.69.in-757235.69.r1 [T:user-delivered-plain-speech] 757235.70.in-757235.70.r1 [T:user-delivered-plain-speech] [T:user-clock-tuesday-#-#-#](2026,01,06,09,00) 680755.1.in ^ 4
+step 680755.2
+  call 757235.1.in 757235.65.in 757235.65.r1 757235.65.call1 -> summary
+  call 757235.1.in 757235.61.r2 757235.61.call2 757235.61.r3 757235.62.in 757235.62.r1 757235.62.call1 757235.62.r2 757235.62.call2 757235.62.r3 757235.63.in 757235.63.r1 757235.63.call1 757235.63.r2 757235.63.call2 757235.63.r3 757235.64.in 757235.64.r1 757235.64.call1 757235.64.r2 757235.65.in 757235.65.r1 757235.65.call1 -> summary
+  call 757235.1.in -> summary
+  wrote L1(757235.65.in-757235.65.call1) [T:summary-l1-33e34b5b]
+  wrote L2(757235.61.r2-757235.65.call1) [T:summary-l2-d45d1e11]
+  wrote L3(757235.33.r2-757235.65.call1) [T:summary-l3-46c28a1e]
+  compile [T:user-clock-monday-#-#-#](2026,01,05,09,00) [T:user-the-local-time](2026,01,05,09,00,00,000,00,00) 757235.1.in [T:user-routing-your-plain] L3(757235.1.r1-757235.33.call1) L3(757235.1.r1-757235.33.call1) L2(757235.33.r2-757235.38.r2) L2(757235.33.r2-757235.38.r2) L2(757235.39.in-757235.43.r3) L2(757235.39.in-757235.43.r3) L2(757235.44.in-757235.49.r1) L2(757235.44.in-757235.49.r1) L2(757235.50.in-757235.54.r2) L2(757235.50.in-757235.54.r2) L2(757235.55.in-757235.61.call1) L2(757235.55.in-757235.61.call1) L1(757235.61.r2-757235.61.r3) L1(757235.61.r2-757235.61.r3) L1(757235.62.in-757235.62.call2) L1(757235.62.in-757235.62.call2) L1(757235.62.r3-757235.63.call1) L1(757235.62.r3-757235.63.call1) L1(757235.63.r2-757235.63.r3) L1(757235.63.r2-757235.63.r3) L1(757235.64.in-757235.64.r2) L1(757235.64.in-757235.64.r2) [T:user-delivered-plain-speech] 757235.65.in-757235.65.r2 [T:user-delivered-plain-speech] 757235.66.in-757235.66.r1 [T:user-delivered-plain-speech] 757235.67.in-757235.67.r3 [T:user-delivered-plain-speech] 757235.68.in-757235.68.r2 [T:user-delivered-plain-speech] 757235.69.in-757235.69.r1 [T:user-delivered-plain-speech] 757235.70.in-757235.70.r1 [T:user-delivered-plain-speech] [T:user-clock-tuesday-#-#-#](2026,01,06,09,00) 680755.1.in-680755.1.r2 [T:user-delivered-plain-speech] 680755.2.in ^ 4
+step 680755.3
+  compile [T:user-clock-monday-#-#-#](2026,01,05,09,00) [T:user-the-local-time](2026,01,05,09,00,00,000,00,00) 757235.1.in [T:user-routing-your-plain] L3(757235.1.r1-757235.33.call1) L3(757235.1.r1-757235.33.call1) L3(757235.33.r2-757235.65.call1) L3(757235.33.r2-757235.65.call1) 757235.65.r2 [T:user-delivered-plain-speech] 757235.66.in-757235.66.r1 [T:user-delivered-plain-speech] 757235.67.in-757235.67.r3 [T:user-delivered-plain-speech] 757235.68.in-757235.68.r2 [T:user-delivered-plain-speech] 757235.69.in-757235.69.r1 [T:user-delivered-plain-speech] 757235.70.in-757235.70.r1 [T:user-delivered-plain-speech] [T:user-clock-tuesday-#-#-#](2026,01,06,09,00) 680755.1.in-680755.1.r2 [T:user-delivered-plain-speech] 680755.2.in-680755.2.r2 [T:user-delivered-plain-speech] 680755.3.in ^ 4
+step 680755.4
+  compile + 680755.3.r1-680755.3.r2 [T:user-delivered-plain-speech] 680755.4.in ^ 4
+step 680755.5
+  call 757235.1.in 757235.65.r2 757235.66.in 757235.66.r1 757235.67.in 757235.67.r1 757235.67.call1 -> summary
+  wrote L1(757235.65.r2-757235.67.call1) [T:summary-l1-483f835e]
+  compile + 680755.4.r1-680755.4.r2 [T:user-delivered-plain-speech] 680755.5.in ^ 4
+step 680755.6
+  compile [T:user-clock-monday-#-#-#](2026,01,05,09,00) [T:user-the-local-time](2026,01,05,09,00,00,000,00,00) 757235.1.in [T:user-routing-your-plain] L3(757235.1.r1-757235.33.call1) L3(757235.1.r1-757235.33.call1) L3(757235.33.r2-757235.65.call1) L3(757235.33.r2-757235.65.call1) L1(757235.65.r2-757235.67.call1) L1(757235.65.r2-757235.67.call1) 757235.67.r2-757235.67.r3 [T:user-delivered-plain-speech] 757235.68.in-757235.68.r2 [T:user-delivered-plain-speech] 757235.69.in-757235.69.r1 [T:user-delivered-plain-speech] 757235.70.in-757235.70.r1 [T:user-delivered-plain-speech] [T:user-clock-tuesday-#-#-#](2026,01,06,09,00) 680755.1.in-680755.1.r2 [T:user-delivered-plain-speech] 680755.2.in-680755.2.r2 [T:user-delivered-plain-speech] 680755.3.in-680755.3.r2 [T:user-delivered-plain-speech] 680755.4.in-680755.4.r2 [T:user-delivered-plain-speech] 680755.5.in-680755.5.r2 [T:user-delivered-plain-speech] 680755.6.in ^ 4
+step 680755.7
+  call 757235.1.in 757235.67.r2 757235.67.call2 757235.67.r3 -> summary
+  wrote L1(757235.67.r2-757235.67.r3) [T:summary-l1-b7ca1bba]
+  compile + 680755.6.r1-680755.6.r2 [T:user-delivered-plain-speech] 680755.7.in ^ 4
+step 680755.8
+  compile [T:user-clock-monday-#-#-#](2026,01,05,09,00) [T:user-the-local-time](2026,01,05,09,00,00,000,00,00) 757235.1.in [T:user-routing-your-plain] L3(757235.1.r1-757235.33.call1) L3(757235.1.r1-757235.33.call1) L3(757235.33.r2-757235.65.call1) L3(757235.33.r2-757235.65.call1) L1(757235.65.r2-757235.67.call1) L1(757235.65.r2-757235.67.call1) L1(757235.67.r2-757235.67.r3) L1(757235.67.r2-757235.67.r3) 757235.68.in-757235.68.r2 [T:user-delivered-plain-speech] 757235.69.in-757235.69.r1 [T:user-delivered-plain-speech] 757235.70.in 757235.70.r1 [T:user-delivered-plain-speech] [T:user-clock-tuesday-#-#-#](2026,01,06,09,00) 680755.1.in-680755.1.r2 [T:user-delivered-plain-speech] 680755.2.in-680755.2.r2 [T:user-delivered-plain-speech] 680755.3.in-680755.3.r2 [T:user-delivered-plain-speech] 680755.4.in-680755.4.r2 [T:user-delivered-plain-speech] 680755.5.in-680755.5.r2 [T:user-delivered-plain-speech] 680755.6.in-680755.6.r2 [T:user-delivered-plain-speech] 680755.7.in-680755.7.r2 [T:user-delivered-plain-speech] 680755.8.in ^ 4
+step 680755.9
+  compile + 680755.8.r1-680755.8.r2 [T:user-delivered-plain-speech] 680755.9.in ^ 4
+step 680755.10
+  compile + 680755.9.r1-680755.9.r2 [T:user-delivered-plain-speech] 680755.10.in ^ 4
+step 680755.11
+  compile + 680755.10.r1-680755.10.r2 [T:user-delivered-plain-speech] 680755.11.in ^ 4
+step 680755.12
+  compile + 680755.11.r1-680755.11.r2 [T:user-delivered-plain-speech] 680755.12.in ^ 4
+step 680755.13
+  compile + 680755.12.r1-680755.12.r2 [T:user-delivered-plain-speech] 680755.13.in ^ 4
+step 680755.14
+  compile + 680755.13.r1-680755.13.r2 [T:user-delivered-plain-speech] 680755.14.in ^ 4
+step 680755.15
+  compile + 680755.14.r1-680755.14.r2 [T:user-delivered-plain-speech] 680755.15.in ^ 4
+step 680755.16
+  compile + 680755.15.r1-680755.15.r2 [T:user-delivered-plain-speech] 680755.16.in ^ 4
+end ok
+totals {"actions":0,"calls":7,"compiles":16,"dry":0,"other":0,"refused":0,"written":88}
+templates
+T:summary-l1-016898aa = {"bytes":4400,"head":"[[s:M97e49b2a]] Memory 97e49b2a, carried 4 canaries to c:757235.21.r3: harbor ga","sha256":"016898aaca362750","tail":"ignal river harbor compass meadow winter harbor stone lantern stone lantern wind"}
+T:summary-l1-07674b07 = {"bytes":4400,"head":"[[s:Mc2ca303b]] Memory c2ca303b, carried 5 canaries to c:757235.8.r2: signal com","sha256":"07674b07aadfff0a","tail":"river window quiet meadow stone ledger ledger signal river orchard quiet lantern"}
+T:summary-l1-07e56019 = {"bytes":4400,"head":"[[s:M25b01efa]] Memory 25b01efa, carried 3 canaries to c:757235.19.r1: stone sig","sha256":"07e5601992a2c0d3","tail":"r stone compass winter thread garden stone lantern lantern stone lantern compass"}
+T:summary-l1-0a6cd89b = {"bytes":4399,"head":"[[s:Mddece9c4]] Memory ddece9c4, carried 4 canaries to c:757235.51.r3: garden co","sha256":"0a6cd89bcc3d704b","tail":"adow stone ledger compass garden orchard stone lantern thread ledger stone river"}
+T:summary-l1-0ae1503b = {"bytes":4400,"head":"[[s:M173a1968]] Memory 173a1968, carried 4 canaries to c:757235.11.r3: winter la","sha256":"0ae1503b5a8093a0","tail":" orchard orchard winter ledger lantern signal lantern winter stone meadow garden"}
+T:summary-l1-0d064571 = {"bytes":4400,"head":"[[s:M2a99279a]] Memory 2a99279a, carried 5 canaries to c:757235.23.r1: quiet gar","sha256":"0d064571c449f64e","tail":"ss meadow signal harbor compass river garden harbor compass compass ledger threa"}
+T:summary-l1-142fbafa = {"bytes":4400,"head":"[[s:M1d65b170]] Memory 1d65b170, carried 5 canaries to c:757235.43.r1: garden le","sha256":"142fbafad4aeaf7b","tail":"r window stone harbor ledger garden lantern copper lantern meadow quiet window c"}
+T:summary-l1-1861e4fb = {"bytes":4400,"head":"[[s:Ma5661b88]] Memory a5661b88, carried 6 canaries to c:757235.42.r2: ledger si","sha256":"1861e4fbd6c1b410","tail":"er winter compass river ledger lantern compass signal compass stone garden ledge"}
+T:summary-l1-18a437e1 = {"bytes":4399,"head":"[[s:M5fe74f96]] Memory 5fe74f96, carried 3 canaries to c:757235.9.r1: orchard st","sha256":"18a437e145c24cf2","tail":"gnal copper thread thread signal ledger copper meadow harbor winter stone thread"}
+T:summary-l1-21accf63 = {"bytes":4400,"head":"[[s:M1d3c3f96]] Memory 1d3c3f96, carried 4 canaries to c:757235.23.r3: copper co","sha256":"21accf6324c132fa","tail":"one meadow quiet garden orchard winter meadow river ledger ledger meadow quiet t"}
+T:summary-l1-28902fa8 = {"bytes":4400,"head":"[[s:M494c57ef]] Memory 494c57ef, carried 3 canaries to c:757235.39.r1: window le","sha256":"28902fa849fa0a16","tail":" lantern winter window garden harbor river harbor garden copper stone quiet harb"}
+T:summary-l1-2956b7d9 = {"bytes":4400,"head":"[[s:Me6865f7c]] Memory e6865f7c, carried 5 canaries to c:757235.64.r2: garden or","sha256":"2956b7d95b39af6b","tail":"quiet stone river garden thread meadow ledger copper stone copper ledger orchard"}
+T:summary-l1-29adf43e = {"bytes":4400,"head":"[[s:Mf298e78c]] Memory f298e78c, carried 4 canaries to c:757235.57.r3: lantern s","sha256":"29adf43ea4579142","tail":"inter quiet stone river river river lantern meadow winter window ledger quiet wi"}
+T:summary-l1-2ce04b32 = {"bytes":4400,"head":"[[s:Ma91c09a1]] Memory a91c09a1, carried 4 canaries to c:757235.7.r3: meadow mea","sha256":"2ce04b32723d6646","tail":" river signal meadow stone orchard garden copper thread stone thread harbor wind"}
+T:summary-l1-2ce43f16 = {"bytes":4400,"head":"[[s:Mf5f6187c]] Memory f5f6187c, carried 7 canaries to c:757235.17.r1: harbor la","sha256":"2ce43f1699afd8a8","tail":"hard quiet compass meadow harbor thread window copper winter ledger meadow lante"}
+T:summary-l1-31173ce2 = {"bytes":4400,"head":"[[s:M2e5bc73c]] Memory 2e5bc73c, carried 6 canaries to c:757235.21.r1: thread qu","sha256":"31173ce2ab459658","tail":"e copper copper harbor compass garden copper window stone window quiet orchard q"}
+T:summary-l1-3159e308 = {"bytes":4400,"head":"[[s:Md6034b67]] Memory d6034b67, carried 7 canaries to c:757235.57.r1: harbor wi","sha256":"3159e3089936b182","tail":"mpass garden signal harbor ledger river stone quiet window quiet winter meadow w"}
+T:summary-l1-33e34b5b = {"bytes":4400,"head":"[[s:Mb49b4b42]] Memory b49b4b42, carried 4 canaries to c:757235.65.r1: meadow wi","sha256":"33e34b5ba465e1b1","tail":"iet window meadow ledger quiet garden ledger meadow thread signal lantern compas"}
+T:summary-l1-3af94e03 = {"bytes":4400,"head":"[[s:M1cdf16b3]] Memory 1cdf16b3, carried 4 canaries to c:757235.33.r3: river thr","sha256":"3af94e0370393b55","tail":"r lantern quiet window ledger quiet garden garden meadow river copper garden lan"}
+T:summary-l1-3ba3411e = {"bytes":4399,"head":"[[s:M3bb2ff8e]] Memory 3bb2ff8e, carried 5 canaries to c:757235.24.r2: river lan","sha256":"3ba3411e0f9e8f15","tail":"er signal river window lantern compass window thread harbor signal ledger winter"}
+T:summary-l1-3e6413d5 = {"bytes":4400,"head":"[[s:M20000b2b]] Memory 20000b2b, carried 4 canaries to c:757235.63.r3: compass h","sha256":"3e6413d565b58890","tail":"ow lantern window orchard meadow copper quiet stone copper winter winter orchard"}
+T:summary-l1-442d5019 = {"bytes":4400,"head":"[[s:Mf410833e]] Memory f410833e, carried 6 canaries to c:757235.31.r1: meadow le","sha256":"442d501900f4db46","tail":"ndow garden window quiet winter ledger ledger harbor harbor thread winter harbor"}
+T:summary-l1-4726604c = {"bytes":4400,"head":"[[s:Mc045191f]] Memory c045191f, carried 4 canaries to c:757235.43.r3: thread st","sha256":"4726604c4cacd8c4","tail":" window meadow copper thread orchard copper stone river thread window harbor har"}
+T:summary-l1-483f835e = {"bytes":4400,"head":"[[s:M1f019a75]] Memory 1f019a75, carried 7 canaries to c:757235.67.r1: river led","sha256":"483f835ec1b8789a","tail":"indow meadow orchard river stone signal meadow lantern quiet thread ledger compa"}
+T:summary-l1-50cce5e1 = {"bytes":4400,"head":"[[s:M079d17e1]] Memory 079d17e1, carried 5 canaries to c:757235.28.r2: garden la","sha256":"50cce5e1c739752f","tail":"tern meadow ledger garden signal quiet compass thread thread winter stone lanter"}
+T:summary-l1-55980128 = {"bytes":4400,"head":"[[s:Mb3fa78c2]] Memory b3fa78c2, carried 4 canaries to c:757235.41.r3: stone cop","sha256":"55980128b2bc4c21","tail":"er copper signal compass stone garden lantern harbor compass meadow harbor compa"}
+T:summary-l1-5740ee02 = {"bytes":4400,"head":"[[s:M9aa3a9e9]] Memory 9aa3a9e9, carried 4 canaries to c:757235.61.r3: window la","sha256":"5740ee02022ebc14","tail":"ver lantern signal meadow stone copper quiet window harbor harbor compass meadow"}
+T:summary-l1-5b90a716 = {"bytes":4399,"head":"[[s:M765bcfe9]] Memory 765bcfe9, carried 4 canaries to c:757235.45.r1: signal st","sha256":"5b90a71672f58037","tail":"uiet signal winter lantern quiet signal signal signal meadow signal harbor stone"}
+T:summary-l1-5b964ea5 = {"bytes":4400,"head":"[[s:M5f800710]] Memory 5f800710, carried 6 canaries to c:757235.61.r1: river cop","sha256":"5b964ea50ccbdb06","tail":"ern winter lantern river stone signal quiet lantern harbor garden compass lanter"}
+T:summary-l1-670ab40f = {"bytes":4399,"head":"[[s:M93ad6996]] Memory 93ad6996, carried 4 canaries to c:757235.55.r1: ledger wi","sha256":"670ab40fab772537","tail":"lantern compass ledger lantern window garden lantern river signal ledger lantern"}
+T:summary-l1-671915a3 = {"bytes":4400,"head":"[[s:Mbacd6f55]] Memory bacd6f55, carried 5 canaries to c:757235.44.r2: copper co","sha256":"671915a3d2141647","tail":"copper quiet harbor copper lantern river winter meadow signal stone compass wind"}
+T:summary-l1-686a466e = {"bytes":4400,"head":"[[s:Mcf9b56fb]] Memory cf9b56fb, carried 5 canaries to c:757235.4.r1: river comp","sha256":"686a466e77dbaf1c","tail":"nal signal window thread winter stone lantern compass copper quiet window winter"}
+T:summary-l1-6a7182df = {"bytes":4399,"head":"[[s:M26ce2533]] Memory 26ce2533, carried 6 canaries to c:757235.11.r1: window th","sha256":"6a7182df6abe9dab","tail":"d compass winter orchard harbor compass river stone orchard winter harbor copper"}
+T:summary-l1-6e3e3d9b = {"bytes":4400,"head":"[[s:M1cef5dc3]] Memory 1cef5dc3, carried 6 canaries to c:757235.41.r1: river riv","sha256":"6e3e3d9b3b48aad0","tail":"et winter harbor copper winter thread meadow quiet ledger signal compass orchard"}
+T:summary-l1-73b10c6e = {"bytes":4400,"head":"[[s:M2b40ba71]] Memory 2b40ba71, carried 4 canaries to c:757235.13.r3: ledger wi","sha256":"73b10c6e8a8f6049","tail":"eadow garden garden meadow signal signal signal copper orchard stone winter comp"}
+T:summary-l1-79087883 = {"bytes":4400,"head":"[[s:M60760d4c]] Memory 60760d4c, carried 5 canaries to c:757235.34.r2: orchard s","sha256":"7908788373d9e279","tail":" ledger meadow window ledger winter compass orchard meadow compass river lantern"}
+T:summary-l1-7ba138ed = {"bytes":4400,"head":"[[s:M7812d84e]] Memory 7812d84e, carried 5 canaries to c:757235.48.r2: orchard r","sha256":"7ba138ed94d95570","tail":"ompass winter garden harbor copper quiet garden orchard meadow meadow compass ga"}
+T:summary-l1-7ebaeb7d = {"bytes":4400,"head":"[[s:Mf6b1f495]] Memory f6b1f495, carried 4 canaries to c:757235.35.r1: harbor wi","sha256":"7ebaeb7d41191c5f","tail":" signal stone orchard copper meadow window harbor window winter thread river gar"}
+T:summary-l1-817a22e7 = {"bytes":4399,"head":"[[s:M1dc1a8f8]] Memory 1dc1a8f8, carried 6 canaries to c:757235.12.r2: copper la","sha256":"817a22e7c4577dd2","tail":"mpass stone stone signal window winter thread window garden signal signal signal"}
+T:summary-l1-841c694b = {"bytes":4400,"head":"[[s:M3d8b140d]] Memory 3d8b140d, carried 6 canaries to c:757235.22.r2: stone qui","sha256":"841c694bfedbe3f4","tail":"t garden winter lantern ledger ledger orchard winter meadow lantern compass lant"}
+T:summary-l1-8699c7b8 = {"bytes":4400,"head":"[[s:M88e75669]] Memory 88e75669, carried 4 canaries to c:757235.25.r1: harbor la","sha256":"8699c7b8b9177041","tail":"n orchard compass thread thread orchard orchard window quiet meadow meadow meado"}
+T:summary-l1-86f6818f = {"bytes":4400,"head":"[[s:M58e60d11]] Memory 58e60d11, carried 7 canaries to c:757235.47.r1: quiet orc","sha256":"86f6818ff9eb365a","tail":"n garden orchard stone quiet garden window quiet copper lantern winter compass t"}
+T:summary-l1-86fef659 = {"bytes":4400,"head":"[[s:Me1d0242c]] Memory e1d0242c, carried 5 canaries to c:757235.38.r2: orchard c","sha256":"86fef659ca4de892","tail":"er garden orchard meadow garden winter signal copper lantern winter stone orchar"}
+T:summary-l1-8da705ae = {"bytes":4400,"head":"[[s:M093a98a8]] Memory 093a98a8, carried 5 canaries to c:757235.13.r1: harbor la","sha256":"8da705aec3162d78","tail":"antern harbor garden stone river garden thread stone orchard quiet lantern ledge"}
+T:summary-l1-90be6666 = {"bytes":4400,"head":"[[s:M8deea5d3]] Memory 8deea5d3, carried 3 canaries to c:757235.49.r1: garden le","sha256":"90be6666ca728ae0","tail":"r compass copper orchard orchard garden quiet quiet garden window quiet garden o"}
+T:summary-l1-93645a72 = {"bytes":4399,"head":"[[s:M456ec48a]] Memory 456ec48a, carried 4 canaries to c:757235.27.r3: copper wi","sha256":"93645a720c439cde","tail":"ad signal winter window quiet window lantern copper winter quiet lantern lantern"}
+T:summary-l1-9a0efc66 = {"bytes":4399,"head":"[[s:M216958f1]] Memory 216958f1, carried 6 canaries to c:757235.51.r1: thread co","sha256":"9a0efc66eca2cb81","tail":"ledger river stone stone river harbor garden ledger window compass ledger winter"}
+T:summary-l1-9b3a576d = {"bytes":4399,"head":"[[s:Mae2760e9]] Memory ae2760e9, carried 7 canaries to c:757235.37.r1: winter or","sha256":"9b3a576d2336dbcd","tail":"dow ledger meadow ledger signal stone window garden lantern compass signal stone"}
+T:summary-l1-a91e29b3 = {"bytes":4400,"head":"[[s:M5906700e]] Memory 5906700e, carried 4 canaries to c:757235.2.r3: ledger cop","sha256":"a91e29b3b68c4727","tail":"d thread quiet thread copper window quiet window river river orchard compass cop"}
+T:summary-l1-aa8869f7 = {"bytes":4400,"head":"[[s:Mc96539a2]] Memory c96539a2, carried 3 canaries to c:757235.59.r1: quiet qui","sha256":"aa8869f7794f2267","tail":" copper thread lantern signal garden stone window copper quiet harbor copper thr"}
+T:summary-l1-ab0ca6a6 = {"bytes":4400,"head":"[[s:M23b1a682]] Memory 23b1a682, carried 7 canaries to c:757235.27.r1: compass l","sha256":"ab0ca6a6f449f50d","tail":"n river stone garden river harbor garden harbor thread ledger quiet stone thread"}
+T:summary-l1-ad747225 = {"bytes":4400,"head":"[[s:Md77b0fa7]] Memory d77b0fa7, carried 4 canaries to c:757235.15.r1: window wi","sha256":"ad7472258918a498","tail":"er orchard ledger stone window copper orchard garden copper lantern meadow river"}
+T:summary-l1-adc2ac6b = {"bytes":4400,"head":"[[s:M54fed995]] Memory 54fed995, carried 4 canaries to c:757235.37.r3: garden ha","sha256":"adc2ac6be5b7116c","tail":" winter signal signal winter lantern compass harbor compass lantern winter river"}
+T:summary-l1-b053647b = {"bytes":4400,"head":"[[s:M9b1a1760]] Memory 9b1a1760, carried 5 canaries to c:757235.58.r2: window le","sha256":"b053647b284e9513","tail":"pass lantern river lantern signal thread copper harbor quiet thread stone compas"}
+T:summary-l1-b39afd5c = {"bytes":4400,"head":"[[s:Mb1769f4e]] Memory b1769f4e, carried 6 canaries to c:757235.52.r2: compass c","sha256":"b39afd5c044863e2","tail":"ard river garden river ledger harbor river orchard stone lantern winter garden r"}
+T:summary-l1-b4c2dada = {"bytes":4400,"head":"[[s:Mc5b3b72a]] Memory c5b3b72a, carried 6 canaries to c:757235.62.r2: lantern g","sha256":"b4c2dada77884d76","tail":"hread meadow winter lantern winter stone harbor signal stone window compass wind"}
+T:summary-l1-b7ca1bba = {"bytes":4400,"head":"[[s:Mf053aa57]] Memory f053aa57, carried 4 canaries to c:757235.67.r3: quiet cop","sha256":"b7ca1bba6c72e164","tail":"per garden winter winter garden thread signal copper orchard signal river copper"}
+T:summary-l1-bd3ff7be = {"bytes":4400,"head":"[[s:Mb9a9617e]] Memory b9a9617e, carried 4 canaries to c:757235.47.r3: garden ha","sha256":"bd3ff7be3741cee2","tail":"iet ledger quiet stone stone orchard quiet river winter orchard lantern river ha"}
+T:summary-l1-beec8c17 = {"bytes":4399,"head":"[[s:M827123b8]] Memory 827123b8, carried 5 canaries to c:757235.53.r1: window si","sha256":"beec8c17cacc3c67","tail":"r signal compass signal orchard orchard garden copper stone stone ledger orchard"}
+T:summary-l1-c10f8353 = {"bytes":4400,"head":"[[s:M53c1fe7f]] Memory 53c1fe7f, carried 4 canaries to c:757235.17.r3: ledger me","sha256":"c10f8353ac04fa30","tail":"garden lantern window meadow window meadow river signal orchard stone winter win"}
+T:summary-l1-c6f87137 = {"bytes":4400,"head":"[[s:M6120db87]] Memory 6120db87, carried 7 canaries to c:757235.7.r1: stone ston","sha256":"c6f87137fde54671","tail":"er winter stone ledger river river ledger garden signal stone winter quiet winte"}
+T:summary-l1-c82888c6 = {"bytes":4400,"head":"[[s:M0cda9af8]] Memory 0cda9af8, carried 3 canaries to c:757235.29.r1: copper si","sha256":"c82888c6168a3ed0","tail":"thread river window winter signal compass ledger orchard thread garden orchard g"}
+T:summary-l1-cdad54aa = {"bytes":4399,"head":"[[s:Ma7826664]] Memory a7826664, carried 5 canaries to c:757235.33.r1: lantern c","sha256":"cdad54aaec80177a","tail":"mpass harbor thread winter meadow thread signal stone river meadow winter signal"}
+T:summary-l1-cddeee60 = {"bytes":4400,"head":"[[s:M5bbc0310]] Memory 5bbc0310, carried 5 canaries to c:757235.5.r1: river gard","sha256":"cddeee60c048f8d5","tail":"chard quiet orchard thread meadow signal quiet winter garden signal harbor signa"}
+T:summary-l1-d7bea46c = {"bytes":4399,"head":"[[s:M87901b4b]] Memory 87901b4b, carried 4 canaries to c:757235.53.r3: harbor ri","sha256":"d7bea46c0910fb10","tail":"orchard ledger window compass winter harbor copper compass copper lantern window"}
+T:summary-l1-d9f4854f = {"bytes":4399,"head":"[[s:Mda8cea1b]] Memory da8cea1b, carried 5 canaries to c:757235.14.r2: winter me","sha256":"d9f4854fccb73604","tail":"iet winter garden garden harbor signal ledger window lantern quiet winter meadow"}
+T:summary-l1-dde6045b = {"bytes":4400,"head":"[[s:M013e2380]] Memory 013e2380, carried 5 canaries to c:757235.54.r2: quiet qui","sha256":"dde6045bffb6cc91","tail":"en harbor stone ledger harbor harbor garden lantern signal winter lantern window"}
+T:summary-l1-df941240 = {"bytes":4400,"head":"[[s:M6c25411d]] Memory 6c25411d, carried 5 canaries to c:757235.63.r1: harbor wi","sha256":"df94124089f18c1f","tail":"er lantern harbor lantern compass thread window ledger lantern window quiet copp"}
+T:summary-l1-e919e4b8 = {"bytes":4400,"head":"[[s:M002e5923]] Memory 002e5923, carried 4 canaries to c:757235.31.r3: harbor la","sha256":"e919e4b84dc3832e","tail":"adow lantern winter copper meadow ledger winter thread ledger river window stone"}
+T:summary-l1-ea07de35 = {"bytes":4400,"head":"[[s:M8a7835a8]] Memory 8a7835a8, carried 5 canaries to c:757235.2.r1: garden qui","sha256":"ea07de35cb1e2f3d","tail":"dow compass window quiet lantern winter quiet orchard stone compass harbor quiet"}
+T:summary-l1-f22937bc = {"bytes":4400,"head":"[[s:Md6a06290]] Memory d6a06290, carried 6 canaries to c:757235.3.r2: meadow har","sha256":"f22937bcbdf9a8fc","tail":"r orchard quiet orchard compass lantern river river compass harbor lantern lante"}
+T:summary-l1-f3c6a076 = {"bytes":4400,"head":"[[s:Ma696f407]] Memory a696f407, carried 5 canaries to c:757235.1.r2: river quie","sha256":"f3c6a076b696d560","tail":"garden orchard harbor copper garden winter river compass meadow lantern river or"}
+T:summary-l1-f6ca2a58 = {"bytes":4400,"head":"[[s:M4e480b6d]] Memory 4e480b6d, carried 6 canaries to c:757235.32.r2: lantern l","sha256":"f6ca2a581afaa6ed","tail":" lantern harbor lantern window river meadow window river meadow meadow quiet win"}
+T:summary-l1-fbfb26fc = {"bytes":4400,"head":"[[s:Md59c6af8]] Memory d59c6af8, carried 5 canaries to c:757235.18.r2: compass h","sha256":"fbfb26fc4a9c585f","tail":"garden winter lantern stone river winter lantern lantern river window lantern th"}
+T:summary-l2-16a78ed7 = {"bytes":4400,"head":"[[s:Mf25eab19]] Memory f25eab19, carried 24 canaries to c:757235.38.r2: thread o","sha256":"16a78ed7468a3380","tail":"compass thread lantern winter window lantern compass copper window quiet orchard"}
+T:summary-l2-2a59a859 = {"bytes":4400,"head":"[[s:M0f4d739b]] Memory 0f4d739b, carried 24 canaries to c:757235.27.r3: compass ","sha256":"2a59a859608a0bbc","tail":"er river garden river garden garden window harbor lantern quiet signal ledger wi"}
+T:summary-l2-2ef15045 = {"bytes":4400,"head":"[[s:M8f4c1270]] Memory 8f4c1270, carried 23 canaries to c:757235.22.r2: quiet me","sha256":"2ef1504588d3fe71","tail":"al garden winter river river quiet harbor winter meadow lantern lantern meadow l"}
+T:summary-l2-5f0498b0 = {"bytes":4400,"head":"[[s:M40a65a77]] Memory 40a65a77, carried 25 canaries to c:757235.5.r1: garden th","sha256":"5f0498b0250fb304","tail":"r river window signal river stone thread compass signal copper copper harbor mea"}
+T:summary-l2-736494b4 = {"bytes":4400,"head":"[[s:Mec427bc1]] Memory ec427bc1, carried 23 canaries to c:757235.49.r1: winter c","sha256":"736494b4bed53f2a","tail":" quiet river river stone harbor ledger river signal orchard copper orchard coppe"}
+T:summary-l2-89664339 = {"bytes":4400,"head":"[[s:M7a765855]] Memory 7a765855, carried 24 canaries to c:757235.61.r1: harbor s","sha256":"89664339fe0a9b1c","tail":"er signal thread copper lantern signal compass window harbor quiet lantern river"}
+T:summary-l2-8dbee804 = {"bytes":4399,"head":"[[s:Mbcb5bdb7]] Memory bcb5bdb7, carried 26 canaries to c:757235.17.r1: stone le","sha256":"8dbee8046c0b5d70","tail":"er stone lantern garden compass meadow copper quiet lantern signal signal meadow"}
+T:summary-l2-9b954151 = {"bytes":4399,"head":"[[s:M4eb3fac5]] Memory 4eb3fac5, carried 25 canaries to c:757235.54.r2: harbor m","sha256":"9b9541519c75459d","tail":"er river compass ledger orchard window quiet window ledger meadow garden lantern"}
+T:summary-l2-cd97df3d = {"bytes":4400,"head":"[[s:M60c6592c]] Memory 60c6592c, carried 23 canaries to c:757235.43.r3: orchard ","sha256":"cd97df3dd44f907c","tail":"edger stone ledger copper harbor window signal ledger river window signal meadow"}
+T:summary-l2-d45d1e11 = {"bytes":4400,"head":"[[s:M2c06297c]] Memory 2c06297c, carried 23 canaries to c:757235.65.r1: window s","sha256":"d45d1e11406aaeac","tail":"indow thread lantern ledger lantern signal harbor ledger copper garden window ri"}
+T:summary-l2-da2361c2 = {"bytes":4399,"head":"[[s:Mfce768dc]] Memory fce768dc, carried 24 canaries to c:757235.11.r3: quiet ga","sha256":"da2361c2bff5c0cf","tail":"river harbor harbor quiet winter garden meadow thread river winter quiet lantern"}
+T:summary-l2-f8049448 = {"bytes":4400,"head":"[[s:Mb0b94075]] Memory b0b94075, carried 24 canaries to c:757235.33.r1: copper g","sha256":"f80494488b50b55f","tail":" orchard copper quiet garden garden signal signal quiet lantern signal garden le"}
+T:summary-l3-10cf9cfd = {"bytes":4400,"head":"[[s:M5e084b12]] Memory 5e084b12, carried 1 canaries to c:757235.1.in: harbor orc","sha256":"10cf9cfd6a4f1315","tail":"pper harbor garden winter ledger orchard stone thread ledger ledger harbor ledge"}
+T:summary-l3-46c28a1e = {"bytes":4400,"head":"[[s:M78b0b910]] Memory 78b0b910, carried 1 canaries to c:757235.1.in: orchard ri","sha256":"46c28a1ebaf46c50","tail":"rchard lantern garden orchard ledger garden garden compass compass harbor winter"}
+T:user-clock-monday-#-#-# = Clock: Monday #-#-#, #:# UTC
+T:user-clock-tuesday-#-#-# = Clock: Tuesday #-#-#, #:# UTC
+T:user-delivered-plain-speech = [delivered] plain speech → chat
+T:user-routing-your-plain = [routing] Your plain speech now lands in chat. Other channels need an explicit send tool.
+T:user-the-local-time = The local time at the start of this session is #-#-#T#:#:#.#+#:# [UTC].

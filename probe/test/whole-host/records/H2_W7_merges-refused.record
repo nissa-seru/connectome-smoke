@@ -1,0 +1,41 @@
+# whole-host record H2/W7/merges-refused
+# checkpoint v0.21.0, empty: connectome-host 0.21.0 (source 54321fd3af80), agent-framework 0.32.0, context-manager 0.24.0, membrane 0.8.0, chronicle 0.5.1, bun 1.4.4
+# candidate: connectome-host 0.21.0, agent-framework 0.32.0, context-manager 0.24.0, membrane 0.8.0, chronicle 0.5.1, bun 1.4.4
+step 617403.1
+  call 617403.1.task 617403.1.s1 617403.1.s1call1 -> summary
+  call 617403.1.task 617403.1.s2 617403.1.s2call1 -> summary
+  call 617403.1.task 617403.1.s3 617403.1.s3call1 -> summary
+  call 617403.1.task 617403.1.s4 617403.1.s4call1 -> summary
+  call 617403.1.task 617403.1.s5 617403.1.s5call1 -> summary
+  call 617403.1.task 617403.1.s6 617403.1.s6call1 -> summary
+  call 617403.1.task 617403.1.s1 617403.1.s1call1 617403.1.s2 617403.1.s2call1 617403.1.s3 617403.1.s3call1 617403.1.s4 617403.1.s4call1 617403.1.s5 617403.1.s5call1 617403.1.s6 617403.1.s6call1 -> refusal
+  call 617403.1.task -> refusal
+  call 617403.1.task -> refusal
+  call 617403.1.task -> refusal
+  call 617403.1.task -> refusal
+  call 617403.1.task 617403.1.s7 617403.1.s7call1 617403.1.s8 617403.1.s8call1 -> summary
+  call 617403.1.task 617403.1.s9 617403.1.s9call1 -> summary
+  call 617403.1.task 617403.1.s10 617403.1.s10call1 -> summary
+  call 617403.1.task 617403.1.s11 617403.1.s11call1 617403.1.s12 617403.1.s12call1 -> summary
+  call 617403.1.task 617403.1.s13 617403.1.s13call1 -> summary
+  call 617403.1.task 617403.1.s14 617403.1.s14call1 617403.1.s15 617403.1.s15call1 -> summary
+  call 617403.1.task 617403.1.s7 617403.1.s7call1 617403.1.s8 617403.1.s8call1 617403.1.s9 617403.1.s9call1 617403.1.s10 617403.1.s10call1 617403.1.s11 617403.1.s11call1 617403.1.s12 617403.1.s12call1 617403.1.s13 617403.1.s13call1 617403.1.s14 617403.1.s14call1 617403.1.s15 617403.1.s15call1 -> refusal
+  call 617403.1.task -> refusal
+  call 617403.1.task -> refusal
+  call 617403.1.task -> refusal
+  call 617403.1.task -> refusal
+  call 617403.1.task 617403.1.s16 617403.1.s16call1 -> summary
+  call 617403.1.task 617403.1.s17 617403.1.s17call1 -> summary
+  call 617403.1.task 617403.1.s18 617403.1.s18call1 -> summary
+  call 617403.1.task 617403.1.s19 617403.1.s19call1 617403.1.s20 617403.1.s20call1 -> summary
+  call 617403.1.task 617403.1.s21 617403.1.s21call1 -> summary
+  compile [T:user-clock-monday-#-#-#](2026,01,05,09,00) [T:user-the-local-time](2026,01,05,09,00,00,000,00,00) 617403.1.in [T:user-routing-your-plain] ^ 4
+  compile [T:user-launch-of-spawn](617403,1,3,4,6,2,000,80,000,120,000,10,000,4,6,300,000,500,000,320,000,16,384,100,000,300,000,10,26) 617403.1.task ^ 2
+end ok
+receipt fixture #1 changes #2/raw/0/1 #3/raw/0/1 617403.1.in/raw/0/1 #11/raw/0/1
+totals {"actions":0,"calls":27,"compiles":2,"dry":0,"other":1,"refused":0,"written":0}
+templates
+T:user-clock-monday-#-#-# = Clock: Monday #-#-#, #:# UTC
+T:user-launch-of-spawn = {"bytes":2121,"head":"Launch of spawn 'knowledge-#', as resolved at its subagent--spawn call:\n- Lineag","sha256":"ba8373513f6298f6","tail":"_decline, channel_close, channel_publish, think, journal, skip_reply and drafts."}
+T:user-routing-your-plain = [routing] Your plain speech now lands in chat. Other channels need an explicit send tool.
+T:user-the-local-time = The local time at the start of this session is #-#-#T#:#:#.#+#:# [UTC].

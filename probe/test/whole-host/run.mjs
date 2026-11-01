@@ -4,7 +4,7 @@
  * requests a resident's host sends. The host runs as residents run it, on a virtual clock,
  * against a stand-in for the provider (lib/strategies/).
  *
- *   node test/whole-host/run.mjs [--runs a,b] [--shard i/n] [--overlay <pack.tgz>,...] [--update-records] [--self-check] [--workdir <dir>] [--out <dir>]
+ *   node test/whole-host/run.mjs [--runs a,b] [--shard i/n] [--overlay <pack.tgz>,...] [--update-records] [--update-seconds] [--self-check] [--workdir <dir>] [--out <dir>]
  *   node test/whole-host/run.mjs --find-lengths [--runs a,b]
  *
  * The runs are each configuration's check (`default`, `passthrough`: the configurations stack.json
@@ -41,8 +41,13 @@
  * rests on; a pull request that changes it, or what runs inside the host's process with it,
  * runs this (.github/workflows/whole-host-self-check.yml).
  *
- * `--shard i/n` runs the i-th of n shares of the runs, each every n-th in order from the i-th,
- * for CI's jobs (.github/workflows/whole-host.yml).
+ * `--shard i/n` runs the i-th of n shares of the runs, for CI's jobs (.github/workflows/whole-host.yml),
+ * balanced by the seconds stack.json records for each run and each checkpoint, as measured on
+ * GitHub's ubuntu24 runners: each run, longest first, goes to the share it adds least to, a share
+ * paying for a checkpoint once however many of its runs continue it (a run or checkpoint with no
+ * recorded seconds counts as the median of those recorded). `run.json` gives every run's and
+ * checkpoint's seconds, and `--update-seconds` writes this run's into stack.json; refresh them,
+ * from a run of all of them on such a runner, when a run is added or the shares drift apart.
  *
  * `--find-lengths` writes each configuration's starting store with the release, searching the
  * length trial (lib/strategies/script.mjs, TRIAL) for the shortest prefix whose continuation
@@ -68,6 +73,7 @@ import { perCheckReport, readExpected } from './lib/strategies/report.mjs';
 import { RUNS, runOf } from './lib/strategies/workloads.mjs';
 import { TRIAL, configurations } from './lib/strategies/script.mjs';
 import { renderRecord } from './lib/record.mjs';
+import { shares } from './lib/shares.mjs';
 import { maskRunVarying } from './lib/strategies/compare.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -114,8 +120,12 @@ if (unknown.length) fail(`no run ${unknown.join(', ')}; there are ${everyRun.joi
 const isCheck = (id) => !id.includes('/');
 const shard = /^(\d+)\/(\d+)$/.exec(opt('shard', '1/1'));
 if (!shard || +shard[1] < 1 || +shard[1] > +shard[2]) fail(`--shard takes i/n with 1 <= i <= n, not ${opt('shard')}`);
-const names = listed.filter((_, k) => k % +shard[2] === +shard[1] - 1);
+/** The checkpoint a run continues: a configuration's check its own, a workload's run its runOf `from` (null from empty). */
+const checkpointKey = (id) => (isCheck(id) ? id : runOf(id, all, {}).from);
+const share = shares(listed, +shard[2], stack.seconds, checkpointKey)[+shard[1] - 1];
+const names = share.ids;
 if (!names.length) { console.log(`${LABEL} shard ${shard[0]} holds none of ${listed.join(', ')}`); process.exit(0); }
+if (+shard[2] > 1) console.log(`${LABEL} shard ${shard[0]}: ${names.length} of ${listed.length} runs, about ${share.seconds} s by stack.json's seconds`);
 const work = opt('workdir') ? resolve(opt('workdir')) : mkdtempSync(join(tmpdir(), 'whole-host-'));
 mkdirSync(work, { recursive: true });
 const out = resolve(opt('out', join(work, 'out')));
@@ -237,13 +247,20 @@ async function drive(job, side, { storeDir, epoch, dir, scratch = dir, rawDir = 
 
 // Each workload checkpoint (runOf's `from`), written once per run of this script by the release, from empty.
 const checkpoints = new Map();
+// Seconds each checkpoint and each run took (run.json), and the checkpoints' share of the time running.
+const seconds = { runs: {}, checkpoints: {} };
+let checkpointTime = 0;
+const since = (t) => Math.round((performance.now() - t) / 100) / 10;
 async function checkpointOf(from) {
   if (!checkpoints.has(from)) {
+    const t = performance.now();
     const job = runOf(from, all, hostFacts({ hostDir: release.hostDir, configuration: all[from.split('/')[0]] }));
     const dir = join(work, 'checkpoints', slug(from));
     const storeDir = join(dir, 'store');
     const d = await drive(job, release, { storeDir, epoch: EPOCH, dir });
     checkpoints.set(from, d.run.ok ? { storeDir, clockEnd: d.run.clockEnd } : { failed: d.run.failure?.reason ?? 'no reason given' });
+    seconds.checkpoints[from] = since(t);
+    checkpointTime += seconds.checkpoints[from];
   }
   return checkpoints.get(from);
 }
@@ -304,9 +321,12 @@ async function workloadRun(id, { harnessModule = true, rawDir = null, dir }) {
 /** A configuration's check: its checkpoint written at its pinned length, then the lane's continuation under the candidate. */
 async function configurationCheck(name, { harnessModule = true, rawDir = null, dir }) {
   const trial = trialOf(name);
+  const t = performance.now();
   try {
     await writeStore({ cacheRoot, configuration: all[name], hostDir: release.hostDir, installDir: release.installDir, work: join(work, `write-${name}`), trial, lane });
   } catch (e) { return { outcome: 'couldnt-run', reason: `writing its checkpoint failed: ${e.message}` }; }
+  seconds.checkpoints[name] = since(t);
+  checkpointTime += seconds.checkpoints[name];
   const configuration = harnessModule ? all[name] : { ...all[name], harnessModule: false };
   const r = await check({ cacheRoot, configuration, hostDir: candidate.hostDir, installDir: candidate.installDir, work: join(work, 'runs', basename(dir), 'work'), evidence: dir, trial, lane, rawDir });
   return {
@@ -326,7 +346,10 @@ const runOne = (id, opts) => (isCheck(id) ? configurationCheck(id, opts) : workl
 const results = [];
 for (const id of names) {
   const dir = join(out, slug(id));
+  const t = performance.now();
+  const before = checkpointTime;
   const r = await runOne(id, { dir, rawDir: flag('self-check') ? join(dir, 'raw') : null });
+  seconds.runs[id] = Math.round((since(t) - (checkpointTime - before)) * 10) / 10;
   console.log((r.lines?.length ? r.lines : [`${id}: couldn't run: ${r.reason}`]).join('\n'));
   let record = null;
   // A record matches whatever the module recorded, nothing included: a run that sent agent
@@ -356,5 +379,10 @@ for (const id of names) {
   }
   results.push({ run: id, outcome: r.outcome, reason: r.reason, failures: r.failures, record, ...(selfCheck ? { selfCheck } : {}) });
 }
-writeFileSync(join(out, 'run.json'), JSON.stringify({ lane, release: { tag: stack.release, versions: release.versions }, candidate: { versions: candidate.versions, overlays: packs }, results }, null, 1));
+writeFileSync(join(out, 'run.json'), JSON.stringify({ lane, release: { tag: stack.release, versions: release.versions }, candidate: { versions: candidate.versions, overlays: packs }, seconds, results }, null, 1));
+if (flag('update-seconds')) {
+  const merged = { runs: { ...stack.seconds?.runs, ...seconds.runs }, checkpoints: { ...stack.seconds?.checkpoints, ...seconds.checkpoints } };
+  writeFileSync(join(HERE, 'stack.json'), `${JSON.stringify({ ...stack, seconds: merged }, null, 2)}\n`);
+  console.log(`${LABEL} wrote ${Object.keys(seconds.runs).length} runs' and ${Object.keys(seconds.checkpoints).length} checkpoints' seconds into stack.json`);
+}
 process.exit(results.some((r) => r.outcome === 'couldnt-run' || r.selfCheck?.outcome === 'couldnt-run') ? 2 : results.every((r) => r.outcome === 'pass' && (r.record === 'same' || r.record === 'updated') && (!r.selfCheck || r.selfCheck.outcome === 'same')) ? 0 : 1);

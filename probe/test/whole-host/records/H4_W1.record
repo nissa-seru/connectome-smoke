@@ -1,0 +1,434 @@
+# whole-host record H4/W1
+# checkpoint v0.21.0, empty: connectome-host 0.21.0 (source 54321fd3af80), agent-framework 0.32.0, context-manager 0.24.0, membrane 0.8.0, chronicle 0.5.1, bun 1.4.4
+# candidate: connectome-host 0.21.0, agent-framework 0.32.0, context-manager 0.24.0, membrane 0.8.0, chronicle 0.5.1, bun 1.4.4
+step 412126.1
+  compile [T:user-clock-monday-#-#-#](2026,01,05,09,00) [T:user-the-local-time](2026,01,05,09,00,00,000,00,00) 412126.1.in [T:user-routing-your-plain] ^ 4
+step 412126.2
+  compile + 412126.1.r1-412126.1.r4 [T:user-delivered-plain-speech] 412126.2.in ^ 4,13
+step 412126.3
+  compile + 412126.2.r1-412126.2.r4 [T:user-delivered-plain-speech] 412126.3.in ^ 4,22
+step 412126.4
+  compile + 412126.3.r1-412126.3.r4 [T:user-delivered-plain-speech] 412126.4.in ^ 4,31
+step 412126.5
+  compile + 412126.4.r1 [T:user-delivered-plain-speech] 412126.5.in ^ 4,34
+step 412126.6
+  compile + 412126.5.r1 [T:user-delivered-plain-speech] 412126.6.in ^ 4,37
+step 412126.7
+  compile + 412126.6.r1 [T:user-delivered-plain-speech] 412126.7.in ^ 4,40
+step 412126.8
+  compile + 412126.7.r1-412126.7.r4 [T:user-delivered-plain-speech] 412126.8.in ^ 4,49
+step 412126.9
+  compile + 412126.8.r1-412126.8.r4 [T:user-delivered-plain-speech] 412126.9.in ^ 4,58
+step 412126.10
+  compile + 412126.9.r1-412126.9.r3 [T:user-delivered-plain-speech] 412126.10.in ^ 4,65
+step 412126.11
+  call 412126.1.in 412126.1.r1 412126.1.call1 412126.1.r2 412126.1.call2 -> summary
+  wrote L1(412126.1.r1-412126.1.call2) [T:summary-l1-0592c2e7]
+  compile + 412126.10.r1-412126.10.r3 [T:user-delivered-plain-speech] 412126.11.in ^ 5,6,72
+step 412126.12
+  call 412126.1.in 412126.1.r3 412126.1.call3 412126.1.r4 -> summary
+  wrote L1(412126.1.r3-412126.1.r4) [T:summary-l1-136ad142]
+  compile + 412126.11.r1-412126.11.r4 [T:user-delivered-plain-speech] 412126.12.in ^ 6,9,13,81
+step 412126.13
+  call 412126.1.in 412126.2.in 412126.2.r1 412126.2.call1 412126.2.r2 412126.2.call2 -> summary
+  wrote L1(412126.2.in-412126.2.call2) [T:summary-l1-282ce5ed]
+  compile + 412126.12.r1-412126.12.r4 [T:user-delivered-plain-speech] 412126.13.in ^ 8,15,19,90
+step 412126.14
+  call 412126.1.in 412126.2.r3 412126.2.call3 412126.2.r4 -> summary
+  call 412126.1.in 412126.3.in 412126.3.r1 412126.3.call1 412126.3.r2 412126.3.call2 -> summary
+  wrote L1(412126.2.r3-412126.2.r4) [T:summary-l1-93fd5699]
+  wrote L1(412126.3.in-412126.3.call2) [T:summary-l1-7872ebba]
+  compile + 412126.13.r1-412126.13.r2 [T:user-delivered-plain-speech] 412126.14.in ^ 10,18,24,95
+step 412126.15
+  compile + 412126.14.r1-412126.14.r2 [T:user-delivered-plain-speech] 412126.15.in ^ 13,22,32,100
+step 412126.16
+  call 412126.1.in 412126.3.r3 412126.3.call3 412126.3.r4 412126.4.in 412126.4.r1 -> summary
+  call 412126.1.in 412126.1.r1 412126.1.call1 412126.1.r2 412126.1.call2 412126.1.r3 412126.1.call3 412126.1.r4 412126.2.in 412126.2.r1 412126.2.call1 412126.2.r2 412126.2.call2 412126.2.r3 412126.2.call3 412126.2.r4 412126.3.in 412126.3.r1 412126.3.call1 412126.3.r2 412126.3.call2 412126.3.r3 412126.3.call3 412126.3.r4 412126.4.in 412126.4.r1 -> summary
+  wrote L1(412126.3.r3-412126.4.r1) [T:summary-l1-f460f260]
+  wrote L2(412126.1.r1-412126.4.r1) [T:summary-l2-61a75ab2]
+  compile + 412126.15.r1 [T:user-delivered-plain-speech] 412126.16.in ^ 14,23,35,103
+step 412126.17
+  compile + 412126.16.r1-412126.16.r2 [T:user-delivered-plain-speech] 412126.17.in ^ 15,24,42,108
+step 412126.18
+  call 412126.1.in 412126.5.in 412126.5.r1 412126.6.in 412126.6.r1 412126.7.in 412126.7.r1 412126.7.call1 -> summary
+  call 412126.1.in 412126.7.r2 412126.7.call2 412126.7.r3 412126.7.call3 -> summary
+  wrote L1(412126.5.in-412126.7.call1) [T:summary-l1-8e40d484]
+  wrote L1(412126.7.r2-412126.7.call3) [T:summary-l1-79ffd8fd]
+  compile + 412126.17.r1-412126.17.r2 [T:user-delivered-plain-speech] 412126.18.in ^ 16,26,44,113
+step 412126.19
+  call 412126.1.in 412126.7.r4 412126.8.in 412126.8.r1 412126.8.call1 -> summary
+  call 412126.1.in 412126.8.r2 412126.8.call2 412126.8.r3 412126.8.call3 -> summary
+  wrote L1(412126.7.r4-412126.8.call1) [T:summary-l1-84dfe656]
+  wrote L1(412126.8.r2-412126.8.call3) [T:summary-l1-849ac128]
+  compile + 412126.18.r1-412126.18.r4 [T:user-delivered-plain-speech] 412126.19.in ^ 19,42,53,122
+step 412126.20
+  call 412126.1.in 412126.8.r4 412126.9.in 412126.9.r1 412126.9.call1 -> summary
+  call 412126.1.in 412126.9.r2 412126.9.call2 412126.9.r3 -> summary
+  call 412126.1.in 412126.10.in 412126.10.r1 412126.10.call1 412126.10.r2 412126.10.call2 -> summary
+  call 412126.1.in 412126.5.in 412126.5.r1 412126.6.in 412126.6.r1 412126.7.in 412126.7.r1 412126.7.call1 412126.7.r2 412126.7.call2 412126.7.r3 412126.7.call3 412126.7.r4 412126.8.in 412126.8.r1 412126.8.call1 412126.8.r2 412126.8.call2 412126.8.r3 412126.8.call3 412126.8.r4 412126.9.in 412126.9.r1 412126.9.call1 412126.9.r2 412126.9.call2 412126.9.r3 -> summary
+  wrote L1(412126.8.r4-412126.9.call1) [T:summary-l1-bde4361b]
+  wrote L1(412126.9.r2-412126.9.r3) [T:summary-l1-cfd35582]
+  wrote L1(412126.10.in-412126.10.call2) [T:summary-l1-2ce78671]
+  wrote L2(412126.5.in-412126.9.r3) [T:summary-l2-622d49ac]
+  compile + 412126.19.r1-412126.19.r4 [T:user-delivered-plain-speech] 412126.20.in ^ 23,46,62,131
+step 412126.21
+  compile + 412126.20.r1-412126.20.r4 [T:user-delivered-plain-speech] 412126.21.in ^ 24,52,74,140
+step 412126.22
+  compile + 412126.21.r1 [T:user-delivered-plain-speech] 412126.22.in ^ 24,52,74,143
+step 412126.23
+  compile + 412126.22.r1 [T:user-delivered-plain-speech] 412126.23.in ^ 24,52,74,146
+step 412126.24
+  call 412126.1.in 412126.10.r3 412126.11.in 412126.11.r1 412126.11.call1 -> summary
+  call 412126.1.in 412126.11.r2 412126.11.call2 412126.11.r3 412126.11.call3 -> summary
+  wrote L1(412126.10.r3-412126.11.call1) [T:summary-l1-4debdbc6]
+  wrote L1(412126.11.r2-412126.11.call3) [T:summary-l1-11cf9618]
+  compile + 412126.23.r1 [T:user-delivered-plain-speech] 412126.24.in ^ 25,53,76,149
+step 412126.25
+  call 412126.1.in 412126.11.r4 412126.12.in 412126.12.r1 412126.12.call1 412126.12.r2 412126.12.call2 -> summary
+  wrote L1(412126.11.r4-412126.12.call2) [T:summary-l1-f6dcc0ac]
+  compile + 412126.24.r1-412126.24.r4 [T:user-delivered-plain-speech] 412126.25.in ^ 29,60,90,158
+step 412126.26
+  call 412126.1.in 412126.12.r3 412126.12.call3 412126.12.r4 412126.13.in 412126.13.r1 412126.13.call1 412126.13.call2 -> summary
+  call 412126.1.in 412126.13.r2 412126.14.in 412126.14.r1 412126.14.call1 -> summary
+  call 412126.1.in 412126.10.in 412126.10.r1 412126.10.call1 412126.10.r2 412126.10.call2 412126.10.r3 412126.11.in 412126.11.r1 412126.11.call1 412126.11.r2 412126.11.call2 412126.11.r3 412126.11.call3 412126.11.r4 412126.12.in 412126.12.r1 412126.12.call1 412126.12.r2 412126.12.call2 412126.12.r3 412126.12.call3 412126.12.r4 412126.13.in 412126.13.r1 412126.13.call1 412126.13.call2 412126.13.r2 412126.14.in 412126.14.r1 412126.14.call1 -> summary
+  wrote L1(412126.12.r3-412126.13.call1) [T:summary-l1-322c269f]
+  wrote L1(412126.13.r2-412126.14.call1) [T:summary-l1-be2ba75f]
+  wrote L2(412126.10.in-412126.14.call1) [T:summary-l2-7843682d]
+  compile + 412126.25.r1-412126.25.r4 [T:user-delivered-plain-speech] 412126.26.in ^ 40,65,95,167
+step 412126.27
+  call 412126.1.in 412126.14.r2 412126.15.in 412126.15.r1 412126.16.in 412126.16.r1 412126.16.call1 -> summary
+  wrote L1(412126.14.r2-412126.16.call1) [T:summary-l1-1147afac]
+  compile [T:user-clock-monday-#-#-#](2026,01,05,09,00) [T:user-the-local-time](2026,01,05,09,00,00,000,00,00) 412126.1.in [T:user-routing-your-plain] 412126.1.r1-412126.1.r4 [T:user-delivered-plain-speech] 412126.2.in-412126.2.r4 [T:user-delivered-plain-speech] 412126.3.in-412126.3.r4 [T:user-delivered-plain-speech] 412126.4.in-412126.4.r1 [T:user-delivered-plain-speech] 412126.5.in-412126.5.r1 [T:user-delivered-plain-speech] 412126.6.in-412126.6.r1 [T:user-delivered-plain-speech] 412126.7.in-412126.7.r4 [T:user-delivered-plain-speech] 412126.8.in-412126.8.r4 [T:user-delivered-plain-speech] 412126.9.in-412126.9.r3 [T:user-delivered-plain-speech] 412126.10.in-412126.10.call2 L1(412126.10.r3-412126.11.call1) L1(412126.10.r3-412126.11.call1) L1(412126.11.r2-412126.11.call3) L1(412126.11.r2-412126.11.call3) L1(412126.11.r4-412126.12.call2) L1(412126.11.r4-412126.12.call2) L1(412126.12.r3-412126.13.call1) L1(412126.12.r3-412126.13.call1) L1(412126.13.r2-412126.14.call1) L1(412126.13.r2-412126.14.call1) 412126.14.r2 [T:user-delivered-plain-speech] 412126.15.in-412126.15.r1 [T:user-delivered-plain-speech] 412126.16.in-412126.16.r2 [T:user-delivered-plain-speech] 412126.17.in-412126.17.r2 [T:user-delivered-plain-speech] 412126.18.in-412126.18.r4 [T:user-delivered-plain-speech] 412126.19.in-412126.19.r4 [T:user-delivered-plain-speech] 412126.20.in-412126.20.r4 [T:user-delivered-plain-speech] 412126.21.in-412126.21.r1 [T:user-delivered-plain-speech] 412126.22.in-412126.22.r1 [T:user-delivered-plain-speech] 412126.23.in-412126.23.r1 [T:user-delivered-plain-speech] 412126.24.in-412126.24.r4 [T:user-delivered-plain-speech] 412126.25.in-412126.25.r4 [T:user-delivered-plain-speech] 412126.26.in-412126.26.r3 [T:user-delivered-plain-speech] 412126.27.in ^ 27,55,87,156
+step 412126.28
+  call 412126.1.in 412126.16.r2 412126.17.in 412126.17.r1 412126.17.call1 412126.17.r2 -> summary
+  call 412126.1.in 412126.18.in 412126.18.r1 412126.18.call1 -> summary
+  wrote L1(412126.16.r2-412126.17.r2) [T:summary-l1-beac0ad0]
+  wrote L1(412126.18.in-412126.18.call1) [T:summary-l1-3456b786]
+  compile + 412126.27.r1-412126.27.r3 [T:user-delivered-plain-speech] 412126.28.in ^ 28,59,95,163
+step 412126.29
+  call 412126.1.in 412126.18.r2 412126.18.call2 412126.18.r3 412126.18.call3 -> summary
+  call 412126.1.in 412126.18.r4 412126.19.in 412126.19.r1 412126.19.call1 -> summary
+  wrote L1(412126.18.r2-412126.18.call3) [T:summary-l1-a1f29a45]
+  wrote L1(412126.18.r4-412126.19.call1) [T:summary-l1-0c5e28b7]
+  compile + 412126.28.r1-412126.28.r4 [T:user-delivered-plain-speech] 412126.29.in ^ 40,66,101,172
+step 412126.30
+  call 412126.1.in 412126.19.r2 412126.19.call2 412126.19.r3 412126.19.call3 -> summary
+  call 412126.1.in 412126.14.r2 412126.15.in 412126.15.r1 412126.16.in 412126.16.r1 412126.16.call1 412126.16.r2 412126.17.in 412126.17.r1 412126.17.call1 412126.17.r2 412126.18.in 412126.18.r1 412126.18.call1 412126.18.r2 412126.18.call2 412126.18.r3 412126.18.call3 412126.18.r4 412126.19.in 412126.19.r1 412126.19.call1 412126.19.r2 412126.19.call2 412126.19.r3 412126.19.call3 -> summary
+  wrote L1(412126.19.r2-412126.19.call3) [T:summary-l1-1f4f68aa]
+  wrote L2(412126.14.r2-412126.19.call3) [T:summary-l2-fc639c0e]
+  compile [T:user-clock-monday-#-#-#](2026,01,05,09,00) [T:user-the-local-time](2026,01,05,09,00,00,000,00,00) 412126.1.in [T:user-routing-your-plain] 412126.1.r1-412126.1.r4 [T:user-delivered-plain-speech] 412126.2.in-412126.2.r4 [T:user-delivered-plain-speech] 412126.3.in-412126.3.r4 [T:user-delivered-plain-speech] 412126.4.in-412126.4.r1 [T:user-delivered-plain-speech] 412126.5.in-412126.5.r1 [T:user-delivered-plain-speech] 412126.6.in-412126.6.r1 [T:user-delivered-plain-speech] 412126.7.in-412126.7.call1 L1(412126.7.r2-412126.7.call3) L1(412126.7.r2-412126.7.call3) L1(412126.7.r4-412126.8.call1) L1(412126.7.r4-412126.8.call1) L1(412126.8.r2-412126.8.call3) L1(412126.8.r2-412126.8.call3) L1(412126.8.r4-412126.9.call1) L1(412126.8.r4-412126.9.call1) L1(412126.9.r2-412126.9.r3) L1(412126.9.r2-412126.9.r3) 412126.10.in-412126.10.call2 L1(412126.10.r3-412126.11.call1) L1(412126.10.r3-412126.11.call1) L1(412126.11.r2-412126.11.call3) L1(412126.11.r2-412126.11.call3) L1(412126.11.r4-412126.12.call2) L1(412126.11.r4-412126.12.call2) L1(412126.12.r3-412126.13.call1) L1(412126.12.r3-412126.13.call1) L1(412126.13.r2-412126.14.call1) L1(412126.13.r2-412126.14.call1) 412126.14.r2 [T:user-delivered-plain-speech] 412126.15.in-412126.15.r1 [T:user-delivered-plain-speech] 412126.16.in-412126.16.r2 [T:user-delivered-plain-speech] 412126.17.in-412126.17.r2 L1(412126.18.in-412126.18.call1) L1(412126.18.in-412126.18.call1) L1(412126.18.r2-412126.18.call3) L1(412126.18.r2-412126.18.call3) L1(412126.18.r4-412126.19.call1) L1(412126.18.r4-412126.19.call1) 412126.19.r2-412126.19.r4 [T:user-delivered-plain-speech] 412126.20.in-412126.20.r4 [T:user-delivered-plain-speech] 412126.21.in-412126.21.r1 [T:user-delivered-plain-speech] 412126.22.in-412126.22.r1 [T:user-delivered-plain-speech] 412126.23.in-412126.23.r1 [T:user-delivered-plain-speech] 412126.24.in-412126.24.r4 [T:user-delivered-plain-speech] 412126.25.in-412126.25.r4 [T:user-delivered-plain-speech] 412126.26.in-412126.26.r3 [T:user-delivered-plain-speech] 412126.27.in-412126.27.r3 [T:user-delivered-plain-speech] 412126.28.in-412126.28.r4 [T:user-delivered-plain-speech] 412126.29.in-412126.29.r4 [T:user-delivered-plain-speech] 412126.30.in ^ 24,63,91,162
+step 412126.31
+  compile + 412126.30.r1-412126.30.r2 [T:user-delivered-plain-speech] 412126.31.in ^ 26,74,98,167
+step 412126.32
+  compile + 412126.31.r1-412126.31.r2 [T:user-delivered-plain-speech] 412126.32.in ^ 28,75,100,172
+step 412126.33
+  call 412126.1.in 412126.19.r4 412126.20.in 412126.20.r1 412126.20.call1 412126.20.r2 412126.20.call2 -> summary
+  wrote L1(412126.19.r4-412126.20.call2) [T:summary-l1-28cff57f]
+  compile + 412126.32.r1 [T:user-delivered-plain-speech] 412126.33.in ^ 28,75,100,175
+step 412126.34
+  call 412126.1.in 412126.20.r3 412126.20.call3 412126.20.r4 -> summary
+  wrote L1(412126.20.r3-412126.20.r4) [T:summary-l1-c5d1e52d]
+  compile + 412126.33.r1-412126.33.r2 [T:user-delivered-plain-speech] 412126.34.in ^ 29,75,110,180
+step 412126.35
+  call 412126.1.in 412126.21.in 412126.21.r1 412126.22.in 412126.22.r1 412126.23.in 412126.23.r1 412126.24.in 412126.24.r1 412126.24.call1 -> summary
+  wrote L1(412126.21.in-412126.24.call1) [T:summary-l1-f9e1ebcc]
+  compile + 412126.34.r1-412126.34.r2 [T:user-delivered-plain-speech] 412126.35.in ^ 34,80,114,185
+step 412126.36
+  call 412126.1.in 412126.24.r2 412126.24.call2 412126.24.r3 412126.24.call3 -> summary
+  call 412126.1.in 412126.24.r4 412126.25.in 412126.25.r1 412126.25.call1 412126.25.r2 412126.25.call2 -> summary
+  call 412126.1.in 412126.25.r3 412126.25.call3 412126.25.r4 412126.26.in -> summary
+  call 412126.1.in 412126.19.r4 412126.20.in 412126.20.r1 412126.20.call1 412126.20.r2 412126.20.call2 412126.20.r3 412126.20.call3 412126.20.r4 412126.21.in 412126.21.r1 412126.22.in 412126.22.r1 412126.23.in 412126.23.r1 412126.24.in 412126.24.r1 412126.24.call1 412126.24.r2 412126.24.call2 412126.24.r3 412126.24.call3 412126.24.r4 412126.25.in 412126.25.r1 412126.25.call1 412126.25.r2 412126.25.call2 412126.25.r3 412126.25.call3 412126.25.r4 412126.26.in -> summary
+  wrote L1(412126.24.r2-412126.24.call3) [T:summary-l1-78866acd]
+  wrote L1(412126.24.r4-412126.25.call2) [T:summary-l1-8d057107]
+  wrote L1(412126.25.r3-412126.26.in) [T:summary-l1-ff46392c]
+  wrote L2(412126.19.r4-412126.26.in) [T:summary-l2-f9ce272e]
+  compile [T:user-clock-monday-#-#-#](2026,01,05,09,00) [T:user-the-local-time](2026,01,05,09,00,00,000,00,00) 412126.1.in [T:user-routing-your-plain] 412126.1.r1-412126.1.r4 [T:user-delivered-plain-speech] 412126.2.in-412126.2.r4 [T:user-delivered-plain-speech] 412126.3.in-412126.3.r4 [T:user-delivered-plain-speech] 412126.4.in-412126.4.r1 [T:user-delivered-plain-speech] 412126.5.in-412126.5.r1 [T:user-delivered-plain-speech] 412126.6.in-412126.6.r1 [T:user-delivered-plain-speech] 412126.7.in-412126.7.call1 L1(412126.7.r2-412126.7.call3) L1(412126.7.r2-412126.7.call3) L1(412126.7.r4-412126.8.call1) L1(412126.7.r4-412126.8.call1) L1(412126.8.r2-412126.8.call3) L1(412126.8.r2-412126.8.call3) L1(412126.8.r4-412126.9.call1) L1(412126.8.r4-412126.9.call1) L1(412126.9.r2-412126.9.r3) L1(412126.9.r2-412126.9.r3) 412126.10.in-412126.10.call2 L1(412126.10.r3-412126.11.call1) L1(412126.10.r3-412126.11.call1) L1(412126.11.r2-412126.11.call3) L1(412126.11.r2-412126.11.call3) L1(412126.11.r4-412126.12.call2) L1(412126.11.r4-412126.12.call2) L1(412126.12.r3-412126.13.call1) L1(412126.12.r3-412126.13.call1) L1(412126.13.r2-412126.14.call1) L1(412126.13.r2-412126.14.call1) 412126.14.r2 [T:user-delivered-plain-speech] 412126.15.in-412126.15.r1 [T:user-delivered-plain-speech] 412126.16.in-412126.16.r2 [T:user-delivered-plain-speech] 412126.17.in-412126.17.r2 L1(412126.18.in-412126.18.call1) L1(412126.18.in-412126.18.call1) L1(412126.18.r2-412126.18.call3) L1(412126.18.r2-412126.18.call3) L1(412126.18.r4-412126.19.call1) L1(412126.18.r4-412126.19.call1) L1(412126.19.r2-412126.19.call3) L1(412126.19.r2-412126.19.call3) L1(412126.19.r4-412126.20.call2) L1(412126.19.r4-412126.20.call2) L1(412126.20.r3-412126.20.r4) L1(412126.20.r3-412126.20.r4) L1(412126.21.in-412126.24.call1) L1(412126.21.in-412126.24.call1) 412126.24.r2-412126.24.r4 [T:user-delivered-plain-speech] 412126.25.in-412126.25.r4 [T:user-delivered-plain-speech] 412126.26.in-412126.26.r3 [T:user-delivered-plain-speech] 412126.27.in-412126.27.r3 [T:user-delivered-plain-speech] 412126.28.in-412126.28.r4 [T:user-delivered-plain-speech] 412126.29.in-412126.29.r4 [T:user-delivered-plain-speech] 412126.30.in-412126.30.r2 [T:user-delivered-plain-speech] 412126.31.in-412126.31.r2 [T:user-delivered-plain-speech] 412126.32.in-412126.32.r1 [T:user-delivered-plain-speech] 412126.33.in-412126.33.r2 [T:user-delivered-plain-speech] 412126.34.in-412126.34.r2 [T:user-delivered-plain-speech] 412126.35.in-412126.35.r4 [T:user-delivered-plain-speech] 412126.36.in ^ 27,74,104,175
+step 412126.37
+  call 412126.1.in 412126.26.r1 412126.26.call1 412126.26.r2 412126.26.call2 -> summary
+  wrote L1(412126.26.r1-412126.26.call2) [T:summary-l1-ad45e6bc]
+  compile + 412126.36.r1-412126.36.r4 [T:user-delivered-plain-speech] 412126.37.in ^ 37,83,115,184
+step 412126.38
+  call 412126.1.in 412126.26.r3 412126.27.in 412126.27.r1 412126.27.call1 -> summary
+  wrote L1(412126.26.r3-412126.27.call1) [T:summary-l1-cfa3c597]
+  compile [T:user-clock-monday-#-#-#](2026,01,05,09,00) [T:user-the-local-time](2026,01,05,09,00,00,000,00,00) 412126.1.in [T:user-routing-your-plain] L2(412126.1.r1-412126.4.r1) L2(412126.1.r1-412126.4.r1) [T:user-delivered-plain-speech] 412126.5.in-412126.5.r1 [T:user-delivered-plain-speech] 412126.6.in-412126.6.r1 [T:user-delivered-plain-speech] 412126.7.in-412126.7.call1 L1(412126.7.r2-412126.7.call3) L1(412126.7.r2-412126.7.call3) L1(412126.7.r4-412126.8.call1) L1(412126.7.r4-412126.8.call1) L1(412126.8.r2-412126.8.call3) L1(412126.8.r2-412126.8.call3) L1(412126.8.r4-412126.9.call1) L1(412126.8.r4-412126.9.call1) L1(412126.9.r2-412126.9.r3) L1(412126.9.r2-412126.9.r3) 412126.10.in-412126.10.call2 L1(412126.10.r3-412126.11.call1) L1(412126.10.r3-412126.11.call1) L1(412126.11.r2-412126.11.call3) L1(412126.11.r2-412126.11.call3) L1(412126.11.r4-412126.12.call2) L1(412126.11.r4-412126.12.call2) L1(412126.12.r3-412126.13.call1) L1(412126.12.r3-412126.13.call1) L1(412126.13.r2-412126.14.call1) L1(412126.13.r2-412126.14.call1) 412126.14.r2 [T:user-delivered-plain-speech] 412126.15.in-412126.15.r1 [T:user-delivered-plain-speech] 412126.16.in-412126.16.r2 [T:user-delivered-plain-speech] 412126.17.in-412126.17.r2 L1(412126.18.in-412126.18.call1) L1(412126.18.in-412126.18.call1) L1(412126.18.r2-412126.18.call3) L1(412126.18.r2-412126.18.call3) L1(412126.18.r4-412126.19.call1) L1(412126.18.r4-412126.19.call1) L1(412126.19.r2-412126.19.call3) L1(412126.19.r2-412126.19.call3) L1(412126.19.r4-412126.20.call2) L1(412126.19.r4-412126.20.call2) L1(412126.20.r3-412126.20.r4) L1(412126.20.r3-412126.20.r4) L1(412126.21.in-412126.24.call1) L1(412126.21.in-412126.24.call1) 412126.24.r2-412126.24.r4 [T:user-delivered-plain-speech] 412126.25.in-412126.25.r4 [T:user-delivered-plain-speech] 412126.26.in L1(412126.26.r1-412126.26.call2) L1(412126.26.r1-412126.26.call2) 412126.26.r3 [T:user-delivered-plain-speech] 412126.27.in-412126.27.r3 [T:user-delivered-plain-speech] 412126.28.in-412126.28.r4 [T:user-delivered-plain-speech] 412126.29.in-412126.29.r4 [T:user-delivered-plain-speech] 412126.30.in-412126.30.r2 [T:user-delivered-plain-speech] 412126.31.in-412126.31.r2 [T:user-delivered-plain-speech] 412126.32.in-412126.32.r1 [T:user-delivered-plain-speech] 412126.33.in-412126.33.r2 [T:user-delivered-plain-speech] 412126.34.in-412126.34.r2 [T:user-delivered-plain-speech] 412126.35.in-412126.35.r4 [T:user-delivered-plain-speech] 412126.36.in-412126.36.r4 [T:user-delivered-plain-speech] 412126.37.in-412126.37.r4 [T:user-delivered-plain-speech] 412126.38.in ^ 42,71,97,165
+step 412126.39
+  compile + 412126.38.r1 [T:user-delivered-plain-speech] 412126.39.in ^ 42,71,97,168
+step 412126.40
+  compile + 412126.39.r1 [T:user-delivered-plain-speech] 412126.40.in ^ 45,73,99,171
+step 412126.41
+  call 412126.1.in 412126.27.r2 412126.27.call2 412126.27.r3 412126.28.in -> summary
+  call 412126.1.in 412126.28.r1 412126.28.call1 412126.28.r2 412126.28.call2 -> summary
+  wrote L1(412126.27.r2-412126.28.in) [T:summary-l1-c7a3b56f]
+  wrote L1(412126.28.r1-412126.28.call2) [T:summary-l1-c5147814]
+  compile + 412126.40.r1 [T:user-delivered-plain-speech] 412126.41.in ^ 45,73,99,174
+step 412126.42
+  call 412126.1.in 412126.28.r3 412126.28.call3 412126.28.r4 -> summary
+  call 412126.1.in 412126.29.in 412126.29.r1 412126.29.call1 412126.29.r2 412126.29.call2 -> summary
+  call 412126.1.in 412126.26.r1 412126.26.call1 412126.26.r2 412126.26.call2 412126.26.r3 412126.27.in 412126.27.r1 412126.27.call1 412126.27.r2 412126.27.call2 412126.27.r3 412126.28.in 412126.28.r1 412126.28.call1 412126.28.r2 412126.28.call2 412126.28.r3 412126.28.call3 412126.28.r4 412126.29.in 412126.29.r1 412126.29.call1 412126.29.r2 412126.29.call2 -> summary
+  call 412126.1.in -> summary
+  wrote L1(412126.28.r3-412126.28.r4) [T:summary-l1-860f1891]
+  wrote L1(412126.29.in-412126.29.call2) [T:summary-l1-d1b3e2ea]
+  wrote L2(412126.26.r1-412126.29.call2) [T:summary-l2-266acb1c]
+  wrote L3(412126.1.r1-412126.29.call2) [T:summary-l3-0bb19861]
+  compile + 412126.41.r1-412126.41.r4 [T:user-delivered-plain-speech] 412126.42.in ^ 49,80,108,183
+step 412126.43
+  call 412126.1.in 412126.29.r3 412126.29.call3 412126.29.r4 412126.30.in -> summary
+  call 412126.1.in 412126.30.r1 412126.30.call1 412126.30.call2 412126.30.r2 -> summary
+  wrote L1(412126.29.r3-412126.30.in) [T:summary-l1-34919fcb]
+  wrote L1(412126.30.r1-412126.30.r2) [T:summary-l1-6d9ad2d6]
+  compile + 412126.42.r1-412126.42.r4 [T:user-delivered-plain-speech] 412126.43.in ^ 54,92,117,192
+step 412126.44
+  call 412126.1.in 412126.31.in 412126.31.r1 412126.31.call1 412126.31.r2 412126.32.in 412126.32.r1 412126.33.in -> summary
+  call 412126.1.in 412126.33.r1 412126.33.call1 412126.33.r2 -> summary
+  wrote L1(412126.31.in-412126.33.in) [T:summary-l1-3138cad9]
+  wrote L1(412126.33.r1-412126.33.r2) [T:summary-l1-4630636c]
+  compile [T:user-clock-monday-#-#-#](2026,01,05,09,00) [T:user-the-local-time](2026,01,05,09,00,00,000,00,00) 412126.1.in [T:user-routing-your-plain] L2(412126.1.r1-412126.4.r1) L2(412126.1.r1-412126.4.r1) [T:user-delivered-plain-speech] 412126.5.in-412126.5.r1 [T:user-delivered-plain-speech] 412126.6.in-412126.6.r1 [T:user-delivered-plain-speech] 412126.7.in-412126.7.call1 L1(412126.7.r2-412126.7.call3) L1(412126.7.r2-412126.7.call3) L1(412126.7.r4-412126.8.call1) L1(412126.7.r4-412126.8.call1) L1(412126.8.r2-412126.8.call3) L1(412126.8.r2-412126.8.call3) L1(412126.8.r4-412126.9.call1) L1(412126.8.r4-412126.9.call1) L1(412126.9.r2-412126.9.r3) L1(412126.9.r2-412126.9.r3) 412126.10.in-412126.10.call2 L1(412126.10.r3-412126.11.call1) L1(412126.10.r3-412126.11.call1) L1(412126.11.r2-412126.11.call3) L1(412126.11.r2-412126.11.call3) L1(412126.11.r4-412126.12.call2) L1(412126.11.r4-412126.12.call2) L1(412126.12.r3-412126.13.call1) L1(412126.12.r3-412126.13.call1) L1(412126.13.r2-412126.14.call1) L1(412126.13.r2-412126.14.call1) 412126.14.r2 [T:user-delivered-plain-speech] 412126.15.in-412126.15.r1 [T:user-delivered-plain-speech] 412126.16.in-412126.16.r2 [T:user-delivered-plain-speech] 412126.17.in-412126.17.r2 L1(412126.18.in-412126.18.call1) L1(412126.18.in-412126.18.call1) L1(412126.18.r2-412126.18.call3) L1(412126.18.r2-412126.18.call3) L1(412126.18.r4-412126.19.call1) L1(412126.18.r4-412126.19.call1) L1(412126.19.r2-412126.19.call3) L1(412126.19.r2-412126.19.call3) L1(412126.19.r4-412126.20.call2) L1(412126.19.r4-412126.20.call2) L1(412126.20.r3-412126.20.r4) L1(412126.20.r3-412126.20.r4) L1(412126.21.in-412126.24.call1) L1(412126.21.in-412126.24.call1) 412126.24.r2-412126.24.r4 [T:user-delivered-plain-speech] 412126.25.in-412126.25.r4 [T:user-delivered-plain-speech] 412126.26.in L1(412126.26.r1-412126.26.call2) L1(412126.26.r1-412126.26.call2) 412126.26.r3 [T:user-delivered-plain-speech] 412126.27.in-412126.27.call1 L1(412126.27.r2-412126.28.in) L1(412126.27.r2-412126.28.in) L1(412126.28.r1-412126.28.call2) L1(412126.28.r1-412126.28.call2) L1(412126.28.r3-412126.28.r4) L1(412126.28.r3-412126.28.r4) L1(412126.29.in-412126.29.call2) L1(412126.29.in-412126.29.call2) L1(412126.29.r3-412126.30.in) L1(412126.29.r3-412126.30.in) L1(412126.30.r1-412126.30.r2) L1(412126.30.r1-412126.30.r2) 412126.31.in-412126.31.r2 [T:user-delivered-plain-speech] 412126.32.in-412126.32.r1 [T:user-delivered-plain-speech] 412126.33.in-412126.33.r2 [T:user-delivered-plain-speech] 412126.34.in-412126.34.r2 [T:user-delivered-plain-speech] 412126.35.in-412126.35.r4 [T:user-delivered-plain-speech] 412126.36.in-412126.36.r4 [T:user-delivered-plain-speech] 412126.37.in-412126.37.r4 [T:user-delivered-plain-speech] 412126.38.in-412126.38.r1 [T:user-delivered-plain-speech] 412126.39.in-412126.39.r1 [T:user-delivered-plain-speech] 412126.40.in-412126.40.r1 [T:user-delivered-plain-speech] 412126.41.in-412126.41.r4 [T:user-delivered-plain-speech] 412126.42.in-412126.42.r4 [T:user-delivered-plain-speech] 412126.43.in-412126.43.r3 [T:user-delivered-plain-speech] 412126.44.in ^ 48,78,115,184
+step 412126.45
+  call 412126.1.in 412126.34.in 412126.34.r1 412126.34.call1 412126.34.r2 -> summary
+  call 412126.1.in 412126.35.in 412126.35.r1 412126.35.call1 -> summary
+  call 412126.1.in 412126.35.r2 412126.35.call2 412126.35.r3 412126.35.call3 -> summary
+  call 412126.1.in 412126.29.r3 412126.29.call3 412126.29.r4 412126.30.in 412126.30.r1 412126.30.call1 412126.30.call2 412126.30.r2 412126.31.in 412126.31.r1 412126.31.call1 412126.31.r2 412126.32.in 412126.32.r1 412126.33.in 412126.33.r1 412126.33.call1 412126.33.r2 412126.34.in 412126.34.r1 412126.34.call1 412126.34.r2 412126.35.in 412126.35.r1 412126.35.call1 -> summary
+  wrote L1(412126.34.in-412126.34.r2) [T:summary-l1-006a3bcd]
+  wrote L1(412126.35.in-412126.35.call1) [T:summary-l1-3285e11c]
+  wrote L1(412126.35.r2-412126.35.call3) [T:summary-l1-0f60f986]
+  wrote L2(412126.29.r3-412126.35.call1) [T:summary-l2-d6b1c327]
+  compile + 412126.44.r1-412126.44.r3 [T:user-delivered-plain-speech] 412126.45.in ^ 49,81,123,191
+step 412126.46
+  call 412126.1.in 412126.35.r4 412126.36.in 412126.36.r1 412126.36.call1 -> summary
+  call 412126.1.in 412126.36.r2 412126.36.call2 412126.36.r3 412126.36.call3 -> summary
+  wrote L1(412126.35.r4-412126.36.call1) [T:summary-l1-413f2581]
+  wrote L1(412126.36.r2-412126.36.call3) [T:summary-l1-49cdb0a1]
+  compile + 412126.45.r1-412126.45.r4 [T:user-delivered-plain-speech] 412126.46.in ^ 54,94,134,200
+step 412126.47
+  call 412126.1.in 412126.36.r4 412126.37.in 412126.37.r1 412126.37.call1 -> summary
+  wrote L1(412126.36.r4-412126.37.call1) [T:summary-l1-58351633]
+  compile [T:user-clock-monday-#-#-#](2026,01,05,09,00) [T:user-the-local-time](2026,01,05,09,00,00,000,00,00) 412126.1.in [T:user-routing-your-plain] L2(412126.1.r1-412126.4.r1) L2(412126.1.r1-412126.4.r1) [T:user-delivered-plain-speech] 412126.5.in-412126.5.r1 [T:user-delivered-plain-speech] 412126.6.in-412126.6.r1 [T:user-delivered-plain-speech] 412126.7.in-412126.7.call1 L1(412126.7.r2-412126.7.call3) L1(412126.7.r2-412126.7.call3) L1(412126.7.r4-412126.8.call1) L1(412126.7.r4-412126.8.call1) L1(412126.8.r2-412126.8.call3) L1(412126.8.r2-412126.8.call3) L1(412126.8.r4-412126.9.call1) L1(412126.8.r4-412126.9.call1) L1(412126.9.r2-412126.9.r3) L1(412126.9.r2-412126.9.r3) 412126.10.in-412126.10.call2 L1(412126.10.r3-412126.11.call1) L1(412126.10.r3-412126.11.call1) L1(412126.11.r2-412126.11.call3) L1(412126.11.r2-412126.11.call3) L1(412126.11.r4-412126.12.call2) L1(412126.11.r4-412126.12.call2) L1(412126.12.r3-412126.13.call1) L1(412126.12.r3-412126.13.call1) L1(412126.13.r2-412126.14.call1) L1(412126.13.r2-412126.14.call1) 412126.14.r2 [T:user-delivered-plain-speech] 412126.15.in-412126.15.r1 [T:user-delivered-plain-speech] 412126.16.in-412126.16.r2 [T:user-delivered-plain-speech] 412126.17.in-412126.17.r2 L1(412126.18.in-412126.18.call1) L1(412126.18.in-412126.18.call1) L1(412126.18.r2-412126.18.call3) L1(412126.18.r2-412126.18.call3) L1(412126.18.r4-412126.19.call1) L1(412126.18.r4-412126.19.call1) L1(412126.19.r2-412126.19.call3) L1(412126.19.r2-412126.19.call3) L1(412126.19.r4-412126.20.call2) L1(412126.19.r4-412126.20.call2) L1(412126.20.r3-412126.20.r4) L1(412126.20.r3-412126.20.r4) L1(412126.21.in-412126.24.call1) L1(412126.21.in-412126.24.call1) 412126.24.r2-412126.24.r4 [T:user-delivered-plain-speech] 412126.25.in-412126.25.r4 [T:user-delivered-plain-speech] 412126.26.in L1(412126.26.r1-412126.26.call2) L1(412126.26.r1-412126.26.call2) 412126.26.r3 [T:user-delivered-plain-speech] 412126.27.in-412126.27.call1 L1(412126.27.r2-412126.28.in) L1(412126.27.r2-412126.28.in) L1(412126.28.r1-412126.28.call2) L1(412126.28.r1-412126.28.call2) L1(412126.28.r3-412126.28.r4) L1(412126.28.r3-412126.28.r4) L1(412126.29.in-412126.29.call2) L1(412126.29.in-412126.29.call2) L2(412126.29.r3-412126.35.call1) L2(412126.29.r3-412126.35.call1) L1(412126.35.r2-412126.35.call3) L1(412126.35.r2-412126.35.call3) L1(412126.35.r4-412126.36.call1) L1(412126.35.r4-412126.36.call1) L1(412126.36.r2-412126.36.call3) L1(412126.36.r2-412126.36.call3) 412126.36.r4 [T:user-delivered-plain-speech] 412126.37.in-412126.37.r4 [T:user-delivered-plain-speech] 412126.38.in-412126.38.r1 [T:user-delivered-plain-speech] 412126.39.in-412126.39.r1 [T:user-delivered-plain-speech] 412126.40.in-412126.40.r1 [T:user-delivered-plain-speech] 412126.41.in-412126.41.r4 [T:user-delivered-plain-speech] 412126.42.in-412126.42.r4 [T:user-delivered-plain-speech] 412126.43.in-412126.43.r3 [T:user-delivered-plain-speech] 412126.44.in-412126.44.r3 [T:user-delivered-plain-speech] 412126.45.in-412126.45.r4 [T:user-delivered-plain-speech] 412126.46.in-412126.46.r4 [T:user-delivered-plain-speech] 412126.47.in ^ 48,77,113,179
+step 412126.48
+  call 412126.1.in 412126.37.r2 412126.37.call2 412126.37.r3 412126.37.call3 -> summary
+  wrote L1(412126.37.r2-412126.37.call3) [T:summary-l1-a2f2ae53]
+  compile + 412126.47.r1-412126.47.r2 [T:user-delivered-plain-speech] 412126.48.in ^ 49,81,117,184
+step 412126.49
+  compile + 412126.48.r1-412126.48.r2 [T:user-delivered-plain-speech] 412126.49.in ^ 49,85,127,189
+step 412126.50
+  call 412126.1.in 412126.37.r4 412126.38.in 412126.38.r1 412126.39.in 412126.39.r1 412126.40.in 412126.40.r1 -> summary
+  call 412126.1.in 412126.35.r2 412126.35.call2 412126.35.r3 412126.35.call3 412126.35.r4 412126.36.in 412126.36.r1 412126.36.call1 412126.36.r2 412126.36.call2 412126.36.r3 412126.36.call3 412126.36.r4 412126.37.in 412126.37.r1 412126.37.call1 412126.37.r2 412126.37.call2 412126.37.r3 412126.37.call3 412126.37.r4 412126.38.in 412126.38.r1 412126.39.in 412126.39.r1 412126.40.in 412126.40.r1 -> summary
+  wrote L1(412126.37.r4-412126.40.r1) [T:summary-l1-d854ffb4]
+  wrote L2(412126.35.r2-412126.40.r1) [T:summary-l2-7a5fbd27]
+  compile + 412126.49.r1 [T:user-delivered-plain-speech] 412126.50.in ^ 49,85,129,192
+step 412126.51
+  compile + 412126.50.r1-412126.50.r2 [T:user-delivered-plain-speech] 412126.51.in ^ 53,91,131,197
+step 412126.52
+  call 412126.1.in 412126.41.in 412126.41.r1 412126.41.call1 -> summary
+  call 412126.1.in 412126.41.r2 412126.41.call2 412126.41.r3 412126.41.call3 -> summary
+  wrote L1(412126.41.in-412126.41.call1) [T:summary-l1-7859a6fe]
+  wrote L1(412126.41.r2-412126.41.call3) [T:summary-l1-087c281a]
+  compile + 412126.51.r1-412126.51.r2 [T:user-delivered-plain-speech] 412126.52.in ^ 54,92,133,202
+step 412126.53
+  call 412126.1.in 412126.41.r4 412126.42.in 412126.42.r1 412126.42.call1 -> summary
+  call 412126.1.in 412126.42.r2 412126.42.call2 412126.42.r3 412126.42.call3 -> summary
+  wrote L1(412126.41.r4-412126.42.call1) [T:summary-l1-535e2128]
+  wrote L1(412126.42.r2-412126.42.call3) [T:summary-l1-73682465]
+  compile [T:user-clock-monday-#-#-#](2026,01,05,09,00) [T:user-the-local-time](2026,01,05,09,00,00,000,00,00) 412126.1.in [T:user-routing-your-plain] L2(412126.1.r1-412126.4.r1) L2(412126.1.r1-412126.4.r1) [T:user-delivered-plain-speech] 412126.5.in-412126.5.r1 [T:user-delivered-plain-speech] 412126.6.in-412126.6.r1 [T:user-delivered-plain-speech] 412126.7.in-412126.7.call1 L1(412126.7.r2-412126.7.call3) L1(412126.7.r2-412126.7.call3) L1(412126.7.r4-412126.8.call1) L1(412126.7.r4-412126.8.call1) L1(412126.8.r2-412126.8.call3) L1(412126.8.r2-412126.8.call3) L1(412126.8.r4-412126.9.call1) L1(412126.8.r4-412126.9.call1) L1(412126.9.r2-412126.9.r3) L1(412126.9.r2-412126.9.r3) 412126.10.in-412126.10.call2 L1(412126.10.r3-412126.11.call1) L1(412126.10.r3-412126.11.call1) L1(412126.11.r2-412126.11.call3) L1(412126.11.r2-412126.11.call3) L1(412126.11.r4-412126.12.call2) L1(412126.11.r4-412126.12.call2) L1(412126.12.r3-412126.13.call1) L1(412126.12.r3-412126.13.call1) L1(412126.13.r2-412126.14.call1) L1(412126.13.r2-412126.14.call1) 412126.14.r2 [T:user-delivered-plain-speech] 412126.15.in-412126.15.r1 [T:user-delivered-plain-speech] 412126.16.in-412126.16.r2 [T:user-delivered-plain-speech] 412126.17.in-412126.17.r2 L1(412126.18.in-412126.18.call1) L1(412126.18.in-412126.18.call1) L1(412126.18.r2-412126.18.call3) L1(412126.18.r2-412126.18.call3) L1(412126.18.r4-412126.19.call1) L1(412126.18.r4-412126.19.call1) L1(412126.19.r2-412126.19.call3) L1(412126.19.r2-412126.19.call3) L2(412126.19.r4-412126.26.in) L2(412126.19.r4-412126.26.in) L2(412126.26.r1-412126.29.call2) L2(412126.26.r1-412126.29.call2) L2(412126.29.r3-412126.35.call1) L2(412126.29.r3-412126.35.call1) L1(412126.35.r2-412126.35.call3) L1(412126.35.r2-412126.35.call3) L1(412126.35.r4-412126.36.call1) L1(412126.35.r4-412126.36.call1) L1(412126.36.r2-412126.36.call3) L1(412126.36.r2-412126.36.call3) 412126.36.r4 [T:user-delivered-plain-speech] 412126.37.in-412126.37.r4 [T:user-delivered-plain-speech] 412126.38.in-412126.38.r1 [T:user-delivered-plain-speech] 412126.39.in-412126.39.r1 [T:user-delivered-plain-speech] 412126.40.in-412126.40.r1 [T:user-delivered-plain-speech] 412126.41.in-412126.41.call1 L1(412126.41.r2-412126.41.call3) L1(412126.41.r2-412126.41.call3) 412126.41.r4 [T:user-delivered-plain-speech] 412126.42.in-412126.42.r4 [T:user-delivered-plain-speech] 412126.43.in-412126.43.r3 [T:user-delivered-plain-speech] 412126.44.in-412126.44.r3 [T:user-delivered-plain-speech] 412126.45.in-412126.45.r4 [T:user-delivered-plain-speech] 412126.46.in-412126.46.r4 [T:user-delivered-plain-speech] 412126.47.in-412126.47.r2 [T:user-delivered-plain-speech] 412126.48.in-412126.48.r2 [T:user-delivered-plain-speech] 412126.49.in-412126.49.r1 [T:user-delivered-plain-speech] 412126.50.in-412126.50.r2 [T:user-delivered-plain-speech] 412126.51.in-412126.51.r2 [T:user-delivered-plain-speech] 412126.52.in-412126.52.r4 [T:user-delivered-plain-speech] 412126.53.in ^ 45,80,107,176
+step 412126.54
+  call 412126.1.in 412126.42.r4 412126.43.in 412126.43.r1 412126.43.call1 -> summary
+  call 412126.1.in 412126.43.r2 412126.43.call2 412126.43.r3 -> summary
+  call 412126.1.in 412126.44.in 412126.44.r1 412126.44.call1 412126.44.r2 412126.44.call2 -> summary
+  call 412126.1.in 412126.41.in 412126.41.r1 412126.41.call1 412126.41.r2 412126.41.call2 412126.41.r3 412126.41.call3 412126.41.r4 412126.42.in 412126.42.r1 412126.42.call1 412126.42.r2 412126.42.call2 412126.42.r3 412126.42.call3 412126.42.r4 412126.43.in 412126.43.r1 412126.43.call1 412126.43.r2 412126.43.call2 412126.43.r3 -> summary
+  wrote L1(412126.42.r4-412126.43.call1) [T:summary-l1-44d883a1]
+  wrote L1(412126.43.r2-412126.43.r3) [T:summary-l1-ba3d22f0]
+  wrote L1(412126.44.in-412126.44.call2) [T:summary-l1-c3a013e8]
+  wrote L2(412126.41.in-412126.43.r3) [T:summary-l2-e7301929]
+  compile + 412126.53.r1-412126.53.r4 [T:user-delivered-plain-speech] 412126.54.in ^ 49,87,116,185
+step 412126.55
+  compile + 412126.54.r1-412126.54.r4 [T:user-delivered-plain-speech] 412126.55.in ^ 54,102,128,194
+step 412126.56
+  compile + 412126.55.r1 [T:user-delivered-plain-speech] 412126.56.in ^ 54,102,128,197
+step 412126.57
+  compile + 412126.56.r1 [T:user-delivered-plain-speech] 412126.57.in ^ 54,102,128,200
+step 412126.58
+  call 412126.1.in 412126.44.r3 412126.45.in 412126.45.r1 412126.45.call1 -> summary
+  call 412126.1.in 412126.45.r2 412126.45.call2 412126.45.r3 412126.45.call3 -> summary
+  wrote L1(412126.44.r3-412126.45.call1) [T:summary-l1-d0c3d6be]
+  wrote L1(412126.45.r2-412126.45.call3) [T:summary-l1-9b0949ff]
+  compile + 412126.57.r1 [T:user-delivered-plain-speech] 412126.58.in ^ 57,106,130,203
+step 412126.59
+  call 412126.1.in 412126.45.r4 412126.46.in 412126.46.r1 412126.46.call1 -> summary
+  call 412126.1.in 412126.46.r2 412126.46.call2 412126.46.r3 412126.46.call3 -> summary
+  wrote L1(412126.45.r4-412126.46.call1) [T:summary-l1-a3cdbf2a]
+  wrote L1(412126.46.r2-412126.46.call3) [T:summary-l1-fa77c7b7]
+  compile [T:user-clock-monday-#-#-#](2026,01,05,09,00) [T:user-the-local-time](2026,01,05,09,00,00,000,00,00) 412126.1.in [T:user-routing-your-plain] L2(412126.1.r1-412126.4.r1) L2(412126.1.r1-412126.4.r1) [T:user-delivered-plain-speech] 412126.5.in-412126.5.r1 [T:user-delivered-plain-speech] 412126.6.in-412126.6.r1 [T:user-delivered-plain-speech] 412126.7.in-412126.7.call1 L1(412126.7.r2-412126.7.call3) L1(412126.7.r2-412126.7.call3) L1(412126.7.r4-412126.8.call1) L1(412126.7.r4-412126.8.call1) L1(412126.8.r2-412126.8.call3) L1(412126.8.r2-412126.8.call3) L1(412126.8.r4-412126.9.call1) L1(412126.8.r4-412126.9.call1) L1(412126.9.r2-412126.9.r3) L1(412126.9.r2-412126.9.r3) 412126.10.in-412126.10.call2 L1(412126.10.r3-412126.11.call1) L1(412126.10.r3-412126.11.call1) L1(412126.11.r2-412126.11.call3) L1(412126.11.r2-412126.11.call3) L1(412126.11.r4-412126.12.call2) L1(412126.11.r4-412126.12.call2) L1(412126.12.r3-412126.13.call1) L1(412126.12.r3-412126.13.call1) L1(412126.13.r2-412126.14.call1) L1(412126.13.r2-412126.14.call1) 412126.14.r2 [T:user-delivered-plain-speech] 412126.15.in-412126.15.r1 [T:user-delivered-plain-speech] 412126.16.in-412126.16.r2 [T:user-delivered-plain-speech] 412126.17.in-412126.17.r2 L1(412126.18.in-412126.18.call1) L1(412126.18.in-412126.18.call1) L1(412126.18.r2-412126.18.call3) L1(412126.18.r2-412126.18.call3) L1(412126.18.r4-412126.19.call1) L1(412126.18.r4-412126.19.call1) L1(412126.19.r2-412126.19.call3) L1(412126.19.r2-412126.19.call3) L2(412126.19.r4-412126.26.in) L2(412126.19.r4-412126.26.in) L2(412126.26.r1-412126.29.call2) L2(412126.26.r1-412126.29.call2) L2(412126.29.r3-412126.35.call1) L2(412126.29.r3-412126.35.call1) L1(412126.35.r2-412126.35.call3) L1(412126.35.r2-412126.35.call3) L1(412126.35.r4-412126.36.call1) L1(412126.35.r4-412126.36.call1) L1(412126.36.r2-412126.36.call3) L1(412126.36.r2-412126.36.call3) 412126.36.r4 [T:user-delivered-plain-speech] 412126.37.in-412126.37.r4 [T:user-delivered-plain-speech] 412126.38.in-412126.38.r1 [T:user-delivered-plain-speech] 412126.39.in-412126.39.r1 [T:user-delivered-plain-speech] 412126.40.in-412126.40.r1 [T:user-delivered-plain-speech] 412126.41.in-412126.41.call1 L1(412126.41.r2-412126.41.call3) L1(412126.41.r2-412126.41.call3) 412126.41.r4 [T:user-delivered-plain-speech] 412126.42.in-412126.42.call3 L1(412126.42.r4-412126.43.call1) L1(412126.42.r4-412126.43.call1) L1(412126.43.r2-412126.43.r3) L1(412126.43.r2-412126.43.r3) L1(412126.44.in-412126.44.call2) L1(412126.44.in-412126.44.call2) L1(412126.44.r3-412126.45.call1) L1(412126.44.r3-412126.45.call1) L1(412126.45.r2-412126.45.call3) L1(412126.45.r2-412126.45.call3) 412126.45.r4 [T:user-delivered-plain-speech] 412126.46.in-412126.46.r4 [T:user-delivered-plain-speech] 412126.47.in-412126.47.r2 [T:user-delivered-plain-speech] 412126.48.in-412126.48.r2 [T:user-delivered-plain-speech] 412126.49.in-412126.49.r1 [T:user-delivered-plain-speech] 412126.50.in-412126.50.r2 [T:user-delivered-plain-speech] 412126.51.in-412126.51.r2 [T:user-delivered-plain-speech] 412126.52.in-412126.52.r4 [T:user-delivered-plain-speech] 412126.53.in-412126.53.r4 [T:user-delivered-plain-speech] 412126.54.in-412126.54.r4 [T:user-delivered-plain-speech] 412126.55.in-412126.55.r1 [T:user-delivered-plain-speech] 412126.56.in-412126.56.r1 [T:user-delivered-plain-speech] 412126.57.in-412126.57.r1 [T:user-delivered-plain-speech] 412126.58.in-412126.58.r4 [T:user-delivered-plain-speech] 412126.59.in ^ 49,93,124,199
+step 412126.60
+  call 412126.1.in 412126.46.r4 412126.47.in 412126.47.r1 412126.47.call1 412126.47.call2 -> summary
+  call 412126.1.in 412126.44.in 412126.44.r1 412126.44.call1 412126.44.r2 412126.44.call2 412126.44.r3 412126.45.in 412126.45.r1 412126.45.call1 412126.45.r2 412126.45.call2 412126.45.r3 412126.45.call3 412126.45.r4 412126.46.in 412126.46.r1 412126.46.call1 412126.46.r2 412126.46.call2 412126.46.r3 412126.46.call3 412126.46.r4 412126.47.in 412126.47.r1 412126.47.call1 412126.47.call2 -> summary
+  wrote L1(412126.46.r4-412126.47.call1) [T:summary-l1-4a18b11e]
+  wrote L2(412126.44.in-412126.47.call1) [T:summary-l2-6852031c]
+  compile + 412126.59.r1-412126.59.r4 [T:user-delivered-plain-speech] 412126.60.in ^ 55,105,134,208
+step 412126.61
+  call 412126.1.in 412126.47.r2 412126.48.in 412126.48.r1 412126.48.call1 -> summary
+  call 412126.1.in 412126.48.r2 412126.49.in 412126.49.r1 412126.50.in 412126.50.r1 412126.50.call1 -> summary
+  wrote L1(412126.47.r2-412126.48.call1) [T:summary-l1-96f6e6c5]
+  wrote L1(412126.48.r2-412126.50.call1) [T:summary-l1-c53f92c0]
+  compile [T:user-clock-monday-#-#-#](2026,01,05,09,00) [T:user-the-local-time](2026,01,05,09,00,00,000,00,00) 412126.1.in [T:user-routing-your-plain] L2(412126.1.r1-412126.4.r1) L2(412126.1.r1-412126.4.r1) [T:user-delivered-plain-speech] 412126.5.in-412126.5.r1 [T:user-delivered-plain-speech] 412126.6.in-412126.6.r1 [T:user-delivered-plain-speech] 412126.7.in-412126.7.call1 L1(412126.7.r2-412126.7.call3) L1(412126.7.r2-412126.7.call3) L1(412126.7.r4-412126.8.call1) L1(412126.7.r4-412126.8.call1) L1(412126.8.r2-412126.8.call3) L1(412126.8.r2-412126.8.call3) L1(412126.8.r4-412126.9.call1) L1(412126.8.r4-412126.9.call1) L1(412126.9.r2-412126.9.r3) L1(412126.9.r2-412126.9.r3) L1(412126.10.in-412126.10.call2) L1(412126.10.in-412126.10.call2) L1(412126.10.r3-412126.11.call1) L1(412126.10.r3-412126.11.call1) L1(412126.11.r2-412126.11.call3) L1(412126.11.r2-412126.11.call3) L1(412126.11.r4-412126.12.call2) L1(412126.11.r4-412126.12.call2) L1(412126.12.r3-412126.13.call1) L1(412126.12.r3-412126.13.call1) L1(412126.13.r2-412126.14.call1) L1(412126.13.r2-412126.14.call1) 412126.14.r2 [T:user-delivered-plain-speech] 412126.15.in-412126.15.r1 [T:user-delivered-plain-speech] 412126.16.in-412126.16.r2 [T:user-delivered-plain-speech] 412126.17.in-412126.17.r2 L1(412126.18.in-412126.18.call1) L1(412126.18.in-412126.18.call1) L1(412126.18.r2-412126.18.call3) L1(412126.18.r2-412126.18.call3) L1(412126.18.r4-412126.19.call1) L1(412126.18.r4-412126.19.call1) L1(412126.19.r2-412126.19.call3) L1(412126.19.r2-412126.19.call3) L2(412126.19.r4-412126.26.in) L2(412126.19.r4-412126.26.in) L2(412126.26.r1-412126.29.call2) L2(412126.26.r1-412126.29.call2) L2(412126.29.r3-412126.35.call1) L2(412126.29.r3-412126.35.call1) L1(412126.35.r2-412126.35.call3) L1(412126.35.r2-412126.35.call3) L1(412126.35.r4-412126.36.call1) L1(412126.35.r4-412126.36.call1) L1(412126.36.r2-412126.36.call3) L1(412126.36.r2-412126.36.call3) 412126.36.r4 [T:user-delivered-plain-speech] 412126.37.in-412126.37.r4 [T:user-delivered-plain-speech] 412126.38.in-412126.38.r1 [T:user-delivered-plain-speech] 412126.39.in-412126.39.r1 [T:user-delivered-plain-speech] 412126.40.in-412126.40.r1 L2(412126.41.in-412126.43.r3) L2(412126.41.in-412126.43.r3) L1(412126.44.in-412126.44.call2) L1(412126.44.in-412126.44.call2) L1(412126.44.r3-412126.45.call1) L1(412126.44.r3-412126.45.call1) L1(412126.45.r2-412126.45.call3) L1(412126.45.r2-412126.45.call3) 412126.45.r4 [T:user-delivered-plain-speech] 412126.46.in-412126.46.r4 [T:user-delivered-plain-speech] 412126.47.in-412126.47.r2 [T:user-delivered-plain-speech] 412126.48.in-412126.48.r2 [T:user-delivered-plain-speech] 412126.49.in-412126.49.r1 [T:user-delivered-plain-speech] 412126.50.in-412126.50.r2 [T:user-delivered-plain-speech] 412126.51.in-412126.51.r2 [T:user-delivered-plain-speech] 412126.52.in-412126.52.r4 [T:user-delivered-plain-speech] 412126.53.in-412126.53.r4 [T:user-delivered-plain-speech] 412126.54.in-412126.54.r4 [T:user-delivered-plain-speech] 412126.55.in-412126.55.r1 [T:user-delivered-plain-speech] 412126.56.in-412126.56.r1 [T:user-delivered-plain-speech] 412126.57.in-412126.57.r1 [T:user-delivered-plain-speech] 412126.58.in-412126.58.r4 [T:user-delivered-plain-speech] 412126.59.in-412126.59.r4 [T:user-delivered-plain-speech] 412126.60.in-412126.60.r3 [T:user-delivered-plain-speech] 412126.61.in ^ 51,95,126,195
+step 412126.62
+  call 412126.1.in 412126.50.r2 412126.51.in 412126.51.r1 412126.51.call1 412126.51.r2 -> summary
+  call 412126.1.in 412126.52.in 412126.52.r1 412126.52.call1 -> summary
+  wrote L1(412126.50.r2-412126.51.r2) [T:summary-l1-f40d3277]
+  wrote L1(412126.52.in-412126.52.call1) [T:summary-l1-e6c466eb]
+  compile + 412126.61.r1-412126.61.r3 [T:user-delivered-plain-speech] 412126.62.in ^ 52,99,132,202
+step 412126.63
+  call 412126.1.in 412126.52.r2 412126.52.call2 412126.52.r3 412126.52.call3 -> summary
+  wrote L1(412126.52.r2-412126.52.call3) [T:summary-l1-2bf9f6f2]
+  compile + 412126.62.r1-412126.62.r4 [T:user-delivered-plain-speech] 412126.63.in ^ 60,106,140,211
+step 412126.64
+  call 412126.1.in 412126.52.r4 412126.53.in 412126.53.r1 412126.53.call1 -> summary
+  call 412126.1.in 412126.47.r2 412126.48.in 412126.48.r1 412126.48.call1 412126.48.r2 412126.49.in 412126.49.r1 412126.50.in 412126.50.r1 412126.50.call1 412126.50.r2 412126.51.in 412126.51.r1 412126.51.call1 412126.51.r2 412126.52.in 412126.52.r1 412126.52.call1 412126.52.r2 412126.52.call2 412126.52.r3 412126.52.call3 412126.52.r4 412126.53.in 412126.53.r1 412126.53.call1 -> summary
+  wrote L1(412126.52.r4-412126.53.call1) [T:summary-l1-9e951f76]
+  wrote L2(412126.47.r2-412126.53.call1) [T:summary-l2-593081a3]
+  compile [T:user-clock-monday-#-#-#](2026,01,05,09,00) [T:user-the-local-time](2026,01,05,09,00,00,000,00,00) 412126.1.in [T:user-routing-your-plain] L2(412126.1.r1-412126.4.r1) L2(412126.1.r1-412126.4.r1) [T:user-delivered-plain-speech] 412126.5.in-412126.5.r1 [T:user-delivered-plain-speech] 412126.6.in-412126.6.r1 [T:user-delivered-plain-speech] 412126.7.in-412126.7.call1 L1(412126.7.r2-412126.7.call3) L1(412126.7.r2-412126.7.call3) L1(412126.7.r4-412126.8.call1) L1(412126.7.r4-412126.8.call1) L1(412126.8.r2-412126.8.call3) L1(412126.8.r2-412126.8.call3) L1(412126.8.r4-412126.9.call1) L1(412126.8.r4-412126.9.call1) L1(412126.9.r2-412126.9.r3) L1(412126.9.r2-412126.9.r3) L1(412126.10.in-412126.10.call2) L1(412126.10.in-412126.10.call2) L1(412126.10.r3-412126.11.call1) L1(412126.10.r3-412126.11.call1) L1(412126.11.r2-412126.11.call3) L1(412126.11.r2-412126.11.call3) L1(412126.11.r4-412126.12.call2) L1(412126.11.r4-412126.12.call2) L1(412126.12.r3-412126.13.call1) L1(412126.12.r3-412126.13.call1) L1(412126.13.r2-412126.14.call1) L1(412126.13.r2-412126.14.call1) 412126.14.r2 [T:user-delivered-plain-speech] 412126.15.in-412126.15.r1 [T:user-delivered-plain-speech] 412126.16.in-412126.16.r2 [T:user-delivered-plain-speech] 412126.17.in-412126.17.r2 L1(412126.18.in-412126.18.call1) L1(412126.18.in-412126.18.call1) L1(412126.18.r2-412126.18.call3) L1(412126.18.r2-412126.18.call3) L1(412126.18.r4-412126.19.call1) L1(412126.18.r4-412126.19.call1) L1(412126.19.r2-412126.19.call3) L1(412126.19.r2-412126.19.call3) L2(412126.19.r4-412126.26.in) L2(412126.19.r4-412126.26.in) L2(412126.26.r1-412126.29.call2) L2(412126.26.r1-412126.29.call2) L2(412126.29.r3-412126.35.call1) L2(412126.29.r3-412126.35.call1) L1(412126.35.r2-412126.35.call3) L1(412126.35.r2-412126.35.call3) L1(412126.35.r4-412126.36.call1) L1(412126.35.r4-412126.36.call1) L1(412126.36.r2-412126.36.call3) L1(412126.36.r2-412126.36.call3) 412126.36.r4 [T:user-delivered-plain-speech] 412126.37.in-412126.37.r4 [T:user-delivered-plain-speech] 412126.38.in-412126.38.r1 [T:user-delivered-plain-speech] 412126.39.in-412126.39.r1 [T:user-delivered-plain-speech] 412126.40.in-412126.40.r1 L2(412126.41.in-412126.43.r3) L2(412126.41.in-412126.43.r3) L1(412126.44.in-412126.44.call2) L1(412126.44.in-412126.44.call2) L1(412126.44.r3-412126.45.call1) L1(412126.44.r3-412126.45.call1) L1(412126.45.r2-412126.45.call3) L1(412126.45.r2-412126.45.call3) 412126.45.r4 [T:user-delivered-plain-speech] 412126.46.in-412126.46.call3 L1(412126.46.r4-412126.47.call1) L1(412126.46.r4-412126.47.call1) L1(412126.47.r2-412126.48.call1) L1(412126.47.r2-412126.48.call1) L1(412126.48.r2-412126.50.call1) L1(412126.48.r2-412126.50.call1) L1(412126.50.r2-412126.51.r2) L1(412126.50.r2-412126.51.r2) L1(412126.52.in-412126.52.call1) L1(412126.52.in-412126.52.call1) L1(412126.52.r2-412126.52.call3) L1(412126.52.r2-412126.52.call3) 412126.52.r4 [T:user-delivered-plain-speech] 412126.53.in-412126.53.r4 [T:user-delivered-plain-speech] 412126.54.in-412126.54.r4 [T:user-delivered-plain-speech] 412126.55.in-412126.55.r1 [T:user-delivered-plain-speech] 412126.56.in-412126.56.r1 [T:user-delivered-plain-speech] 412126.57.in-412126.57.r1 [T:user-delivered-plain-speech] 412126.58.in-412126.58.r4 [T:user-delivered-plain-speech] 412126.59.in-412126.59.r4 [T:user-delivered-plain-speech] 412126.60.in-412126.60.r3 [T:user-delivered-plain-speech] 412126.61.in-412126.61.r3 [T:user-delivered-plain-speech] 412126.62.in-412126.62.r4 [T:user-delivered-plain-speech] 412126.63.in-412126.63.r4 [T:user-delivered-plain-speech] 412126.64.in ^ 51,93,127,200
+step 412126.65
+  call 412126.1.in 412126.53.r2 412126.53.call2 412126.53.r3 412126.53.call3 -> summary
+  wrote L1(412126.53.r2-412126.53.call3) [T:summary-l1-c6a5804e]
+  compile + 412126.64.r1-412126.64.r2 [T:user-delivered-plain-speech] 412126.65.in ^ 56,103,134,205
+step 412126.66
+  compile + 412126.65.r1-412126.65.r2 [T:user-delivered-plain-speech] 412126.66.in ^ 60,107,138,210
+step 412126.67
+  call 412126.1.in 412126.53.r4 412126.54.in 412126.54.r1 412126.54.call1 412126.54.r2 412126.54.call2 -> summary
+  wrote L1(412126.53.r4-412126.54.call2) [T:summary-l1-96cd391b]
+  compile + 412126.66.r1 [T:user-delivered-plain-speech] 412126.67.in ^ 60,107,138,213
+step 412126.68
+  call 412126.1.in 412126.54.r3 412126.54.call3 412126.54.r4 -> summary
+  wrote L1(412126.54.r3-412126.54.r4) [T:summary-l1-6866d08d]
+  compile + 412126.67.r1-412126.67.r2 [T:user-delivered-plain-speech] 412126.68.in ^ 62,107,144,218
+step 412126.69
+  call 412126.1.in 412126.55.in 412126.55.r1 412126.56.in 412126.56.r1 412126.57.in 412126.57.r1 412126.58.in -> summary
+  call 412126.1.in 412126.58.r1 412126.58.call1 412126.58.r2 412126.58.call2 -> summary
+  wrote L1(412126.55.in-412126.58.in) [T:summary-l1-08b88708]
+  wrote L1(412126.58.r1-412126.58.call2) [T:summary-l1-84166ed5]
+  compile [T:user-clock-monday-#-#-#](2026,01,05,09,00) [T:user-the-local-time](2026,01,05,09,00,00,000,00,00) 412126.1.in [T:user-routing-your-plain] L2(412126.1.r1-412126.4.r1) L2(412126.1.r1-412126.4.r1) [T:user-delivered-plain-speech] 412126.5.in-412126.5.r1 [T:user-delivered-plain-speech] 412126.6.in-412126.6.r1 [T:user-delivered-plain-speech] 412126.7.in-412126.7.call1 L1(412126.7.r2-412126.7.call3) L1(412126.7.r2-412126.7.call3) L1(412126.7.r4-412126.8.call1) L1(412126.7.r4-412126.8.call1) L1(412126.8.r2-412126.8.call3) L1(412126.8.r2-412126.8.call3) L1(412126.8.r4-412126.9.call1) L1(412126.8.r4-412126.9.call1) L1(412126.9.r2-412126.9.r3) L1(412126.9.r2-412126.9.r3) L1(412126.10.in-412126.10.call2) L1(412126.10.in-412126.10.call2) L1(412126.10.r3-412126.11.call1) L1(412126.10.r3-412126.11.call1) L1(412126.11.r2-412126.11.call3) L1(412126.11.r2-412126.11.call3) L1(412126.11.r4-412126.12.call2) L1(412126.11.r4-412126.12.call2) L1(412126.12.r3-412126.13.call1) L1(412126.12.r3-412126.13.call1) L1(412126.13.r2-412126.14.call1) L1(412126.13.r2-412126.14.call1) 412126.14.r2 [T:user-delivered-plain-speech] 412126.15.in-412126.15.r1 [T:user-delivered-plain-speech] 412126.16.in-412126.16.r2 [T:user-delivered-plain-speech] 412126.17.in-412126.17.r2 L1(412126.18.in-412126.18.call1) L1(412126.18.in-412126.18.call1) L1(412126.18.r2-412126.18.call3) L1(412126.18.r2-412126.18.call3) L1(412126.18.r4-412126.19.call1) L1(412126.18.r4-412126.19.call1) L1(412126.19.r2-412126.19.call3) L1(412126.19.r2-412126.19.call3) L2(412126.19.r4-412126.26.in) L2(412126.19.r4-412126.26.in) L2(412126.26.r1-412126.29.call2) L2(412126.26.r1-412126.29.call2) L2(412126.29.r3-412126.35.call1) L2(412126.29.r3-412126.35.call1) L1(412126.35.r2-412126.35.call3) L1(412126.35.r2-412126.35.call3) L1(412126.35.r4-412126.36.call1) L1(412126.35.r4-412126.36.call1) L1(412126.36.r2-412126.36.call3) L1(412126.36.r2-412126.36.call3) 412126.36.r4 [T:user-delivered-plain-speech] 412126.37.in-412126.37.r4 [T:user-delivered-plain-speech] 412126.38.in-412126.38.r1 [T:user-delivered-plain-speech] 412126.39.in-412126.39.r1 [T:user-delivered-plain-speech] 412126.40.in-412126.40.r1 L2(412126.41.in-412126.43.r3) L2(412126.41.in-412126.43.r3) L1(412126.44.in-412126.44.call2) L1(412126.44.in-412126.44.call2) L1(412126.44.r3-412126.45.call1) L1(412126.44.r3-412126.45.call1) L1(412126.45.r2-412126.45.call3) L1(412126.45.r2-412126.45.call3) 412126.45.r4 [T:user-delivered-plain-speech] 412126.46.in-412126.46.call3 L1(412126.46.r4-412126.47.call1) L1(412126.46.r4-412126.47.call1) L2(412126.47.r2-412126.53.call1) L2(412126.47.r2-412126.53.call1) L1(412126.53.r2-412126.53.call3) L1(412126.53.r2-412126.53.call3) L1(412126.53.r4-412126.54.call2) L1(412126.53.r4-412126.54.call2) L1(412126.54.r3-412126.54.r4) L1(412126.54.r3-412126.54.r4) 412126.55.in-412126.55.r1 [T:user-delivered-plain-speech] 412126.56.in-412126.56.r1 [T:user-delivered-plain-speech] 412126.57.in-412126.57.r1 [T:user-delivered-plain-speech] 412126.58.in-412126.58.r4 [T:user-delivered-plain-speech] 412126.59.in-412126.59.r4 [T:user-delivered-plain-speech] 412126.60.in-412126.60.r3 [T:user-delivered-plain-speech] 412126.61.in-412126.61.r3 [T:user-delivered-plain-speech] 412126.62.in-412126.62.r4 [T:user-delivered-plain-speech] 412126.63.in-412126.63.r4 [T:user-delivered-plain-speech] 412126.64.in-412126.64.r2 [T:user-delivered-plain-speech] 412126.65.in-412126.65.r2 [T:user-delivered-plain-speech] 412126.66.in-412126.66.r1 [T:user-delivered-plain-speech] 412126.67.in-412126.67.r2 [T:user-delivered-plain-speech] 412126.68.in-412126.68.r2 [T:user-delivered-plain-speech] 412126.69.in ^ 50,91,130,201
+step 412126.70
+  call 412126.1.in 412126.58.r3 412126.58.call3 412126.58.r4 412126.59.in -> summary
+  call 412126.1.in 412126.53.r2 412126.53.call2 412126.53.r3 412126.53.call3 412126.53.r4 412126.54.in 412126.54.r1 412126.54.call1 412126.54.r2 412126.54.call2 412126.54.r3 412126.54.call3 412126.54.r4 412126.55.in 412126.55.r1 412126.56.in 412126.56.r1 412126.57.in 412126.57.r1 412126.58.in 412126.58.r1 412126.58.call1 412126.58.r2 412126.58.call2 412126.58.r3 412126.58.call3 412126.58.r4 412126.59.in -> summary
+  call 412126.1.in -> summary
+  wrote L1(412126.58.r3-412126.59.in) [T:summary-l1-9e4fd5f1]
+  wrote L2(412126.53.r2-412126.59.in) [T:summary-l2-ed83b4f5]
+  wrote L3(412126.29.r3-412126.59.in) [T:summary-l3-99308fa7]
+  compile + 412126.69.r1-412126.69.r4 [T:user-delivered-plain-speech] 412126.70.in ^ 56,104,139,210
+step 412126.tune
+  compile [T:user-clock-monday-#-#-#](2026,01,05,09,00) [T:user-the-local-time](2026,01,05,09,00,00,000,00,00) 412126.1.in [T:user-routing-your-plain] L2(412126.1.r1-412126.4.r1) L2(412126.1.r1-412126.4.r1) [T:user-delivered-plain-speech] 412126.5.in-412126.5.r1 [T:user-delivered-plain-speech] 412126.6.in-412126.6.r1 [T:user-delivered-plain-speech] 412126.7.in-412126.7.call1 L1(412126.7.r2-412126.7.call3) L1(412126.7.r2-412126.7.call3) L1(412126.7.r4-412126.8.call1) L1(412126.7.r4-412126.8.call1) L1(412126.8.r2-412126.8.call3) L1(412126.8.r2-412126.8.call3) L1(412126.8.r4-412126.9.call1) L1(412126.8.r4-412126.9.call1) L1(412126.9.r2-412126.9.r3) L1(412126.9.r2-412126.9.r3) L1(412126.10.in-412126.10.call2) L1(412126.10.in-412126.10.call2) L1(412126.10.r3-412126.11.call1) L1(412126.10.r3-412126.11.call1) L1(412126.11.r2-412126.11.call3) L1(412126.11.r2-412126.11.call3) L1(412126.11.r4-412126.12.call2) L1(412126.11.r4-412126.12.call2) L1(412126.12.r3-412126.13.call1) L1(412126.12.r3-412126.13.call1) L1(412126.13.r2-412126.14.call1) L1(412126.13.r2-412126.14.call1) 412126.14.r2 [T:user-delivered-plain-speech] 412126.15.in-412126.15.r1 [T:user-delivered-plain-speech] 412126.16.in-412126.16.r2 [T:user-delivered-plain-speech] 412126.17.in-412126.17.r2 L1(412126.18.in-412126.18.call1) L1(412126.18.in-412126.18.call1) L1(412126.18.r2-412126.18.call3) L1(412126.18.r2-412126.18.call3) 412126.18.r4 [T:user-delivered-plain-speech] 412126.19.in-412126.19.call1 L1(412126.19.r2-412126.19.call3) L1(412126.19.r2-412126.19.call3) L2(412126.19.r4-412126.26.in) L2(412126.19.r4-412126.26.in) L2(412126.26.r1-412126.29.call2) L2(412126.26.r1-412126.29.call2) L2(412126.29.r3-412126.35.call1) L2(412126.29.r3-412126.35.call1) L2(412126.35.r2-412126.40.r1) L2(412126.35.r2-412126.40.r1) L2(412126.41.in-412126.43.r3) L2(412126.41.in-412126.43.r3) L2(412126.44.in-412126.47.call1) L2(412126.44.in-412126.47.call1) L2(412126.47.r2-412126.53.call1) L2(412126.47.r2-412126.53.call1) L1(412126.53.r2-412126.53.call3) L1(412126.53.r2-412126.53.call3) L1(412126.53.r4-412126.54.call2) L1(412126.53.r4-412126.54.call2) L1(412126.54.r3-412126.54.r4) L1(412126.54.r3-412126.54.r4) 412126.55.in-412126.55.r1 [T:user-delivered-plain-speech] 412126.56.in-412126.56.r1 [T:user-delivered-plain-speech] 412126.57.in-412126.57.r1 [T:user-delivered-plain-speech] 412126.58.in-412126.58.r4 [T:user-delivered-plain-speech] 412126.59.in-412126.59.r4 [T:user-delivered-plain-speech] 412126.60.in-412126.60.r3 [T:user-delivered-plain-speech] 412126.61.in-412126.61.r3 [T:user-delivered-plain-speech] 412126.62.in-412126.62.r4 [T:user-delivered-plain-speech] 412126.63.in-412126.63.r4 [T:user-delivered-plain-speech] 412126.64.in-412126.64.r2 [T:user-delivered-plain-speech] 412126.65.in-412126.65.r2 [T:user-delivered-plain-speech] 412126.66.in-412126.66.r1 [T:user-delivered-plain-speech] 412126.67.in-412126.67.r2 [T:user-delivered-plain-speech] 412126.68.in-412126.68.r2 [T:user-delivered-plain-speech] 412126.69.in-412126.69.r4 [T:user-delivered-plain-speech] 412126.70.in-412126.70.r4 [T:user-delivered-plain-speech] 412126.tune.in ^ 46,91,109,184
+step 412126.h1
+  call 412126.1.in 412126.59.r1 412126.59.call1 412126.59.r2 412126.59.call2 -> summary
+  wrote L1(412126.59.r1-412126.59.call2) [T:summary-l1-868045a3]
+  compile 412126.tune.r1 [T:user-tunedout-chat-cadenceseconds-#-backlogca](86400,200,64) 412126.tune.r2 [T:user-delivered-plain-speech] 412126.h1.in [T:user-tune-out-wake-chat](1) [T:user-prose-routing-output-mode] ^ 7
+step 412126.h2
+  compile + 412126.h1.read [T:user-delivered-true] [T:subconscious-skip-reply] [T:user-skipped-true-note-turn-ended-nothing] 412126.h2.in [T:user-tune-out-wake-chat](1) ^ 7,14
+step 412126.h3
+  compile + 412126.h2.read [T:user-delivered-true] [T:subconscious-skip-reply] [T:user-skipped-true-note-turn-ended-nothing] 412126.h3.in [T:user-tune-out-wake-chat](1) ^ 14,21
+step 412126.undo
+  action /undo
+step 412126.h4
+  compile 412126.tune.r1 [T:user-tunedout-chat-cadenceseconds-#-backlogca](86400,200,64) 412126.tune.r2 [T:user-delivered-plain-speech] 412126.h1.in [T:user-tune-out-wake-chat](1) [T:user-prose-routing-output-mode] 412126.h1.read [T:user-delivered-true] [T:subconscious-skip-reply] [T:user-skipped-true-note-turn-ended-nothing] 412126.h2.in [T:user-tune-out-wake-chat](1) 412126.h2.read [T:user-delivered-true] [T:subconscious-skip-reply] [T:user-skipped-true-note-turn-ended-nothing] 412126.h3.in 412126.h4.in [T:user-tune-out-wake-chat](1) ^ 22
+step 412126.h5
+  compile + 412126.h4.read [T:user-delivered-true] [T:subconscious-skip-reply] [T:user-skipped-true-note-turn-ended-nothing] 412126.h5.in [T:user-tune-out-wake-chat](1) ^ 22,29
+step 412126.h6
+  compile + 412126.h5.read [T:user-delivered-true] [T:subconscious-skip-reply] [T:user-skipped-true-note-turn-ended-nothing] 412126.h6.in [T:user-tune-out-wake-chat](1) ^ 29,36
+end ok
+receipt fixture #71 changes 412126.18.r4/raw/0/71 #324/raw/0/71 412126.19.in/raw/0/71 412126.19.r1/raw/0/71 412126.19.call1/raw/0/71 412126.35.r2/summary/2/71 412126.35.call2/summary/2/71 412126.35.r3/summary/2/71 412126.35.call3/summary/2/71 412126.35.r4/summary/2/71 #690/summary/2/71 412126.36.in/summary/2/71 412126.36.r1/summary/2/71 412126.36.call1/summary/2/71 412126.36.r2/summary/2/71 412126.36.call2/summary/2/71 412126.36.r3/summary/2/71 412126.36.call3/summary/2/71 412126.36.r4/summary/2/71 #716/summary/2/71 412126.37.in/summary/2/71 412126.37.r1/summary/2/71 412126.37.call1/summary/2/71 412126.37.r2/summary/2/71 412126.37.call2/summary/2/71 412126.37.r3/summary/2/71 412126.37.call3/summary/2/71 412126.37.r4/summary/2/71 #755/summary/2/71 412126.38.in/summary/2/71 412126.38.r1/summary/2/71 #774/summary/2/71 412126.39.in/summary/2/71 412126.39.r1/summary/2/71 #783/summary/2/71 412126.40.in/summary/2/71 412126.40.r1/summary/2/71 412126.44.in/summary/2/71 412126.44.r1/summary/2/71 412126.44.call1/summary/2/71 412126.44.r2/summary/2/71 412126.44.call2/summary/2/71 412126.44.r3/summary/2/71 #908/summary/2/71 412126.45.in/summary/2/71 412126.45.r1/summary/2/71 412126.45.call1/summary/2/71 412126.45.r2/summary/2/71 412126.45.call2/summary/2/71 412126.45.r3/summary/2/71 412126.45.call3/summary/2/71 412126.45.r4/summary/2/71 #936/summary/2/71 412126.46.in/summary/2/71 412126.46.r1/summary/2/71 412126.46.call1/summary/2/71 412126.46.r2/summary/2/71 412126.46.call2/summary/2/71 412126.46.r3/summary/2/71 412126.46.call3/summary/2/71 412126.46.r4/summary/2/71 #977/summary/2/71 412126.47.in/summary/2/71 412126.47.r1/summary/2/71 412126.47.call1/summary/2/71 412126.70.r1/raw/0/71 412126.70.call1/raw/0/71 412126.70.r2/raw/0/71 412126.70.call2/raw/0/71 412126.70.r3/raw/0/71 412126.70.call3/raw/0/71 412126.70.r4/raw/0/71 #1489/raw/0/71 412126.tune.in/raw/0/71
+totals {"actions":1,"calls":87,"compiles":77,"dry":0,"other":0,"refused":0,"written":87}
+templates
+T:subconscious-skip-reply = skip_reply {}
+T:summary-l1-006a3bcd = {"bytes":4400,"head":"[[s:Ma5fb593a]] Memory a5fb593a, carried 5 canaries to c:412126.34.r2: ledger co","sha256":"006a3bcd254005fd","tail":" winter meadow harbor signal harbor compass ledger signal garden quiet compass s"}
+T:summary-l1-0592c2e7 = {"bytes":4400,"head":"[[s:M66411cd3]] Memory 66411cd3, carried 5 canaries to c:412126.1.r2: compass ri","sha256":"0592c2e7b4812353","tail":"adow signal copper winter signal thread ledger winter meadow ledger thread orcha"}
+T:summary-l1-087c281a = {"bytes":4400,"head":"[[s:Mda4a2edf]] Memory da4a2edf, carried 5 canaries to c:412126.41.r3: ledger ga","sha256":"087c281a03330baf","tail":"nter meadow harbor stone garden harbor thread orchard window orchard winter wint"}
+T:summary-l1-08b88708 = {"bytes":4400,"head":"[[s:M909f21e6]] Memory 909f21e6, carried 8 canaries to c:412126.58.in: copper wi","sha256":"08b88708e3eb2a95","tail":"edger copper river stone harbor signal orchard orchard meadow winter harbor quie"}
+T:summary-l1-0c5e28b7 = {"bytes":4400,"head":"[[s:Me6badb86]] Memory e6badb86, carried 5 canaries to c:412126.19.r1: orchard q","sha256":"0c5e28b7252b0116","tail":"d window orchard river copper stone lantern ledger window signal harbor ledger w"}
+T:summary-l1-0f60f986 = {"bytes":4400,"head":"[[s:M7dd64689]] Memory 7dd64689, carried 5 canaries to c:412126.35.r3: compass t","sha256":"0f60f986566a9266","tail":"r compass garden winter harbor winter thread ledger window ledger copper quiet w"}
+T:summary-l1-1147afac = {"bytes":4400,"head":"[[s:Mdeaf8157]] Memory deaf8157, carried 7 canaries to c:412126.16.r1: stone win","sha256":"1147afacb64848e5","tail":"mpass stone garden harbor compass thread thread ledger orchard river ledger copp"}
+T:summary-l1-11cf9618 = {"bytes":4400,"head":"[[s:M982dad27]] Memory 982dad27, carried 5 canaries to c:412126.11.r3: winter th","sha256":"11cf96183b55ccaf","tail":" compass garden winter ledger window quiet orchard window thread quiet thread ha"}
+T:summary-l1-136ad142 = {"bytes":4400,"head":"[[s:M35645a1b]] Memory 35645a1b, carried 4 canaries to c:412126.1.r4: copper har","sha256":"136ad14239765860","tail":" meadow thread harbor harbor stone orchard quiet river lantern harbor ledger led"}
+T:summary-l1-1f4f68aa = {"bytes":4400,"head":"[[s:Mace523e4]] Memory ace523e4, carried 5 canaries to c:412126.19.r3: orchard h","sha256":"1f4f68aa6d2a3f9a","tail":" compass stone meadow signal quiet garden thread harbor window copper window qui"}
+T:summary-l1-282ce5ed = {"bytes":4400,"head":"[[s:M8a02da52]] Memory 8a02da52, carried 6 canaries to c:412126.2.r2: signal win","sha256":"282ce5ed749aca86","tail":" meadow thread river ledger harbor winter garden thread compass signal garden co"}
+T:summary-l1-28cff57f = {"bytes":4400,"head":"[[s:Mffd62eaa]] Memory ffd62eaa, carried 7 canaries to c:412126.20.r2: ledger th","sha256":"28cff57fc1a39166","tail":"ard quiet lantern stone winter winter compass stone garden window signal lantern"}
+T:summary-l1-2bf9f6f2 = {"bytes":4400,"head":"[[s:M35fcbc4c]] Memory 35fcbc4c, carried 5 canaries to c:412126.52.r3: quiet qui","sha256":"2bf9f6f2faef5bf1","tail":"opper copper lantern lantern signal thread harbor copper ledger winter stone sig"}
+T:summary-l1-2ce78671 = {"bytes":4400,"head":"[[s:Md818d838]] Memory d818d838, carried 6 canaries to c:412126.10.r2: winter ga","sha256":"2ce7867192940ca6","tail":"rden lantern garden copper meadow garden ledger thread orchard meadow window gar"}
+T:summary-l1-3138cad9 = {"bytes":4400,"head":"[[s:Mb0d504af]] Memory b0d504af, carried 8 canaries to c:412126.33.in: lantern t","sha256":"3138cad96eb8cd89","tail":" winter quiet quiet winter river thread garden garden thread window river orchar"}
+T:summary-l1-322c269f = {"bytes":4400,"head":"[[s:M306dd7e4]] Memory 306dd7e4, carried 8 canaries to c:412126.13.r1: signal st","sha256":"322c269f9295f2ca","tail":"t meadow garden harbor lantern copper thread river quiet garden meadow signal ri"}
+T:summary-l1-3285e11c = {"bytes":4399,"head":"[[s:M05a3b7e0]] Memory 05a3b7e0, carried 4 canaries to c:412126.35.r1: compass l","sha256":"3285e11cd24adcb9","tail":"den ledger meadow garden stone copper thread compass orchard river garden meadow"}
+T:summary-l1-3456b786 = {"bytes":4400,"head":"[[s:Mfbe73c59]] Memory fbe73c59, carried 4 canaries to c:412126.18.r1: lantern s","sha256":"3456b786d61413e6","tail":"ern thread thread meadow meadow orchard stone garden harbor compass harbor river"}
+T:summary-l1-34919fcb = {"bytes":4400,"head":"[[s:M02113175]] Memory 02113175, carried 5 canaries to c:412126.30.in: signal le","sha256":"34919fcba78e7af4","tail":"r lantern ledger ledger ledger copper compass ledger harbor window compass garde"}
+T:summary-l1-413f2581 = {"bytes":4399,"head":"[[s:Medd6e7fb]] Memory edd6e7fb, carried 5 canaries to c:412126.36.r1: window co","sha256":"413f258130ba791b","tail":"iet quiet compass ledger harbor window winter ledger harbor copper ledger harbor"}
+T:summary-l1-44d883a1 = {"bytes":4400,"head":"[[s:Mc6bad932]] Memory c6bad932, carried 5 canaries to c:412126.43.r1: thread co","sha256":"44d883a1a07c64fd","tail":"ledger copper thread river harbor compass winter garden copper meadow garden mea"}
+T:summary-l1-4630636c = {"bytes":4400,"head":"[[s:Ma5205fcd]] Memory a5205fcd, carried 4 canaries to c:412126.33.r2: window la","sha256":"4630636c79b5758b","tail":"er thread compass lantern thread stone meadow garden river window signal orchard"}
+T:summary-l1-49cdb0a1 = {"bytes":4400,"head":"[[s:M63194326]] Memory 63194326, carried 5 canaries to c:412126.36.r3: thread ri","sha256":"49cdb0a1a9a8f0a9","tail":" harbor ledger lantern river river copper winter ledger river ledger compass sto"}
+T:summary-l1-4a18b11e = {"bytes":4399,"head":"[[s:Mda28e9e6]] Memory da28e9e6, carried 6 canaries to c:412126.47.r1: compass t","sha256":"4a18b11e95b72fd0","tail":"bor copper compass thread ledger harbor copper lantern river quiet stone compass"}
+T:summary-l1-4debdbc6 = {"bytes":4400,"head":"[[s:M0ba85b8c]] Memory 0ba85b8c, carried 5 canaries to c:412126.11.r1: lantern w","sha256":"4debdbc60210ac59","tail":"read ledger stone compass signal garden window harbor garden winter orchard mead"}
+T:summary-l1-535e2128 = {"bytes":4400,"head":"[[s:M0c39931b]] Memory 0c39931b, carried 5 canaries to c:412126.42.r1: lantern t","sha256":"535e212887f96196","tail":"nter orchard meadow orchard window quiet thread window garden quiet meadow orcha"}
+T:summary-l1-58351633 = {"bytes":4399,"head":"[[s:M7ae2b499]] Memory 7ae2b499, carried 5 canaries to c:412126.37.r1: signal wi","sha256":"5835163358aa33ef","tail":"copper copper compass thread winter signal winter compass harbor compass lantern"}
+T:summary-l1-6866d08d = {"bytes":4400,"head":"[[s:M1798fb02]] Memory 1798fb02, carried 4 canaries to c:412126.54.r4: meadow si","sha256":"6866d08da0282121","tail":"tern garden river orchard copper meadow garden compass quiet river copper signal"}
+T:summary-l1-6d9ad2d6 = {"bytes":4400,"head":"[[s:M1783315e]] Memory 1783315e, carried 5 canaries to c:412126.30.r2: copper or","sha256":"6d9ad2d68528e550","tail":" lantern thread thread signal stone meadow lantern compass river quiet signal qu"}
+T:summary-l1-73682465 = {"bytes":4400,"head":"[[s:M8b0b7094]] Memory 8b0b7094, carried 5 canaries to c:412126.42.r3: garden wi","sha256":"7368246564315236","tail":" meadow harbor river stone meadow meadow signal stone ledger river compass compa"}
+T:summary-l1-7859a6fe = {"bytes":4400,"head":"[[s:M39247927]] Memory 39247927, carried 4 canaries to c:412126.41.r1: lantern r","sha256":"7859a6fe7b238ab5","tail":"mpass copper stone garden signal signal harbor ledger meadow orchard garden rive"}
+T:summary-l1-7872ebba = {"bytes":4399,"head":"[[s:M507a7dbc]] Memory 507a7dbc, carried 6 canaries to c:412126.3.r2: harbor led","sha256":"7872ebbacb4c2ad9","tail":" meadow signal river stone ledger thread thread garden stone harbor quiet harbor"}
+T:summary-l1-78866acd = {"bytes":4400,"head":"[[s:M75ff3e0a]] Memory 75ff3e0a, carried 5 canaries to c:412126.24.r3: river com","sha256":"78866acde172a64b","tail":" ledger garden meadow stone compass orchard copper window window garden harbor r"}
+T:summary-l1-79ffd8fd = {"bytes":4400,"head":"[[s:M184f8d6e]] Memory 184f8d6e, carried 5 canaries to c:412126.7.r3: signal riv","sha256":"79ffd8fd33311485","tail":" thread orchard thread compass harbor orchard compass quiet compass signal river"}
+T:summary-l1-84166ed5 = {"bytes":4400,"head":"[[s:Meb99d6db]] Memory eb99d6db, carried 5 canaries to c:412126.58.r2: orchard h","sha256":"84166ed51567c0ba","tail":"r thread quiet copper meadow signal ledger river meadow ledger copper harbor qui"}
+T:summary-l1-849ac128 = {"bytes":4399,"head":"[[s:M0e6387ad]] Memory 0e6387ad, carried 5 canaries to c:412126.8.r3: harbor win","sha256":"849ac128bd2dd48c","tail":"rn meadow signal ledger thread thread orchard thread stone harbor harbor orchard"}
+T:summary-l1-84dfe656 = {"bytes":4400,"head":"[[s:M268be907]] Memory 268be907, carried 5 canaries to c:412126.8.r1: stone wind","sha256":"84dfe656ce5c09ac","tail":"t river compass river quiet garden signal window compass signal thread window ri"}
+T:summary-l1-860f1891 = {"bytes":4400,"head":"[[s:M275f4531]] Memory 275f4531, carried 4 canaries to c:412126.28.r4: orchard s","sha256":"860f18916cb96628","tail":"ntern window garden compass lantern meadow window winter window copper window qu"}
+T:summary-l1-868045a3 = {"bytes":4400,"head":"[[s:M399f804d]] Memory 399f804d, carried 5 canaries to c:412126.59.r2: signal st","sha256":"868045a3b418bb6d","tail":"en lantern harbor stone ledger copper quiet compass lantern copper compass river"}
+T:summary-l1-8d057107 = {"bytes":4399,"head":"[[s:M19224cf2]] Memory 19224cf2, carried 7 canaries to c:412126.25.r2: lantern g","sha256":"8d0571071fea5c85","tail":"nal harbor quiet window harbor quiet ledger garden copper lantern lantern copper"}
+T:summary-l1-8e40d484 = {"bytes":4400,"head":"[[s:M1ad3fc91]] Memory 1ad3fc91, carried 8 canaries to c:412126.7.r1: copper riv","sha256":"8e40d484f936fe18","tail":" compass stone signal river stone thread copper meadow garden winter quiet harbo"}
+T:summary-l1-93fd5699 = {"bytes":4399,"head":"[[s:M9aa52681]] Memory 9aa52681, carried 4 canaries to c:412126.2.r4: quiet quie","sha256":"93fd56990c9c4519","tail":"thread harbor window stone winter ledger meadow harbor meadow quiet river winter"}
+T:summary-l1-96cd391b = {"bytes":4399,"head":"[[s:Mdc95fbe3]] Memory dc95fbe3, carried 7 canaries to c:412126.54.r2: ledger me","sha256":"96cd391bf0787f5a","tail":"ad winter lantern copper ledger orchard ledger quiet signal stone compass winter"}
+T:summary-l1-96f6e6c5 = {"bytes":4400,"head":"[[s:M149bd760]] Memory 149bd760, carried 5 canaries to c:412126.48.r1: winter th","sha256":"96f6e6c57e652fd2","tail":"rden compass orchard window river meadow ledger thread meadow quiet stone thread"}
+T:summary-l1-9b0949ff = {"bytes":4400,"head":"[[s:Mff187ff2]] Memory ff187ff2, carried 5 canaries to c:412126.45.r3: signal st","sha256":"9b0949ff44c2c133","tail":" winter thread signal window ledger copper harbor river stone signal lantern lan"}
+T:summary-l1-9e4fd5f1 = {"bytes":4400,"head":"[[s:M214abc27]] Memory 214abc27, carried 5 canaries to c:412126.59.in: window co","sha256":"9e4fd5f1b32deb5b","tail":"arden thread signal signal meadow copper compass compass winter ledger quiet riv"}
+T:summary-l1-9e951f76 = {"bytes":4400,"head":"[[s:M1e78ec20]] Memory 1e78ec20, carried 5 canaries to c:412126.53.r1: stone win","sha256":"9e951f769f4ef5cf","tail":" garden lantern orchard thread compass meadow thread harbor window lantern orcha"}
+T:summary-l1-a1f29a45 = {"bytes":4399,"head":"[[s:M3d45a04a]] Memory 3d45a04a, carried 5 canaries to c:412126.18.r3: copper ri","sha256":"a1f29a45bf7aec47","tail":"uiet compass garden ledger compass harbor quiet river river copper garden garden"}
+T:summary-l1-a2f2ae53 = {"bytes":4400,"head":"[[s:M144242e7]] Memory 144242e7, carried 5 canaries to c:412126.37.r3: compass w","sha256":"a2f2ae53452ad9cd","tail":"ledger winter orchard compass ledger river ledger ledger copper stone meadow qui"}
+T:summary-l1-a3cdbf2a = {"bytes":4399,"head":"[[s:M44717793]] Memory 44717793, carried 5 canaries to c:412126.46.r1: lantern w","sha256":"a3cdbf2a6f3aceef","tail":"winter compass meadow orchard harbor thread signal window compass compass window"}
+T:summary-l1-ad45e6bc = {"bytes":4400,"head":"[[s:Mae2c808f]] Memory ae2c808f, carried 5 canaries to c:412126.26.r2: orchard c","sha256":"ad45e6bc4d78a827","tail":"compass compass garden meadow orchard garden river quiet river garden copper gar"}
+T:summary-l1-ba3d22f0 = {"bytes":4399,"head":"[[s:Mff9c1c81]] Memory ff9c1c81, carried 4 canaries to c:412126.43.r3: winter co","sha256":"ba3d22f04b37d4c9","tail":"e window garden ledger window winter garden window ledger ledger lantern compass"}
+T:summary-l1-bde4361b = {"bytes":4400,"head":"[[s:M8414068a]] Memory 8414068a, carried 5 canaries to c:412126.9.r1: window gar","sha256":"bde4361b0e7f84f8","tail":"read quiet garden thread ledger quiet stone copper compass ledger river stone wi"}
+T:summary-l1-be2ba75f = {"bytes":4400,"head":"[[s:Md911a187]] Memory d911a187, carried 5 canaries to c:412126.14.r1: lantern w","sha256":"be2ba75f3e313e8e","tail":" garden orchard quiet thread stone stone compass compass winter garden lantern g"}
+T:summary-l1-beac0ad0 = {"bytes":4400,"head":"[[s:Md5f2d0a7]] Memory d5f2d0a7, carried 6 canaries to c:412126.17.r2: meadow or","sha256":"beac0ad0deec913d","tail":"r compass meadow harbor window copper meadow quiet stone river quiet window mead"}
+T:summary-l1-c3a013e8 = {"bytes":4400,"head":"[[s:Mb7922b97]] Memory b7922b97, carried 6 canaries to c:412126.44.r2: quiet gar","sha256":"c3a013e8953c8c98","tail":"r copper quiet signal ledger signal meadow river harbor copper garden window orc"}
+T:summary-l1-c5147814 = {"bytes":4400,"head":"[[s:M911d548b]] Memory 911d548b, carried 5 canaries to c:412126.28.r2: thread ga","sha256":"c5147814c51e08cf","tail":"s signal compass harbor winter quiet copper quiet signal winter thread ledger le"}
+T:summary-l1-c53f92c0 = {"bytes":4400,"head":"[[s:M8e6a51e8]] Memory 8e6a51e8, carried 7 canaries to c:412126.50.r1: thread qu","sha256":"c53f92c0354f24c2","tail":" river quiet stone river harbor window window winter lantern river compass meado"}
+T:summary-l1-c5d1e52d = {"bytes":4400,"head":"[[s:M9af8ddb7]] Memory 9af8ddb7, carried 4 canaries to c:412126.20.r4: garden qu","sha256":"c5d1e52dc3561269","tail":"orchard lantern river window meadow signal compass stone copper compass signal l"}
+T:summary-l1-c6a5804e = {"bytes":4400,"head":"[[s:Mc03ef321]] Memory c03ef321, carried 5 canaries to c:412126.53.r3: harbor la","sha256":"c6a5804eef2f4500","tail":"n copper harbor ledger thread orchard quiet compass lantern lantern quiet signal"}
+T:summary-l1-c7a3b56f = {"bytes":4400,"head":"[[s:Mfac2873f]] Memory fac2873f, carried 5 canaries to c:412126.28.in: thread th","sha256":"c7a3b56fc23d7668","tail":"rchard compass orchard thread lantern window thread harbor quiet quiet signal co"}
+T:summary-l1-cfa3c597 = {"bytes":4400,"head":"[[s:M358e5c9b]] Memory 358e5c9b, carried 5 canaries to c:412126.27.r1: garden th","sha256":"cfa3c59750ce8e51","tail":"harbor stone quiet meadow winter quiet meadow quiet window ledger stone thread q"}
+T:summary-l1-cfd35582 = {"bytes":4400,"head":"[[s:Mb7246365]] Memory b7246365, carried 4 canaries to c:412126.9.r3: garden win","sha256":"cfd355823f708d4a","tail":"ad window garden meadow copper signal harbor compass harbor garden winter window"}
+T:summary-l1-d0c3d6be = {"bytes":4400,"head":"[[s:M54b15382]] Memory 54b15382, carried 5 canaries to c:412126.45.r1: harbor ga","sha256":"d0c3d6becf44dac8","tail":"read stone garden orchard stone winter compass orchard river garden orchard rive"}
+T:summary-l1-d1b3e2ea = {"bytes":4400,"head":"[[s:M353fddab]] Memory 353fddab, carried 6 canaries to c:412126.29.r2: lantern h","sha256":"d1b3e2eac58e2306","tail":" lantern thread garden compass lantern window compass winter compass lantern cop"}
+T:summary-l1-d854ffb4 = {"bytes":4400,"head":"[[s:M968ea811]] Memory 968ea811, carried 8 canaries to c:412126.40.r1: ledger or","sha256":"d854ffb4edffbded","tail":"read window quiet garden meadow stone harbor signal meadow harbor thread orchard"}
+T:summary-l1-e6c466eb = {"bytes":4400,"head":"[[s:M68ece0fb]] Memory 68ece0fb, carried 4 canaries to c:412126.52.r1: signal co","sha256":"e6c466eb9808fa5d","tail":"r meadow quiet signal harbor thread river quiet copper harbor river stone compas"}
+T:summary-l1-f40d3277 = {"bytes":4400,"head":"[[s:M964dac7c]] Memory 964dac7c, carried 6 canaries to c:412126.51.r2: winter st","sha256":"f40d32771a05364b","tail":"dger quiet stone stone lantern river quiet lantern winter ledger river meadow or"}
+T:summary-l1-f460f260 = {"bytes":4400,"head":"[[s:Mce2baf40]] Memory ce2baf40, carried 6 canaries to c:412126.4.r1: stone harb","sha256":"f460f260717b3f1e","tail":"s winter stone compass orchard meadow copper harbor window window compass lanter"}
+T:summary-l1-f6dcc0ac = {"bytes":4400,"head":"[[s:M4d336b93]] Memory 4d336b93, carried 7 canaries to c:412126.12.r2: signal or","sha256":"f6dcc0ac9c771d1d","tail":" harbor copper stone orchard thread lantern meadow quiet winter quiet quiet orch"}
+T:summary-l1-f9e1ebcc = {"bytes":4400,"head":"[[s:M09a05636]] Memory 09a05636, carried 10 canaries to c:412126.24.r1: winter l","sha256":"f9e1ebcc51a14c11","tail":"edger copper orchard quiet river meadow river quiet harbor signal ledger orchard"}
+T:summary-l1-fa77c7b7 = {"bytes":4400,"head":"[[s:Mc0f1a9b4]] Memory c0f1a9b4, carried 5 canaries to c:412126.46.r3: quiet sig","sha256":"fa77c7b77c989d25","tail":"ndow lantern window copper ledger meadow orchard window orchard signal signal co"}
+T:summary-l1-ff46392c = {"bytes":4400,"head":"[[s:Ma4cfd75b]] Memory a4cfd75b, carried 5 canaries to c:412126.26.in: winter th","sha256":"ff46392cefd5564f","tail":"read harbor quiet harbor signal river meadow harbor lantern harbor signal ledger"}
+T:summary-l2-266acb1c = {"bytes":4399,"head":"[[s:M822efd71]] Memory 822efd71, carried 25 canaries to c:412126.29.r2: copper s","sha256":"266acb1c6b2c8443","tail":"ntern garden harbor thread stone copper garden harbor signal quiet meadow window"}
+T:summary-l2-593081a3 = {"bytes":4400,"head":"[[s:Mca82e014]] Memory ca82e014, carried 27 canaries to c:412126.53.r1: orchard ","sha256":"593081a3ff1b1029","tail":"antern ledger river stone winter meadow garden thread lantern window signal thre"}
+T:summary-l2-61a75ab2 = {"bytes":4400,"head":"[[s:M18373e39]] Memory 18373e39, carried 26 canaries to c:412126.4.r1: compass l","sha256":"61a75ab2310c804d","tail":"en garden window meadow copper winter garden harbor orchard thread copper copper"}
+T:summary-l2-622d49ac = {"bytes":4400,"head":"[[s:M14e03dc5]] Memory 14e03dc5, carried 27 canaries to c:412126.9.r3: orchard o","sha256":"622d49ac41a533a9","tail":"er copper quiet thread garden orchard stone meadow copper winter copper harbor s"}
+T:summary-l2-6852031c = {"bytes":4400,"head":"[[s:Mbf089d3b]] Memory bf089d3b, carried 27 canaries to c:412126.47.r1: compass ","sha256":"6852031c7f8ca380","tail":"adow stone lantern river thread compass lantern compass garden window compass th"}
+T:summary-l2-7843682d = {"bytes":4400,"head":"[[s:M3e701e92]] Memory 3e701e92, carried 31 canaries to c:412126.14.r1: lantern ","sha256":"7843682d062bfe1b","tail":" window stone harbor lantern compass garden stone window garden signal lantern r"}
+T:summary-l2-7a5fbd27 = {"bytes":4400,"head":"[[s:Mc21adeac]] Memory c21adeac, carried 28 canaries to c:412126.40.r1: lantern ","sha256":"7a5fbd27fdb1e3d4","tail":"eadow signal lantern winter window thread lantern signal compass thread meadow w"}
+T:summary-l2-d6b1c327 = {"bytes":4400,"head":"[[s:Me0c55417]] Memory e0c55417, carried 26 canaries to c:412126.35.r1: garden s","sha256":"d6b1c327ca024f50","tail":"thread compass orchard quiet ledger river window stone meadow quiet orchard quie"}
+T:summary-l2-e7301929 = {"bytes":4400,"head":"[[s:M360d568c]] Memory 360d568c, carried 23 canaries to c:412126.43.r3: winter l","sha256":"e7301929e3f8c924","tail":"rn orchard signal river stone winter ledger copper compass window orchard meadow"}
+T:summary-l2-ed83b4f5 = {"bytes":4400,"head":"[[s:M14953909]] Memory 14953909, carried 29 canaries to c:412126.59.in: lantern ","sha256":"ed83b4f581c82338","tail":" compass orchard thread lantern ledger compass lantern copper meadow thread mead"}
+T:summary-l2-f9ce272e = {"bytes":4400,"head":"[[s:M79559e56]] Memory 79559e56, carried 33 canaries to c:412126.26.in: stone ga","sha256":"f9ce272ee94bca61","tail":"rden orchard winter garden quiet thread meadow winter copper signal garden coppe"}
+T:summary-l2-fc639c0e = {"bytes":4400,"head":"[[s:M2ccedb8a]] Memory 2ccedb8a, carried 27 canaries to c:412126.19.r3: harbor m","sha256":"fc639c0ea5fbbce0","tail":"indow garden thread orchard harbor harbor signal river window orchard ledger mea"}
+T:summary-l3-0bb19861 = {"bytes":4400,"head":"[[s:Mf22b55b9]] Memory f22b55b9, carried 1 canaries to c:412126.1.in: river quie","sha256":"0bb19861dcef5ab1","tail":" meadow garden winter quiet meadow harbor copper garden harbor orchard stone gar"}
+T:summary-l3-99308fa7 = {"bytes":4400,"head":"[[s:M62c009e8]] Memory 62c009e8, carried 1 canaries to c:412126.1.in: window win","sha256":"99308fa717722150","tail":"arden thread stone signal window window winter garden stone ledger compass signa"}
+T:user-clock-monday-#-#-# = Clock: Monday #-#-#, #:# UTC
+T:user-delivered-plain-speech = [delivered] plain speech → chat
+T:user-delivered-true = {"delivered":true}
+T:user-prose-routing-output-mode = [prose-routing] Output mode changed: plain text is delivered only with a destination prefix line, e.g. ">>#channel-name your text".
+T:user-routing-your-plain = [routing] Your plain speech now lands in chat. Other channels need an explicit send tool.
+T:user-skipped-true-note-turn-ended-nothing = {"skipped":true,"note":"Turn ended; nothing sent."}
+T:user-the-local-time = The local time at the start of this session is #-#-#T#:#:#.#+#:# [UTC].
+T:user-tune-out-wake-chat = [Tune-out wake: chat — # addressed message]
+T:user-tunedout-chat-cadenceseconds-#-backlogca = {"tunedOut":"chat","cadenceSeconds":#,"backlogCap":#,"maxWakes":#}
