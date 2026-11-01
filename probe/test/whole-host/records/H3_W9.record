@@ -32,35 +32,35 @@ step 321741.1
   compile 442693.42.r1-442693.42.r4 [T:user-delivered-plain-speech] 442693.43.in-442693.43.r3 [T:user-delivered-plain-speech] 442693.44.in-442693.44.r3 [T:user-delivered-plain-speech] 442693.45.in-442693.45.r4 [T:user-delivered-plain-speech] 442693.46.in-442693.46.r4 [T:user-delivered-plain-speech] 442693.47.in-442693.47.r2 [T:user-delivered-plain-speech] 442693.48.in-442693.48.r2 [T:user-delivered-plain-speech] 442693.49.in-442693.49.r1 [T:user-delivered-plain-speech] 442693.50.in-442693.50.r2 [T:user-delivered-plain-speech] 442693.51.in-442693.51.r2 [T:user-delivered-plain-speech] 442693.52.in-442693.52.r4 [T:user-delivered-plain-speech] 442693.53.in-442693.53.r4 [T:user-delivered-plain-speech] 442693.54.in-442693.54.r4 [T:user-delivered-plain-speech] 442693.55.in-442693.55.r1 [T:user-delivered-plain-speech] 442693.56.in-442693.56.r1 [T:user-delivered-plain-speech] 442693.57.in-442693.57.r1 [T:user-delivered-plain-speech] 442693.58.in-442693.58.r4 [T:user-delivered-plain-speech] 442693.59.in-442693.59.r4 [T:user-delivered-plain-speech] 442693.60.in-442693.60.r3 [T:user-delivered-plain-speech] 442693.61.in-442693.61.r3 [T:user-delivered-plain-speech] 442693.62.in-442693.62.r4 [T:user-delivered-plain-speech] 442693.63.in-442693.63.r4 [T:user-delivered-plain-speech] 442693.64.in-442693.64.r2 [T:user-delivered-plain-speech] 442693.65.in-442693.65.r2 [T:user-delivered-plain-speech] 442693.66.in-442693.66.r1 [T:user-delivered-plain-speech] 442693.67.in-442693.67.r2 [T:user-delivered-plain-speech] 442693.68.in-442693.68.r2 [T:user-delivered-plain-speech] 442693.69.in-442693.69.r4 [T:user-delivered-plain-speech] 442693.70.in-442693.70.r4 [T:user-delivered-plain-speech] [T:user-clock-tuesday-#-#-#](2026,01,06,09,00) 321741.1.in, head H:da33089c, body ec2bfbc5
   compile -3 + 321741.1.r1-321741.1.call1, body b24a2c0e
 step 321741.2
-  round + 321741.1.r2 321741.2.in 321741.2.r1 321741.2.call1, body 5adf93ea
   compile + 321741.1.r2 [T:user-delivered-plain-speech] 321741.2.in, body 6e4cae16
+  round + 321741.2.r1 321741.2.call1, body 5adf93ea
 step 321741.3
-  round + 321741.2.r1 321741.2.call1 321741.2.r2 321741.3.in 321741.3.r1 321741.3.call1, body 9c1e8593
   compile -3 + 321741.2.r1-321741.2.r2 [T:user-delivered-plain-speech] 321741.3.in, body 196510a8
+  round + 321741.3.r1 321741.3.call1, body 9c1e8593
 step 321741.3.reopen
   compile dry 442693.43.r2-442693.43.r3 [T:user-delivered-plain-speech] 442693.44.in-442693.44.r3 [T:user-delivered-plain-speech] 442693.45.in-442693.45.r4 [T:user-delivered-plain-speech] 442693.46.in-442693.46.r4 [T:user-delivered-plain-speech] 442693.47.in-442693.47.r2 [T:user-delivered-plain-speech] 442693.48.in-442693.48.r2 [T:user-delivered-plain-speech] 442693.49.in-442693.49.r1 [T:user-delivered-plain-speech] 442693.50.in-442693.50.r2 [T:user-delivered-plain-speech] 442693.51.in-442693.51.r2 [T:user-delivered-plain-speech] 442693.52.in-442693.52.r4 [T:user-delivered-plain-speech] 442693.53.in-442693.53.r4 [T:user-delivered-plain-speech] 442693.54.in-442693.54.r4 [T:user-delivered-plain-speech] 442693.55.in-442693.55.r1 [T:user-delivered-plain-speech] 442693.56.in-442693.56.r1 [T:user-delivered-plain-speech] 442693.57.in-442693.57.r1 [T:user-delivered-plain-speech] 442693.58.in-442693.58.r4 [T:user-delivered-plain-speech] 442693.59.in-442693.59.r4 [T:user-delivered-plain-speech] 442693.60.in-442693.60.r3 [T:user-delivered-plain-speech] 442693.61.in-442693.61.r3 [T:user-delivered-plain-speech] 442693.62.in-442693.62.r4 [T:user-delivered-plain-speech] 442693.63.in-442693.63.r4 [T:user-delivered-plain-speech] 442693.64.in-442693.64.r2 [T:user-delivered-plain-speech] 442693.65.in-442693.65.r2 [T:user-delivered-plain-speech] 442693.66.in-442693.66.r1 [T:user-delivered-plain-speech] 442693.67.in-442693.67.r2 [T:user-delivered-plain-speech] 442693.68.in-442693.68.r2 [T:user-delivered-plain-speech] 442693.69.in-442693.69.r4 [T:user-delivered-plain-speech] 442693.70.in-442693.70.r4 [T:user-delivered-plain-speech] [T:user-clock-tuesday-#-#-#](2026,01,06,09,00) 321741.1.in-321741.1.r2 [T:user-delivered-plain-speech] 321741.2.in-321741.2.r2 [T:user-delivered-plain-speech] 321741.3.in-321741.3.r2 [T:user-delivered-plain-speech]
   compile dry = (as before)
 step 321741.4
-  round + 321741.3.r1 321741.3.call1 321741.3.r2 321741.4.in 321741.4.r1 321741.4.call1, body 691b1e0f
   compile -5 + 321741.3.r1-321741.3.r2 [T:user-delivered-plain-speech] 321741.4.in, body 5c060b1a
+  round + 321741.4.r1 321741.4.call1, body 691b1e0f
 step 321741.5
   compile -2 + 321741.4.r1-321741.4.r2 [T:user-delivered-plain-speech] 321741.5.in, body fef25634
   compile -5 + 321741.5.r1-321741.5.call1, body 5d9a0bfc
 step 321741.6
-  round + 321741.5.r2 321741.6.in 321741.6.r1 321741.6.call1, body 8c7b0b6e
   compile + 321741.5.r2 [T:user-delivered-plain-speech] 321741.6.in, body f6e98176
+  round + 321741.6.r1 321741.6.call1, body 8c7b0b6e
 step 321741.7
-  round + 321741.6.r1 321741.6.call1 321741.6.r2 321741.7.in 321741.7.r1 321741.7.call1, body 57e6b184
   compile -2 + 321741.6.r1-321741.6.r2 [T:user-delivered-plain-speech] 321741.7.in, body c5f2750a
+  round + 321741.7.r1 321741.7.call1, body 57e6b184
 step 321741.7f
-  call 442693.65.r1 442693.65.call1 442693.65.r2 442693.66.in 442693.66.r1 [T:call-context-manager-system] [T:call-user-delivered-plain] [T:call-empty] [T:call-context-manager-capture](2000) -> summary, head H:a1125413, body 8bc883a8
-  round + 321741.7.r1 321741.7.call1 321741.7.r2 321741.7f.in 321741.7f.r1 321741.7f.f1, body 23711246
   compile -7 + 321741.7.r1-321741.7.r2 [T:user-delivered-plain-speech] 321741.7f.in, body 310bbdf5
   compile dry -144 + 321741.4.in-321741.4.r2 [T:user-delivered-plain-speech] 321741.5.in-321741.5.r2 [T:user-delivered-plain-speech] 321741.6.in-321741.6.r2 [T:user-delivered-plain-speech] 321741.7.in-321741.7.r2 [T:user-delivered-plain-speech] 321741.7f.in
   compile [fork-321741-d1-1767690000000] 442693.65.r1-442693.65.r2 [T:user-delivered-plain-speech] 442693.66.in-442693.70.r4 [T:user-clock-tuesday-#-#-#](2026,01,06,09,00) 321741.1.in-321741.7f.task, head H:95c02981, body 41dcab3f
+  call 442693.65.r1 442693.65.call1 442693.65.r2 442693.66.in 442693.66.r1 [T:call-context-manager-system] [T:call-user-delivered-plain] [T:call-empty] [T:call-context-manager-capture](2000) -> summary, head H:a1125413, body 8bc883a8
+  round + 321741.7f.r1 321741.7f.f1, body 23711246
 step 321741.8
-  round + 321741.7f.r1 321741.7f.f1 321741.7f.r2 321741.8.in 321741.8.r1 321741.8.call1, body 5d48703e
   compile + 321741.7f.r1-321741.7f.r2 [T:user-delivered-plain-speech] 321741.8.in, body 76c524d9
+  round + 321741.8.r1 321741.8.call1, body 5d48703e
 step 321741.9a
   compile -6 + 321741.8.r1-321741.8.r2 [T:user-delivered-plain-speech] 321741.9a.in, head H:f1de1d76, body 106351d0
 step 321741.9b

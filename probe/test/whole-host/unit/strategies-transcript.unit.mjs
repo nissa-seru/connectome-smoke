@@ -73,6 +73,20 @@ test('X4: a long stack text already shown is named the next time, and a one-word
   assert.match(named, /^tool notes: \(as above: tool notes, [\d,]+ chars, [0-9a-f]{8}\)$/);
   assert.ok(changed.some((l) => l.includes('The heading is optional.')), 'the changed definition is shown, not named');
   assert.equal(second.find((l) => l.startsWith('system[0]')), 'system[0]: You are the fixture agent.', 'a short text is always shown');
+  const notice = (word) => `Context Manager: ${'This note is the stack\'s own wording, kept as written. '.repeat(5)}The ${word} closes it.`;
+  const shown = transcriptOf(body([user(said, notice('word'))]), generated, seen).at(-1);
+  const again = transcriptOf(body([user(said, notice('word'))]), generated, seen).at(-1);
+  const reworded = transcriptOf(body([user(said, notice('phrase'))]), generated, seen).at(-1);
+  assert.equal(shown, `  text: ${notice('word')}`);
+  assert.match(again, /^ {2}text: \(as above: "Context Manager: This note is the stack'…", [\d,]+ chars, [0-9a-f]{8}\)$/);
+  assert.equal(reworded, `  text: ${notice('phrase')}`, 'a one-word change shows it whole');
+});
+
+test('X9: a call\'s input is matched as its strings read, so a run text with a newline or a quote in it still shows as the run\'s, and the stack\'s strings stay JSON', () => {
+  const task = `[[c:x.6.task]] ${prose(200, 'x.6:task')}\n"${prose(100, 'x.6:quoted')}"`;
+  const generated = generatedTexts({ steps: [{ id: 'x.6', replies: [{ calls: [{ name: 'subagent--spawn', input: { task } }] }] }] });
+  const [line] = transcriptOf(body([{ role: 'assistant', content: [{ type: 'tool_use', id: 'toolu_1', name: 'subagent--spawn', input: { note: 'line one\nline "two"', task, sync: true } }] }]), generated).slice(-1);
+  assert.equal(line, `  tool_use toolu_1 subagent--spawn: {"note":"line one\\nline \\"two\\"","task":"⟪[[c:x.6.task]] ${task.length} chars: ${head(task, '[[c:x.6.task]] '.length)}⟫","sync":true}`);
 });
 
 test('X5: thinking shows signed or not with its length, a call its input with the run\'s texts marked, a result its blocks, an image its type, size and bytes, and a cache marker on its block', () => {
@@ -117,15 +131,19 @@ test('X6: the run\'s texts include each fixture call\'s result, both texts of a 
   ]);
 });
 
-test('X7: a per-process image ref nonce and a fork call\'s UUID are masked, so two processes\' requests give the same lines', () => {
+test('X7: a per-process image ref nonce and a fork call\'s UUID are masked, so two processes\' requests give the same lines, and a result naming another fork than its call shows it', () => {
   const generated = generatedTexts({ steps: [turn] });
-  const of = (ref, uuid) => transcriptOf(body([
+  const of = (ref, uuid, answered = uuid) => transcriptOf(body([
     user(said, `[image: image/png, ~1KB, ref ${ref}]`),
     { role: 'assistant', content: [{ type: 'tool_use', id: `fork-fork-x-${uuid}`, name: 'subagent--fork', input: {} }] },
+    { role: 'user', content: [{ type: 'tool_result', tool_use_id: `fork-fork-x-${answered}`, content: 'done' }] },
   ]), generated);
   const one = of('img_k7x3q2_7', '0f8e2c1a-1b2c-4d5e-8f90-a1b2c3d4e5f6');
   const two = of('img_zz91aa_7', '9a8b7c6d-5e4f-4a3b-9c2d-1e0f9a8b7c6d');
   assert.deepEqual(one, two);
   assert.ok(one.includes('  text: [image: image/png, ~1KB, ref img_*_7]'));
-  assert.ok(one.includes('  tool_use fork-fork-x-UUID subagent--fork: {}'));
+  assert.ok(one.includes('  tool_use fork-fork-x-UUID1 subagent--fork: {}'));
+  assert.ok(one.includes('  tool_result fork-fork-x-UUID1'));
+  const crossed = of('img_k7x3q2_7', '0f8e2c1a-1b2c-4d5e-8f90-a1b2c3d4e5f6', '9a8b7c6d-5e4f-4a3b-9c2d-1e0f9a8b7c6d');
+  assert.ok(crossed.includes('  tool_result fork-fork-x-UUID2'), 'a result answering another fork is named apart');
 });

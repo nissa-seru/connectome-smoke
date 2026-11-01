@@ -137,7 +137,7 @@
  {
   "configuration": "H3/W9",
   "check": 11,
-  "step": "321741.14",
+  "step": "321741.13.redo",
   "what": "fixture:dry:shape",
   "match": "^message 0: result toolu_fx000090 answers no call in the message before it$",
   "finding": "passthrough-window-cuts-call-from-result",
@@ -353,6 +353,42 @@
  {
   "configuration": "C3h/W9",
   "check": 11,
+  "step": "555806.13.redo",
+  "what": "fixture:dry:beside-sources",
+  "match": "^8 stored messages sent raw beside a summary of them: 1158 raw beside L2-93; 1161 raw beside L2-93; 1163 raw beside L2-93; 1165 raw beside L2-93$",
+  "finding": "raw-pin-sent-beside-covering-summary, level-pin-under-covering-summary",
+  "reason": "A raw pin and a level pin, each set after a summary covers its range, both send content twice."
+ },
+ {
+  "configuration": "C3h/W9",
+  "check": 11,
+  "step": "555806.13.redo",
+  "what": "fixture:dry:pins",
+  "match": "^summary L2-93 at L2 covers 1158, inside pin pin-84 allowing L0$",
+  "finding": "raw-pin-sent-beside-covering-summary",
+  "reason": "A message pinned raw after an L1 summary covers it is also sent inside that summary."
+ },
+ {
+  "configuration": "C3h/W9",
+  "check": 11,
+  "step": "555806.13.redo",
+  "what": "fixture:dry:pins",
+  "match": "^summary L2-93 at L2 covers 1177, inside pin pin-86 allowing L1$",
+  "finding": "level-pin-under-covering-summary",
+  "reason": "A level pin set after a higher summary covers its range sends the pinned part beside the summary over it."
+ },
+ {
+  "configuration": "C3h/W9",
+  "check": 11,
+  "step": "555806.13.redo",
+  "what": "fixture:dry:pins",
+  "match": "^summary L2-99 at L2 covers 1182, inside pin pin-86 allowing L1$",
+  "finding": "level-pin-under-covering-summary",
+  "reason": "A level pin set after a higher summary covers its range sends the pinned part beside the summary over it."
+ },
+ {
+  "configuration": "C3h/W9",
+  "check": 11,
   "step": "555806.14",
   "what": "fixture:dry:beside-sources",
   "match": "^8 stored messages sent raw beside a summary of them: 1158 raw beside L2-93; 1161 raw beside L2-93; 1163 raw beside L2-93; 1165 raw beside L2-93$",
@@ -742,6 +778,24 @@
   "check": 11,
   "step": "405389.13",
   "what": "fixture:request:pins",
+  "match": "^summary L1-133 at L1 covers 1560, inside pin pin-87 allowing L0$",
+  "finding": "raw-pin-sent-beside-covering-summary",
+  "reason": "A message pinned raw after an L1 summary covers it is also sent inside that summary."
+ },
+ {
+  "configuration": "C6h/W9",
+  "check": 11,
+  "step": "405389.13.redo",
+  "what": "fixture:dry:beside-sources",
+  "match": "^1 stored messages sent raw beside a summary of them: 1560 raw beside L1-133$",
+  "finding": "raw-pin-sent-beside-covering-summary",
+  "reason": "A message pinned raw after an L1 summary covers it is also sent inside that summary."
+ },
+ {
+  "configuration": "C6h/W9",
+  "check": 11,
+  "step": "405389.13.redo",
+  "what": "fixture:dry:pins",
   "match": "^summary L1-133 at L1 covers 1560, inside pin pin-87 allowing L0$",
   "finding": "raw-pin-sent-beside-covering-summary",
   "reason": "A message pinned raw after an L1 summary covers it is also sent inside that summary."
@@ -886,6 +940,33 @@
   "check": 11,
   "step": "648143.13",
   "what": "fixture:request:pins",
+  "match": "^summary L1-133 at L1 covers 1709, inside pin pin-87 allowing L0$",
+  "finding": "raw-pin-sent-beside-covering-summary",
+  "reason": "A message pinned raw after an L1 summary covers it is also sent inside that summary."
+ },
+ {
+  "configuration": "H1/W9",
+  "check": 11,
+  "step": "648143.13.redo",
+  "what": "fixture:dry:beside-sources",
+  "match": "^4 stored messages sent raw beside a summary of them: 1702 raw beside L1-132; 1706 raw beside L1-132; 1707 raw beside L1-132; 1709 raw beside L1-133$",
+  "finding": "raw-pin-sent-beside-covering-summary",
+  "reason": "A message pinned raw after an L1 summary covers it is also sent inside that summary."
+ },
+ {
+  "configuration": "H1/W9",
+  "check": 11,
+  "step": "648143.13.redo",
+  "what": "fixture:dry:pins",
+  "match": "^summary L1-132 at L1 covers 1702, inside pin pin-87 allowing L0$",
+  "finding": "raw-pin-sent-beside-covering-summary",
+  "reason": "A message pinned raw after an L1 summary covers it is also sent inside that summary."
+ },
+ {
+  "configuration": "H1/W9",
+  "check": 11,
+  "step": "648143.13.redo",
+  "what": "fixture:dry:pins",
   "match": "^summary L1-133 at L1 covers 1709, inside pin pin-87 allowing L0$",
   "finding": "raw-pin-sent-beside-covering-summary",
   "reason": "A message pinned raw after an L1 summary covers it is also sent inside that summary."

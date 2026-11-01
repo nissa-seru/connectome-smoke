@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { maskRunVarying } from './compare.mjs';
 import { CANARY } from './standin.mjs';
-import { checkCompile, compileLedger, digest, isUnreadable, normalizeMessage, readCompile, readSummaries, readable, sourceStrings } from './invariants.mjs';
+import { checkCompile, digest, isUnreadable, normalizeMessage, readSummaries, readable, sourceStrings } from './invariants.mjs';
 
 const PASSTHROUGH = ['PassthroughStrategy', 'WindowedPassthroughStrategy'];
 
@@ -23,7 +23,7 @@ export function errorClass(error) {
 
 export function compresses(manager) {
   const strategy = readable(() => manager.getStrategy());
-  return !isUnreadable(strategy) && !!strategy && !PASSTHROUGH.includes(strategy.constructor?.name);
+  return isUnreadable(strategy) ? strategy : !!strategy && !PASSTHROUGH.includes(strategy.constructor?.name);
 }
 
 // Nothing is masked here: agent-framework's image-ref nonce is per process, so only the record writer, which sees
@@ -47,7 +47,7 @@ export function blobStore() {
   };
 }
 
-export function compiledLine(manager, budget, compiled, blobs) {
+export function compiledLine(manager, budget, compiled, blobs, elsewhere) {
   const prov = compiled?.provenance?.messages;
   const entries = (compiled?.messages ?? []).map((m, i) => {
     const { message, marker } = normalizeMessage(m);
@@ -55,8 +55,7 @@ export function compiledLine(manager, budget, compiled, blobs) {
     if (marker) entry.marker = plain(marker);
     return entry;
   });
-  const read = readCompile(manager, compiled, entries);
-  const violations = checkCompile(manager, budget, compiled, entries, { compresses: compresses(manager), read });
+  const violations = checkCompile(manager, budget, compiled, entries, { compresses: compresses(manager), elsewhere });
   const layout = compiled?.provenance?.layout;
   return {
     outcome: 'compiled',
@@ -65,7 +64,6 @@ export function compiledLine(manager, budget, compiled, blobs) {
     layout: !compiled?.provenance ? { unreadable: 'no provenance' } : layout ? untimed(plain({ ...layout, members: undefined })) : null,
     stats: untimed(plain(compiled?.renderStats ?? readable(() => manager.getRenderStats()))),
     violations,
-    ledger: compileLedger(read, entries),
   };
 }
 

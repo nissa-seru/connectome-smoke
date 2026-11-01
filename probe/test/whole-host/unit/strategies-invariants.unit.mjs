@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { checkCompile, compileLedger, readCompile } from '../lib/strategies/invariants.mjs';
+import { checkCompile } from '../lib/strategies/invariants.mjs';
 const text = (t) => ({ type: 'text', text: t });
 const call = (id) => ({ type: 'tool_use', id, name: 'look', input: {} });
 const result = (id) => ({ type: 'tool_result', toolUseId: id, content: 'seen' });
@@ -155,25 +155,32 @@ test('bodies are context-manager\'s: two ingestions of one text, sharing a group
   }
 });
 
-test('compileLedger: each stored message as the compile left it, raw, in which summary, or left out, as spans of store order with counts', () => {
-  const sharded = [...STORE, shard('5', 5, 0, 'first half'), shard('6', 6, 1, 'second half')];
-  for (const m of sharded) byId.set(m.id, m);
+test('coverage: one carried text holds one shard, so of two shards with the same text, a partial copy carrying it once loses the other', () => {
+  const twin = [...STORE, shard('5', 5, 0, 'same words'), shard('6', 6, 1, 'same words')];
+  for (const m of twin) byId.set(m.id, m);
   try {
-    const m = manager({ messages: sharded, summaries: { S: { sourceIds: ['3', '4'] } } });
-    const [compiled, messages] = compile(['r:1', 'r:2', 's:S@1', ['r:5!shards', [text('first half')]]]);
-    assert.deepEqual(compileLedger(readCompile(m, compiled, messages), messages), {
-      raw: [['1', '2', 2], ['5', '5', 1]],
-      summaries: [['S', 1, [['3', '4', 2]]]],
-      out: [['6', '6', 1]],
-      counts: { raw: 3, summarised: 2, out: 1 },
-    });
-    const both = manager({ messages: sharded, summaries: { S: { sourceIds: ['2', '3'] }, T: { sourceIds: ['3', '4'] } } });
-    const [c2, m2] = compile(['r:1', 's:S@1', 's:T@2', 'r:5']);
-    const ledger = compileLedger(readCompile(both, c2, m2), m2);
-    assert.deepEqual(ledger.summaries, [['S', 1, [['2', '3', 2]]], ['T', 2, [['3', '4', 2]]]]);
-    assert.deepEqual(ledger.counts, { raw: 3, summarised: 3, out: 0 }, 'a message under two summaries counts once');
+    assert.deepEqual(named(check(manager({ messages: twin }), ['r:1', 'r:2', 'r:3', 'r:4', ['r:5!shards', [text('same words')]]])), [['coverage', '1 stored bodies in no message sent: 5 (shards 6)']]);
+    assert.deepEqual(check(manager({ messages: twin }), ['r:1', 'r:2', 'r:3', 'r:4', ['r:5!shards', [text('same wordssame words')]]]), [], 'carried twice, both held');
   } finally {
-    for (const m of sharded) if (!STORE.includes(m)) byId.delete(m.id);
+    for (const m of twin) if (!STORE.includes(m)) byId.delete(m.id);
   }
-  assert.deepEqual(compileLedger(readCompile({ ...manager(), getAllMessages: () => { throw new Error('gone'); } }, ...compile(['r:1'])), []), { unreadable: 'gone' });
+});
+
+test('a view member its own slot doesn\'t hold is judged from the slot that holds it; one no slot holds is unreadable', () => {
+  const shared = [stored('9', 9, 'user', [text('nine')])];
+  const elsewhere = (ids) => ({ found: shared.filter((m) => ids.includes(m.id)), unfound: ids.filter((id) => !shared.some((m) => m.id === id)) });
+  const [compiled, messages] = compile(['r:1', 'r:2', 'r:3', 'r:4']);
+  compiled.provenance = { layout: { memberIds: ['1', '2', '3', '4', '9'] } };
+  assert.deepEqual(named(checkCompile(manager(), BUDGET, compiled, messages, { elsewhere })), [['coverage', '1 stored bodies in no message sent: 9']], 'the shared slot\'s message is in the store judged');
+  compiled.provenance.layout.memberIds.push('10');
+  assert.deepEqual(named(checkCompile(manager(), BUDGET, compiled, messages, { elsewhere })).filter(([v]) => v === 'unreadable'), [['unreadable', 'view members no registered agent\'s slot holds: 10; what depends on it wasn\'t judged']]);
+  assert.deepEqual(named(checkCompile(manager(), BUDGET, compiled, messages)).filter(([v]) => v === 'unreadable').length, 1, 'with nothing to read other slots by, every member it doesn\'t hold is unreadable');
+});
+
+test('unreadable: a summary or strategy read that fails is a violation naming it, never a throw or a default', () => {
+  const failing = (what) => () => { throw new Error(`${what} failed`); };
+  const m = { ...manager({ summaries: { S: { sourceIds: ['1', '2'] } } }), getSummary: failing('summary') };
+  assert.deepEqual(named(check(m, ['s:S@1', 'r:3', 'r:4'])).filter(([v]) => v === 'unreadable'), [['unreadable', 'getSummary(S): summary failed; what depends on it wasn\'t judged']]);
+  assert.deepEqual(named(check({ ...manager(), getStrategy: failing('strategy') }, ['r:1', 'r:2', 'r:3', 'r:4'])), [['unreadable', 'getStrategy: strategy failed; budget wasn\'t judged']]);
+  assert.deepEqual(named(check(manager(), ['r:1', 'r:2', 'r:3', 'r:4'], { compresses: { unreadable: 'strategy failed' } })), [['unreadable', 'getStrategy: strategy failed; coverage wasn\'t judged']]);
 });

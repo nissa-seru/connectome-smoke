@@ -55,25 +55,47 @@ test('module: a take covers an agent that compiled and has left the registry onc
   assert.deepEqual(after.store, {}, 'once, then forgotten');
 });
 
-test('module: with recording off it wraps no compile and its take is empty, while its reads still answer', async () => {
+test('module: with recording off it wraps no agent compile and records no compile, yet counts every manager\'s ticks, and its reads still answer', async () => {
   const boot = (record) => {
     const module = new HarnessModule('/nowhere', { record });
     module.connect = () => {};
     const Own = class extends Manager {};
     const manager = new Own();
-    const Agent = class { getContextManager() { return manager; } };
+    const Agent = class { compileWithInjections() {} compileContext() {} getContextManager() { return manager; } };
+    const originals = { compileWithInjections: Agent.prototype.compileWithInjections, compileContext: Agent.prototype.compileContext };
     const agent = Object.assign(new Agent(), { name: 'fixture' });
     module.setFramework({ getPrimaryAgentName: () => 'fixture', getAgent: (name) => (name === 'fixture' ? agent : null), listAgents: () => [{ name: 'fixture' }] });
-    return [module, manager];
+    return { module, manager, Own, Agent, originals };
   };
-  const [off, offManager] = boot(false);
-  await offManager.compile();
-  assert.deepEqual(await off.answer({ op: 'take' }), { lines: [], store: {}, blobs: {} });
-  assert.deepEqual((await off.answer({ op: 'messages', agent: 'fixture' })).map((m) => m.canaries), [['[[c:a.in]]']]);
-  assert.deepEqual(await off.answer({ op: 'state', agent: 'fixture' }), { maxLevel: 0 });
-  const [on, onManager] = boot(true);
-  await onManager.compile();
-  const taken = await on.answer({ op: 'take' });
+  const off = boot(false);
+  for (const [name, original] of Object.entries(off.originals)) assert.equal(off.Agent.prototype[name], original, `${name} isn't wrapped`);
+  await off.manager.compile();
+  assert.deepEqual(off.module.lines, [], 'no line is recorded, not only none handed over');
+  let finish;
+  const strategy = { tick: () => new Promise((resolve) => { finish = resolve; }) };
+  const second = new off.Own();
+  second.getStrategy = () => strategy;
+  await second.compile();
+  const ticking = strategy.tick();
+  assert.equal(off.module.ticksInFlight(second), 1, 'a second manager\'s tick, watched from its compile');
+  finish();
+  await ticking;
+  assert.equal(off.module.ticksInFlight(second), 0);
+  assert.deepEqual((await off.module.answer({ op: 'messages', agent: 'fixture' })).map((m) => m.canaries), [['[[c:a.in]]']]);
+  assert.deepEqual(await off.module.answer({ op: 'state', agent: 'fixture' }), { maxLevel: 0 });
+  const on = boot(true);
+  for (const [name, original] of Object.entries(on.originals)) assert.notEqual(on.Agent.prototype[name], original, `${name} is wrapped with recording on`);
+  await on.manager.compile();
+  const taken = await on.module.answer({ op: 'take' });
   assert.equal(taken.lines.length, 1, 'the same compile, recorded');
   assert.ok(taken.store.fixture);
+});
+
+test('module: a compile\'s view member another agent\'s slot holds is read from that agent\'s manager', async () => {
+  const shared = new Manager();
+  shared.messages = [{ id: 9, sequence: 9, content: [{ type: 'text', text: '[[c:a.chat]] hi' }] }];
+  const [module, Own] = harness({ listAgents: () => [{ name: 'fixture' }, { name: 'reader' }], getAgent: (name) => (name === 'fixture' ? { getContextManager: () => shared } : null) });
+  const reader = new Own();
+  assert.deepEqual(module.elsewhere(reader, ['9', '10']), { found: shared.messages, unfound: ['10'] });
+  assert.deepEqual(module.elsewhere(shared, ['9']), { found: [], unfound: ['9'] }, 'never its own slot');
 });

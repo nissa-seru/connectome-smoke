@@ -125,6 +125,10 @@ test('S3: arguments the server cannot honour get an error result naming what is 
       [{ kind: 'prose', size: 1e9, canary: 'C' }, /size/],
       [{ kind: 'image', canary: 'C' }, /width/],
       [{ kind: 'image', width: 0, height: 4, canary: 'C' }, /width/],
+      [{ kind: 'image', width: 2049, height: 4, canary: 'C' }, /width/],
+      [{ kind: 'image', width: 4, height: 2049, canary: 'C' }, /height/],
+      [{ kind: 'mixed', width: 2049, height: 4, size: 100, canary: 'C' }, /width/],
+      [{ kind: 'mixed', width: 4, height: 2049, size: 100, canary: 'C' }, /height/],
     ];
     for (const [args, names] of cases) {
       const r = await h.call(args);

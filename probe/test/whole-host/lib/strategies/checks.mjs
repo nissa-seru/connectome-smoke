@@ -30,18 +30,21 @@ export function compileInvariants(log = []) {
   return withJudged(flags, judged);
 }
 
+const BINDING_BETA = 'thinking-binding-controls-2026-08-01';
+
 export function bindingControl(records) {
   const asked = records.filter((r) => r.kind === 'agent');
-  const flags = asked
-    .filter((r) => r.thinking?.block_binding?.prefix_mismatch_behavior !== 'drop_block')
-    .map((r) => ({ check: 15, step: r.step ?? 'the run', what: 'no-drop-control', message: `request ${r.id} carries no drop control (its thinking setting: ${JSON.stringify(r.thinking ?? null)})` }));
+  const flags = asked.flatMap((r) => [
+    ...(r.thinking?.block_binding?.prefix_mismatch_behavior !== 'drop_block' ? [{ check: 15, step: r.step ?? 'the run', what: 'no-drop-control', message: `request ${r.id} carries no drop control (its thinking setting: ${JSON.stringify(r.thinking ?? null)})` }] : []),
+    ...(!(r.head?.headers?.beta ?? []).includes(BINDING_BETA) ? [{ check: 15, step: r.step ?? 'the run', what: 'no-binding-beta', message: `request ${r.id} doesn't ask for the ${BINDING_BETA} beta the control needs (its anthropic-beta: ${JSON.stringify(r.head?.headers?.beta ?? null)})` }] : []),
+  ]);
   return withJudged(flags, asked.length);
 }
 
 export function pairing(records, log = [], agent = FIXTURE_AGENT) {
   const paired = requestPairs(records, log, agent);
   if (!paired) return withJudged([], 0);
-  return withJudged(paired.unpaired.map((l) => ({ check: 13, step: l.step ?? 'the run', what: `${agent}:unpaired`, message: `${agent}'s request compile ${l.seq} (assembly ${l.assembly}) went out in no request the stand-in received: a compile agent-framework never sent, or a pairing that went wrong` })), paired.pairs.length);
+  return withJudged(paired.unpaired.map((l) => ({ check: 13, step: l.step ?? 'the run', what: `${agent}:unpaired`, message: `${agent}'s request compile ${l.seq} (assembly ${l.assembly}) went out in no request the stand-in received at its step: a compile agent-framework never sent, or a pairing that went wrong` })), paired.pairs.length + paired.unpaired.length);
 }
 
 export function reloads(log = []) {
@@ -159,7 +162,8 @@ export function assemblies(log = [], agent = FIXTURE_AGENT) {
 }
 
 // agent-framework restarts a stream by compiling again, and a passthrough's restart sends what a continuation round
-// would, so only the compile lines tell the two apart.
+// would, so only the compile lines tell the two apart. A windowed reader's compile can carry no canary at all, a wake
+// notice alone, and its request then carries none either.
 export function requestPairs(records, log = [], agent = FIXTURE_AGENT, { side = agent === FIXTURE_AGENT ? 'primary' : 'sub' } = {}) {
   const sent = assemblies(log, agent).filter((l) => l.outcome === 'compiled');
   if (!sent.length) return null;
@@ -172,16 +176,25 @@ export function requestPairs(records, log = [], agent = FIXTURE_AGENT, { side = 
     return null;
   };
   const requestCanary = (r) => (r.messages ?? []).flatMap((m) => (m.blocks ?? []).flatMap((b) => b.canaries ?? [])).at(-1) ?? null;
+  const waiting = new Map();
+  for (const l of sent) waiting.set(l.step, [...(waiting.get(l.step) ?? []), l]);
   const pairs = [];
   const continuations = [];
-  let next = 0;
   for (const r of records) {
     if (r.kind !== 'agent' || (r.agent ?? 'primary') !== side) continue;
+    const queue = waiting.get(r.step) ?? [];
     const here = requestCanary(r);
-    if (next < sent.length && here !== null && lineCanary(sent[next]) === here) pairs.push({ line: sent[next++], request: r });
-    else continuations.push(r);
+    const at = queue.findIndex((l) => lineCanary(l) === here);
+    if (at < 0) { continuations.push(r); continue; }
+    queue.splice(0, at);
+    pairs.push({ line: queue.shift(), request: r });
   }
-  return { pairs, continuations, unpaired: sent.slice(next) };
+  const paired = new Set(pairs.map((p) => p.line));
+  return { pairs, continuations, unpaired: sent.filter((l) => !paired.has(l)) };
+}
+
+export function compilingAgents(log = []) {
+  return [...new Set(log.filter((e) => e.kind === 'compiles').flatMap((e) => (e.lines ?? []).filter((l) => l.kind === 'request' && l.outcome === 'compiled').map((l) => l.agent)))];
 }
 
 export function compileKinds(records, log = [], agent = FIXTURE_AGENT) {
@@ -326,9 +339,12 @@ export function windowsRaw(records, script, log, store, { agent = FIXTURE_AGENT,
   const checkpointed = new Set(log.filter((e) => e.kind === 'checkpoint').map((e) => e.name));
   const order = store ? store.messages.flatMap((m) => m.canaries.filter(conversational)) : [];
   const at = new Map(order.map((c, i) => [c, i]));
-  const suppressed = new Set(script.filter((s) => s.op === 'suppress' || s.kind === 'suppress').flatMap((s) => (s.messages ?? []).map((m) => m.canary)).filter(Boolean));
+  const stepAt = new Map(script.map((s, i) => [s.id, i]));
+  const suppressedAt = new Map();
+  script.forEach((s, i) => { if (s.op === 'suppress' || s.kind === 'suppress') for (const m of s.messages ?? []) if (m.canary && !suppressedAt.has(m.canary)) suppressedAt.set(m.canary, i); });
+  const suppressed = (c, stepId) => suppressedAt.has(c) && suppressedAt.get(c) < (stepAt.get(stepId) ?? Infinity);
   const failed = new Set(log.filter((e) => e.kind === 'ipc' && /^inference:(failed|exhausted)$/.test(e.event?.type ?? '')).map((e) => e.step));
-  const held = (c, stepId) => (store ? at.has(c) : !suppressed.has(c) && !(failed.has(stepId) && /\.r\d+\]\]$/.test(c)));
+  const held = (c, stepId, at_ = stepId) => (store ? at.has(c) : !suppressed(c, at_) && !(failed.has(stepId) && /\.r\d+\]\]$/.test(c)));
   const asked = new Map();
   for (const r of records) {
     if (!own(r)) continue;
@@ -351,7 +367,7 @@ export function windowsRaw(records, script, log, store, { agent = FIXTURE_AGENT,
       }
     }
     for (const t of before.get(r.step)) {
-      const wanted = [`[[c:${t.id}.in]]`, ...t.replies.map((_, k) => `[[c:${t.id}.r${k + 1}]]`)].filter((c) => held(c, t.id));
+      const wanted = [`[[c:${t.id}.in]]`, ...t.replies.map((_, k) => `[[c:${t.id}.r${k + 1}]]`)].filter((c) => held(c, t.id, r.step));
       heldTo += wanted.length;
       const missing = wanted.filter((c) => !carried.has(c));
       if (missing.length) flags.push({ check: 6, step: r.step, request: r.id, message: `the recent window lacks ${missing.join(' ')}` });
@@ -460,7 +476,6 @@ export function bookkeeping(records, store) {
     if (!s) continue;
     const unread = s.sourceIds.filter((id) => !(s.sourceLevel === 0 ? messages.has(id) : byId.has(id)));
     if (unread.length) { flags.push({ check: 5, step: r.step, request: r.id, what: 'unread-source', message: `summary ${number} (${s.id}) has ${unread.length} source(s) the store read doesn't hold: ${unread.slice(0, 5).join(', ')}` }); continue; }
-    judged++;
     const sentCanaries = new Set(r.sent?.canaries || []);
     const sentSummaries = new Set(r.sent?.summaries || []);
     const shown = (child, seen = new Set()) => {
@@ -471,14 +486,21 @@ export function bookkeeping(records, store) {
       return child.covers.filter(conversational).every((c) => sentCanaries.has(c));
     };
     const unseen = [];
+    let held = 0;
     for (const id of s.sourceIds) {
       if (s.sourceLevel === 0) {
         const own = messages.get(id).canaries.filter(conversational);
+        if (!own.length) continue;
+        held++;
         if (own.some((c) => !sentCanaries.has(c))) unseen.push(id);
       } else {
-        if (!shown(byId.get(id))) unseen.push(id);
+        const child = byId.get(id);
+        if (!child.number && !child.covers.some(conversational)) continue;
+        held++;
+        if (!shown(child)) unseen.push(id);
       }
     }
+    if (held) judged++;
     if (unseen.length) flags.push({ check: 5, step: r.step, request: r.id, message: `summary ${number} (${s.id}, L${s.level}) declares ${unseen.length} source(s) its request didn't show: ${unseen.slice(0, 5).join(', ')}` });
   }
   return withJudged(flags, judged);

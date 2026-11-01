@@ -65,9 +65,16 @@ export function readSummaries(manager, name = (id) => String(id)) {
   return out;
 }
 
-export function readCompile(manager, compiled, messages) {
-  const stored = readable(() => manager.getAllMessages());
-  if (isUnreadable(stored)) return stored;
+// agent-framework's Subconscious reader merges the residents' shared slot into its view read-only, so its compiles
+// send messages its own slot doesn't hold; a view member is read from the registered agent whose slot holds it.
+function readCompile(manager, compiled, messages, elsewhere) {
+  const own = readable(() => manager.getAllMessages());
+  if (isUnreadable(own)) return own;
+  const ownIds = new Set(own.map((m) => String(m.id)));
+  const members = (compiled?.provenance?.layout?.memberIds ?? []).map(String).filter((id) => !ownIds.has(id));
+  const { found = [], unfound = members } = members.length && elsewhere ? elsewhere(members) : {};
+  const stored = [...own, ...found];
+  const failed = unfound.length ? [`view members no registered agent's slot holds: ${unfound.slice(0, 8).join(', ')}`] : [];
   const inOrder = [...stored].sort((a, b) => a.sequence - b.sequence);
   const bodyOf = new Map();
   const membersOf = new Map();
@@ -87,7 +94,11 @@ export function readCompile(manager, compiled, messages) {
   const leaves = (summaryId) => {
     if (expanded.has(summaryId)) return expanded.get(summaryId);
     expanded.set(summaryId, []);
-    const s = manager.getSummary(summaryId);
+    const s = readable(() => manager.getSummary(summaryId));
+    if (isUnreadable(s)) {
+      failed.push(`getSummary(${summaryId}): ${s.unreadable}`);
+      return [];
+    }
     const out2 = [];
     if (s) for (const src of s.sourceIds ?? []) out2.push(...(s.sourceLevel === 0 ? [String(src)] : leaves(String(src))));
     const set = [...new Set(out2)];
@@ -115,57 +126,32 @@ export function readCompile(manager, compiled, messages) {
   // A raw copy of a body holds a shard when it carries every shard (context-manager marks one that
   // doesn't `!shards`; `!content` alone is every shard, altered), or when it carries that shard's text
   // (a shard with no text, by any raw copy of its body).
+  const partlyHeld = new Set();
+  for (const [body, copy] of raw) {
+    if (copy.everyShard) continue;
+    let from = 0;
+    for (const m of [...(membersOf.get(body) ?? [])].sort((x, y) => (x.shardIndex ?? 0) - (y.shardIndex ?? 0))) {
+      const text = textOf(m);
+      const at = text.length === 0 ? from : copy.text.indexOf(text, from);
+      if (at < 0) continue;
+      partlyHeld.add(String(m.id));
+      from = at + text.length;
+    }
+  }
   const held = (body, m) => {
     const copy = raw.get(body);
-    if (!copy) return false;
-    const own = textOf(m);
-    return copy.everyShard || own.length === 0 || copy.text.includes(own);
+    return !!copy && (copy.everyShard || partlyHeld.has(String(m.id)));
   };
-  return { stored, inOrder, bodyOf, membersOf, sequenceOf, leaves, blocks, textOf, sent, raw, summariesSent, bySummary, held };
+  return { stored, inOrder, bodyOf, membersOf, sequenceOf, leaves, blocks, textOf, sent, raw, bySummary, held, failed };
 }
 
-export function compileLedger(read, messages) {
-  if (isUnreadable(read)) return read;
-  const { inOrder, bodyOf, bySummary, held } = read;
-  const levels = new Map();
-  for (const m of messages) {
-    for (const s of m.sources) {
-      if (!s.startsWith('s:')) continue;
-      const [id, level] = s.slice(2).replace('~', '').split('@');
-      levels.set(id, Number(level));
-    }
-  }
-  const at = new Map(inOrder.map((m, i) => [String(m.id), i]));
-  const spans = (ids) => {
-    const out = [];
-    for (const id of ids) {
-      const last = out.at(-1);
-      if (last && at.get(id) === at.get(last[1]) + 1) { last[1] = id; last[2]++; } else out.push([id, id, 1]);
-    }
-    return out;
-  };
-  const raw = [], out = [], under = new Map();
-  for (const m of inOrder) {
-    const id = String(m.id);
-    const summaries = bySummary.get(id) ?? [];
-    const isRaw = held(bodyOf.get(id), m);
-    if (isRaw) raw.push(id);
-    for (const s of summaries) under.set(s, [...(under.get(s) ?? []), id]);
-    if (!isRaw && !summaries.length) out.push(id);
-  }
-  const summarised = new Set([...under.values()].flat());
-  return {
-    raw: spans(raw),
-    summaries: [...under].map(([id, ids]) => [id, levels.get(id) ?? null, spans(ids)]),
-    out: spans(out),
-    counts: { raw: raw.length, summarised: summarised.size, out: out.length },
-  };
-}
-
-export function checkCompile(manager, budget, compiled, messages, { compresses: compressing = true, read = readCompile(manager, compiled, messages) } = {}) {
+export function checkCompile(manager, budget, compiled, messages, { compresses = true, elsewhere } = {}) {
   const out = [];
+  const read = readCompile(manager, compiled, messages, elsewhere);
   if (isUnreadable(read)) return [{ invariant: 'unreadable', detail: `getAllMessages: ${read.unreadable}; no invariant was judged` }];
-  const { stored, inOrder, bodyOf, membersOf, sequenceOf, leaves, blocks, textOf, sent, raw, bySummary, held } = read;
+  const { stored, inOrder, bodyOf, membersOf, sequenceOf, leaves, blocks, textOf, sent, raw, bySummary, held, failed } = read;
+  if (isUnreadable(compresses)) out.push({ invariant: 'unreadable', detail: `getStrategy: ${compresses.unreadable}; coverage wasn't judged` });
+  const compressing = compresses === true;
   const uncovered = [], twice = [], beside = [];
   for (const [body, members] of membersOf) {
     const lost = compressing ? members.filter((m) => !bySummary.has(String(m.id)) && !held(body, m)) : [];
@@ -212,10 +198,11 @@ export function checkCompile(manager, budget, compiled, messages, { compresses: 
   // context-manager's grace is 0.02 when `overBudgetGraceRatio` is unset. The count is the compile's own
   // `renderStats`, since in a host another compile of the same manager can finish before this line is written.
   const configured = readable(() => manager.getStrategy().config ?? {});
+  if (isUnreadable(configured)) out.push({ invariant: 'unreadable', detail: `getStrategy: ${configured.unreadable}; budget wasn't judged` });
   const config = isUnreadable(configured) ? {} : configured;
   const rendered = compiled?.renderStats ?? readable(() => manager.getRenderStats());
   if (isUnreadable(rendered)) out.push({ invariant: 'unreadable', detail: `getRenderStats: ${rendered.unreadable}; budget wasn't judged` });
-  const tokens = !isUnreadable(rendered) && rendered?.total?.tokens;
+  const tokens = !isUnreadable(configured) && !isUnreadable(rendered) && rendered?.total?.tokens;
   const input = budget.maxTokens - (budget.reserveForResponse ?? 0);
   const grace = Math.max(0, config.overBudgetGraceRatio ?? 0.02);
   if (config.enforceBudget !== false && typeof tokens === 'number' && tokens > Math.floor(input * (1 + grace))) {
@@ -300,6 +287,7 @@ export function checkCompile(manager, budget, compiled, messages, { compresses: 
       }
     }
   }
+  for (const f of failed) out.push({ invariant: 'unreadable', detail: `${f}; what depends on it wasn't judged` });
   return dedupe(out);
 }
 

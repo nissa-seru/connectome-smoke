@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { changedRequests, stepSummary, summaryTable, viewOf } from '../lib/view.mjs';
+import { changedRequests, STEP_SUMMARY_BYTES, stepSummary, summaryTable, viewOf } from '../lib/view.mjs';
 
 const lines = (...xs) => xs.map(([text, request = null]) => ({ text, request }));
 const text = (...xs) => `${xs.join('\n')}\n`;
@@ -31,6 +31,7 @@ test('the summary has a row per run, naming what changed, with a count it wasn\'
     { run: 'H3/W4', record: 'differs', changed: { requests: ['r3', 'r4'], added: 3, removed: 2 }, counts: {} },
   ]).split('\n');
   assert.equal(table.length, 4);
+  assert.equal(table[0], '| run | record | request compiles | refused | compressions | merges | quarantines | ledger of | raw | summarised | left out | tokens sent | invariant lines |');
   assert.equal(table[1], '|---|---|---:|---:|---:|---:|---:|---|---:|---:|---:|---:|---:|', 'counts align right, the agent\'s name left');
   assert.equal(table[2], '| H1/W1 | same | 70 | 0 | 12 | 3 | 0 | fixture | 20 | 40 | 10 | 123456 | 0 |');
   assert.equal(table[3], '| H3/W4 | differs: 2 request(s), +3 -2 line(s) | ? | ? | ? | ? | ? | ? | ? | ? | ? | ? | ? |');
@@ -67,4 +68,11 @@ test('a changed request\'s heading keeps its record line short, since the line i
   const view = viewOf({ run: 'R', record: 'differs', changed: { requests: ['r1'], added: 1, removed: 1, unattributed: 0 }, lines: lines([long, 'r1']), ledger: () => [], transcript: () => [] });
   const heading = view.split('\n').find((l) => l.startsWith('### r1: '));
   assert.equal(heading, `### r1: \`${long.trim().slice(0, 199)}…\``);
+});
+
+test('the step summary counts bytes, not characters, against GitHub\'s 1 MiB for a step', () => {
+  assert.equal(STEP_SUMMARY_BYTES, 1_048_576);
+  const wide = { run: 'a', path: 'a/view.md', text: `a:${'é'.repeat(600)}\n` };
+  const out = stepSummary({ table: 'T', views: [wide], budget: 1000 });
+  assert.equal(out, "T\n\nThe view of a (1203 bytes) didn't fit within this summary's 1000 bytes: it's a/view.md in the job's evidence.\n", '603 characters, but 1,203 bytes');
 });

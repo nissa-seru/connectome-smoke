@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { renderRecord, renderRecordLines } from '../lib/record.mjs';
+import { changedRequests } from '../lib/view.mjs';
 
 const header = { configuration: 'H1/W1', release: { tag: 'v0.0.1', versions: { '@animalabs/connectome-host': '0.0.1' } }, from: 'empty', candidate: { versions: { '@animalabs/connectome-host': '0.0.2' } } };
 const text = (t) => ({ participant: 'user', content: [{ type: 'text', text: t }] });
@@ -209,4 +210,79 @@ test('a turn\'s compile comes before its rounds, as the stand-in received them, 
   assert.deepEqual(body, ['  compile q.1.in', '  round + q.1.r1 q.1.call1', '  round + q.1.r2 q.1.call2']);
   const rounds = lines.filter((l) => l.round);
   assert.deepEqual(rounds.map((l) => l.compile?.seq), [1, 1], 'each round belongs to the compile that sent its turn');
+});
+
+test('the thinking a store reported holds across batches, and a message reported again without the bit has none', () => {
+  const reply = (c, withThinking) => ({ participant: 'fixture', content: [...(withThinking ? [{ type: 'thinking', thinking: 'hm', signature: 's' }] : []), { type: 'text', text: `[[c:${c}]] ok` }] });
+  const b = { u1: text('[[c:q.1.in]] a'), r1: reply('q.1.r1', true), r1bare: reply('q.1.r1', false), u2: text('[[c:q.2.in]] b'), r2: reply('q.2.r1', false) };
+  const sent = [m(1, 'u1'), m(2, 'r1bare'), m(3, 'u2'), m(4, 'r2')];
+  const lg = [
+    { kind: 'compiles', step: 'q.1', blobs: b, store: { fixture: { messages: [['1', ['[[c:q.1.in]]']], ['2', ['[[c:q.1.r1]]'], { thinking: true }], ['3', ['[[c:q.2.in]]']], ['4', ['[[c:q.2.r1]]']]] } }, lines: [line(1, [m(1, 'u1'), m(2, 'r1'), m(3, 'u2'), m(4, 'r2')])] },
+    { kind: 'compiles', step: 'q.2', blobs: {}, lines: [line(2, sent)] },
+    { kind: 'compiles', step: 'q.3', blobs: {}, store: { fixture: { messages: [['2', ['[[c:q.1.r1]]']]] } }, lines: [line(3, sent)] },
+  ];
+  const compiles = renderRecord({ header, log: lg, records: [], end: { ok: true } }).split('\n').filter((x) => x.startsWith('  compile'));
+  assert.deepEqual(compiles, [
+    '  compile q.1.in-q.2.r1',
+    '  compile q.1.in q.1.r1:no-thinking q.2.in-q.2.r1',
+    '  compile q.1.in-q.2.r1',
+  ], 'the bit from the first batch marks the second; the third batch\'s report without it clears it');
+});
+
+test('a body sent without all its shards says so and stands outside any range', () => {
+  const b = { u1: text('[[c:q.1.in]] a'), r1: { participant: 'fixture', content: [{ type: 'text', text: '[[c:q.1.r1]] ok' }] }, u2: text('[[c:q.2.in]] b'), r2: { participant: 'fixture', content: [{ type: 'text', text: '[[c:q.2.r1]] ok' }] } };
+  const lg = [{ kind: 'compiles', step: 'q.1', blobs: b, lines: [line(1, [m(1, 'u1'), m(2, 'r1'), { sources: ['r:3!shards'], content: 'u2' }, m(4, 'r2')])] }];
+  const compile = renderRecord({ header, log: lg, records: [], end: { ok: true } }).split('\n').find((x) => x.startsWith('  compile'));
+  assert.equal(compile, '  compile q.1.in-q.1.r1 q.2.in!shards q.2.r1');
+});
+
+test('a stack text up to 4,096 bytes is written whole, and a longer one as its hash, size, head and tail', () => {
+  const block = (n) => {
+    const lg = [{ kind: 'compiles', step: 'q.1', blobs: { u1: text('[[c:q.1.in]] a'), t1: text('x'.repeat(n)) }, lines: [line(1, [m(1, 'u1'), m(2, 't1')])] }];
+    return renderRecord({ header, log: lg, records: [], end: { ok: true } }).split('\n').find((l) => l.startsWith('T:user-x'));
+  };
+  assert.equal(block(4096), `T:user-${'x'.repeat(40)} = ${'x'.repeat(4096)}`);
+  assert.match(block(4097), /^T:user-x{40} = \{"bytes":4097,"head":"x{80}","sha256":"[0-9a-f]{16}","tail":"x{80}"\}$/);
+});
+
+test('a store read the recorder couldn\'t make is a line of the record, and the rest of the record still renders', () => {
+  const lg = [
+    { kind: 'compiles', step: 'q.1', blobs: { u1: text('[[c:q.1.in]] a') }, store: { fixture: { messages: { unreadable: 'getAllMessages threw' }, summaries: { unreadable: 'no such reader' } } }, lines: [line(1, [m(1, 'u1')])] },
+  ];
+  const r = renderRecord({ header, log: lg, records: [], end: { ok: true } }).split('\n');
+  assert.ok(r.includes('  unreadable messages: getAllMessages threw'));
+  assert.ok(r.includes('  unreadable summaries: no such reader'));
+  assert.ok(r.includes('  compile q.1.in'));
+});
+
+test('a sent compile names each new head where it changes, and its body hash moves with what it sent, cache markers included', () => {
+  const head = (maxTokens) => ({ model: 'm', maxTokens, toolChoice: null, thinking: null, system: [], tools: [], rest: null });
+  const req = (id, seq, step, h, digest = `d${seq}`, cache = null) => ({ id, seq, kind: 'agent', agent: 'primary', step, stream: true, head: h, messages: [{ role: 'user', digest, blocks: [{ type: 'text', canaries: [`[[c:${step}.in]]`], cache }] }], answer: { shape: 'reply' } });
+  const lg = ['q.1', 'q.2', 'q.3'].flatMap((step, i) => [
+    { kind: 'request', step, request: { id: `a${i + 1}`, kind: 'agent' } },
+    { kind: 'compiles', step, blobs: { [`u${i + 1}`]: text(`[[c:${step}.in]] a`) }, lines: [line(i + 1, [m(i + 1, `u${i + 1}`)])] },
+  ]);
+  const recs = [req('a1', 1, 'q.1', head(100)), req('a2', 2, 'q.2', head(200)), req('a3', 3, 'q.3', head(200))];
+  const compiles = (rs) => renderRecord({ header, log: lg, records: rs, end: { ok: true } }).split('\n').filter((l) => l.startsWith('  compile'));
+  const [c1, c2, c3] = compiles(recs);
+  assert.match(c1, /, head H:[0-9a-f]{8}, body [0-9a-f]{8}$/);
+  assert.match(c2, /, head H:[0-9a-f]{8}, body [0-9a-f]{8}$/);
+  assert.notEqual(c1.match(/H:[0-9a-f]{8}/)[0], c2.match(/H:[0-9a-f]{8}/)[0], 'the second request\'s head differs, and is named');
+  assert.doesNotMatch(c3, /head H:/, 'the third request\'s head is the second\'s, so it isn\'t named again');
+  assert.notEqual(compiles([recs[0], req('a2', 2, 'q.2', head(200), 'dX'), recs[2]])[1], c2, 'a change to a compiled request\'s message moves its line');
+  assert.notEqual(compiles([recs[0], req('a2', 2, 'q.2', head(200), 'd2', '1h'), recs[2]])[1], c2, 'and so does a cache marker on it');
+});
+
+test('the requests a view shows are those whose lines a rendered record moved', () => {
+  const head = { model: 'm', maxTokens: 100, toolChoice: null, thinking: null, system: [], tools: [], rest: null };
+  const req = (id, seq, digest) => ({ id, seq, kind: 'agent', agent: 'primary', step: 'q.1', stream: true, head, messages: [{ role: 'user', digest, blocks: [{ type: 'text', canaries: ['[[c:q.1.in]]'] }] }], answer: { shape: 'reply' } });
+  const lg = [
+    { kind: 'request', step: 'q.1', request: { id: 'a1', kind: 'agent' } },
+    { kind: 'request', step: 'q.1', request: { id: 'a2', kind: 'agent' } },
+    { kind: 'compiles', step: 'q.1', blobs: { u1: text('[[c:q.1.in]] a') }, lines: [line(1, [m(1, 'u1')])] },
+  ];
+  const committed = renderRecord({ header, log: lg, records: [req('a1', 1, 'd1'), req('a2', 2, 'd2')], end: { ok: true } });
+  const moved = renderRecordLines({ header, log: lg, records: [req('a1', 1, 'd1'), req('a2', 2, 'dX')], end: { ok: true } });
+  assert.deepEqual(changedRequests(committed, moved).requests, ['a2']);
+  assert.deepEqual(changedRequests(committed, renderRecordLines({ header, log: lg, records: [req('a1', 1, 'd1'), req('a2', 2, 'd2')], end: { ok: true } })).requests, []);
 });

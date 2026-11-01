@@ -69,12 +69,12 @@ export function renderRecordLines({ header, log, records, end }) {
   for (const b of batches) {
     for (const [agent, st] of Object.entries(b.store ?? {})) {
       const store = storeOf(agent);
-      for (const [id, canaries] of st.messages ?? []) {
+      for (const [id, canaries] of Array.isArray(st.messages) ? st.messages : []) {
         store.ids.add(String(id));
         const c = CANARY.exec(canaries?.[0] ?? '')?.[1];
         if (c) store.canaryOf.set(String(id), c);
       }
-      for (const sm of st.summaries ?? []) store.summaries.set(sm.id, sm);
+      for (const sm of Array.isArray(st.summaries) ? st.summaries : []) store.summaries.set(sm.id, sm);
     }
     for (const l of b.lines ?? []) for (const m of l.messages ?? []) if (m.sources.length === 1 && m.sources[0].startsWith('r:')) storeOf(l.agent).ids.add(m.sources[0].slice(2).split('!')[0]);
   }
@@ -171,9 +171,10 @@ export function renderRecordLines({ header, log, records, end }) {
       return `[${template('system', text.replace(/\d+/g, '#'))}]${numbers.length ? `(${numbers.join(',')})` : ''}${b.cache ? `^${b.cache}` : ''}`;
     }).join(' ') || '-'}`,
     `tools ${(h.tools ?? []).map((t) => `${t.name}:${String(t.sha).slice(0, 8)}`).join(' ') || '-'}`,
+    ...(h.headers ? [`headers beta ${(h.headers.beta ?? []).join('+') || '-'} version ${h.headers.version ?? '-'}`] : []),
     ...(h.rest ? [`rest ${String(h.rest).slice(0, 8)}`] : []),
   ].join(', ');
-  const messagesOf = (r) => (r.messages ?? []).map((m) => ({ role: m.role, digest: m.digest, cache: (m.blocks ?? []).map((b) => b.cache ?? null) }));
+  const messagesOf = (r) => (r.messages ?? []).map((m) => ({ role: m.role, digest: m.digest, cache: (m.blocks ?? []).map((b) => (b.contentCache ? [b.cache ?? null, b.contentCache] : b.cache ?? null)) }));
   const sentNote = (who, r) => {
     const head = r.head ? { ...r.head, stream: r.stream ?? null } : null;
     let note = '';
@@ -247,8 +248,10 @@ export function renderRecordLines({ header, log, records, end }) {
     if (e.kind === 'compiles') {
       for (const [agent, st] of Object.entries(e.store ?? {})) {
         if (st.receiptHead) receipt.set(agent, st.receiptHead);
-        for (const [id, , more] of st.messages ?? []) if (typeof more?.thinking === 'boolean') thinking.set(`${agent} ${id}`, more.thinking);
-        for (const sm of st.summaries ?? []) {
+        const tag = agent === primary ? '' : ` [${agent}]`;
+        for (const part of ['messages', 'summaries']) if (st[part] && !Array.isArray(st[part])) { seen(e.step); at(e.step).push({ text: `  unreadable${tag} ${part}: ${st[part].unreadable ?? 'not a list'}` }); }
+        for (const [id, , more] of Array.isArray(st.messages) ? st.messages : []) thinking.set(`${agent} ${id}`, more?.thinking === true);
+        for (const sm of Array.isArray(st.summaries) ? st.summaries : []) {
           const was = known.get(`${agent} ${sm.id}`);
           const now = canonical({ level: sm.level, sources: sm.sources, content: sm.content, parent: sm.parent ?? null });
           known.set(`${agent} ${sm.id}`, now);

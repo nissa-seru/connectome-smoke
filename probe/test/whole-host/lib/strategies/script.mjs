@@ -132,7 +132,7 @@ export function products(configuration) {
       { name: 'the tool round\'s image as its placeholder', test: (r) => r.kind === 'agent' && r.messages.some((m) => m.blocks.some((b) => b.type === 'tool_result' && (b.canaries || []).includes(imageCall) && !b.images && b.placeholders > 0)) },
     ],
     'thinking-call': [
-      { name: 'the call\'s request carrying the reply\'s thinking', test: (r) => r.kind === 'agent' && r.messages.some((m) => m.role === 'assistant' && m.blocks.some((b) => b.type === 'thinking' && typeof b.signature === 'string' && b.signature.startsWith('fx1.'))) },
+      { name: 'the call\'s request carrying the reply\'s thinking', test: (r) => r.kind === 'agent' && r.messages.some((m) => m.role === 'assistant' && thinkingLedCalls(m).some((id) => resultFor(r, id))) },
     ],
     debt: summarises
       ? [
@@ -146,6 +146,13 @@ export function products(configuration) {
 }
 
 const resultsIn = (message) => (message?.blocks || []).filter((b) => b.type === 'tool_result').length;
+
+function thinkingLedCalls(message) {
+  const thought = message.blocks.findIndex((b) => b.type === 'thinking' && typeof b.signature === 'string' && b.signature.startsWith('fx1.'));
+  return thought < 0 ? [] : message.blocks.slice(thought + 1).filter((b) => b.type === 'tool_use').map((b) => b.toolUseId);
+}
+
+const resultFor = (record, id) => record.messages.some((m) => m.role === 'user' && m.blocks.some((b) => b.type === 'tool_result' && b.toolUseId === id));
 
 function storedInParts(store, input) {
   const first = store.messages.find((m) => m.canaries.includes(input));

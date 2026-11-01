@@ -94,3 +94,5 @@ export function stackVersions(hostDir, { installDir, registry } = {}) {
   out.bun = bun.status === 0 ? bun.stdout.trim() : null;
   return out;
 }
+
+export const keptWhole = (dir) => existsSync(join(dir, 'checkpoint.json')) && existsSync(join(dir, 'store')) && existsSync(join(dir, 'answers'));

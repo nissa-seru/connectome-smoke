@@ -1,6 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { maskRunVarying } from '../lib/strategies/compare.mjs';
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { maskRunVarying, runVaryingMasker, sameBodies } from '../lib/strategies/compare.mjs';
 
 const sameAcrossRuns = (a, b) => JSON.stringify(maskRunVarying(a)) === JSON.stringify(maskRunVarying(b));
 
@@ -45,4 +48,30 @@ test('N12: any other difference compares unequal, the ref\'s sequence number and
   assert.equal(sameAcrossRuns(signed('fx1.YYYY'), signed('fx1.ZZZZ')), false, 'a signature on a block that isn\'t thinking');
   const { model, ...rest } = a;
   assert.equal(sameAcrossRuns(a, { ...rest, model }), false, 'the order of keys');
+});
+
+test('a fork\'s UUID is named by its first appearance in what one masker reads, so a call and a result that disagree still differ', () => {
+  const pair = (callUuid, resultUuid) => [
+    { role: 'assistant', content: [{ type: 'tool_use', id: `fork-w9-${callUuid}`, name: 'subagent--fork', input: {} }] },
+    { role: 'user', content: [{ type: 'tool_result', tool_use_id: `fork-w9-${resultUuid}`, content: 'forked' }] },
+  ];
+  const a = 'd5641659-0a1b-4c2d-8e3f-123456789abc';
+  const b = '7271e5fa-9f8e-4d7c-b6a5-cba987654321';
+  const masked = (messages) => { const mask = runVaryingMasker(); return JSON.stringify(messages.map(mask)); };
+  assert.equal(masked(pair(a, a)), masked(pair(b, b)), 'the same pairing under another run\'s UUID');
+  assert.notEqual(masked(pair(a, a)), masked(pair(a, b)), 'a result naming another fork than its call');
+});
+
+test('the self-check compares two arms\' request bodies in order, and names the pair where they first differ', () => {
+  const arm = (bodies) => { const d = mkdtempSync(join(tmpdir(), 'arm-')); bodies.forEach((b, i) => writeFileSync(join(d, `r${i + 1}.json`), JSON.stringify(b))); writeFileSync(join(d, 'r1.answer.json'), '[]'); return d; };
+  const on = arm([body(), body({ text: 'two [[c:c.chat.in]]' })]);
+  const same = arm([body({ nonce: 'nai651' }), body({ text: 'two [[c:c.chat.in]]', nonce: 'q0q0q0' })]);
+  const off = arm([body(), body({ text: 'twO [[c:c.chat.in]]' })]);
+  try {
+    assert.deepEqual(sameBodies(on, same), { outcome: 'same', requests: 2 }, 'answers aren\'t compared, and what differs by design is masked');
+    const differs = sameBodies(on, off);
+    assert.equal(differs.outcome, 'differs');
+    assert.equal(differs.at, 1);
+    assert.deepEqual(differs.files, ['r2.json', 'r2.json'], 'the pair a failing job keeps');
+  } finally { for (const d of [on, same, off]) rmSync(d, { recursive: true, force: true }); }
 });

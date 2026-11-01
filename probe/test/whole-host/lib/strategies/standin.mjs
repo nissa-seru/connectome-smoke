@@ -3,7 +3,7 @@ import { createHash } from 'node:crypto';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { performance } from 'node:perf_hooks';
-import { maskRunVarying } from './compare.mjs';
+import { maskRunVarying, runVaryingMasker } from './compare.mjs';
 import { prose } from './prose.mjs';
 
 // The openings of context-manager's compression instructions (autobiographical.ts, knowledge.ts) and of
@@ -180,7 +180,23 @@ function readSummariser(body, target) {
   };
 }
 
-function normalise(body) {
+const validMarker = (cc) => cc && typeof cc === 'object' && cc.type === 'ephemeral' && (cc.ttl === undefined || cc.ttl === '5m' || cc.ttl === '1h');
+
+function badMarker(body) {
+  const at = [];
+  if (body.cache_control != null) at.push(['cache_control', body.cache_control]);
+  (body.tools || []).forEach((t, i) => { if (t?.cache_control != null) at.push([`tools.${i}.cache_control`, t.cache_control]); });
+  if (Array.isArray(body.system)) body.system.forEach((b, i) => { if (b?.cache_control != null) at.push([`system.${i}.cache_control`, b.cache_control]); });
+  (body.messages || []).forEach((m, i) => blocksOf(m.content).forEach((b, j) => {
+    if (b?.cache_control != null) at.push([`messages.${i}.content.${j}.cache_control`, b.cache_control]);
+    if (b?.type === 'tool_result') blocksOf(b.content).forEach((x, k) => { if (x?.cache_control != null) at.push([`messages.${i}.content.${j}.content.${k}.cache_control`, x.cache_control]); });
+  }));
+  return at.find(([, cc]) => !validMarker(cc))?.[0] ?? null;
+}
+
+const headerValues = (v) => (Array.isArray(v) ? v : v === undefined ? [] : [v]).flatMap((x) => String(x).split(',')).map((x) => x.trim()).filter(Boolean);
+
+function normalise(body, headers, mask) {
   const block = (b) => {
     const text = b.type === 'text' ? b.text || '' : b.type === 'tool_result' ? texts({ messages: [{ content: [b] }] }).join('') : '';
     const out = { type: b.type, chars: b.type === 'text' || b.type === 'tool_result' ? text.length : b.type === 'thinking' ? (b.thinking || '').length : b.type === 'tool_use' ? JSON.stringify(b.input ?? {}).length : b.type === 'image' ? (b.source?.data || '').length : JSON.stringify(b).length };
@@ -193,13 +209,15 @@ function normalise(body) {
       out.toolUseId = b.tool_use_id;
       const images = blocksOf(b.content).filter((x) => x?.type === 'image').length;
       if (images) out.images = images;
+      const inner = blocksOf(b.content).map((x) => (x?.cache_control ? x.cache_control.ttl || '5m' : null));
+      if (inner.some(Boolean)) out.contentCache = inner;
     }
     if (b.cache_control) out.cache = b.cache_control.ttl || '5m';
     if (b.type === 'thinking') out.signature = b.signature ?? null;
     return out;
   };
   const system = typeof body.system === 'string' ? body.system : Array.isArray(body.system) ? body.system.map((b) => b.text || '').join('') : '';
-  const digest = (v) => sha(JSON.stringify(sorted(maskRunVarying(v ?? null)))).slice(0, 16);
+  const digest = (v) => sha(JSON.stringify(sorted(mask(v ?? null)))).slice(0, 16);
   const { messages: _m, model: _o, max_tokens: _x, stream: _s, thinking: _t, tool_choice: _c, system: _y, tools: _l, ...rest } = body;
   const systemBlocks = typeof body.system === 'string' ? [{ type: 'text', text: body.system }] : Array.isArray(body.system) ? body.system : [];
   return {
@@ -208,9 +226,10 @@ function normalise(body) {
       maxTokens: body.max_tokens ?? null,
       toolChoice: body.tool_choice ?? null,
       thinking: body.thinking ?? null,
-      system: systemBlocks.map((b) => ({ text: maskRunVarying(b.text ?? ''), cache: b.cache_control ? b.cache_control.ttl || '5m' : null })),
+      system: systemBlocks.map((b) => ({ text: mask(b.text ?? ''), cache: b.cache_control ? b.cache_control.ttl || '5m' : null })),
       tools: (body.tools || []).map((t) => ({ name: t.name, sha: digest(t) })),
       rest: Object.keys(rest).length ? digest(rest) : null,
+      headers: { beta: [...new Set(headerValues(headers['anthropic-beta']))].sort(), version: headers['anthropic-version'] ?? null },
     },
     model: body.model ?? null,
     maxTokens: body.max_tokens ?? null,
@@ -218,11 +237,11 @@ function normalise(body) {
     thinking: body.thinking ?? null,
     system: { sha256: sha(system), chars: system.length },
     tools: (body.tools || []).map((t) => t.name),
-    messages: (body.messages || []).map((m) => ({ role: m.role, digest: digestOf(m), blocks: blocksOf(m.content).map(block) })),
+    messages: (body.messages || []).map((m) => ({ role: m.role, digest: digestOf(m, mask), blocks: blocksOf(m.content).map(block) })),
   };
 }
 
-const digestOf = (m) => sha(JSON.stringify(maskRunVarying(unmarked({ role: m.role, content: blocksOf(m.content) })))).slice(0, 16);
+const digestOf = (m, mask) => sha(JSON.stringify(mask(unmarked({ role: m.role, content: blocksOf(m.content) })))).slice(0, 16);
 
 export function tokensSent(records) {
   const sum = { input: 0, cacheRead: 0, cacheWrite: 0, output: 0 };
@@ -236,7 +255,7 @@ export function tokensSent(records) {
   return sum;
 }
 
-const summariserTexts = (body) => (body.messages || []).flatMap((m) => blocksOf(m.content).filter((b) => b.type === 'text' && !(b.text || '').match(CANARY)).map((b) => maskRunVarying(b.text || '')));
+const summariserTexts = (body, mask) => (body.messages || []).flatMap((m) => blocksOf(m.content).filter((b) => b.type === 'text' && !(b.text || '').match(CANARY)).map((b) => mask(b.text || '')));
 
 export async function startStandin({ configuration, rawDir = null, refuseMerges = false, rejectMerges = false }) {
   const config = { minCacheTokens: 0, ...configuration };
@@ -377,7 +396,7 @@ export async function startStandin({ configuration, rawDir = null, refuseMerges 
   function answerAgent(res, body, record, reply) {
     const identity = bindingIdentity(body, body.messages.length);
     const content = [];
-    const thinking = reply.thinking ?? (config.thinks ? prose(THINKING_CHARS, parseInt(identity.slice(0, 8), 16)) : undefined);
+    const thinking = reply.thinking ?? (config.thinks ? prose(THINKING_CHARS, parseInt(bindingIdentity(maskRunVarying(body), body.messages.length).slice(0, 8), 16)) : undefined);
     if (thinking !== undefined) content.push({ type: 'thinking', thinking, signature: signatureFor(identity) });
     if (reply.text !== undefined) content.push({ type: 'text', text: reply.text });
     for (const call of reply.calls || []) content.push({ type: 'tool_use', id: call.id ?? `toolu_fx${String(++toolNumber).padStart(6, '0')}`, name: call.name, input: call.input });
@@ -428,8 +447,9 @@ export async function startStandin({ configuration, rawDir = null, refuseMerges 
     const seq = records.length + 1;
     const id = `r${seq}`;
     const { kind, agent, reason } = classify(body);
-    const record = { id, seq, at: Math.round(performance.now() - t0), clock, step: step?.id ?? null, kind, ...(agent ? { agent } : {}), ...(reason ? { reason } : {}), ...(body ? normalise(body) : {}) };
-    if (kind === 'summariser' && body) record.texts = summariserTexts(body);
+    const mask = runVaryingMasker();
+    const record = { id, seq, at: Math.round(performance.now() - t0), clock, step: step?.id ?? null, kind, ...(agent ? { agent } : {}), ...(reason ? { reason } : {}), ...(body ? normalise(body, req.headers, mask) : {}) };
+    if (kind === 'summariser' && body) record.texts = summariserTexts(body, mask);
     records.push(record);
     if (rawDir) writeFileSync(join(rawDir, `${id}.json`), raw);
     for (const cb of listeners) cb({ id, seq, kind, step: record.step, at: record.at, clock });
@@ -442,6 +462,13 @@ export async function startStandin({ configuration, rawDir = null, refuseMerges 
       record.answer = { shape: 'refused' };
       if (kind === 'agent') answered[agent]++;
       return sendError(res, 400, 'max_tokens: Field required');
+    }
+    const marker = badMarker(body);
+    if (marker) {
+      record.refused = 'cache_control';
+      record.answer = { shape: 'refused' };
+      if (kind === 'agent') answered[agent]++;
+      return sendError(res, 400, `${marker}: a cache marker is {"type": "ephemeral"}, with an optional ttl of "5m" or "1h"`);
     }
     const tooLong = countTokens(asRead(body));
     if (tooLong > config.windowTokens) {

@@ -7,7 +7,6 @@ export function hash32(s) {
   return x;
 }
 
-/** Draws in [0, 1), from a number or a string. */
 export function seeded(seed) {
   let a = (typeof seed === 'number' ? seed : hash32(String(seed))) >>> 0;
   return () => {
@@ -18,7 +17,6 @@ export function seeded(seed) {
   };
 }
 
-/** Exactly `chars` characters of sentences, from a seed or a draw function, never ending in a space. */
 export function prose(chars, seed) {
   const r = typeof seed === 'function' ? seed : seeded(seed);
   let s = '';

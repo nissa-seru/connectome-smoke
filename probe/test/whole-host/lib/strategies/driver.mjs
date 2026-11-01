@@ -18,6 +18,8 @@ const COMMAND_MS = 60_000;
 const MAINTAIN_MS = 120_000;
 const SHUTDOWN_MS = 30_000;
 
+const FENCE = 'settle-fence:';
+
 const COMMANDS = {
   session: (lines) => {
     if (lines.some((l) => /^Session renamed to /.test(l))) return 'done';
@@ -252,7 +254,7 @@ export async function runScript({ steps, configuration, standin, hostDir, facts,
     lineReader(b.sock, (e) => {
       const at = wall();
       b.events.push({ at, e });
-      log('ipc', { at, event: e });
+      if (!(e.type === 'snapshot' && String(e.corrId).startsWith(FENCE))) log('ipc', { at, event: e });
       poke();
     });
     await until(() => b.events.some(({ e }) => e.type === 'lifecycle' && e.phase === 'ready'), BOOT_MS, `boot ${b.n}: lifecycle ready`);
@@ -305,6 +307,16 @@ export async function runScript({ steps, configuration, standin, hostDir, facts,
 
   const eventAfter = (from, test) => host.events.slice(from).find(({ e }) => test(e));
 
+  let fences = 0;
+  async function ipcFence() {
+    const t = performance.now();
+    const corrId = `${FENCE}${++fences}`;
+    const from = host.events.length;
+    send(host.sock, { type: 'describe', corrId });
+    await until(() => eventAfter(from, (e) => e.type === 'snapshot' && e.corrId === corrId), COMMAND_MS, 'the IPC answer that ends a settle');
+    return Math.round((performance.now() - t) * 10) / 10;
+  }
+
   async function settle() {
     const started = performance.now();
     let progress = null;
@@ -321,7 +333,8 @@ export async function runScript({ steps, configuration, standin, hostDir, facts,
       const { drained, deferredWrites, activeTurnAgents = [] } = answer?.hostMode ?? {};
       log('settle', { phase: 'pass', pass, ms: Math.round(performance.now() - t), ok: answer?.ok, ran: answer?.maintenance?.ran, runId: answer?.maintenance?.history?.[0]?.id ?? null, agents, drained, deferredWrites, activeTurnAgents, inFlight: read.inFlight, moved: read.moved, ...(ticking.length ? { ticking } : {}) });
       if (read.settled) {
-        log('settle', { phase: 'end', settled: true, passes: pass, ms: Math.round(performance.now() - started) });
+        const fence = await ipcFence();
+        log('settle', { phase: 'end', settled: true, passes: pass, ms: Math.round(performance.now() - started), fenceMs: fence });
         await takeCompiles();
         return pass;
       }
@@ -429,6 +442,7 @@ export async function runScript({ steps, configuration, standin, hostDir, facts,
       fail({ step: step.id, reason: `${step.command} ${outcome}, where the step expects it ${step.expect ?? 'done'}: ${lines().join(' | ').slice(0, 1500)}` });
       throw new RunFailure(`command ${outcome}`);
     }
+    await settle();
   }
 
   async function advance(step) {

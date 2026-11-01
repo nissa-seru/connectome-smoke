@@ -4,7 +4,7 @@ import { spawnSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync, unlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { laneVersion, sourceHash, stackVersions } from '../lib/strategies/lane.mjs';
+import { keptWhole, laneVersion, sourceHash, stackVersions } from '../lib/strategies/lane.mjs';
 
 function tree(files) {
   const root = mkdtempSync(join(tmpdir(), 'fxl-'));
@@ -157,4 +157,15 @@ test('a host that is the checkout itself is named by its version and its source,
     assert.notEqual(a.host, b.host);
     assert.equal(checkout('a').host, a.host, 'the same source names the same host');
   } finally { rmSync(a.root, { recursive: true, force: true }); rmSync(b.root, { recursive: true, force: true }); }
+});
+
+test('a kept checkpoint is used only whole, with its record, its store and the answers its transcripts read', () => {
+  const whole = tree({ 'checkpoint.json': '{}', 'store/x': '', 'answers/r1.answer.json': '[]' });
+  const noAnswers = tree({ 'checkpoint.json': '{}', 'store/x': '' });
+  const noRecord = tree({ 'store/x': '', 'answers/r1.answer.json': '[]' });
+  try {
+    assert.equal(keptWhole(whole), true);
+    assert.equal(keptWhole(noAnswers), false, 'one kept before its answers were, or that lost them, is written again');
+    assert.equal(keptWhole(noRecord), false);
+  } finally { for (const d of [whole, noAnswers, noRecord]) rmSync(d, { recursive: true, force: true }); }
 });

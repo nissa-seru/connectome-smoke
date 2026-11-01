@@ -18,6 +18,8 @@ export function judgedAgent(configuration, log = []) {
   return { agent: name, namespace: `subagent/${name}`, isolate: true };
 }
 
+export const streamBoundFor = (configuration, launched = null) => launched ?? configuration.streamBound ?? configuration.agent?.maxStreamTokens ?? STREAM_BOUND;
+
 export function launchStreamBound(log, agent) {
   const blobs = Object.assign({}, ...log.filter((e) => e.kind === 'compiles').map((e) => e.blobs ?? {}));
   for (const e of log) {
@@ -77,6 +79,6 @@ export async function judge({ records, log, script, storeCopy, configuration, in
   } else if (configuration.summarises !== false && run?.ok) {
     throw new Error('the run succeeded but left no store copy to judge');
   }
-  const checked = runChecks({ records, log, script, products: declared, store, agent: target.agent, streamBound: launched ?? configuration.streamBound ?? configuration.agent?.maxStreamTokens ?? STREAM_BOUND, windowTokens: configuration.windowTokens, binds: configuration.binds === true, adaptive: (configuration.agent?.strategy?.type ?? 'autobiographical') !== 'passthrough' && configuration.agent?.strategy?.adaptiveResolution !== false });
+  const checked = runChecks({ records, log, script, products: declared, store, agent: target.agent, streamBound: streamBoundFor(configuration, launched), windowTokens: configuration.windowTokens, binds: configuration.binds === true, adaptive: (configuration.agent?.strategy?.type ?? 'autobiographical') !== 'passthrough' && configuration.agent?.strategy?.adaptiveResolution !== false });
   return { flags: [...flags, ...checked.flags], missing: checked.missing, headroom: checked.headroom, notes: checked.notes, judged: checked.judged };
 }

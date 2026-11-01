@@ -1,6 +1,7 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { connect } from 'node:net';
 import { lineReader } from './control.mjs';
+import { isUnreadable, readable } from './invariants.mjs';
 import { blobStore, compiledLine, messagesOf, plain, refusedLine, stateOf, storeDelta } from './recorder.mjs';
 
 const CALLER = new AsyncLocalStorage();
@@ -58,10 +59,8 @@ export class HarnessModule {
     const primary = framework.getPrimaryAgentName();
     const agent = primary === null ? null : framework.getAgent(primary);
     if (!agent) throw new Error(`the whole-host harness module found no primary agent to record (getPrimaryAgentName() is ${JSON.stringify(primary)})`);
-    if (this.recording) {
-      this.wrapAgentCompiles(Object.getPrototypeOf(agent));
-      this.wrapManagerCompile(Object.getPrototypeOf(agent.getContextManager()));
-    }
+    if (this.recording) this.wrapAgentCompiles(Object.getPrototypeOf(agent));
+    this.wrapManagerCompile(Object.getPrototypeOf(agent.getContextManager()));
     this.watchTicks(agent.getContextManager());
     this.connect();
   }
@@ -85,11 +84,12 @@ export class HarnessModule {
     const original = proto.compile;
     if (typeof original !== 'function' || original[WRAPPED]) return;
     const wrapped = async function (...args) {
+      module.watchTicks(this);
+      if (!module.recording) return original.apply(this, args);
       const [budget, , opts] = args;
       const caller = CALLER.getStore();
       const own = caller?.manager === this;
       const dry = opts?.dryRun === true;
-      module.watchTicks(this);
       const head = {
         seq: ++module.seq,
         agent: module.agentName(this, own ? caller : null),
@@ -106,7 +106,7 @@ export class HarnessModule {
         module.record(head, () => refusedLine(error, module.blobs));
         throw error;
       }
-      module.record(head, () => compiledLine(this, budget ?? DEFAULT_BUDGET, result, module.blobs));
+      module.record(head, () => compiledLine(this, budget ?? DEFAULT_BUDGET, result, module.blobs, (ids) => module.elsewhere(this, ids)));
       return result;
     };
     wrapped[WRAPPED] = true;
@@ -136,6 +136,24 @@ export class HarnessModule {
       try { p = tick(...args); } catch (error) { counter.inFlight--; throw error; }
       return Promise.resolve(p).finally(() => { counter.inFlight--; });
     };
+  }
+
+  elsewhere(manager, ids) {
+    const wanted = new Set(ids);
+    const found = [];
+    const others = new Set(this.managers.values());
+    for (const record of this.framework?.listAgents() ?? []) {
+      const agent = this.framework.getAgent(record.name);
+      if (agent) others.add(agent.getContextManager());
+    }
+    others.delete(manager);
+    for (const other of others) {
+      if (!wanted.size) break;
+      const messages = readable(() => other.getAllMessages());
+      if (isUnreadable(messages)) continue;
+      for (const m of messages) if (wanted.delete(String(m.id))) found.push(m);
+    }
+    return { found, unfound: [...wanted] };
   }
 
   ticksInFlight(manager) {

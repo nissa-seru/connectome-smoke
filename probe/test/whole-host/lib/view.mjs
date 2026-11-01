@@ -29,11 +29,12 @@ export function changedRequests(committed, lines) {
   return { requests, added: added.length, removed, unattributed: added.filter((k) => !lines[k].request).length };
 }
 
+// GitHub fails a step whose summary passes 1 MiB (docs.github.com/en/actions/reference/workflows-and-actions/workflow-commands#step-isolation-and-limits).
 export const STEP_SUMMARY_BYTES = 1024 * 1024;
 const HEADING_CHARS = 200;
 
 const COLUMNS = [
-  ['compiles sent', (c) => c.counts?.compiles],
+  ['request compiles', (c) => c.counts?.compiles],
   ['refused', (c) => c.counts?.refused],
   ['compressions', (c) => c.counts?.compressions],
   ['merges', (c) => c.counts?.merges],

@@ -5,7 +5,8 @@ import { connect as netConnect } from 'node:net';
 export const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 export function sh(cmd, cmdArgs, { cwd, env = {}, timeout = 600_000, allowFail = false } = {}) {
-  const r = spawnSync(cmd, cmdArgs, { cwd, env: { ...process.env, ...env }, encoding: 'utf-8', timeout });
+  // The commands sh runs (a clone, npm installs, tar reads) wrote at most 1,489 bytes when measured; past 1 MiB it throws ENOBUFS.
+  const r = spawnSync(cmd, cmdArgs, { cwd, env: { ...process.env, ...env }, encoding: 'utf-8', timeout, maxBuffer: 1024 * 1024 });
   if (r.error) throw r.error;
   if (r.status !== 0 && !allowFail) {
     throw new Error(`${cmd} ${cmdArgs.join(' ')} (cwd ${cwd}) exited ${r.status}${r.signal ? ' signal ' + r.signal : ''}\n${(r.stdout + '\n' + r.stderr).trim().slice(-3000)}`);

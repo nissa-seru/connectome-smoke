@@ -54,12 +54,12 @@ test('the expected failures read: none without the file, and an entry missing a 
   assert.throws(() => readExpected(at({ entries: [] }), ['H1/W1']), /isn't a list of entries/);
   const { what, ...noWhat } = good;
   assert.throws(() => readExpected(at([noWhat]), ['H1/W1']), /entry 0: has no what: an entry covers one kind of flag/);
-  assert.throws(() => readExpected(at([{ ...good, match: '^($' }]), ['H1/W1']), /entry 0: has a match that isn't a regular expression/);
   const { match, ...noMatch } = good;
-  assert.throws(() => readExpected(at([noMatch]), ['H1/W1']), /entry 0: has no match: an entry covers exactly one flag/);
-  for (const unanchored of ['m$', '^m', 'm', '^m\\$']) assert.throws(() => readExpected(at([{ ...good, match: unanchored }]), ['H1/W1']), /entry 0: has a match that isn't anchored at both ends/, unanchored);
+  assert.throws(() => readExpected(at([noMatch]), ['H1/W1']), /entry 0: has no match: an entry covers the flags whose whole detail/);
+  for (const loose of ['m$', '^m', 'm', '^m\\$', '^known|other$', '^.*$', '^m+$', '^[mn]$']) assert.throws(() => readExpected(at([{ ...good, match: loose }]), ['H1/W1']), /entry 0: has a match that isn't an escaped literal between \^ and \$/, loose);
+  assert.equal(readExpected(at([{ ...good, match: '^a\\.b \\(c\\) \\$5$' }]), ['H1/W1']).length, 1, 'escaped characters are literal');
   const pins = { ...good, what: 'fixture:request:pins' };
-  assert.equal(readExpected(at([{ ...pins, match: '^allowing L0$' }, { ...pins, match: '^allowing L[1-9]$', finding: 'D39' }]), ['H1/W1']).length, 2, 'entries sharing a key, each with its own match');
+  assert.equal(readExpected(at([{ ...pins, match: '^allowing L0$' }, { ...pins, match: '^allowing L1$', finding: 'D39' }]), ['H1/W1']).length, 2, 'entries sharing a key, each with its own match');
   assert.throws(() => readExpected(at([{ ...pins, match: '^x$' }, { ...pins, match: '^x$', reason: 'again' }]), ['H1/W1']), /entry 1: repeats another entry's configuration, check, step, what and match/);
 });
 
@@ -85,6 +85,9 @@ test('a clamp-edge calibration makes the run invalid, and the first line says so
   const r = perCheckReport({ configuration, candidate: { flags: [flag(10, 'c.cm.cp', 'calibration at the clamp edge (1.8)'), flag(1, 's')], missing: [] } });
   assert.equal(r.verdict, 'invalid');
   assert.match(r.lines[0], /^INVALID: calibration at the clamp edge \(1\.8\)/);
+  const unjudged = perCheckReport({ configuration, candidate: { flags: [{ check: 10, step: 'the run', what: 'judged-none:calibration edge', message: 'couldn\'t judge: check 10 (calibration edge) judged nothing' }], missing: [] } });
+  assert.equal(unjudged.verdict, 'flags', 'a check 10 that judged nothing is a flag, with no claim that folds were clamped');
+  assert.ok(!unjudged.lines.some((l) => /clamped/.test(l)));
 });
 
 test('K1b: the report names each operator alert by its kind, and prints the checks\' notes', () => {
@@ -103,11 +106,34 @@ test('K2d: the checks carry check 3\'s note that the host reported its window go
   const r2 = { ...r1, id: 'r2', messages: [...r1.messages, { role: 'assistant', digest: 'd2', blocks: [{ type: 'tool_use', toolUseId: 't1' }] }, { role: 'user', digest: 'd3', blocks: [] }], answer: { shape: 'reply', toolUseIds: [] } };
   const report = { kind: 'budget-report', boot: 1, lines: ['--- Stream Token Budgets ---', '  fixture: 150.0k (last: 0, 0%); its stream doesn\'t break at this budget mid-turn: for its size, only before a request its 1.0M window can\'t hold'] };
   const checkpoint = { kind: 'checkpoint', name: 's', step: 's.cp', health: { data: { contextComposition: { fixture: { planVsActual: { budgetMet: true } } }, runtimeSettings: { fixture: { effectiveContextBudgetTokens: 20_000 } } } } };
-  const compiled = { kind: 'compiles', lines: [{ seq: 1, agent: 'fixture', kind: 'request', assembly: 1, outcome: 'compiled', messages: [{ sources: ['r:1'], content: 'x1' }] }], blobs: { x1: { role: 'user', content: [{ type: 'text', text: '[[c:a.in]] words' }] } } };
+  const compiled = { kind: 'compiles', step: 'a', lines: [{ seq: 1, agent: 'fixture', kind: 'request', assembly: 1, outcome: 'compiled', messages: [{ sources: ['r:1'], content: 'x1' }] }], blobs: { x1: { role: 'user', content: [{ type: 'text', text: '[[c:a.in]] words' }] } } };
   const log = [compiled, report, { kind: 'request', request: { id: 'r1', kind: 'agent' } }, { kind: 'request', request: { id: 'r2', kind: 'agent' } }, checkpoint];
   const { notes } = runChecks({ records: [r1, r2], log, script: [{ id: 'a', segment: 's' }], products: [], store: null, windowTokens: 1_000_000 });
   assert.equal(notes.length, 1);
   assert.match(notes[0], /window/);
+});
+
+test('check 13 judges every agent that compiles, each with its own count, so a reader\'s compile no request took is a flag', () => {
+  const usage = { input_tokens: 1_000, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 };
+  const req = (id, agent, canary) => ({ id, step: 'a', kind: 'agent', agent, maxTokens: 2_048, usage, messages: [{ role: 'user', digest: `d.${id}`, blocks: [{ type: 'text', canaries: [canary] }] }], answer: { shape: 'reply', toolUseIds: [] } });
+  const blob = (canary) => ({ role: 'user', content: [{ type: 'text', text: `${canary} words` }] });
+  const line = (seq, agent, content) => ({ seq, agent, kind: 'request', assembly: seq, outcome: 'compiled', messages: [{ sources: ['r:1'], content }] });
+  const log = [{ kind: 'compiles', step: 'a', lines: [line(1, 'fixture', 'x1'), line(2, 'Subconscious', 'xs'), line(3, 'Subconscious', 'xl')], blobs: { x1: blob('[[c:a.in]]'), xs: blob('[[c:a.wake]]'), xl: blob('[[c:a.lost]]') } }];
+  const { flags, judged } = runChecks({ records: [req('r1', 'primary', '[[c:a.in]]'), req('s1', 'sub', '[[c:a.wake]]')], log, script: [{ id: 'a', segment: 's', kind: 'channel' }], products: [], store: null, windowTokens: 1_000_000 });
+  assert.deepEqual(Object.fromEntries(judged.filter((j) => j.check === 13).map((j) => [j.name, j.judged])), { 'pairing fixture': 1, 'pairing Subconscious': 2 });
+  assert.deepEqual(flags.filter((f) => f.check === 13).map((f) => [f.step, f.what]), [['a', 'Subconscious:unpaired']]);
+});
+
+test('check 13 can\'t judge two agents besides the configuration\'s own, since the stand-in pools their requests: a couldn\'t-judge flag naming both, not a pairing', () => {
+  const usage = { input_tokens: 1_000, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 };
+  const req = (id, agent, canary) => ({ id, step: 'a', kind: 'agent', agent, maxTokens: 2_048, usage, messages: [{ role: 'user', digest: `d.${id}`, blocks: [{ type: 'text', canaries: [canary] }] }], answer: { shape: 'reply', toolUseIds: [] } });
+  const blob = (canary) => ({ role: 'user', content: [{ type: 'text', text: `${canary} words` }] });
+  const line = (seq, agent, content) => ({ seq, agent, kind: 'request', assembly: seq, outcome: 'compiled', messages: [{ sources: ['r:1'], content }] });
+  const log = [{ kind: 'compiles', step: 'a', lines: [line(1, 'fixture', 'x1'), line(2, 'Subconscious', 'xs'), line(3, 'knowledge', 'xk')], blobs: { x1: blob('[[c:a.in]]'), xs: blob('[[c:a.wake]]'), xk: blob('[[c:a.task]]') } }];
+  const { flags, judged } = runChecks({ records: [req('r1', 'primary', '[[c:a.in]]'), req('s1', 'sub', '[[c:a.wake]]'), req('k1', 'sub', '[[c:a.task]]')], log, script: [{ id: 'a', segment: 's', kind: 'channel' }], products: [], store: null, windowTokens: 1_000_000 });
+  assert.deepEqual(flags.filter((f) => f.check === 13).map((f) => f.what), ['Subconscious:shared-side', 'knowledge:shared-side']);
+  assert.match(flags.find((f) => f.what === 'knowledge:shared-side').message, /couldn't judge knowledge's pairing: Subconscious and knowledge compile requests/);
+  assert.deepEqual(Object.fromEntries(judged.filter((j) => j.check === 13).map((j) => [j.name, j.judged])), { 'pairing fixture': 1, 'pairing Subconscious': null, 'pairing knowledge': null }, 'counted as unknown, so no judged-none flag doubles it');
 });
 
 test('judged: every check reports how many items it judged; zero where check 3, 11, 12 or 13 applies is a couldn\'t-judge flag, and the report prints the counts', () => {
@@ -116,7 +142,7 @@ test('judged: every check reports how many items it judged; zero where check 3, 
   const script = [{ id: 'a', segment: 's', kind: 'channel' }];
   const none = runChecks({ records: [r1], log: [], script, products: [], store: null, windowTokens: 1_000_000 });
   const what = none.flags.filter((f) => /^judged-none:/.test(f.what ?? '')).map((f) => [f.check, f.what]);
-  assert.deepEqual(what, [[11, 'judged-none:compile invariants'], [13, 'judged-none:pairing']]);
+  assert.deepEqual(what, [[11, 'judged-none:compile invariants'], [13, 'judged-none:pairing fixture']]);
   assert.match(none.flags.find((f) => f.check === 11).message, /couldn't judge: check 11 \(compile invariants\) judged nothing, though it applies/);
   assert.deepEqual(none.flags.filter((f) => f.check === 3).map((f) => f.what), ['no-compile-lines'], 'check 3 can\'t tell a compiled request from a round without the lines, and says so itself');
   const counts = Object.fromEntries(none.judged.map((j) => [`${j.check} ${j.name}`, j.judged]));
@@ -125,7 +151,7 @@ test('judged: every check reports how many items it judged; zero where check 3, 
   assert.equal(counts['11 compile invariants'], 0);
   const restarted = runChecks({ records: [r1], log: [], script: [...script, { id: 'r', segment: 's', kind: 'restart', reloadCheck: true }], products: [], store: null, windowTokens: 1_000_000 });
   assert.deepEqual(restarted.flags.filter((f) => /^judged-none:/.test(f.what ?? '')).map((f) => f.check), [11, 12, 13]);
-  const line = { kind: 'compiles', lines: [{ seq: 1, agent: 'fixture', kind: 'request', assembly: 1, outcome: 'compiled', messages: [{ sources: ['r:1'], content: 'x1' }] }], blobs: { x1: { role: 'user', content: [{ type: 'text', text: '[[c:a.in]] words' }] } } };
+  const line = { kind: 'compiles', step: 'a', lines: [{ seq: 1, agent: 'fixture', kind: 'request', assembly: 1, outcome: 'compiled', messages: [{ sources: ['r:1'], content: 'x1' }] }], blobs: { x1: { role: 'user', content: [{ type: 'text', text: '[[c:a.in]] words' }] } } };
   const unused = runChecks({ records: [{ ...r1, usage: undefined }], log: [line], script, products: [], store: null, windowTokens: 1_000_000 });
   assert.ok(unused.flags.some((f) => f.what === 'judged-none:budgets'));
   assert.deepEqual(runChecks({ records: [], log: [], script: [], products: [], store: null }).flags, []);
@@ -158,7 +184,7 @@ test('R15: check 15 runs only for a binding configuration, and one whose agent s
   assert.equal(run(false, []).judged.some((j) => j.check === 15), false);
   assert.deepEqual(run(true, []).flags.filter((f) => f.check === 15).map((f) => f.what), ['judged-none:binding control']);
   const one = run(true, [{ id: 'r1', step: 'a', kind: 'agent', thinking: null, messages: [], answer: { shape: 'reply', toolUseIds: [] } }]);
-  assert.deepEqual(one.flags.filter((f) => f.check === 15).map((f) => f.what), ['no-drop-control']);
+  assert.deepEqual(one.flags.filter((f) => f.check === 15).map((f) => f.what), ['no-drop-control', 'no-binding-beta']);
   assert.equal(one.judged.find((j) => j.check === 15).judged, 1);
 });
 
@@ -169,7 +195,7 @@ test('checks 4, 6 and 10 apply where they can anchor, and judging none there is 
   const what = (r) => r.flags.filter((f) => /^judged-none:/.test(f.what ?? '')).map((f) => f.check).filter((c) => [4, 6, 10].includes(c));
   const emptyStore = { messages: [], summaries: [] };
   assert.deepEqual(what(runChecks({ records: [req('r1', 'a', [])], log: [], script, products: [], store: emptyStore, windowTokens: 1_000_000 })), [4]);
-  const suppressed = [...script, { id: 'x', segment: 's', kind: 'suppress', messages: [{ canary: '[[c:a.in]]' }, { canary: '[[c:a.r1]]' }] }];
+  const suppressed = [script[0], { id: 'x', segment: 's', kind: 'suppress', messages: [{ canary: '[[c:a.in]]' }, { canary: '[[c:a.r1]]' }] }, script[1]];
   assert.ok(what(runChecks({ records: [req('r2', 'b', [])], log: [], script: suppressed, products: [], store: null, windowTokens: 1_000_000 })).includes(6));
   const quiet = runChecks({ records: [], log: [], script, products: [], store: { messages: [], summaries: [{ id: 'L1-9', level: 1, sourceLevel: 0, sourceIds: [], number: null, covers: [] }] } });
   assert.ok(quiet.notes.some((n) => /doesn't judge 1 stored summary with no stand-in mark.*L1-9/.test(n)));

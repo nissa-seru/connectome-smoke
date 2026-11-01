@@ -26,15 +26,17 @@ test('storeDelta: a stored message holding thinking is added with the bit; one w
 
 test('storeDelta: context-manager\'s quarantines, compression spans and merges, are reported when they move', () => {
   const blobs = blobStore();
-  let spans = [];
+  let status = { count: 0, keys: [], spans: [] };
   let merges = 0;
-  const strategy = { getCompressionQuarantineStatus: () => ({ count: spans.length, keys: [], spans }), getMergeQuarantineStatus: () => ({ count: merges, records: [] }) };
+  const strategy = { getCompressionQuarantineStatus: () => status, getMergeQuarantineStatus: () => ({ count: merges, records: [] }) };
   const m = { ...manager([]), getStrategy: () => strategy };
   const first = storeDelta(m, undefined, blobs);
   assert.deepEqual(first.out.quarantine, { compression: 0, merge: 0 });
   assert.equal(storeDelta(m, first.seen, blobs).out.quarantine, undefined, 'unmoved');
-  spans = [{}, {}];
+  status = { count: 3, keys: ['a', 'b', 'c'], spans: [{}] };
   merges = 1;
-  assert.deepEqual(storeDelta(m, first.seen, blobs).out.quarantine, { compression: 2, merge: 1 });
+  assert.deepEqual(storeDelta(m, first.seen, blobs).out.quarantine, { compression: 1, merge: 1 }, 'spans, each once however many records it holds');
+  status = { count: 0, keys: [], spans: [], unreadable: true };
+  assert.deepEqual(storeDelta(m, first.seen, blobs).out.quarantine, { compression: null, merge: 1 }, 'a quarantine context-manager couldn\'t read is unknown, not none');
   assert.equal(storeDelta(manager([]), undefined, blobs).out.quarantine, undefined, 'a strategy with no quarantine reports none');
 });

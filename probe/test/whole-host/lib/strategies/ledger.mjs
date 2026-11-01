@@ -1,68 +1,79 @@
 import { assemblies, FIXTURE_AGENT } from './checks.mjs';
 
-function canaryNames(log, agent) {
+function canaryNames(log) {
   const canaryOf = new Map();
   for (const e of log) {
     if (e.kind !== 'compiles') continue;
-    const messages = e.store?.[agent]?.messages;
-    for (const [id, canaries] of Array.isArray(messages) ? messages : []) if (canaries?.length) canaryOf.set(String(id), canaries[0]);
+    for (const store of Object.values(e.store ?? {})) {
+      for (const [id, canaries] of Array.isArray(store?.messages) ? store.messages : []) if (canaries?.length) canaryOf.set(String(id), canaries[0]);
+    }
   }
   return canaryOf;
 }
 
-function namedLedger(log, line) {
-  if (!line?.ledger) return null;
-  if (line.ledger.unreadable) return { unreadable: line.ledger.unreadable };
-  const canaryOf = canaryNames(log, line.agent);
-  const name = (id) => canaryOf.get(String(id)) ?? `#${id}`;
-  const span = ([from, to, n]) => ({ from: name(from), to: name(to), n });
-  return {
-    raw: line.ledger.raw.map(span),
-    summaries: line.ledger.summaries.map(([id, level, spans]) => ({ id, level, spans: spans.map(span) })),
-    out: line.ledger.out.map(span),
-    counts: line.ledger.counts,
-  };
+// context-manager's layout of a compile (buildRenderedLayout): the view's members in order, and one unit per raw
+// member (`p` where its body went out incomplete), per run under the same summaries, and per run left out.
+function fates(layout) {
+  if (!Array.isArray(layout?.memberIds) || !Array.isArray(layout?.units)) return null;
+  const ids = layout.memberIds.map(String);
+  const raw = [], incomplete = [], out = [], under = new Map();
+  let at = 0;
+  for (const u of layout.units) {
+    if (u.k === 'r') (u.p ? incomplete : raw).push(ids[at++]);
+    else {
+      const run = ids.slice(at, at + u.n);
+      at += u.n;
+      if (u.k === 'o') out.push(...run);
+      else for (const [id, level] of u.sm ?? []) under.set(id, { level, ids: [...(under.get(id)?.ids ?? []), ...run] });
+    }
+  }
+  if (at !== ids.length) return null;
+  const summarised = new Set([...under.values()].flatMap((s) => s.ids));
+  return { ids, raw, incomplete, under, out, counts: { raw: raw.length + incomplete.length, summarised: summarised.size, out: out.length } };
 }
 
-const spanText = (s) => (s.n === 1 ? s.from : `${s.from}–${s.to} (${s.n})`);
-
-function ledgerLines(ledger) {
-  if (!ledger) return ['- no ledger: the compile line carries none'];
-  if (ledger.unreadable) return [`- no ledger: the store couldn't be read (${ledger.unreadable})`];
-  const n = (spans) => spans.reduce((sum, s) => sum + s.n, 0);
+export function ledgerOf(log, line) {
+  const f = fates(line?.layout);
+  if (!f) return [`- no ledger: the compile line carries no layout context-manager gave${line?.layout?.unreadable ? ` (${line.layout.unreadable})` : ''}`];
+  const canaryOf = canaryNames(log);
+  const position = new Map(f.ids.map((id, i) => [id, i]));
+  const name = (id) => canaryOf.get(id) ?? `#${id}`;
+  const spans = (ids) => {
+    const runs = [];
+    for (const id of ids) {
+      const last = runs.at(-1);
+      if (last && position.get(id) === position.get(last.to) + 1) { last.to = id; last.n++; } else runs.push({ from: id, to: id, n: 1 });
+    }
+    return runs.map((r) => (r.n === 1 ? name(r.from) : `${name(r.from)}–${name(r.to)} (${r.n})`)).join(', ') || 'none';
+  };
   return [
-    `- raw (${ledger.counts.raw}): ${ledger.raw.map(spanText).join(', ') || 'none'}`,
-    ...ledger.summaries.map((s) => `- in ${s.id}${s.level === null ? '' : ` (L${s.level})`} (${n(s.spans)}): ${s.spans.map(spanText).join(', ')}`),
-    `- left out (${ledger.counts.out}): ${ledger.out.map(spanText).join(', ') || 'none'}`,
+    `- raw (${f.raw.length}): ${spans(f.raw)}`,
+    ...(f.incomplete.length ? [`- raw, its body incomplete (${f.incomplete.length}): ${spans(f.incomplete)}`] : []),
+    ...[...f.under].map(([id, s]) => `- in ${id} (L${s.level}) (${s.ids.length}): ${spans(s.ids)}`),
+    `- left out (${f.out.length}): ${spans(f.out)}`,
   ];
 }
 
-// The run's requests, calls and quarantines are counted across every agent, since a configuration's work can be its
-// subagent's or another module's; a compile's ledger is one agent's, so raw, summarised and left out are `agent`'s.
 export function moduleCounts(log, records, agent = FIXTURE_AGENT) {
   const agents = [...new Set(log.filter((e) => e.kind === 'compiles').flatMap((e) => (e.lines ?? []).filter((l) => l.kind === 'request').map((l) => l.agent)))];
   const asm = agents.flatMap((a) => assemblies(log, a));
-  const sent = asm.filter((l) => l.outcome === 'compiled');
+  const made = asm.filter((l) => l.outcome === 'compiled');
   const summariser = records.filter((r) => r.kind === 'summariser');
   const quarantine = new Map();
   for (const e of log) {
     if (e.kind !== 'compiles') continue;
     for (const [a, st] of Object.entries(e.store ?? {})) if (st && 'quarantine' in st) quarantine.set(a, st.quarantine);
   }
-  const known = [...quarantine.values()].filter((q) => q && typeof q.merge === 'number');
-  const ledger = assemblies(log, agent).filter((l) => l.outcome === 'compiled').at(-1)?.ledger;
-  const last = ledger && !ledger.unreadable ? ledger.counts : null;
+  const reported = [...quarantine.values()];
+  const known = reported.every((q) => typeof q?.compression === 'number' && typeof q?.merge === 'number');
+  const last = fates(assemblies(log, agent).filter((l) => l.outcome === 'compiled').at(-1)?.layout)?.counts;
   return {
-    compiles: sent.length,
-    refused: asm.length - sent.length,
+    compiles: made.length,
+    refused: asm.length - made.length,
     compressions: summariser.filter((r) => r.level === 1).length,
     merges: summariser.filter((r) => typeof r.level === 'number' && r.level > 1).length,
-    ...(known.length ? { quarantines: known.reduce((n, q) => n + (q.compression ?? 0) + q.merge, 0) } : {}),
+    ...(reported.length && known ? { quarantines: reported.reduce((n, q) => n + q.compression + q.merge, 0) } : {}),
     ...(last ? { raw: last.raw, summarised: last.summarised, out: last.out } : {}),
     invariantLines: log.filter((e) => e.kind === 'compiles').flatMap((e) => e.lines ?? []).filter((l) => (l.violations ?? []).length > 0).length,
   };
-}
-
-export function ledgerOf(log, line) {
-  return ledgerLines(namedLedger(log, line));
 }

@@ -47,8 +47,8 @@ function summariserBody({ canaries = ['[[c:x.1]]'], summaries = [], instruction 
   return { model, max_tokens, stream: false, tools: TOOLS, messages };
 }
 
-async function post(url, body, path = '/v1/messages') {
-  const res = await fetch(url + path, { method: 'POST', headers: { 'content-type': 'application/json', 'anthropic-version': '2023-06-01' }, body: JSON.stringify(body) });
+async function post(url, body, path = '/v1/messages', headers = {}) {
+  const res = await fetch(url + path, { method: 'POST', headers: { 'content-type': 'application/json', 'anthropic-version': '2023-06-01', ...headers }, body: JSON.stringify(body) });
   const type = res.headers.get('content-type') || '';
   if (!type.includes('event-stream')) return { status: res.status, json: await res.json() };
   const raw = await res.text();
@@ -206,14 +206,20 @@ test('T1/T4: a compression instruction that states no target is refused as uncla
   assert.match(r.json.error.message, /no target/);
 }));
 test('T4: an answer never runs past what max_tokens allows: one that would is cut there, with a max_tokens stop, as a provider cuts it', () => withStandin({}, async (s) => {
-  s.setStep(step('m', [{ text: `[[c:m.r1]] ${prose(4_000)}` }]));
+  const scripted = `[[c:m.r1]] ${prose(4_000)}`;
+  s.setStep(step('m', [{ text: scripted }, { text: scripted }]));
   const summary = await post(s.url, summariserBody({ canaries: ['[[c:m.1]]'], textChars: 40_000, max_tokens: 100 }));
   assert.ok(summary.json.usage.output_tokens <= 100, String(summary.json.usage.output_tokens));
   assert.equal(summary.json.stop_reason, 'max_tokens');
-  const reply = (await post(s.url, agentBody({ canary: '[[c:m.in]]', stream: false, max_tokens: 50 }))).json;
-  assert.ok(reply.usage.output_tokens <= 50, String(reply.usage.output_tokens));
-  assert.equal(reply.stop_reason, 'max_tokens');
-  assert.equal(reply.content[0].text.slice(0, 11), '[[c:m.r1]] ', 'the answer is its own beginning, cut');
+  assert.ok(textOf(summary.json).length <= 100 * 2.2, `the summary itself is cut to what 100 tokens of prose hold: ${textOf(summary.json).length} chars`);
+  for (const stream of [false, true]) {
+    const reply = (await post(s.url, agentBody({ canary: '[[c:m.in]]', stream, max_tokens: 50 }))).json;
+    assert.ok(reply.usage.output_tokens <= 50, String(reply.usage.output_tokens));
+    assert.equal(reply.stop_reason, 'max_tokens');
+    const text = textOf(reply);
+    assert.ok(text.length > 0 && text.length <= 50 * 2.2, `${stream ? 'streamed' : 'whole'}: the text itself is cut to what 50 tokens of prose hold: ${text.length} chars`);
+    assert.ok(scripted.startsWith(text), 'the answer is its own beginning, cut');
+  }
   const fits = await post(s.url, summariserBody({ canaries: ['[[c:m.2]]'], max_tokens: 16_000 }));
   assert.equal(fits.json.stop_reason, 'end_turn', 'an answer within the ceiling ends as it would');
   const none = await post(s.url, { ...summariserBody({ canaries: ['[[c:m.3]]'] }), max_tokens: undefined });
@@ -305,6 +311,23 @@ test('T10: the same request always counts the same, at about 1.3 times context-m
   assert.ok(large - small > 900, `${small} → ${large}`);
 }));
 
+test('T10b: denser text counts more tokens a character (prose, then code, JSON and base64), and a prose opening doesn\'t price a dense body as prose', () => withStandin({}, async (s) => {
+  const count = async (text) => (await post(s.url, { model: 'm', messages: [{ role: 'user', content: [{ type: 'text', text }] }] }, '/v1/messages/count_tokens')).json.input_tokens;
+  const empty = await count('');
+  const rate = async (text) => (await count(text) - empty) / text.length;
+  const code = (n) => 'const value_1 = read(index, total);\n'.repeat(Math.ceil(n / 36)).slice(0, n);
+  const json = JSON.stringify({ rows: Array.from({ length: 300 }, (_, i) => ({ id: i, name: `row ${i}` })) });
+  const base64 = Buffer.from(Array.from({ length: 4500 }, (_, i) => (i * 37) % 256)).toString('base64');
+  const rates = [await rate(prose(6000, 3)), await rate(code(6000)), await rate(json), await rate(base64)];
+  assert.ok(rates[0] < rates[1] && rates[1] < rates[2] && rates[2] < rates[3], rates.join(' < '));
+  const opening = prose(2500, 4);
+  const body = code(30_000);
+  const mixed = await count(`${opening}${body}`) - empty;
+  const apart = (await count(opening) - empty) + (await count(body) - empty);
+  assert.ok(Math.abs(mixed - apart) <= apart * 0.02, `priced in stretches, as its parts are: ${mixed} vs ${apart}`);
+  assert.ok(mixed > (await count(prose(32_500, 4)) - empty) * 1.1, 'not as prose');
+}));
+
 test('T11: a request over the window is refused as the API refuses it', () => withStandin({ windowTokens: 1000 }, async (s) => {
   s.setStep(step('o'));
   const r = await post(s.url, agentBody({ canary: '[[c:o.in]]', history: [{ role: 'user', content: [{ type: 'text', text: prose(8000) }] }, { role: 'assistant', content: [{ type: 'text', text: 'ok' }] }] }));
@@ -375,6 +398,12 @@ test('T13: when the model binds thinking, a block whose request changed is refus
       } else if (binds) {
         assert.equal(r.status, 200);
         assert.equal(await count(changed), await count(withoutBlock), 'the block set aside counts for nothing');
+        const billed = r.json.usage.input_tokens + r.json.usage.cache_read_input_tokens + r.json.usage.cache_creation_input_tokens;
+        assert.equal(billed, await count(withoutBlock), 'nor is it billed');
+        await withStandin({ binds, windowTokens: await count(withoutBlock) }, async (t) => {
+          t.setStep({ ...step('g', [{ text: 'ok' }]), canaries: ['[[c:g.in]]', '[[c:g.call1]]'] });
+          assert.equal((await post(t.url, changed)).status, 200, 'nor counted against the window: it fits once the block is set aside');
+        });
       } else {
         assert.equal(r.status, 200);
         assert.ok(await count(changed) > await count(withoutBlock), 'a block the model reads counts');
@@ -387,7 +416,7 @@ test('T25: each request\'s record carries its head, everything it sends but its 
   const s = await startStandin({ configuration: { windowTokens: 50_000 } });
   let records = null;
   try {
-    s.setStep({ ...step('t', [{ text: 'a' }, { text: 'b' }, { text: 'c' }, { text: 'd' }, { text: 'e' }, { text: 'f' }]), canaries: ['[[c:t.in]]'] });
+    s.setStep({ ...step('t', [{ text: 'a' }, { text: 'b' }, { text: 'c' }, { text: 'd' }, { text: 'e' }, { text: 'f' }, { text: 'g' }, { text: 'h' }]), canaries: ['[[c:t.in]]'] });
     const base = agentBody({ canary: '[[c:t.in]]', stream: false });
     const variants = [
       base,
@@ -398,9 +427,11 @@ test('T25: each request\'s record carries its head, everything it sends but its 
       { ...base, tool_choice: { type: 'auto' }, metadata: { user_id: 'u' } },
     ];
     for (const v of variants) assert.equal((await post(s.url, v)).status, 200);
+    assert.equal((await post(s.url, { ...base, tool_choice: { type: 'auto' }, metadata: { user_id: 'v' } })).status, 200);
+    assert.equal((await post(s.url, base, '/v1/messages', { 'anthropic-beta': 'b2-2026, b1-2026,b2-2026' })).status, 200);
     records = await s.close();
   } finally { if (!records) await s.close(); }
-  const [same, again, tool, system, thinking, more] = records;
+  const [same, again, tool, system, thinking, more, otherUser, beta] = records;
   assert.deepEqual(same.head, again.head, 'the same body, the same head');
   assert.deepEqual(same.head.tools.map((t) => t.name), ['time--now']);
   assert.notEqual(tool.head.tools[0].sha, same.head.tools[0].sha, 'a tool\'s description moves its definition\'s digest');
@@ -409,6 +440,9 @@ test('T25: each request\'s record carries its head, everything it sends but its 
   assert.deepEqual(more.head.toolChoice, { type: 'auto' });
   assert.equal(same.head.rest, null, 'nothing else on the body');
   assert.match(more.head.rest, /^[0-9a-f]{16}$/, 'a field no part names is still digested');
+  assert.notEqual(otherUser.head.rest, more.head.rest, 'by its value');
+  assert.deepEqual(same.head.headers, { beta: [], version: '2023-06-01' }, 'the headers that change what a provider does');
+  assert.deepEqual(beta.head.headers, { beta: ['b1-2026', 'b2-2026'], version: '2023-06-01' }, 'betas as a set');
 });
 
 test('T26: a reply marked settle waits until releaseHeld, after onHeld names its request; an ordinary reply is answered at once', async () => {
@@ -440,6 +474,8 @@ test('T27: a summary\'s id comes from what its request carries as sets (target, 
   assert.equal(await idOf(summariserBody({ canaries: ['[[c:i.2]]', '[[c:i.1]]', '[[c:i.2]]'] })), base, 'order and repeats leave it');
   assert.equal(await idOf(summariserBody({ canaries: ['[[c:i.1]]', '[[c:i.2]]'], instruction: CHAT.replace('Speak in the first person', 'Use the first person'), textChars: 900 })), base, 'rewording and longer text leave it');
   assert.notEqual(await idOf(summariserBody({ canaries: ['[[c:i.1]]', '[[c:i.2]]'], summaries: ['[[s:M0123abcd]]'] })), base, 'a recalled summary moves it');
+  const recalled = await idOf(summariserBody({ canaries: ['[[c:i.1]]', '[[c:i.2]]'], summaries: ['[[s:M0123abcd]]', '[[s:M89abcdef]]'] }));
+  assert.equal(await idOf(summariserBody({ canaries: ['[[c:i.1]]', '[[c:i.2]]'], summaries: ['[[s:M89abcdef]]', '[[s:M0123abcd]]', '[[s:M89abcdef]]'] })), recalled, 'recalled summaries\' order and repeats leave it');
   assert.notEqual(await idOf(summariserBody({ canaries: ['[[c:i.1]]', '[[c:i.3]]'] })), base, 'another canary moves it');
 }));
 
@@ -461,6 +497,14 @@ test('T13b: a model that thinks leads every reply with signed thinking minted fo
     assert.deepEqual(one.content.map((b) => b.type), ['text'], 'a model that doesn\'t think replies without thinking');
   });
 });
+
+test('T13c: a thinking model\'s thinking comes from its request as the run-varying mask reads it, so an image ref\'s nonce doesn\'t change the words', () => withStandin({ thinks: true }, async (s) => {
+  s.setStep({ ...step('q', [{ text: 'one' }, { text: 'two' }, { text: 'three' }]), canaries: ['[[c:q.in]]'] });
+  const ask = (ref) => ({ ...agentBody({ canary: '[[c:q.in]]' }), messages: [{ role: 'user', content: [{ type: 'text', text: `user: [[c:q.in]] see ${ref}` }] }] });
+  const [one, two, other] = [await post(s.url, ask('img_abc123_4')), await post(s.url, ask('img_def456_4')), await post(s.url, ask('img_abc123_5'))].map((r) => r.json.content[0].thinking);
+  assert.equal(one, two, 'the nonce masked');
+  assert.notEqual(one, other, 'the ref\'s number still moves it');
+}));
 
 test('T7/T14/T15: summariser requests are answered at once, every arrival is reported, and close() returns each request\'s normalised record', async () => {
   const s = await startStandin({ configuration: { windowTokens: 50_000 } });
@@ -495,19 +539,72 @@ test('T28: with a raw directory, each answer\'s content goes beside its request 
   const rawDir = mkdtempSync(join(tmpdir(), 'standin-raw-'));
   try {
     const s = await startStandin({ configuration: { windowTokens: 50_000 }, rawDir });
-    s.setStep(step('w', [{ text: '[[c:w.r1]] noted', thinking: 'a thought' }]));
-    const summ = await post(s.url, summariserBody({ canaries: ['[[c:w.in]]'] }));
-    const agent = await post(s.url, agentBody({ canary: '[[c:w.in]]' }));
-    const refused = await post(s.url, agentBody({ canary: '[[c:other.in]]' }));
+    s.setStep(step('w', [{ text: '[[c:w.r1]] noted', thinking: 'a thought' }, { text: '[[c:w.r2]] again' }]));
+    const summBody = summariserBody({ canaries: ['[[c:w.in]]'] });
+    const marked = agentBody({ canary: '[[c:w.in]]' });
+    marked.messages.at(-1).content.at(-1).cache_control = { type: 'ephemeral' };
+    const refusedBody = agentBody({ canary: '[[c:other.in]]' });
+    const summ = await post(s.url, summBody);
+    const agent = await post(s.url, marked);
+    const again = await post(s.url, marked);
+    const refused = await post(s.url, refusedBody);
     const records = await s.close();
     assert.equal(refused.status, 400);
-    assert.deepEqual(readdirSync(rawDir).sort(), ['r1.answer.json', 'r1.json', 'r2.answer.json', 'r2.json', 'r3.json']);
-    assert.deepEqual(JSON.parse(readFileSync(join(rawDir, 'r1.answer.json'), 'utf-8')), summ.json.content);
-    assert.deepEqual(JSON.parse(readFileSync(join(rawDir, 'r2.answer.json'), 'utf-8')), agent.json.content);
-    const billed = [summ.json.usage, agent.json.usage];
+    assert.deepEqual(readdirSync(rawDir).sort(), ['r1.answer.json', 'r1.json', 'r2.answer.json', 'r2.json', 'r3.answer.json', 'r3.json', 'r4.json']);
+    const saved = (name) => JSON.parse(readFileSync(join(rawDir, name), 'utf-8'));
+    assert.deepEqual([saved('r1.json'), saved('r2.json'), saved('r3.json'), saved('r4.json')], [summBody, marked, marked, refusedBody], 'each body as it was sent');
+    assert.deepEqual(saved('r1.answer.json'), summ.json.content);
+    assert.deepEqual(saved('r2.answer.json'), agent.json.content);
+    assert.deepEqual(saved('r3.answer.json'), again.json.content);
+    const billed = [summ.json.usage, agent.json.usage, again.json.usage];
     const sum = (k) => billed.reduce((t, u) => t + u[k], 0);
+    assert.ok(sum('cache_creation_input_tokens') > 0 && sum('cache_read_input_tokens') > 0, 'the marked prefix was written, then read');
     assert.deepEqual(tokensSent(records), { input: sum('input_tokens'), cacheRead: sum('cache_read_input_tokens'), cacheWrite: sum('cache_creation_input_tokens'), output: sum('output_tokens') });
   } finally { rmSync(rawDir, { recursive: true, force: true }); }
+});
+
+test('T29: a cache marker the provider refuses is refused wherever it sits; a marker inside a tool result is recorded with its place', async () => {
+  const s = await startStandin({ configuration: { windowTokens: 50_000 } });
+  let records = null;
+  try {
+    s.setStep({ ...step('k', Array.from({ length: 8 }, (_, i) => ({ text: `r${i}` }))), canaries: ['[[c:k.in]]'] });
+    const base = agentBody({ canary: '[[c:k.in]]', stream: false });
+    const lastMarked = (cc) => ({ ...base, messages: [{ role: 'user', content: [{ type: 'text', text: 'user: [[c:k.in]] hello', cache_control: cc }] }] });
+    for (const cc of [{}, { type: 'persistent' }, { type: 'ephemeral', ttl: '2h' }]) {
+      const r = await post(s.url, lastMarked(cc));
+      assert.equal(r.status, 400, JSON.stringify(cc));
+      assert.match(r.json.error.message, /^messages\.0\.content\.0\.cache_control: /);
+    }
+    const tool = await post(s.url, { ...base, tools: [{ ...TOOLS[0], cache_control: { type: 'ephemeral', ttl: '30m' } }] });
+    assert.match(tool.json.error.message, /^tools\.0\.cache_control: /);
+    for (const cc of [{ type: 'ephemeral' }, { type: 'ephemeral', ttl: '5m' }, { type: 'ephemeral', ttl: '1h' }]) assert.equal((await post(s.url, lastMarked(cc))).status, 200, JSON.stringify(cc));
+    const nested = { ...base, messages: [{ role: 'user', content: [{ type: 'tool_result', tool_use_id: 't1', content: [{ type: 'text', text: '[[c:k.in]] one' }, { type: 'text', text: 'two', cache_control: { type: 'ephemeral', ttl: '1h' } }] }] }] };
+    assert.equal((await post(s.url, nested)).status, 200);
+    records = await s.close();
+  } finally { if (!records) await s.close(); }
+  assert.deepEqual(records.filter((r) => r.refused).map((r) => r.refused), ['cache_control', 'cache_control', 'cache_control', 'cache_control']);
+  assert.deepEqual(records.at(-1).messages[0].blocks[0].contentCache, [null, '1h']);
+  assert.equal('contentCache' in records.at(-2).messages[0].blocks[0], false, 'and only where one sits');
+});
+
+test('T30: a request\'s messages are masked together, so a result answering another fork than its call digests apart, and the same pair under other UUIDs alike', async () => {
+  const s = await startStandin({ configuration: { windowTokens: 50_000 } });
+  let records = null;
+  try {
+    s.setStep({ ...step('f', [{ text: 'a' }, { text: 'b' }, { text: 'c' }]), canaries: ['[[c:f.in]]'] });
+    const pair = (call, answered) => ({ ...agentBody({ canary: '[[c:f.in]]', stream: false }), messages: [
+      { role: 'user', content: [{ type: 'text', text: 'user: [[c:f.in]] fork it' }] },
+      { role: 'assistant', content: [{ type: 'tool_use', id: `fork-fork-x-${call}`, name: 'subagent--fork', input: {} }] },
+      { role: 'user', content: [{ type: 'tool_result', tool_use_id: `fork-fork-x-${answered}`, content: [{ type: 'text', text: '[[c:f.in]] done' }] }] },
+    ] });
+    const [u1, u2, u3] = ['0f8e2c1a-1b2c-4d5e-8f90-a1b2c3d4e5f6', '9a8b7c6d-5e4f-4a3b-9c2d-1e0f9a8b7c6d', '11111111-2222-4333-8444-555555555555'];
+    for (const body of [pair(u1, u1), pair(u3, u3), pair(u1, u2)]) assert.equal((await post(s.url, body)).status, 200);
+    records = await s.close();
+  } finally { if (!records) await s.close(); }
+  const [matched, other, crossed] = records;
+  assert.deepEqual(other.messages.map((m) => m.digest), matched.messages.map((m) => m.digest), 'the same pairing under other UUIDs');
+  assert.equal(crossed.messages[1].digest, matched.messages[1].digest);
+  assert.notEqual(crossed.messages[2].digest, matched.messages[2].digest, 'a result naming another fork');
 });
 
 test('T18: each message in a record has a digest, the same wherever it is carried unchanged, whatever its cache marker or a tool image ref\'s nonce, and an answer records the tool_use ids it minted', async () => {

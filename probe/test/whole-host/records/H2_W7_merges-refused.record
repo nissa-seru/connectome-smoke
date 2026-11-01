@@ -80,7 +80,9 @@ H:c83ee666 = model claude-opus-4-6, max_tokens 16000, stream false, system -, to
 H:e56dddc8 = model claude-opus-4-6, max_tokens 16384, stream true, system [T:system-knowledge-#-you-are](617403), tools time--now:c75ffd8b subagent--spawn:2a17a360 subagent--fork:136143f0 subagent--hud:5f0c1c0f subagent--concurrency:d7b33f91 subagent--peek:8ca1f2b3 subagent--list:c8f9a2cd subagent--stop:58767033 subagent--message:3e92d0ab subagent--adopt:bdace804 subagent--resume:cf82477c subagent--return:2b5f1dc7 toolsets--open:93971848 toolsets--act:31eaf5be toolsets--look:89df00cf toolsets--close:012524d9 mcpl--fixture--result:51a802b9 channel_list:79d10259 channel_open:e6c38053 channel_decline:36d64388 channel_close:83791a86 channel_publish:489a8faa think:90ff8920 journal:3ea69d86 skip_reply:9b9848e9 drafts:a31a7b43
 H:fe9cb321 = model claude-opus-4-6, max_tokens 16384, stream true, system [T:system-you-are-the], tools time--now:c75ffd8b subagent--spawn:2a17a360 subagent--fork:136143f0 subagent--hud:5f0c1c0f subagent--concurrency:d7b33f91 subagent--peek:8ca1f2b3 subagent--list:c8f9a2cd subagent--stop:58767033 subagent--message:3e92d0ab subagent--adopt:bdace804 subagent--resume:cf82477c subagent--return:2b5f1dc7 toolsets--open:93971848 toolsets--act:31eaf5be toolsets--look:89df00cf toolsets--close:012524d9 mcpl--fixture--result:51a802b9 channel_list:79d10259 channel_open:4cf9e8f9 channel_decline:36d64388 channel_close:064c8388 channel_publish:489a8faa think:90ff8920 journal:3ea69d86 skip_reply:9b9848e9 drafts:a31a7b43
 step 617403.1
-  round [spawn-knowledge-617403-1767603600000] + 617403.1.task 617403.1.s1 617403.1.s1call1, head H:e56dddc8, body 8cc333dc
+  compile [T:user-clock-monday-#-#-#](2026,01,05,09,00) [T:user-the-local-time](2026,01,05,09,00,00,000,00,00) 617403.1.in [T:user-routing-your-plain] ^ 4, head H:fe9cb321, body 80793977
+  compile [spawn-knowledge-617403-1767603600000] [T:user-launch-of-spawn](617403,1,3,4,6,2,000,80,000,120,000,10,000,4,6,300,000,500,000,320,000,16,384,100,000,300,000,10,26) 617403.1.task ^ 2, head H:e56dddc8, body b4f04819
+  round [spawn-knowledge-617403-1767603600000] + 617403.1.s1 617403.1.s1call1, body 8cc333dc
   round [spawn-knowledge-617403-1767603600000] + 617403.1.s2 617403.1.s2call1, body 5e5d2bf2
   round [spawn-knowledge-617403-1767603600000] + 617403.1.s3 617403.1.s3call1, body 71cd7c1a
   round [spawn-knowledge-617403-1767603600000] + 617403.1.s4 617403.1.s4call1, body 6bf8a89c
@@ -145,7 +147,7 @@ step 617403.1
   call 617403.1.task 617403.1.s21 617403.1.s21call1 [T:call-user-launch-of](617403,1,3,4,6,2,000,80,000,120,000,10,000,4,6,300,000,500,000,320,000,16,384,100,000,300,000,10,26) [T:call-empty] [T:call-context-manager-cm-recall](1,0) L1(617403.1.s1-617403.1.s1call1) [T:call-context-manager-cm-recall](1,1) L1(617403.1.s2-617403.1.s2call1) [T:call-context-manager-cm-recall](1,2) L1(617403.1.s3-617403.1.s3call1) [T:call-context-manager-cm-recall](1,3) L1(617403.1.s4-617403.1.s4call1) [T:call-context-manager-cm-recall](1,4) L1(617403.1.s5-617403.1.s5call1) [T:call-context-manager-cm-recall](1,5) L1(617403.1.s6-617403.1.s6call1) [T:call-context-manager-cm-recall](1,6) L1(617403.1.s7-617403.1.s8call1) [T:call-context-manager-cm-recall](1,7) L1(617403.1.s9-617403.1.s9call1) [T:call-context-manager-cm-recall](1,8) L1(617403.1.s10-617403.1.s10call1) [T:call-context-manager-cm-recall](1,9) L1(617403.1.s11-617403.1.s12call1) [T:call-context-manager-cm-recall](1,10) L1(617403.1.s13-617403.1.s13call1) [T:call-context-manager-cm-recall](1,11) L1(617403.1.s14-617403.1.s15call1) [T:call-context-manager-cm-recall](1,12) L1(617403.1.s16-617403.1.s16call1) [T:call-context-manager-cm-recall](1,13) L1(617403.1.s17-617403.1.s17call1) [T:call-context-manager-cm-recall](1,14) L1(617403.1.s18-617403.1.s18call1) [T:call-context-manager-cm-recall](1,15) L1(617403.1.s19-617403.1.s20call1) [T:call-context-manager-system] [T:call-context-manager-capture](2000) -> summary, body f5f117d4
   round [spawn-knowledge-617403-1767603600000] + 617403.1.s37 617403.1.s37call1, body b899448e
   round [spawn-knowledge-617403-1767603600000] + 617403.1.s38 617403.1.s38call1, body 0d820887
-  round + 617403.1.in 617403.1.r1 617403.1.report, head H:fe9cb321, body 589d9edd
+  round + 617403.1.r1 617403.1.report, body 589d9edd
   wrote [spawn-knowledge-617403-1767603600000] L1(617403.1.s1-617403.1.s1call1) [T:summary-l1-fec51bc7]
   wrote [spawn-knowledge-617403-1767603600000] L1(617403.1.s2-617403.1.s2call1) [T:summary-l1-a1b9eadb]
   wrote [spawn-knowledge-617403-1767603600000] L1(617403.1.s3-617403.1.s3call1) [T:summary-l1-7ed0b106]
@@ -163,8 +165,6 @@ step 617403.1
   wrote [spawn-knowledge-617403-1767603600000] L1(617403.1.s18-617403.1.s18call1) [T:summary-l1-7e1bc7b3]
   wrote [spawn-knowledge-617403-1767603600000] L1(617403.1.s19-617403.1.s20call1) [T:summary-l1-37cda9fd]
   wrote [spawn-knowledge-617403-1767603600000] L1(617403.1.s21-617403.1.s21call1) [T:summary-l1-1b7d9f9d]
-  compile [T:user-clock-monday-#-#-#](2026,01,05,09,00) [T:user-the-local-time](2026,01,05,09,00,00,000,00,00) 617403.1.in [T:user-routing-your-plain] ^ 4, body 80793977
-  compile [spawn-knowledge-617403-1767603600000] [T:user-launch-of-spawn](617403,1,3,4,6,2,000,80,000,120,000,10,000,4,6,300,000,500,000,320,000,16,384,100,000,300,000,10,26) 617403.1.task ^ 2, body b4f04819
 end ok
 receipt fixture #1 changes #2/raw/0/1 #3/raw/0/1 617403.1.in/raw/0/1 #11/raw/0/1
 totals {"actions":0,"calls":27,"compiles":2,"dry":0,"other":1,"refused":0,"rounds":39,"written":17}

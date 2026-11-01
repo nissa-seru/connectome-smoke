@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { maskRunVarying } from './compare.mjs';
+import { runVaryingMasker } from './compare.mjs';
 import { toolResult } from './results.mjs';
 import { TOOL } from './script.mjs';
 import { CANARY, SUMMARY, pngSize } from './standin.mjs';
@@ -19,7 +19,6 @@ const headOf = (s) => {
   return t.length > HEAD ? `${oneLine(t.slice(0, HEAD))}…` : oneLine(t);
 };
 
-/** The texts a run generated: `steps` are its workload's and its checkpoint's, `answers` each answer's content array. */
 export function generatedTexts({ steps = [], answers = [] }) {
   const texts = [];
   const known = new Set();
@@ -95,11 +94,11 @@ function runPart({ e, from, length }, { texts }) {
   return `⟪${name} ${span}: ${headOf(said)}⟫`;
 }
 
-/** A request body as lines: the stack's words verbatim, the run's as ⟪name span: head⟫; `seen` names a tool or long text already shown. */
 export function transcriptOf(body, generated, seen = new Set()) {
   const lines = [];
+  const mask = runVaryingMasker();
   const stack = (label, text, shortest = NAMED) => {
-    const masked = maskRunVarying(text);
+    const masked = mask(text);
     if (masked.length < shortest) return masked;
     const key = digest(masked);
     if (seen.has(key)) return `(as above: ${label ?? JSON.stringify(headOf(masked))}, ${count(masked.length)} chars, ${key})`;
@@ -115,6 +114,12 @@ export function transcriptOf(body, generated, seen = new Set()) {
     for (const row of rows) lines.push(`${pad}    | ${row}`);
   };
   const rendered = (s) => partsOf(s, generated).map((p) => (p.run ? runPart(p.run, generated) : stack(null, p.text))).join('');
+  const renderedJson = (v) => {
+    if (typeof v === 'string') return `"${partsOf(v, generated).map((p) => (p.run ? runPart(p.run, generated) : stack(null, JSON.stringify(p.text).slice(1, -1)))).join('')}"`;
+    if (Array.isArray(v)) return `[${v.map(renderedJson).join(',')}]`;
+    if (v && typeof v === 'object') return `{${Object.entries(v).map(([k, x]) => `${JSON.stringify(k)}:${renderedJson(x)}`).join(',')}}`;
+    return JSON.stringify(v ?? null);
+  };
   const cache = (b) => (b?.cache_control ? ` [cache ${b.cache_control.ttl ?? '5m'}]` : '');
   const blocksOf = (content) => (typeof content === 'string' ? [{ type: 'text', text: content }] : Array.isArray(content) ? content : []);
 
@@ -128,15 +133,15 @@ export function transcriptOf(body, generated, seen = new Set()) {
       case 'redacted_thinking': return emit(indent, `redacted_thinking${cache(b)}`, `${count((b.data ?? '').length)} chars`);
       case 'image': {
         const src = b.source ?? {};
-        if (src.type !== 'base64') return emit(indent, `image${cache(b)}`, JSON.stringify(maskRunVarying(src)));
+        if (src.type !== 'base64') return emit(indent, `image${cache(b)}`, JSON.stringify(mask(src)));
         const data = src.data ?? '';
         const size = pngSize(data);
         const bytes = Math.floor((data.length * 3) / 4) - (data.endsWith('==') ? 2 : data.endsWith('=') ? 1 : 0);
         return emit(indent, `image${cache(b)}`, `${src.media_type}${size ? ` ${size.width}×${size.height}` : ''}, ${count(bytes)} bytes`);
       }
-      case 'tool_use': return emit(indent, `tool_use ${maskRunVarying(String(b.id))} ${b.name}${cache(b)}`, rendered(JSON.stringify(b.input ?? {})));
+      case 'tool_use': return emit(indent, `tool_use ${mask(String(b.id))} ${b.name}${cache(b)}`, renderedJson(b.input ?? {}));
       case 'tool_result':
-        emit(indent, `tool_result ${maskRunVarying(String(b.tool_use_id))}${b.is_error ? ' (error)' : ''}${cache(b)}`);
+        emit(indent, `tool_result ${mask(String(b.tool_use_id))}${b.is_error ? ' (error)' : ''}${cache(b)}`);
         for (const inner of blocksOf(b.content)) block(inner, indent + 1);
         return undefined;
       default: {

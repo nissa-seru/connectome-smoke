@@ -23,23 +23,23 @@ step c.cm.4
   compile + c.cm.3.r1 [T:user-delivered-plain-speech] c.cm.4.in, body 76cd0baa
 checkpoint close-merge
 step c.tool
-  round + c.cm.4.r1 c.tool.in c.tool.r1 c.tool.call1 c.tool.call2, body d7bb8991
   compile + c.cm.4.r1 [T:user-delivered-plain-speech] [T:user-clock-#-#-utc](10,10) c.tool.in, body 12655000
+  round + c.tool.r1 c.tool.call1 c.tool.call2, body d7bb8991
 checkpoint tool-round
 step c.par
-  round + c.tool.r1 c.tool.call1 c.tool.call2 c.tool.r2 c.par.in c.par.r1 c.par.call1 c.par.call2 c.par.call3, body 2a6ec0de
   compile + c.tool.r1-c.tool.r2 [T:user-delivered-plain-speech] c.par.in, body 9564958c
+  round + c.par.r1 c.par.call1 c.par.call2 c.par.call3, body 2a6ec0de
 checkpoint parallel
 step c.think
-  round + c.par.r1 c.par.call1 c.par.call2 c.par.call3 c.par.r2 c.think.in c.think.r1 c.think.call1, body 94f85ee3
   compile + c.par.r1-c.par.r2 [T:user-delivered-plain-speech] [T:user-clock-#-#-utc](10,20) c.think.in, body 3e341930
+  round + c.think.r1 c.think.call1, body 94f85ee3
 checkpoint thinking-call
 step c.debt
-  round + c.think.r1 c.think.call1 c.think.r2 c.debt.in c.debt.r1 c.debt.call1, body b75f41ef
+  compile + c.think.r1-c.think.r2 [T:user-delivered-plain-speech] c.debt.in, body c6506ca6
+  round + c.debt.r1 c.debt.call1, body b75f41ef
   round + c.debt.r2 c.debt.call2, body a2e7223b
   round + c.debt.r3 c.debt.call3, body 58c66d73
   round + c.debt.r4 c.debt.call4, body d027b4ac
-  compile + c.think.r1-c.think.r2 [T:user-delivered-plain-speech] c.debt.in, body c6506ca6
 checkpoint debt
 end ok
 totals {"actions":1,"calls":0,"compiles":8,"dry":0,"other":0,"refused":0,"rounds":7,"written":0}

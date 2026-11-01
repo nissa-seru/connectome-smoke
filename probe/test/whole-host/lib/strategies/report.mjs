@@ -1,5 +1,5 @@
 import { existsSync, readFileSync } from 'node:fs';
-import { bindingControl, budgets, compileInvariants, ofSide, pairing, reloads, declaredProducts, everyTurnAnswers, wellFormed, windowsRaw, coverage, bookkeeping, calibrationEdge, FIXTURE_AGENT, STREAM_BOUND } from './checks.mjs';
+import { bindingControl, budgets, compileInvariants, compilingAgents, ofSide, pairing, withJudged, reloads, declaredProducts, everyTurnAnswers, wellFormed, windowsRaw, coverage, bookkeeping, calibrationEdge, FIXTURE_AGENT, STREAM_BOUND } from './checks.mjs';
 
 export function runChecks({ records, log, script, products, store, agent = FIXTURE_AGENT, side = agent === FIXTURE_AGENT ? 'primary' : 'sub', streamBound = STREAM_BOUND, windowTokens, binds = false, adaptive = false }) {
   const own = ofSide(side);
@@ -9,6 +9,7 @@ export function runChecks({ records, log, script, products, store, agent = FIXTU
   const turnRequests = records.filter((r) => own(r) && laterTurns.has(r.step)).length;
   const missing = declaredProducts(records, script, products, store);
   const declared = Object.values(products ?? {}).flat().length;
+  const sharing = compilingAgents(log).filter((a) => a !== FIXTURE_AGENT);
   const parts = [
     { check: 1, name: 'every turn answers', flags: everyTurnAnswers(records, log, script) },
     { check: 2, name: 'declared products', flags: [], judged: missing.judged, applies: declared > 0 ? `the run declares ${declared} product(s)` : null },
@@ -20,7 +21,13 @@ export function runChecks({ records, log, script, products, store, agent = FIXTU
     { check: 10, name: 'calibration edge', flags: calibrationEdge(log), applies: adaptive && log.some((e) => e.kind === 'checkpoint') ? 'an adaptive configuration logged a checkpoint' : null },
     { check: 11, name: 'compile invariants', flags: compileInvariants(log), applies: budget.requests > 0 ? 'the run\'s agent made requests' : null },
     { check: 12, name: 'reloads', flags: reloads(log), applies: script.some((s) => s.reloadCheck) ? 'the script restarts with a reload check' : null },
-    { check: 13, name: 'pairing', flags: pairing(records, log, agent), applies: budget.requests > 0 ? 'the run\'s agent made requests' : null },
+    ...[...new Set([...(budget.requests > 0 ? [agent] : []), ...compilingAgents(log)])].map((a) => ({
+      check: 13, name: `pairing ${a}`,
+      flags: a !== FIXTURE_AGENT && sharing.length > 1
+        ? withJudged([{ check: 13, step: 'the run', what: `${a}:shared-side`, message: `couldn't judge ${a}'s pairing: ${sharing.join(' and ')} compile requests, and the stand-in tells only the configuration's own agent's requests from the rest` }], null)
+        : pairing(records, log, a),
+      applies: a === agent && budget.requests > 0 ? `${a} made ${budget.requests} request(s)` : `${a} compiled requests`,
+    })),
     ...(binds ? [{ check: 15, name: 'binding control', flags: bindingControl(records), applies: 'the configuration\'s model binds thinking' }] : []),
   ];
   const judged = parts.map((p) => ({ check: p.check, name: p.name, judged: p.judged ?? p.flags.judged ?? null }));
@@ -36,6 +43,17 @@ export function runChecks({ records, log, script, products, store, agent = FIXTU
 
 const key = (f) => `${f.check}|${f.step}|${f.what ?? ''}`;
 
+const META = new Set('.*+?()[]{}|^$');
+function literal(match) {
+  if (!match.startsWith('^') || !match.endsWith('$')) return false;
+  const body = match.slice(1, -1);
+  for (let i = 0; i < body.length; i++) {
+    if (body[i] === '\\') { i++; if (i >= body.length) return false; continue; }
+    if (META.has(body[i])) return false;
+  }
+  return true;
+}
+
 export function readExpected(path, names) {
   if (!existsSync(path)) return [];
   const entries = JSON.parse(readFileSync(path, 'utf-8'));
@@ -47,9 +65,8 @@ export function readExpected(path, names) {
     for (const field of ['configuration', 'step', 'finding', 'reason']) if (typeof e[field] !== 'string' || !e[field]) bad(`has no ${field}`);
     if (!Number.isInteger(e.check)) bad('has no check number');
     if (typeof e.what !== 'string' || !e.what) bad('has no what: an entry covers one kind of flag, so its check\'s flags must name their kind');
-    if (typeof e.match !== 'string' || !e.match) bad('has no match: an entry covers exactly one flag, by its whole detail (its message, where it has none), escaped and anchored');
-    if (!e.match.startsWith('^') || !e.match.endsWith('$') || e.match.endsWith('\\$')) bad('has a match that isn\'t anchored at both ends, so it could cover flags other than the one it names');
-    try { new RegExp(e.match); } catch (err) { bad(`has a match that isn't a regular expression: ${err.message}`); }
+    if (typeof e.match !== 'string' || !e.match) bad('has no match: an entry covers the flags whose whole detail (their message, where they have none) its match names, escaped and anchored');
+    if (!literal(e.match)) bad('has a match that isn\'t an escaped literal between ^ and $, so it could cover flags other than the one it names');
     if (!names.includes(e.configuration)) bad(`names a configuration this run has none of: ${e.configuration}`);
     const k = `${e.configuration}|${key(e)}`;
     const others = byKey.get(k) ?? [];
@@ -60,10 +77,10 @@ export function readExpected(path, names) {
 }
 
 export function perCheckReport({ configuration, candidate, expected = [] }) {
-  const invalid = candidate.flags.filter((f) => f.check === 10);
+  const invalid = candidate.flags.filter((f) => f.check === 10 && !String(f.what ?? '').startsWith('judged-none:'));
   const entries = expected.filter((e) => e.configuration === configuration.name).map((e) => ({ e, re: new RegExp(e.match) }));
   const coverOf = (f) => entries.filter(({ e, re }) => key(e) === key(f) && re.test(f.detail ?? f.message ?? ''));
-  const counted = candidate.flags.filter((f) => f.check !== 10);
+  const counted = candidate.flags.filter((f) => !invalid.includes(f));
   const covered = [];
   const flags = [];
   const met = new Set();
