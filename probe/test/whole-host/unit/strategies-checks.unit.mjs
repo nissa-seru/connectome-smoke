@@ -396,6 +396,24 @@ test('K2b: a continuation is held to its stream\'s fresh input so far, as membra
   assert.match(wide[0].message, /continuation round's whole input at 32000 tokens, over the model's 31500-token window/);
 });
 
+test('K2b: for a second agent, check 3 judges its own requests (the stand-in\'s sub records) and none of the primary\'s', () => {
+  const sub = (r) => ({ ...r, agent: 'sub' });
+  const s1 = sub(opened('s1', 'a', 2_000, 10_000, ['t1']));
+  const s2 = sub(continued(s1, 's2', 2_100, 11_000, ['t2']));
+  const s3 = sub(continued(s2, 's3', 2_200, 12_000));
+  const p1 = { ...opened('p1', 'b', 1_000, 9_000), agent: 'primary' };
+  const script = [turnStep('a'), turnStep('b')];
+  const log = [sent('s1'), sent('s2'), sent('s3'), sent('p1')];
+  const forSub = budgets([s1, s2, s3, p1], script, log, { agent: 'knowledge-1', streamBound: 100_000, windowTokens: 1_000_000 });
+  assert.deepEqual(forSub.flags, []);
+  assert.equal(forSub.requests, 3);
+  assert.equal(forSub.judged, 3, 'the subagent\'s compiled request and its two continuation rounds');
+  assert.deepEqual(forSub.headroom.map((h) => [h.kind, h.request]), [['compiled', 's1'], ['continuation', 's3']]);
+  const forPrimary = budgets([s1, s2, s3, p1], script, log, { streamBound: 100_000, windowTokens: 1_000_000 });
+  assert.equal(forPrimary.requests, 1);
+  assert.equal(forPrimary.judged, 1);
+});
+
 test('K2b: a request the stand-in answered with a provider error isn\'t judged, and adds nothing to its stream\'s fresh input; the retry is judged', () => {
   const script = [turnStep('a')];
   const failed = { ...opened('r1', 'a', 20_000, 31_000, ['t1']), usage: undefined, answer: { shape: 'error', status: 529 } };
@@ -602,4 +620,27 @@ test('checks 4 and 6: a request the stand-in answered with an error gives its st
   const failed = { id: 'r3', step: 'c', kind: 'agent', answer: { shape: 'error', status: 529 }, messages: [msg('user', summaryBlock('[[s:C3]]')), msg('assistant', carrying('[[c:c.in]]'))] };
   const retry = { id: 'r4', step: 'c', kind: 'agent', answer: { shape: 'reply' }, messages: [msg('user', summaryBlock('[[s:C3]]')), msg('assistant', carrying('[[c:c.in]]'))] };
   assert.deepEqual(coverage([failed, retry], store).map((f) => f.request), [], 'the retry is held to what the step had stored, not to a reply the error never gave');
+});
+
+test('check 4 on a subagent: its requests are held to its own store up to the last canary each carries, whatever the canaries are named', () => {
+  const sub = {
+    messages: [{ id: 's1', canaries: ['[[c:k.task]]'] }, { id: 's2', canaries: ['[[c:k.s1]]'] }, { id: 's3', canaries: ['[[c:k.s1call1]]'] }, { id: 's4', canaries: ['[[c:k.s2]]'] }],
+    summaries: [{ id: 'L1-9', level: 1, sourceLevel: 0, sourceIds: ['s2', 's3'], number: '[[s:C9]]', covers: ['[[c:k.s1]]', '[[c:k.s1call1]]'] }],
+  };
+  const whole = { id: 'whole', step: 'k', kind: 'agent', agent: 'sub', messages: [msg('user', carrying('[[c:k.task]]')), msg('assistant', summaryBlock('[[s:C9]]')), msg('user', carrying('[[c:k.s2]]'))] };
+  const lost = { id: 'lost', step: 'k', kind: 'agent', agent: 'sub', messages: [msg('user', carrying('[[c:k.task]]')), msg('user', carrying('[[c:k.s2]]'))] };
+  const primaryOnly = coverage([whole, lost], sub);
+  assert.equal(primaryOnly.judged, 0, 'the primary\'s side judges none of a subagent\'s requests');
+  const flags = coverage([whole, lost], sub, [], [], { side: 'sub' });
+  assert.equal(flags.judged, 2);
+  assert.deepEqual(flags.map((f) => [f.request, f.what]), [['lost', 'not-reached']]);
+  assert.match(flags[0].message, /\[\[c:k\.s1\]\] \[\[c:k\.s1call1\]\]/);
+});
+
+test('check 6 counts a request as judged only where it held it to some message', () => {
+  const script = [{ id: 'a', segment: 's', replies: [{}] }, { id: 'b', segment: 's', replies: [{}] }, { id: 'c', segment: 's', replies: [{}] }];
+  const empty = { messages: [], summaries: [] };
+  const r = { id: 'r', step: 'c', kind: 'agent', messages: [msg('user', carrying('[[c:c.in]]'))] };
+  assert.equal(windowsRaw([r], script, [], empty).judged, 0, 'nothing stored, so nothing to hold it to');
+  assert.equal(windowsRaw([r], script, [], null).judged, 1, 'without a store read, the script\'s turns hold it');
 });

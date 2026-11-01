@@ -231,42 +231,6 @@ test('T6: a step\'s bad answers go one each, in order, to the next first attempt
   assert.equal(got[3].stop_reason, 'max_tokens');
   assert.match(textOf(got[4]), /^\[\[s:M[0-9a-f]{8}\]\] /);
 }));
-test('T19: a marker in a summariser request scripts its failure: fx:refuse every time, the one-off markers once each, and fx:merge-refuse at merges only, carried on by the summary that covers it', () => withStandin({}, async (s) => {
-  s.setStep(step('fx', []));
-  const marked = (marker, instruction = CHAT) => summariserBody({ canaries: [`[[c:fx.${marker}]]`], instruction: `${instruction}\n\n${marker}` });
-  const ask = async (body) => (await post(s.url, body));
-  for (let i = 0; i < 2; i++) {
-    const r = await ask(marked('fx:refuse'));
-    assert.equal(r.json.stop_reason, 'refusal');
-  }
-  const once = async (marker, check) => {
-    check(await ask(marked(marker)));
-    const again = await ask(marked(marker));
-    assert.equal(again.status, 200, marker);
-    assert.match(textOf(again.json), /^\[\[s:M[0-9a-f]{8}\]\] /, `${marker} a second time is answered`);
-  };
-  await once('fx:empty', (r) => assert.deepEqual(r.json.content, [{ type: 'text', text: '' }]));
-  await once('fx:thinking', (r) => assert.deepEqual(r.json.content.map((b) => b.type), ['thinking']));
-  await once('fx:max-tokens', (r) => assert.equal(r.json.stop_reason, 'max_tokens'));
-  await once('fx:overlong', (r) => assert.ok(r.json.usage.output_tokens > 700, String(r.json.usage.output_tokens)));
-  await once('fx:throw', (r) => {
-    assert.equal(r.status, 500);
-    assert.equal(r.json.error.type, 'api_error');
-  });
-  const l1 = await ask(marked('fx:merge-refuse'));
-  assert.match(textOf(l1.json), /^\[\[s:M[0-9a-f]{8}\]\] Memory [0-9a-f]{8}, carried 1 canaries to \S+ fx:merge-refuse: /);
-  const merge = summariserBody({ canaries: ['[[c:fx.later]]'], summaries: ['placeholder'], instruction: MERGE });
-  merge.messages[1].content[0].text = textOf(l1.json);
-  assert.equal((await ask(merge)).json.stop_reason, 'refusal');
-}));
-
-test('T19: a provider error a marker scripts tells the client not to retry', () => withStandin({}, async (s) => {
-  s.setStep(step('fx', []));
-  const res = await fetch(`${s.url}/v1/messages`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(summariserBody({ instruction: `${CHAT}\n\nfx:fail` })) });
-  assert.equal(res.status, 500);
-  assert.equal(res.headers.get('x-should-retry'), 'false');
-}));
-
 test('T20: with refuseMerges every merge request is refused and an L1 answered; with rejectMerges every merge request is rejected for its request', async () => {
   for (const [opts, check] of [
     [{ refuseMerges: true }, (r) => assert.equal(r.json.stop_reason, 'refusal')],

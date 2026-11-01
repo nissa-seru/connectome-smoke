@@ -9,19 +9,25 @@ import { CANARY, SUMMARY } from './standin.mjs';
  * so a release that stores summaries differently still reads. Opening a store takes its lock
  * and can write to it, so this runs on a copy, never on a store a host has open.
  *
- * Returns `{ messages, summaries }`: each message's id, participant, the canaries its text
- * carries and its body's group and shard; each summary's id, level, sources, the stand-in's
+ * Returns `{ messages, summaries, violations }`: each message's id, participant, the canaries its
+ * text carries and its body's group and shard; each summary's id, level, sources, the stand-in's
  * summary number its content starts with, and the canaries of every message it covers, read
- * down through its sources. A strategy that compressed (`expectSummaries`) and yields no
- * summary, or a summary whose number or sources can't be read, is an error, never "none".
+ * down through its sources; and the strategy's topology violations as it opened the store, each
+ * a line as context-manager's audit-topology prints it (the audit opens a store with the same
+ * strategy options). A strategy that compressed (`expectSummaries`) and yields no summary, or a
+ * summary whose number or sources can't be read, is an error, never "none".
+ * `isolate` opens the namespace's own message slot (`{namespace}/messages`), as agent-framework
+ * opens an ephemeral agent's context, a subagent's among them, where the shared slot holds the
+ * other agents' messages; audit-topology's CLI has no such option, so `violations` is the audit
+ * there.
  */
-export async function readStore({ installDir, storePath, namespace, expectSummaries = true }) {
+export async function readStore({ installDir, storePath, namespace, isolate = false, expectSummaries = true }) {
   const cmEntry = join(installDir, 'node_modules', '@animalabs', 'context-manager', 'dist', 'src', 'index.js');
   const { ContextManager, AutobiographicalStrategy } = await import(pathToFileURL(cmEntry).href);
   // Opened audit-only, as context-manager's own audit-topology opens a store: no chunking at
   // the frontier, no merge enqueued, nothing ticked.
   const strategy = new AutobiographicalStrategy({ adaptiveResolution: true, autoTickOnNewMessage: false, topologyPolicy: 'report', auditOnly: true });
-  const cm = await ContextManager.open({ path: storePath, namespace, strategy });
+  const cm = await ContextManager.open({ path: storePath, namespace, strategy, ...(isolate ? { isolate: true } : {}) });
   try {
     const textOf = (content) => (Array.isArray(content) ? content : [content]).map((b) => (typeof b === 'string' ? b : b?.type === 'text' ? b.text : b?.type === 'tool_result' ? JSON.stringify(b.content) : '')).join('');
     const messages = cm.getAllMessages().map((m) => ({
@@ -59,7 +65,8 @@ export async function readStore({ installDir, storePath, namespace, expectSummar
       number: (String(s.content ?? '').match(SUMMARY) ?? [null])[0],
       covers: leaves(s).flatMap((id) => byMessage.get(id)?.canaries ?? []),
     }));
-    return { messages, summaries };
+    const violations = strategy.getTopologyViolations().map((v) => `L${v.level} ${v.id}: ${v.leafCount} leaves ${v.span.first}..${v.span.last}, ${v.holes} hole(s) e.g. ${v.holeSample.join(',')}${v.holeOwners.length ? ` owned by ${v.holeOwners.join(',')}` : ''}`);
+    return { messages, summaries, violations };
   } finally {
     await cm.close();
   }
@@ -67,6 +74,6 @@ export async function readStore({ installDir, storePath, namespace, expectSummar
 
 if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
   const arg = (name) => { const i = process.argv.indexOf(`--${name}`); return i > 0 ? process.argv[i + 1] : undefined; };
-  const out = await readStore({ installDir: arg('install'), storePath: arg('store'), namespace: arg('namespace'), expectSummaries: arg('expect-summaries') !== 'false' });
+  const out = await readStore({ installDir: arg('install'), storePath: arg('store'), namespace: arg('namespace'), isolate: process.argv.includes('--isolate'), expectSummaries: arg('expect-summaries') !== 'false' });
   writeFileSync(arg('out'), JSON.stringify(out, null, 1));
 }

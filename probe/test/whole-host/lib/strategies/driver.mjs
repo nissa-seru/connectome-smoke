@@ -440,15 +440,17 @@ export async function runScript({ steps, configuration, standin, hostDir, facts,
 
   /**
    * A held reply's settle: maintenance passes until every agent is ready with no compression
-   * pending. The turn whose request is held is alive, so the host isn't drained, and settle()
-   * would wait on it.
+   * pending and no auto-tick in flight (the module's ticks, as settle() reads them). The turn
+   * whose request is held is alive, so the host isn't drained, and settle() would wait on it.
    */
   async function compressionIdle(request) {
     const started = performance.now();
     for (let pass = 1; ; pass++) {
       const answer = await ctl.hostCommand({ command: 'maintain' }, { timeoutMs: MAINTAIN_MS });
       const agents = answer?.maintenance?.agents ?? [];
-      const idle = answer?.ok === true && agents.every((a) => a.ready === true && a.progress?.pending !== true);
+      const ticks = configuration.harnessModule === false ? {} : await ctl.moduleRequest('ticks');
+      const idle = answer?.ok === true && agents.every((a) => a.ready === true && a.progress?.pending !== true)
+        && Object.values(ticks).every((n) => n === 0);
       if (idle) {
         log('held', { request: request.id, agent: request.agent, passes: pass, ms: Math.round(performance.now() - started) });
         return;

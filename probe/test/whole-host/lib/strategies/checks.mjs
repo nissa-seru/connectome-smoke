@@ -41,7 +41,7 @@ export function compileInvariants(log = []) {
     for (const line of e.lines ?? []) {
       if (line.outcome === 'compiled') judged++;
       if (line.outcome === 'unrecordable') flags.push({ check: 11, step: e.step, what: `${line.agent}:${line.kind}:unrecordable`, message: `the harness module couldn't record ${line.agent}'s ${line.kind} compile ${line.seq}: ${line.reason}` });
-      for (const v of line.violations ?? []) flags.push({ check: 11, step: e.step, what: `${line.agent}:${line.kind}:${v.invariant}`, message: `${line.agent}'s ${line.kind} compile ${line.seq} breaks ${v.invariant}: ${v.detail}` });
+      for (const v of line.violations ?? []) flags.push({ check: 11, step: e.step, what: `${line.agent}:${line.kind}:${v.invariant}`, detail: v.detail, message: `${line.agent}'s ${line.kind} compile ${line.seq} breaks ${v.invariant}: ${v.detail}` });
     }
   }
   return withJudged(flags, judged);
@@ -165,14 +165,20 @@ function lastRequests(records, script, log, agent = FIXTURE_AGENT) {
 }
 
 /** Whether a stand-in record is the run's own agent's: the primary's, not a subagent's or a reader's (standin.mjs `agent`). */
-export const primary = (r) => r.kind === 'agent' && (r.agent ?? 'primary') === 'primary';
+export const ofSide = (side = 'primary') => (r) => r.kind === 'agent' && (r.agent ?? 'primary') === side;
+export const primary = ofSide('primary');
 
-/** Each segment's agent requests, the run's own agent's, in the order they arrived, keyed by segment. */
-function segmentAgents(records, script) {
+/**
+ * Each segment's agent requests of one side, the primary's unless `side` names the second agent's
+ * (`sub`, as the stand-in's records name a subagent's or the reader's), in the order they
+ * arrived, keyed by segment.
+ */
+function segmentAgents(records, script, side = 'primary') {
   const segmentOf = new Map(script.map((s) => [s.id, s.segment]));
   const bySegment = new Map();
+  const mine = ofSide(side);
   for (const r of records) {
-    if (!primary(r) || !segmentOf.has(r.step)) continue;
+    if (!mine(r) || !segmentOf.has(r.step)) continue;
     const segment = segmentOf.get(r.step);
     bySegment.set(segment, [...(bySegment.get(segment) ?? []), r]);
   }
@@ -419,7 +425,7 @@ export function budgets(records, script, log = [], { agent = FIXTURE_AGENT, stre
   const side = agent === FIXTURE_AGENT ? 'primary' : 'sub';
   const own = records.filter((r) => r.kind === 'agent' && (r.agent ?? 'primary') === side);
   const agentRequests = own;
-  const bySegment = segmentAgents(own, script);
+  const bySegment = segmentAgents(own, script, side);
   for (const e of log) {
     if (e.kind === 'checkpoint' && !bySegment.has(e.name)) flags.push({ check: 3, step: e.step ?? e.name, message: `segment ${e.name} made no agent request` });
   }
@@ -509,7 +515,8 @@ export function headStart(store, step) {
  * was stored and still is, with a store read; without one, the script's turns less what a
  * suppress step removed and the replies of a turn that ended without one.
  */
-export function windowsRaw(records, script, log, store, { agent = FIXTURE_AGENT } = {}) {
+export function windowsRaw(records, script, log, store, { agent = FIXTURE_AGENT, side = 'primary' } = {}) {
+  const own = ofSide(side);
   const flags = [];
   let judged = 0;
   const turns = script.filter((s) => Array.isArray(s.replies) && s.replies.length);
@@ -528,13 +535,14 @@ export function windowsRaw(records, script, log, store, { agent = FIXTURE_AGENT 
   const held = (c, stepId) => (store ? at.has(c) : !suppressed.has(c) && !(failed.has(stepId) && /\.r\d+\]\]$/.test(c)));
   const asked = new Map();
   for (const r of records) {
-    if (!primary(r)) continue;
+    if (!own(r)) continue;
     // The step's replies so far: each earlier request of the step, but one the stand-in answered
     // with a provider error or a refusal (a scripted 529 gives no reply, and its retry is no new round).
     const n = (asked.get(r.step) ?? 0) + 1;
     asked.set(r.step, n - (['error', 'refused'].includes(r.answer?.shape) ? 1 : 0));
     if (!before.has(r.step)) continue;
-    judged++;
+    // Judged: a request held to at least one message, its head's or its recent window's.
+    let heldTo = 0;
     const carried = new Set((r.messages || []).flatMap((m) => m.blocks).flatMap((b) => b.canaries || []));
     const ownInput = at.get(`[[c:${r.step}.in]]`);
     if (store && ownInput !== undefined && lasts.has(r) && checkpointed.has(segmentOf.get(r.step))) {
@@ -544,15 +552,18 @@ export function windowsRaw(records, script, log, store, { agent = FIXTURE_AGENT 
       } else {
         const from = headStart(store, r.step);
         const head = store.messages.slice(from, from + heads.get(segmentOf.get(r.step))).flatMap((m) => m.canaries.filter(conversational)).filter((c) => storedBefore.has(c));
+        heldTo += head.length;
         const lost = head.filter((c) => !carried.has(c));
         if (lost.length) flags.push({ check: 6, step: r.step, request: r.id, message: `the head window's ${lost.join(' ')} isn't raw` });
       }
     }
     for (const t of before.get(r.step)) {
       const wanted = [`[[c:${t.id}.in]]`, ...t.replies.map((_, k) => `[[c:${t.id}.r${k + 1}]]`)].filter((c) => held(c, t.id));
+      heldTo += wanted.length;
       const missing = wanted.filter((c) => !carried.has(c));
       if (missing.length) flags.push({ check: 6, step: r.step, request: r.id, message: `the recent window lacks ${missing.join(' ')}` });
     }
+    if (heldTo) judged++;
   }
   if (!store) return withJudged(flags, judged);
   const stepOf = new Map(script.map((s) => [s.id, s]));
@@ -578,7 +589,9 @@ const conversational = (c) => /\.(in|r\d+)\]\]$/.test(c);
 
 /**
  * Check 4, coverage read from the wire, against a store read (read-store.mjs): in each request
- * of the run's own agent (not a subagent's or a reader's, which the primary's store doesn't describe), every message stored before it that carries an input or reply canary is there raw
+ * of the judged agent's (`side`: the primary's, or, judging a subagent, its `sub` requests against its own store),
+ * every message stored before it that carries an input or reply canary (a subagent's: any canary, up to the last
+ * the request carries, since the script's turns don't name its conversation) is there raw
  * or inside a summary whose number is there, no such message is there twice, and what it
  * carries runs in store order within each window, a summary by the first message it covers,
  * since context-manager renders the head first and, after a head-window reset, the history
@@ -591,37 +604,42 @@ const conversational = (c) => /\.(in|r\d+)\]\]$/.test(c);
  * result's canary isn't required, since pruning replaces older results by design. A summary
  * number no store read maps is flagged, never counted either way.
  */
-export function coverage(records, store, script = [], log = [], { agent = FIXTURE_AGENT } = {}) {
+export function coverage(records, store, script = [], log = [], { agent = FIXTURE_AGENT, side = 'primary' } = {}) {
+  const own = ofSide(side);
+  // A subagent's store is its own conversation, which the script's turns don't name: every
+  // canary in it counts, and a request is held to what was stored up to the last of them it carries.
+  const sub = side !== 'primary';
+  const counted = sub ? () => true : conversational;
   const flags = [];
   let judged = 0;
   const segmentOf = new Map(script.map((s) => [s.id, s.segment]));
   const heads = headCounts(log, agent);
   const lasts = segmentLasts(records, script);
   const covers = new Map(store.summaries.filter((s) => s.number).map((s) => [s.number, s.covers]));
-  const order = store.messages.flatMap((m) => m.canaries.filter(conversational));
+  const order = store.messages.flatMap((m) => m.canaries.filter(counted));
   const at = new Map(order.map((c, i) => [c, i]));
   const asked = new Map();
   for (const r of records) {
-    if (!primary(r)) continue;
+    if (!own(r)) continue;
     // The step's replies so far: each earlier request of the step, but one the stand-in answered
     // with a provider error or a refusal (a scripted 529 gives no reply, and its retry is no new round).
     const n = (asked.get(r.step) ?? 0) + 1;
     asked.set(r.step, n - (['error', 'refused'].includes(r.answer?.shape) ? 1 : 0));
-    const ownInput = at.get(`[[c:${r.step}.in]]`);
-    if (ownInput === undefined) continue;
-    judged++;
     const shown = [];
     const unknown = [];
     for (const m of r.messages || []) {
       for (const b of m.blocks) {
-        shown.push(...(b.canaries || []).filter(conversational));
+        shown.push(...(b.canaries || []).filter(counted));
         for (const s of b.summaries || []) {
-          if (covers.has(s)) shown.push(...covers.get(s).filter(conversational));
+          if (covers.has(s)) shown.push(...covers.get(s).filter(counted));
           else unknown.push(s);
         }
       }
     }
-    for (const s of new Set(unknown)) flags.push({ check: 4, step: r.step, request: r.id, message: `summary ${s} is in the request, and no store read maps it` });
+    const ownInput = sub ? Math.max(-1, ...shown.map((x) => at.get(x) ?? -1)) : at.get(`[[c:${r.step}.in]]`);
+    if (ownInput === undefined || ownInput < 0) continue;
+    judged++;
+    for (const s of new Set(unknown)) flags.push({ check: 4, step: r.step, request: r.id, what: 'unmapped-summary', message: `summary ${s} is in the request, and no store read maps it` });
     const size = lasts.has(r) ? heads.get(segmentOf.get(r.step)) : undefined;
     const from = headStart(store, r.step);
     const head = size === undefined ? null : new Set(store.messages.slice(from, from + size).flatMap((m) => m.canaries));
@@ -633,13 +651,13 @@ export function coverage(records, store, script = [], log = [], { agent = FIXTUR
     for (const m of r.messages || []) {
       for (const b of m.blocks) {
         const items = [
-          ...(b.canaries || []).filter(conversational).map((c) => [c, at.get(c)]).map(([c, i]) => [c, i, raw(c, i)]),
-          ...(b.summaries || []).filter((x) => covers.has(x)).map((x) => [x, Math.min(...covers.get(x).filter(conversational).map((c) => at.get(c) ?? Infinity))]).map(([x, i]) => [x, i, summary(i)]),
+          ...(b.canaries || []).filter(counted).map((c) => [c, at.get(c)]).map(([c, i]) => [c, i, raw(c, i)]),
+          ...(b.summaries || []).filter((x) => covers.has(x)).map((x) => [x, Math.min(...covers.get(x).filter(counted).map((c) => at.get(c) ?? Infinity))]).map(([x, i]) => [x, i, summary(i)]),
         ].filter(([, i]) => Number.isFinite(i));
         for (const item of items) {
           const before = last[item[2]];
           if (before && item[1] < before[1] && !flags.some((f) => f.request === r.id && /store order/.test(f.message))) {
-            flags.push({ check: 4, step: r.step, request: r.id, message: `it carries ${item[0]} after ${before[0]}, out of store order${head || boundary > 0 ? ` within ${within[item[2]]}` : ''}` });
+            flags.push({ check: 4, step: r.step, request: r.id, what: 'store-order', message: `it carries ${item[0]} after ${before[0]}, out of store order${head || boundary > 0 ? ` within ${within[item[2]]}` : ''}` });
           }
           last[item[2]] = item;
         }
@@ -647,11 +665,11 @@ export function coverage(records, store, script = [], log = [], { agent = FIXTUR
     }
     const count = new Map();
     for (const c of shown) count.set(c, (count.get(c) ?? 0) + 1);
-    const wanted = [...order.slice(0, ownInput + 1), ...Array.from({ length: n - 1 }, (_, k) => `[[c:${r.step}.r${k + 1}]]`)];
+    const wanted = [...order.slice(0, ownInput + 1), ...(sub ? [] : Array.from({ length: n - 1 }, (_, k) => `[[c:${r.step}.r${k + 1}]]`))];
     const missing = wanted.filter((c) => !count.has(c));
     const twice = wanted.filter((c) => count.get(c) > 1);
-    if (missing.length) flags.push({ check: 4, step: r.step, request: r.id, message: `${missing.length} stored message(s) reach the request neither raw nor in a summary: ${missing.slice(0, 5).join(' ')}${missing.length > 5 ? ' …' : ''}` });
-    if (twice.length) flags.push({ check: 4, step: r.step, request: r.id, message: `${twice.length} message(s) reach the request more than once: ${twice.slice(0, 5).join(' ')}${twice.length > 5 ? ' …' : ''}` });
+    if (missing.length) flags.push({ check: 4, step: r.step, request: r.id, what: 'not-reached', message: `${missing.length} stored message(s) reach the request neither raw nor in a summary: ${missing.slice(0, 5).join(' ')}${missing.length > 5 ? ' …' : ''}` });
+    if (twice.length) flags.push({ check: 4, step: r.step, request: r.id, what: 'more-than-once', message: `${twice.length} message(s) reach the request more than once: ${twice.slice(0, 5).join(' ')}${twice.length > 5 ? ' …' : ''}` });
   }
   return withJudged(flags, judged);
 }

@@ -284,7 +284,11 @@ async function workloadRun(id, { harnessModule = true, rawDir = null, dir }) {
   const judgedFlags = judged.flags.filter((f) => !owns(f));
   const owned = judged.flags.length - judgedFlags.length;
   const flags = [...judgedFlags, ...breaches.map((b) => ({ check: 14, step: b.step ?? 'the run', ...(b.what ? { what: b.what } : {}), message: `${job.workload}'s property: ${b.message}` }))];
-  const report = perCheckReport({ configuration: { name: id }, candidate: { flags, missing: [], notes: [...(judged.notes ?? []), ...(owned ? [`${owned} flag(s) are ${job.workload}'s by design, judged by its property (runOf owns)`] : [])], headroom: judged.headroom, judged: judged.judged }, expected });
+  // The property's count joins the run's: a property that says how many it judged and
+  // judged none, on a run that completed, couldn't judge it.
+  const counts = [...(judged.judged ?? []), ...(typeof breaches.judged === 'number' ? [{ check: 14, name: 'property', judged: breaches.judged }] : [])];
+  if (d.run.ok && breaches.judged === 0 && !breaches.length) flags.push({ check: 14, step: 'the run', what: 'judged-none:property', message: `couldn't judge: ${job.workload}'s property judged nothing, though the run completed` });
+  const report = perCheckReport({ configuration: { name: id }, candidate: { flags, missing: [], notes: [...(judged.notes ?? []), ...(owned ? [`${owned} flag(s) are ${job.workload}'s by design, judged by its property (runOf owns)`] : [])], headroom: judged.headroom, judged: counts }, expected });
   writeFileSync(join(dir, 'report.txt'), `${report.lines.join('\n')}\n`);
   return {
     outcome: report.verdict === 'pass' ? 'pass' : report.verdict,

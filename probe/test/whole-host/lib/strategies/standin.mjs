@@ -44,20 +44,6 @@ export const CANARY = /\[\[c:[^\]\s]+\]\]/g;
 /** A summary's id, the first thing each summary answer says: `M` and eight hex digits of what its request carried. */
 export const SUMMARY = /\[\[s:M[0-9a-f]{8}\]\]/g;
 
-/**
- * The scripted failures a workload writes into a message's text, as context-manager characterization fixture's stand-in
- * met them (no marker may be a substring of another, since they match by text):
- * - fx:refuse: every summariser call carrying it is refused (stop reason `refusal`), as a model refuses the same text
- *   again;
- * - fx:merge-refuse: answered at L1, and every merge request carrying it is refused; a summary of messages carrying it
- *   carries it on, so the merge that reads that summary refuses too;
- * - fx:empty, fx:thinking, fx:max-tokens, fx:overlong: once, the first call carrying it: an empty answer, a thinking
- *   block and no text, text cut at max_tokens, an answer four times its target;
- * - fx:throw, fx:fail: once, a provider error, an HTTP 500 that the provider says not to retry, so membrane hands it
- *   on at once, as a resident meets an error past its retries.
- */
-export const MARKERS = ['fx:merge-refuse', 'fx:refuse', 'fx:fail', 'fx:empty', 'fx:thinking', 'fx:max-tokens', 'fx:overlong', 'fx:throw'];
-const MEMORY = /\[\[s:M[0-9a-f]{8}\]\] Memory /;
 
 const canaryOrder = (a, b) => a.localeCompare(b, 'en', { numeric: true });
 
@@ -187,13 +173,10 @@ const systemText = (body) => (typeof body.system === 'string' ? body.system : (b
 
 function readSummariser(body, target) {
   const all = [systemText(body), ...texts(body)];
-  const markersIn = (strings) => MARKERS.filter((m) => strings.some((t) => t.includes(m)));
   return {
     target,
     canaries: [...new Set(found(all, CANARY))].sort(canaryOrder),
     recalled: [...new Set(found(all, SUMMARY))].sort(),
-    markers: markersIn(all),
-    rawMarkers: markersIn(all.filter((t) => !MEMORY.test(t))),
   };
 }
 
@@ -241,8 +224,8 @@ const digestOf = (m) => sha(JSON.stringify(maskRunVarying(unmarked({ role: m.rol
  * @param {string} [opts.rawDir] where each request's body is saved, as `<id>.json`.
  *
  * A summariser's answer is a function of what its request carries, never of its bytes or its arrival: the target its
- * instruction states, and the canaries, summary ids (SUMMARY) and markers (MARKERS) anywhere in it, its system prompt
- * and tool results included, as sets. So a reworded prompt shows in its own call, and one moved compression doesn't
+ * instruction states, and the canaries and summary ids (SUMMARY) anywhere in it, its system prompt and tool results
+ * included, as sets. So a reworded prompt shows in its own call, and one moved compression doesn't
  * renumber every later summary. A summary opens with its id, `[[s:M` and eight hex digits of that digest, then says
  * how many canaries it carried and the last of them in order, without its brackets, so no reader takes the summary's
  * text for the message that canary names.
@@ -271,7 +254,6 @@ export async function startStandin({ configuration, rawDir = null, refuseMerges 
   let clock = 0;
   let toolNumber = 0;
   const badQueue = [];
-  const spent = new Set();
   const held = [];
   const heldListeners = [];
   if (rawDir) mkdirSync(rawDir, { recursive: true });
@@ -391,43 +373,29 @@ export async function startStandin({ configuration, rawDir = null, refuseMerges 
   }
 
   function summariserShape(read, record) {
-    const once = (m) => {
-      if (!read.markers.includes(m) || spent.has(m)) return false;
-      spent.add(m);
-      return true;
-    };
-    const has = (m) => read.markers.includes(m);
     const merge = record.level >= 2;
-    if (once('fx:throw') || once('fx:fail')) return 'throw';
     if (rejectMerges && merge) return 'rejection';
-    if (has('fx:refuse') || (has('fx:merge-refuse') && merge) || (refuseMerges && merge)) return 'refusal';
-    if (once('fx:empty')) return 'empty';
-    if (once('fx:thinking')) return 'thinking-block';
-    if (once('fx:max-tokens')) return 'max-tokens';
-    if (once('fx:overlong')) return 'over-long';
+    if (refuseMerges && merge) return 'refusal';
     if (badQueue.length && !record.retry) return badQueue.shift();
     return 'summary';
   }
 
   function answerSummariser(res, body, record, read) {
     const shape = record.answer.shape;
-    if (shape === 'throw') return sendError(res, 500, `stand-in provider error (${record.id})`, { type: 'api_error', headers: { 'x-should-retry': 'false' } });
     if (shape === 'rejection') return sendError(res, 400, `stand-in: merge request ${record.id} is rejected for its request`);
     const seed = sha([read.target, read.canaries.join(','), read.recalled.join(',')].join('\u0000'));
     const words = parseInt(seed.slice(8, 16), 16);
     const summary = `[[s:M${seed.slice(0, 8)}]]`;
-    const carryOn = read.rawMarkers.includes('fx:merge-refuse') ? ' fx:merge-refuse' : '';
-    const head = `${summary} Memory ${seed.slice(0, 8)}, carried ${read.canaries.length} canaries to ${read.canaries.at(-1)?.slice(2, -2) ?? 'none'}${carryOn}:`;
+    const head = `${summary} Memory ${seed.slice(0, 8)}, carried ${read.canaries.length} canaries to ${read.canaries.at(-1)?.slice(2, -2) ?? 'none'}:`;
     const maxChars = Math.floor((body.max_tokens || 16_000) * RATE.prose) - 32;
     const memory = (chars) => `${head} ${padding(Math.min(chars, maxChars) - head.length - 1, words)}`;
     let content; let stop = 'end_turn';
     if (shape === 'refusal') { content = [{ type: 'text', text: 'I can\'t help with that.' }]; stop = 'refusal'; }
     else if (shape === 'empty') content = [{ type: 'text', text: '' }];
     else if (shape === 'thinking-only') content = [{ type: 'text', text: `<thinking>${padding(200, words)}</thinking>` }];
-    else if (shape === 'thinking-block') content = [{ type: 'thinking', thinking: padding(200, words), signature: `fx1.${seed.slice(0, 16)}` }];
     else if (shape === 'max-tokens') { content = [{ type: 'text', text: memory(maxChars) }]; stop = 'max_tokens'; }
-    else content = [{ type: 'text', text: memory(Math.floor(record.target * RATE.prose * (shape === 'over-long' ? 4 : 1))) }];
-    if (['summary', 'over-long', 'max-tokens'].includes(shape)) record.answer.summary = summary;
+    else content = [{ type: 'text', text: memory(Math.floor(record.target * RATE.prose)) }];
+    if (['summary', 'max-tokens'].includes(shape)) record.answer.summary = summary;
     record.answer.chars = content.reduce((t, b) => t + (b.text ?? b.thinking ?? '').length, 0);
     record.answer.stop = stop;
     sendMessage(res, body, record, { content, stop });

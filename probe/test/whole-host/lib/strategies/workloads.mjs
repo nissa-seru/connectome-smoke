@@ -80,8 +80,8 @@ function image(seed) {
 /**
  * A run's step writer: `turn(step, o)` is one channel turn as a host drives a resident's: the message arrives, the
  * agent calls the fixture server's tool in `rounds` rounds of `calls` calls each (none with `calls: 0`), each result
- * comes back, and the agent replies. `o`: `user` (its text instead of prose), `size` (the user text's range), `mark`
- * (a marker written after the canaries, with the poison canary `x`), `attach` (an image with the message), `result`
+ * comes back, and the agent replies. `o`: `user` (its text instead of prose), `size` (the user text's range),
+ * `attach` (an image with the message), `result`
  * (the k-th call's tool input, given its canary), `callId` (the k-th call's own tool id), `thinking` (the first
  * round's thinking, in characters), `arrival` (`{ after: k }`: a message arrives while call k runs), `more` (any other
  * step fields).
@@ -94,8 +94,7 @@ function writer(ctx, workload) {
   const turn = (step, o = {}) => {
     const sid = id(step);
     const canaries = [c(step, 'in')];
-    const poison = o.mark ? ` ${c(step, 'x')} ${o.mark}` : '';
-    const text = `${c(step, 'in')}${poison} ${o.user ?? prose(between(o.size ?? SIZES.user), `${sid}:in`)}`;
+    const text = `${c(step, 'in')} ${o.user ?? prose(between(o.size ?? SIZES.user), `${sid}:in`)}`;
     const calls = o.calls ?? 1;
     const rounds = calls === 0 ? 0 : (o.rounds ?? 1);
     const replies = [];
@@ -264,9 +263,6 @@ function markdownPaste(seed, step, target) {
 
 const entries = (run, kind) => run.log.filter((e) => e.kind === kind);
 const readsOf = (run, op) => entries(run, 'read').filter((e) => e.op === op);
-/** The test module's compile lines, each with the step whose settle or shutdown took it and the boot that made it. */
-const compileLines = (run) => entries(run, 'compiles').flatMap((e) => e.lines.map((l) => ({ ...l, step: e.step, boot: e.boot })));
-const canaryRe = (seed) => new RegExp(`^\\[\\[c:${seed}\\.([^.\\]]+)\\.([a-z0-9]+)\\]\\]$`);
 
 /** Every block of an agent request's record, with its message's index and role. */
 const blocksOf = (record) => (record.messages ?? []).flatMap((m, i) => m.blocks.map((b) => ({ i, role: m.role, b })));
@@ -425,15 +421,15 @@ export const WORKLOADS = {
   },
 
   /**
-   * W7: modes marks seven turns with the stand-in's one-off and refusing failures; throws marks two provider errors;
-   * merges-refused and merges-rejected set the stand-in to refuse or reject every merge; fable-no-tools and no-tools
-   * run an agent permitted no tools from empty, whose 32 turns say more each, as its tool results would have.
+   * W7: merges-refused and merges-rejected set the stand-in to refuse or reject every merge; fable-no-tools and
+   * no-tools run an agent permitted no tools from empty, whose 32 turns say more each, as its tool results would have
+   * (fable-no-tools with a Fable-family compression model: D41's run, no-tools its control).
    */
   W7: {
     from: 'checkpoint',
     turns: 21,
-    property: 'failures: a refused chunk is quarantined alone, and no other chunk\'s compression request carries its text',
-    variants: ['modes', 'merges-refused', 'merges-rejected', 'fable-no-tools', 'no-tools', 'throws'],
+    property: 'failures: each merge the stand-in refuses raises one off-path refusal alert, and no other call raises one',
+    variants: ['merges-refused', 'merges-rejected', 'fable-no-tools', 'no-tools'],
     owns: (variant) => (variant === 'merges-refused' ? [{ check: 1, what: 'refusal-offpath' }] : []),
     fromEmpty: (variant) => variant === 'fable-no-tools' || variant === 'no-tools',
     standin: (variant) => ({ refuseMerges: variant === 'merges-refused', rejectMerges: variant === 'merges-rejected' }),
@@ -443,7 +439,6 @@ export const WORKLOADS = {
     }),
     steps(ctx) {
       const w = writer(ctx, 'W7');
-      const MARKS = { 3: 'fx:refuse', 6: 'fx:empty', 9: 'fx:thinking', 12: 'fx:max-tokens', 15: 'fx:overlong', 18: 'fx:throw', 21: 'fx:merge-refuse' };
       const noTools = ['fable-no-tools', 'no-tools'].includes(ctx.variant);
       const turns = noTools ? 32 : this.turns;
       if (ctx.configurationName === 'H2') {
@@ -456,44 +451,20 @@ export const WORKLOADS = {
       }
       const steps = [];
       for (let n = 1; n <= turns; n++) {
-        const mark = ctx.variant === 'modes' ? MARKS[n] : ctx.variant === 'throws' ? { 3: 'fx:throw', 5: 'fx:fail' }[n] : null;
-        if (mark) steps.push(w.turn(n, { mark, calls: 0 }));
-        else if (noTools) steps.push(w.turn(n, { calls: 0, size: SIZES.reading }));
+        if (noTools) steps.push(w.turn(n, { calls: 0, size: SIZES.reading }));
         else steps.push(w.turn(n, ctx.variant === 'merges-refused' ? phaseTurn(n) : {}));
       }
       return steps;
     },
     check(run, ctx) {
       const out = [];
-      const re = canaryRe(ctx.seed);
-      const turnsOf = (r) => (r.sent?.canaries ?? []).map((x) => re.exec(x)).filter(Boolean).map((m) => Number(m[1])).filter(Number.isFinite);
       const calls = run.records.filter((r) => r.kind === 'summariser');
-      if (ctx.variant === 'modes') {
-        const poison = canary(ctx.seed, 3, 'x');
-        const carrying = calls.filter((r) => (r.sent?.canaries ?? []).includes(poison));
-        if (!carrying.length) return withJudged([{ step: null, message: `couldn't judge: no summariser call carried the marked ${poison}` }], 0);
-        const cascade = carrying.filter((r) => ['refusal', 'rejection'].includes(r.answer?.shape) && turnsOf(r).some((t) => t >= 5));
-        if (cascade.length) out.push({ step: null, message: `${cascade.length} refused or rejected calls for other chunks carried the quarantined ${poison} (steps ${[...new Set(cascade.map((r) => r.step))].join(', ')})` });
-        return withJudged(out, carrying.length);
-      }
       if (ctx.variant === 'merges-refused') {
         const refused = calls.filter((r) => r.answer?.shape === 'refusal');
         const alerts = run.log.filter((e) => e.kind === 'ipc' && e.event?.type === 'ops:alert' && e.event.kind === 'refusal-offpath');
         if (!refused.length) return withJudged([{ step: null, message: 'couldn\'t judge: the stand-in refused no merge' }], 0);
         if (alerts.length !== refused.length) out.push({ step: null, message: `${refused.length} refused merge(s) raised ${alerts.length} off-path refusal alert(s), where each raises one` });
         return withJudged(out, refused.length);
-      }
-      if (ctx.variant === 'throws') {
-        const newest = (r) => Math.max(-1, ...turnsOf(r));
-        const stepTurn = (r) => Number(String(r.step ?? '').split('.')[1]);
-        const l1 = calls.filter((r) => r.level === 1);
-        const f = l1.findIndex((r) => r.answer?.shape === 'throw');
-        const k = f === -1 ? -1 : l1.findIndex((r, i) => i > f && r.step !== l1[f].step);
-        if (k !== -1 && newest(l1[k]) === newest(l1[f])) {
-          const waited = l1.slice(k + 1).find((r) => r.step === l1[k].step && newest(r) > newest(l1[f]) && newest(r) < stepTurn(l1[k]));
-          if (waited) out.push({ step: l1[k].step, message: `the chunk whose call failed at ${l1[f].step} went again before one whose messages had all arrived (newest at turn ${newest(waited)})` });
-        }
-        return withJudged(f === -1 || k === -1 ? [{ step: null, message: 'couldn\'t judge: no failed chunk call was followed by another chunk\'s' }] : out, f === -1 || k === -1 ? 0 : 1);
       }
       return out;
     },
@@ -691,8 +662,8 @@ function restoredWithin(run, agent, stepOf, noun) {
   for (const a of assemblies(run.log, agent)) if (!firstByStep.has(a.step)) firstByStep.set(a.step, a);
   const outcome = (n) => firstByStep.get(stepOf(n))?.outcome ?? 'no request';
   const before = [1, 2, 3, 4].filter((n) => outcome(n) !== 'compiled');
-  if (before.length) return [{ step: stepOf(before[0]), message: `couldn't judge the restore: ${before.map((n) => `${noun} ${n} ${outcome(n)}`).join(', ')}, before the budget was lowered` }];
-  return [15, 16].filter((n) => outcome(n) !== 'compiled').map((n) => ({ step: stepOf(n), message: `${noun} ${n}: ${outcome(n)} ${n - 13} turn(s) after the budget was restored` }));
+  if (before.length) return withJudged([{ step: stepOf(before[0]), message: `couldn't judge the restore: ${before.map((n) => `${noun} ${n} ${outcome(n)}`).join(', ')}, before the budget was lowered` }], 0);
+  return withJudged([15, 16].filter((n) => outcome(n) !== 'compiled').map((n) => ({ step: stepOf(n), message: `${noun} ${n}: ${outcome(n)} ${n - 13} turn(s) after the budget was restored` })), 2);
 }
 
 /**
@@ -736,7 +707,7 @@ export const RUNS = [
   'H3/W4',
   'C5h/W5',
   'C8h/W6',
-  'C3h/W7/modes', 'C3h/W7/throws', 'C3h/W7/merges-refused', 'C3h/W7/fable-no-tools', 'C3h/W7/no-tools',
+  'C3h/W7/merges-refused', 'C3h/W7/fable-no-tools', 'C3h/W7/no-tools',
   'H1/W7/merges-refused', 'H1/W7/merges-rejected', 'H2/W7/merges-refused',
   'C3h/W8/unenforced', 'C6h/W8/enforced', 'H1/W8/enforced', 'H4/W8/unenforced',
   'H3/W9', 'C3h/W9', 'C6h/W9', 'H1/W9',

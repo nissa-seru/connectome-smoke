@@ -78,3 +78,11 @@ test('a store that kept no summaries, where the configuration compresses, is a c
   const unreadable = { readStore: async () => { throw new Error('getSummary(L1-3) is null, though getSummariesInRange lists it'); }, audit };
   await assert.rejects(judge({ ...side(configurations().default), readers: unreadable }), /getSummary/);
 });
+
+test('a run is judged by its configuration\'s agent, or, where it judges its subagent, by the first other agent its compile lines name, in that agent\'s own slot', async () => {
+  const { judgedAgent } = await import('../lib/strategies/judge.mjs');
+  assert.deepEqual(judgedAgent(configurations().default, []), { agent: 'fixture', namespace: 'agents/fixture', isolate: false });
+  const log = [{ kind: 'compiles', lines: [{ kind: 'request', agent: 'fixture' }, { kind: 'dry', agent: 'spawn-x' }] }, { kind: 'compiles', lines: [{ kind: 'request', agent: 'spawn-knowledge-1-2' }] }];
+  assert.deepEqual(judgedAgent({ ...configurations().H2 }, log), { agent: 'spawn-knowledge-1-2', namespace: 'subagent/spawn-knowledge-1-2', isolate: true });
+  assert.throws(() => judgedAgent(configurations().H2, log.slice(0, 1)), /no compile line names a subagent/);
+});

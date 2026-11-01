@@ -52,7 +52,7 @@ export const FULL_RUN_MODELS = [
  */
 export function configurations({ model = 'claude-opus-4-6' } = {}) {
   const agent = { model, cacheKeepalive: { enabled: false } };
-  const run = (name, more, summarises = true) => ({ name, agent: { ...agent, ...more.agent }, ...(more.modules ? { modules: more.modules } : {}), ...(more.subconscious ? { subconscious: more.subconscious } : {}), maintenanceIntervalMs: 0, binds: false, summarises });
+  const run = (name, more, summarises = true) => ({ name, agent: { ...agent, ...more.agent }, ...(more.modules ? { modules: more.modules } : {}), ...(more.subconscious ? { subconscious: more.subconscious } : {}), ...(more.judges ? { judges: more.judges } : {}), maintenanceIntervalMs: 0, binds: false, summarises });
   return {
     default: { name: 'default', agent, maintenanceIntervalMs: 0, binds: false, summarises: true },
     passthrough: { name: 'passthrough', agent: { ...agent, strategy: { type: 'passthrough' } }, maintenanceIntervalMs: 0, binds: false, summarises: false },
@@ -64,7 +64,8 @@ export function configurations({ model = 'claude-opus-4-6' } = {}) {
  * The workloads' configurations (workloads.mjs), as a host's recipe makes each (room-203 #315555, #315561):
  * - H1: the strategy left to the host, which makes it autobiographical, adaptive and kv-unified with its standard block
  *   (`framework-strategy.ts:162-187`): the fixture's H1 for this model, and its C7 too;
- * - H2: H1 with the subagent module on, whose knowledge subagent the workloads run inside a spawn;
+ * - H2: H1 with the subagent module on, whose knowledge subagent the workloads run inside a spawn, so the judge
+ *   judges that subagent (judge.mjs judgedAgent);
  * - H3: a passthrough;
  * - H4: H1 with a persistent subconscious reader, agent-framework's WindowedPassthrough strategy, which reads what
  *   the resident's tune-out holds (`READER` in its system prompt tells its requests apart);
@@ -74,7 +75,7 @@ export function configurations({ model = 'claude-opus-4-6' } = {}) {
 function configurationsAsResidentsRun(run) {
   return {
     H1: run('H1', {}),
-    H2: run('H2', { modules: { subagents: true } }),
+    H2: run('H2', { modules: { subagents: true }, judges: 'subagent' }),
     H3: run('H3', { agent: { strategy: { type: 'passthrough' } } }, false),
     H4: run('H4', { subconscious: { enabled: true, systemPrompt: `${READER} You read what the resident has tuned out, and tell them what matters.` } }),
     C3h: run('C3h', { agent: { strategy: { adaptiveResolution: false } } }),

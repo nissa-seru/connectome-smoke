@@ -42,6 +42,32 @@ test('the expected failures read: none without the file, and an entry missing a 
   assert.throws(() => readExpected(at([{ ...good, configuration: 'H9' }]), ['default']), /entry 0: names a configuration this run has none of: H9/);
   assert.throws(() => readExpected(at([good, { ...good, reason: 'another' }]), ['default']), /entry 1: repeats another entry/);
   assert.throws(() => readExpected(at({ entries: [] }), ['default']), /isn't a list of entries/);
+  const { what, ...noWhat } = good;
+  assert.throws(() => readExpected(at([noWhat]), ['default']), /entry 0: has no what: an entry covers one kind of flag/);
+  assert.throws(() => readExpected(at([{ ...good, match: '(' }]), ['default']), /entry 0: has a match that isn't a regular expression/);
+  const pins = { ...good, what: 'fixture:request:pins' };
+  assert.equal(readExpected(at([{ ...pins, match: 'allowing L0$' }, { ...pins, match: 'allowing L[1-9]', finding: 'D39' }]), ['default']).length, 2, 'entries sharing a key, each with its own match');
+  assert.throws(() => readExpected(at([{ ...pins, match: 'allowing L0$' }, pins]), ['default']), /entry 1: shares its configuration, check, step and what with another entry, and one of them has no match/);
+  assert.throws(() => readExpected(at([pins, { ...pins, match: 'allowing L0$' }]), ['default']), /entry 1: shares its configuration, check, step and what/);
+  assert.throws(() => readExpected(at([{ ...pins, match: 'x' }, { ...pins, match: 'x', reason: 'again' }]), ['default']), /entry 1: repeats another entry's configuration, check, step, what and match/);
+});
+
+test('an entry\'s match narrows its cover to the flags whose detail it finds: D3 and D39 at one step each cover their own, a pins flag of a third shape is a flag, and an entry whose match no flag meets fails the run', () => {
+  const pins = (detail) => ({ check: 11, step: 'p.9', what: 'fixture:request:pins', detail, message: `fixture's request compile 9 breaks pins: ${detail}` });
+  const entry = (finding, match) => ({ configuration: 'default', check: 11, step: 'p.9', what: 'fixture:request:pins', match, finding, reason: 'r' });
+  const d3 = entry('D3', 'allowing L0$');
+  const d39 = entry('D39', 'allowing L[1-9][0-9]*$');
+  const both = perCheckReport({ configuration, candidate: { flags: [pins('summary 4 sent over raw pin p1, allowing L0'), pins('summary 7 sent under level pin p2, allowing L1')], missing: [] }, expected: [d3, d39] });
+  assert.equal(both.verdict, 'pass');
+  assert.match(both.lines[0], /^default: no flags, 2 expected \(D3, D39\)\.$/);
+  assert.ok(both.lines.some((l) => /allowing L1 \[expected: D39\]$/.test(l)));
+  const third = perCheckReport({ configuration, candidate: { flags: [pins('summary 4 sent over raw pin p1, allowing L0'), pins('summary 7 sent under level pin p2, allowing L1'), pins('pin p3 names no stored message')], missing: [] }, expected: [d3, d39] });
+  assert.deepEqual(third.flags.map((f) => f.detail), ['pin p3 names no stored message'], 'a pins flag neither match finds isn\'t covered');
+  const gone = perCheckReport({ configuration, candidate: { flags: [pins('summary 4 sent over raw pin p1, allowing L0')], missing: [] }, expected: [d3, d39] });
+  assert.equal(gone.flags.length, 1);
+  assert.match(gone.flags[0].message, /expects a flag here for D39 matching \/allowing L\[1-9\]\[0-9\]\*\$\/, and the run raised none/);
+  const noDetail = perCheckReport({ configuration, candidate: { flags: [{ check: 4, step: 'p.9', what: 'more-than-once', message: '3 stored message(s) reach the request more than once' }], missing: [] }, expected: [{ configuration: 'default', check: 4, step: 'p.9', what: 'more-than-once', match: 'more than once', finding: 'D3', reason: 'r' }] });
+  assert.equal(noDetail.verdict, 'pass', 'a flag with no detail is matched by its message');
 });
 
 test('a clamp-edge calibration makes the run invalid, and the first line says so', () => {
