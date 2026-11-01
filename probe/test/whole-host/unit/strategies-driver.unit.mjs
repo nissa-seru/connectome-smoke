@@ -2,7 +2,7 @@
 // need no host. Its runs through a host are its own evidence (see its commits).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { budgetReportDone, readSettle } from '../lib/strategies/driver.mjs';
+import { budgetReportDone, hostEnv, readSettle } from '../lib/strategies/driver.mjs';
 
 // R7: how a settle reads one `maintain` answer (agent-framework 0.28.0's host-command reply).
 const answer = ({ ready = true, pending = false, queue = 0, compressed = 30, drained = true, deferredWrites = 0, activeTurnAgents = [], parkedAdmissions = 0, ok = true } = {}) => ({
@@ -57,4 +57,11 @@ test('R7b: an answer with no deferred-write count isn\'t settled, so a host that
   delete unreported.hostMode.deferredWrites;
   assert.equal(readSettle(unreported, null).settled, false);
   assert.equal(readSettle(answer(), null).settled, true);
+});
+
+test('R12: a configuration whose model binds thinking boots its host with the start-up binding probe off; any other, without the setting', () => {
+  const base = { standinUrl: 'http://127.0.0.1:1', control: '/tmp/c', clock: 5 };
+  assert.equal(hostEnv({ ...base, configuration: { binds: true } }).THINKING_BINDING_PROBE, 'off');
+  assert.equal('THINKING_BINDING_PROBE' in hostEnv({ ...base, configuration: { binds: false } }), false);
+  assert.equal(hostEnv({ ...base, configuration: {} }).ANTHROPIC_BASE_URL, 'http://127.0.0.1:1');
 });

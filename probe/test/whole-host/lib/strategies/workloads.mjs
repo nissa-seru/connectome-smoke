@@ -1,6 +1,6 @@
 import { FIXTURE_AGENT, assemblies, requestPairs, withJudged } from './checks.mjs';
 import { png } from './png.mjs';
-import { CHANNEL, READER, TOOL, continuation, products } from './script.mjs';
+import { CHANNEL, READER, TOOL, continuation, prefix, products } from './script.mjs';
 
 /**
  * The context-manager characterization fixture's nine workloads (connectome-smoke `lib/cm-fixture/workloads.mjs` at
@@ -271,12 +271,15 @@ const blocksOf = (record) => (record.messages ?? []).flatMap((m, i) => m.blocks.
 const summarises = (configuration) => configuration.summarises !== false;
 
 export const WORKLOADS = {
-  /**
-   * The continuation (script.mjs, continuation), about a dozen turns from W2's store (W1's for a configuration that
-   * doesn't summarise), in segments that each exist to produce something: a merge, a request carrying an image result,
-   * parallel results, a thinking-led call, compression debt. Check 2 judges that each did (`products`).
-   */
+  prefix: {
+    from: null,
+    property: 'none: it writes the continuation\'s checkpoint and is no run of its own',
+    steps: (ctx) => prefix(ctx.prefixTurns),
+    check: () => [],
+  },
+
   continuation: {
+    from: 'prefix',
     property: 'each segment produces what it exists to produce (check 2)',
     steps: () => continuation(),
     check: () => [],
@@ -717,7 +720,7 @@ function toolBlocksLost(run) {
 export const RUNS = [
   'H1/continuation', 'H3/continuation',
   'H1/W1', 'H4/W1',
-  'C3h/W2', 'H1/W2',
+  'C3h/W2', 'H1/W2', 'H1b/W2',
   'H3/W4',
   'C5h/W5',
   'C8h/W6',
@@ -750,7 +753,7 @@ const merge = (a = {}, b = {}) => {
  * `{ check, what }`, that the workload makes by design and its property judges; `products` what its segments declare
  * for check 2 (the continuation's; none for the others).
  */
-export function runOf(id, configurations, facts) {
+export function runOf(id, configurations, facts, { prefixTurns = {} } = {}) {
   const [configName, workloadName, variant = null] = id.split('/');
   const base = configurations[configName];
   const workload = WORKLOADS[workloadName];
@@ -774,6 +777,7 @@ export function runOf(id, configurations, facts) {
     adaptive,
     folding: adaptive ? strategy.foldingStrategy ?? 'kv-unified' : null,
     native: configuration.agent?.formatter !== 'anthropic-xml',
+    prefixTurns: prefixTurns[configName],
   };
   const fromEmpty = workload.from === null || workload.fromEmpty?.(variant) || configName === 'H2';
   return {
@@ -783,7 +787,7 @@ export function runOf(id, configurations, facts) {
     seed,
     configuration,
     standin: typeof workload.standin === 'function' ? workload.standin(variant) : {},
-    from: fromEmpty ? null : `${configName}/${base.summarises === false ? 'W1' : 'W2'}`,
+    from: typeof workload.from === 'string' ? `${configName}/${workload.from}` : fromEmpty ? null : `${configName}/${base.summarises === false ? 'W1' : 'W2'}`,
     steps: () => workload.steps(ctx),
     check: (run) => workload.check(run, ctx),
     owns: typeof workload.owns === 'function' ? workload.owns(variant) : workload.owns ?? [],

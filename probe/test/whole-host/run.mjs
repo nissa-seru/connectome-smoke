@@ -68,7 +68,7 @@ import { EPOCH, EXPECTED_FAILURES, KEY_PACKAGES, asRun, laneVersion, stackVersio
 import { hostFacts, runScript } from './lib/strategies/driver.mjs';
 import { startStandin } from './lib/strategies/standin.mjs';
 import { judge } from './lib/strategies/judge.mjs';
-import { perCheckReport, readExpected } from './lib/strategies/report.mjs';
+import { readExpected, workloadReport } from './lib/strategies/report.mjs';
 import { RUNS, runOf } from './lib/strategies/workloads.mjs';
 import { configurations } from './lib/strategies/script.mjs';
 import { renderRecord } from './lib/record.mjs';
@@ -118,7 +118,8 @@ if (unknown.length) fail(`no run ${unknown.join(', ')}; there are ${everyRun.joi
 const shard = /^(\d+)\/(\d+)$/.exec(opt('shard', '1/1'));
 if (!shard || +shard[1] < 1 || +shard[1] > +shard[2]) fail(`--shard takes i/n with 1 <= i <= n, not ${opt('shard')}`);
 /** The checkpoint a run continues: its runOf `from` (null from empty). */
-const checkpointKey = (id) => runOf(id, all, {}).from;
+const runOptions = { prefixTurns: stack.prefixTurns ?? {} };
+const checkpointKey = (id) => runOf(id, all, {}, runOptions).from;
 const share = shares(listed, +shard[2], stack.seconds, checkpointKey)[+shard[1] - 1];
 const names = share.ids;
 if (!names.length) { console.log(`${LABEL} shard ${shard[0]} holds none of ${listed.join(', ')}`); process.exit(0); }
@@ -220,9 +221,9 @@ const since = (t) => Math.round((performance.now() - t) / 100) / 10;
 async function checkpointOf(from) {
   if (!checkpoints.has(from)) {
     const t = performance.now();
-    const job = runOf(from, all, hostFacts({ hostDir: release.hostDir, configuration: all[from.split('/')[0]] }));
+    const job = runOf(from, all, hostFacts({ hostDir: release.hostDir, configuration: all[from.split('/')[0]] }), runOptions);
     // Kept under --checkpoints by everything that determines it; else written in this run's work directory.
-    const key = createHash('sha256').update(JSON.stringify({ lane, release: release.versions, from, configuration: job.configuration, epoch: EPOCH })).digest('hex').slice(0, 16);
+    const key = createHash('sha256').update(JSON.stringify({ lane, release: release.versions, from, configuration: job.configuration, epoch: EPOCH, steps: job.steps() })).digest('hex').slice(0, 16);
     const kept = checkpointsDir ? join(checkpointsDir, 'workloads', `${slug(from)}-${key}`) : null;
     if (kept && existsSync(join(kept, 'checkpoint.json'))) {
       checkpoints.set(from, { ...JSON.parse(readFileSync(join(kept, 'checkpoint.json'), 'utf-8')), storeDir: join(kept, 'store') });
@@ -253,7 +254,7 @@ async function checkpointOf(from) {
  * compares only what the stand-in received.
  */
 async function driven(id, { harnessModule = true, rawDir = null, dir }) {
-  const job = runOf(id, all, hostFacts({ hostDir: candidate.hostDir, configuration: all[id.split('/')[0]] }));
+  const job = runOf(id, all, hostFacts({ hostDir: candidate.hostDir, configuration: all[id.split('/')[0]] }), runOptions);
   if (!harnessModule) job.configuration = { ...job.configuration, harnessModule: false };
   let epoch = EPOCH;
   // The run's store, its copies and the host's work stay in the work directory; only what judges
@@ -285,17 +286,7 @@ async function workloadRun(id, { rawDir = null, dir }) {
     judged = await judge({ records: d.records, log: d.log, script: d.steps, storeCopy: sessions[0] ?? null, configuration: d.configuration, installDir: candidate.installDir, run: d.run, declared: job.products });
   } catch (e) { return { outcome: 'couldnt-run', reason: `the run couldn't be judged: ${String(e?.message ?? e).slice(0, 2000)}` }; }
   const breaches = d.run.ok ? job.check({ log: d.log, records: d.records }) : [];
-  // What the workload makes happen by design and its property judges (runOf's `owns`, each
-  // `{ check, what }`), such as the alert a refused merge raises, isn't counted again here.
-  const owns = (f) => (job.owns ?? []).some((o) => o.check === f.check && (o.what === undefined || o.what === f.what));
-  const judgedFlags = judged.flags.filter((f) => !owns(f));
-  const owned = judged.flags.length - judgedFlags.length;
-  const flags = [...judgedFlags, ...breaches.map((b) => ({ check: 14, step: b.step ?? 'the run', ...(b.what ? { what: b.what } : {}), message: `${job.workload}'s property: ${b.message}` }))];
-  // The property's count joins the run's: a property that says how many it judged and
-  // judged none, on a run that completed, couldn't judge it.
-  const counts = [...(judged.judged ?? []), ...(typeof breaches.judged === 'number' ? [{ check: 14, name: 'property', judged: breaches.judged }] : [])];
-  if (d.run.ok && breaches.judged === 0 && !breaches.length) flags.push({ check: 14, step: 'the run', what: 'judged-none:property', message: `couldn't judge: ${job.workload}'s property judged nothing, though the run completed` });
-  const report = perCheckReport({ configuration: { name: id }, candidate: { flags, missing: [], notes: [...(judged.notes ?? []), ...(owned ? [`${owned} flag(s) are ${job.workload}'s by design, judged by its property (runOf owns)`] : [])], headroom: judged.headroom, judged: counts }, expected });
+  const report = workloadReport({ id, workload: job.workload, owns: job.owns, judged, breaches, completed: d.run.ok, expected });
   writeFileSync(join(dir, 'report.txt'), `${report.lines.join('\n')}\n`);
   return {
     outcome: report.verdict === 'pass' ? 'pass' : report.verdict,

@@ -16,13 +16,16 @@ import { CANARY } from './standin.mjs';
 export function declaredProducts(records, script, products, store = null) {
   const segmentOf = new Map(script.map((s) => [s.id, s.segment]));
   const out = [];
+  let judged = 0;
   for (const [segment, wanted] of Object.entries(products)) {
     if (!script.some((s) => s.segment === segment)) continue;
     const mine = records.filter((r) => segmentOf.get(r.step) === segment);
-    const missing = wanted.filter((p) => (p.fromStore ? store !== null && !p.fromStore(store) : !mine.some((r) => p.test(r, mine)))).map((p) => p.name);
+    const judgeable = wanted.filter((p) => !p.fromStore || store !== null);
+    judged += judgeable.length;
+    const missing = judgeable.filter((p) => (p.fromStore ? !p.fromStore(store) : !mine.some((r) => p.test(r, mine)))).map((p) => p.name);
     if (missing.length) out.push({ segment, missing });
   }
-  return out;
+  return withJudged(out, judged);
 }
 
 /**

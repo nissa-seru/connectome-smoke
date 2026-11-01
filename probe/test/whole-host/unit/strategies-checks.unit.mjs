@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { assemblies, budgets, compileInvariants, compileKinds, pairing, reloads, requestPairs, declaredProducts, everyTurnAnswers, wellFormed, windowsRaw, calibrationEdge, coverage, bookkeeping } from '../lib/strategies/checks.mjs';
 import { continuation, products, configurations, L3_PRODUCT } from '../lib/strategies/script.mjs';
+import { runOf } from '../lib/strategies/workloads.mjs';
 
 const msg = (role, ...blocks) => ({ role, blocks });
 const text = (canaries) => ({ type: 'text', chars: 10, ...(canaries ? { canaries } : {}) });
@@ -611,4 +612,17 @@ test('check 6 counts a request as judged only where it held it to some message',
   const r = { id: 'r', step: 'c', kind: 'agent', messages: [msg('user', carrying('[[c:c.in]]'))] };
   assert.equal(windowsRaw([r], script, [], empty).judged, 0, 'nothing stored, so nothing to hold it to');
   assert.equal(windowsRaw([r], script, [], null).judged, 1, 'without a store read, the script\'s turns hold it');
+});
+
+test('the continuation runs from its configuration\'s prefix, which is written from empty at the length stack.json pins', () => {
+  const facts = { budget: 100_000, maxTokens: 16_000 };
+  const lengths = { prefixTurns: { H1: 49, H3: 13 } };
+  for (const [config, turns] of [['H1', 49], ['H3', 13]]) {
+    const cont = runOf(`${config}/continuation`, configurations(), facts, lengths);
+    assert.equal(cont.from, `${config}/prefix`);
+    assert.ok(Object.keys(cont.products).length > 0, 'and declares its segments\' products');
+    const pre = runOf(`${config}/prefix`, configurations(), facts, lengths);
+    assert.equal(pre.from, null);
+    assert.equal(pre.steps().filter((st) => st.kind === 'channel').length, turns);
+  }
 });

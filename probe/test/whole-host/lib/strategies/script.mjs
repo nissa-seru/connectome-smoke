@@ -44,6 +44,9 @@ export function configurations({ model = 'claude-opus-4-6' } = {}) {
  * The workloads' configurations (workloads.mjs), as a host's recipe makes each:
  * - H1: the strategy left to the host, which makes it autobiographical, adaptive and kv-unified with its standard block
  *   (`framework-strategy.ts:162-187`): the fixture's H1 for this model, and its C7 too;
+ * - H1b: H1 on `claude-opus-5-5`, whose signed thinking binds to the request it was minted in, as a resident on an
+ *   account that enforces the binding runs it (anima-research/connectome-host#500): the host passes agent-framework
+ *   its `thinkingBinding` and the drop control, and every reply leads with signed thinking;
  * - H2: H1 with the subagent module on, whose knowledge subagent the workloads run inside a spawn, so the judge
  *   judges that subagent (judge.mjs judgedAgent);
  * - H3: a passthrough;
@@ -55,6 +58,7 @@ export function configurations({ model = 'claude-opus-4-6' } = {}) {
 function configurationsAsResidentsRun(run) {
   return {
     H1: run('H1', {}),
+    H1b: { ...run('H1b', { agent: { model: 'claude-opus-5-5' } }), binds: true, thinks: true },
     H2: run('H2', { modules: { subagents: true }, judges: 'subagent' }),
     H3: run('H3', { agent: { strategy: { type: 'passthrough' } } }, false),
     H4: run('H4', { subconscious: { enabled: true, systemPrompt: `${READER} You read what the resident has tuned out, and tell them what matters.` } }),
@@ -123,6 +127,23 @@ const checkpoint = (id, segment, more = {}) => ({ id, segment, kind: 'checkpoint
 
 /** close-merge's L3 product, by name. */
 export const L3_PRODUCT = 'an L3 merge request';
+
+export function prefix(turns) {
+  const steps = [{ id: 'p.name', segment: 'prefix', kind: 'command', command: '/session rename fixture' }];
+  for (let i = 1; i <= turns; i++) {
+    const id = `p.${i}`;
+    const r = rng(id);
+    steps.push(advance(`${id}.adv`, 'prefix', 4 * MINUTE));
+    if (i === 1) steps.push(turn(id, 'prefix', { chars: 2250, replyChars: 1800 }));
+    else if (i % 17 === 0) steps.push(turn(id, 'prefix', { chars: 90_000 }));
+    else if (i % 13 === 0) steps.push(turn(id, 'prefix', { chars: 4500, calls: [{ kind: 'json', size: 9000 }, { kind: 'prose', size: 13_500 }, { kind: 'code', size: 10_500 }] }));
+    else if (i % 11 === 0) steps.push(turn(id, 'prefix', { chars: 4500, thinking: 6000, calls: [{ kind: 'prose', size: 12_000 }] }));
+    else if (i % 7 === 0) steps.push(turn(id, 'prefix', { chars: 3750, calls: [{ kind: 'prose', size: 18_000 }] }));
+    else steps.push(turn(id, 'prefix', { chars: 1800 + 15 * Math.floor(r() * 900), replyChars: 1200 + 15 * Math.floor(r() * 500) }));
+  }
+  steps.push(checkpoint('p.end', 'prefix', { copyStore: true }));
+  return steps;
+}
 
 /**
  * The continuation, about a dozen turns from a stored store. Each segment ends

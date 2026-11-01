@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { perCheckReport, readExpected, runChecks } from '../lib/strategies/report.mjs';
+import { perCheckReport, readExpected, runChecks, workloadReport } from '../lib/strategies/report.mjs';
 
 const configuration = { name: 'H1/W1' };
 const flag = (check, step, message = 'm') => ({ check, step, message });
@@ -123,5 +123,25 @@ test('judged: every check reports how many items it judged; zero where check 3, 
   // No request at all: nothing applies, nothing flags.
   assert.deepEqual(runChecks({ records: [], log: [], script: [], products: [], store: null }).flags, []);
   const report = perCheckReport({ configuration, candidate: { flags: [], missing: [], judged: none.judged } });
-  assert.ok(report.lines.some((l) => /^- judged: check 1 every turn answers 1, check 3 request shape 1, check 3 budgets \?, /.test(l)));
+  assert.ok(report.lines.some((l) => /^- judged: check 1 every turn answers 1, check 2 declared products 0, check 3 request shape 1, check 3 budgets \?, /.test(l)));
+});
+
+test('a workload run that lacks a product its segments declare fails, and says which', () => {
+  const judged = { flags: [], missing: [{ segment: 'close-merge', missing: ['an L3 merge request'] }], notes: [], judged: [] };
+  const r = workloadReport({ id: 'H1/continuation', workload: 'continuation', judged, breaches: [], completed: true });
+  assert.equal(r.verdict, 'flags');
+  assert.ok(r.lines.includes('- check 2, close-merge: missing an L3 merge request'));
+  const whole = workloadReport({ id: 'H1/continuation', workload: 'continuation', judged: { ...judged, missing: [] }, breaches: [], completed: true });
+  assert.equal(whole.verdict, 'pass');
+});
+
+test('check 2 counts the declared products it judged, and judging none of them where some are declared is a flag', () => {
+  const wanted = { s: [{ name: 'a reply', test: (r) => r.kind === 'agent' }] };
+  const judged = (script) => runChecks({ records: [], log: [], script, products: wanted, store: null });
+  const none = judged([{ id: 'x', segment: 'other' }]);
+  assert.ok(none.flags.some((f) => f.check === 2 && f.what === 'judged-none:declared products'), 'its segment never ran, so nothing was judged');
+  const ran = judged([{ id: 'a', segment: 's' }]);
+  assert.equal(ran.judged.find((j) => j.check === 2).judged, 1);
+  assert.deepEqual(ran.missing, [{ segment: 's', missing: ['a reply'] }]);
+  assert.ok(!ran.flags.some((f) => f.check === 2));
 });

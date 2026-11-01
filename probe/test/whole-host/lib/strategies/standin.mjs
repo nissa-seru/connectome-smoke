@@ -151,6 +151,9 @@ function bindingIdentity(body, beforeMessage) {
   return sha(JSON.stringify(unmarked({ model: body.model, system: body.system ?? null, tools: body.tools ?? null, head, messages: (body.messages || []).slice(0, beforeMessage) })));
 }
 
+/** The length of the thinking a model that thinks (`thinks`) leads each reply with, where its script gives none. */
+const THINKING_CHARS = 600;
+
 const signatureFor = (identity) => `fx1.${Buffer.from(identity, 'hex').toString('base64url')}`;
 
 function padding(chars, seed) {
@@ -219,9 +222,12 @@ const summariserTexts = (body) => (body.messages || []).flatMap((m) => blocksOf(
  * Start the stand-in for Anthropic's Messages API on a free loopback port.
  *
  * @param {object} opts
- * @param {{ windowTokens: number, binds?: boolean, dropBlock?: boolean, minCacheTokens?: number }} opts.configuration
- *   `windowTokens` is the model's window (T11); `binds` says the model binds thinking to the
- *   request it was minted in, and `dropBlock` that requests carry the provider's drop control (T13).
+ * @param {{ windowTokens: number, binds?: boolean, thinks?: boolean, minCacheTokens?: number }} opts.configuration
+ *   `windowTokens` is the model's window (T11). `binds` says the model binds thinking to the request it was minted
+ *   in: a block whose request has changed since is refused, as an account that enforces the binding refuses it, unless
+ *   the request carries the provider's drop control, which has the block set aside, unread and uncounted (T13).
+ *   `thinks` says every reply leads with signed thinking, as a model that thinks without a thinking config replies
+ *   (T13b).
  * @param {string} [opts.rawDir] where each request's body is saved, as `<id>.json`.
  *
  * A summariser's answer is a function of what its request carries, never of its bytes or its arrival: the target its
@@ -312,15 +318,29 @@ export async function startStandin({ configuration, rawDir = null, refuseMerges 
     return { kind: 'agent', agent };
   }
 
-  function bindingRefusal(body) {
-    if (!config.binds || config.dropBlock) return null;
+  /** Each thinking block a binding model wouldn't take: minted for a request whose prefix this one doesn't share. */
+  function unbound(body) {
+    if (!config.binds) return [];
+    const out = [];
     for (const [i, m] of body.messages.entries()) {
       for (const [j, b] of blocksOf(m.content).entries()) {
-        if (b.type !== 'thinking') continue;
-        if (b.signature !== signatureFor(bindingIdentity(body, i))) return `messages.${i}.content.${j}: the thinking block's signature doesn't match this request; something before it changed since it was minted`;
+        if (b.type === 'thinking' && b.signature !== signatureFor(bindingIdentity(body, i))) out.push({ i, j });
       }
     }
-    return null;
+    return out;
+  }
+  const dropsUnbound = (body) => body.thinking?.block_binding?.prefix_mismatch_behavior === 'drop_block';
+  /** The request as the model reads it: under the drop control, without the blocks it sets aside. */
+  function asRead(body) {
+    const drop = dropsUnbound(body) ? unbound(body) : [];
+    if (!drop.length) return body;
+    const gone = new Set(drop.map(({ i, j }) => `${i}.${j}`));
+    return { ...body, messages: body.messages.map((m, i) => (Array.isArray(m.content) ? { ...m, content: m.content.filter((_, j) => !gone.has(`${i}.${j}`)) } : m)) };
+  }
+  function bindingRefusal(body) {
+    if (dropsUnbound(body)) return null;
+    const [first] = unbound(body);
+    return first ? `messages.${first.i}.content.${first.j}: Invalid \`signature\` in \`thinking\` block. The block is bound to a different conversation.` : null;
   }
 
   const sendError = (res, status, message, { type = 'invalid_request_error', headers = {} } = {}) => {
@@ -331,7 +351,7 @@ export async function startStandin({ configuration, rawDir = null, refuseMerges 
 
   function sendMessage(res, body, record, { content, stop }) {
     const outputTokens = content.reduce((t, b) => t + blockTokens(b), 0) || 1;
-    const usage = usageFor(body, stop === 'max_tokens' && body.max_tokens ? body.max_tokens : outputTokens);
+    const usage = usageFor(asRead(body), stop === 'max_tokens' && body.max_tokens ? body.max_tokens : outputTokens);
     record.usage = usage;
     const message = { id: `msg_${record.id}`, type: 'message', role: 'assistant', model: body.model, content, stop_reason: stop, stop_sequence: null, usage };
     if (!body.stream) {
@@ -365,7 +385,8 @@ export async function startStandin({ configuration, rawDir = null, refuseMerges 
   function answerAgent(res, body, record, reply) {
     const identity = bindingIdentity(body, body.messages.length);
     const content = [];
-    if (reply.thinking !== undefined) content.push({ type: 'thinking', thinking: reply.thinking, signature: signatureFor(identity) });
+    const thinking = reply.thinking ?? (config.thinks ? padding(THINKING_CHARS, parseInt(identity.slice(0, 8), 16)) : undefined);
+    if (thinking !== undefined) content.push({ type: 'thinking', thinking, signature: signatureFor(identity) });
     if (reply.text !== undefined) content.push({ type: 'text', text: reply.text });
     for (const call of reply.calls || []) content.push({ type: 'tool_use', id: call.id ?? `toolu_fx${String(++toolNumber).padStart(6, '0')}`, name: call.name, input: call.input });
     const stop = reply.stop ?? ((reply.calls || []).length ? 'tool_use' : 'end_turn');
@@ -407,7 +428,7 @@ export async function startStandin({ configuration, rawDir = null, refuseMerges 
     let body = null;
     try { body = raw ? JSON.parse(raw) : null; } catch { body = null; }
     if (req.method === 'POST' && path.endsWith('/v1/messages/count_tokens')) {
-      const out = JSON.stringify({ input_tokens: body ? countTokens(body) : 0 });
+      const out = JSON.stringify({ input_tokens: body ? countTokens(asRead(body)) : 0 });
       res.writeHead(200, { 'content-type': 'application/json' });
       res.end(out);
       return;
@@ -425,7 +446,7 @@ export async function startStandin({ configuration, rawDir = null, refuseMerges 
       record.answer = { shape: 'refused' };
       return sendError(res, 400, `stand-in: unclassified request ${id}: ${reason}`);
     }
-    const tooLong = countTokens(body);
+    const tooLong = countTokens(asRead(body));
     if (tooLong > config.windowTokens) {
       record.refused = 'window';
       record.answer = { shape: 'refused' };

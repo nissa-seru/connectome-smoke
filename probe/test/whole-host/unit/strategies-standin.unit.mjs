@@ -346,33 +346,58 @@ test('T12: a cache entry is the model\'s own', () => withStandin({}, async (s) =
   assert.equal(other.json.usage.cache_read_input_tokens, 0);
 }));
 
-test('T13: when the model binds thinking, a block sent after anything before it changed is refused; otherwise it\'s taken', async () => {
-  for (const binds of [true, false]) {
+test('T13: when the model binds thinking, a block whose request changed is refused, or set aside uncounted under the drop control; otherwise it\'s taken', async () => {
+  const DROP = { type: 'adaptive', block_binding: { prefix_mismatch_behavior: 'drop_block' } };
+  for (const [binds, control] of [[true, false], [true, true], [false, false]]) {
     await withStandin({ binds }, async (s) => {
       s.setStep({ ...step('g', [{ thinking: 'plan', calls: [{ name: 'fixture--result', input: { size: 300, kind: 'prose', canary: '[[c:g.call1]]' } }] }, { text: 'ok' }, { text: 'ok' }]), canaries: ['[[c:g.in]]', '[[c:g.call1]]'] });
-      const opening = agentBody({ canary: '[[c:g.in]]' });
+      const opening = { ...agentBody({ canary: '[[c:g.in]]' }), ...(control ? { thinking: DROP } : {}) };
       const first = (await post(s.url, opening)).json;
       const call = first.content.find((b) => b.type === 'tool_use');
-      const next = (prefixText) => ({
+      const next = (prefix, reply) => ({
         ...opening, messages: [
-          { role: 'user', content: [{ type: 'text', text: prefixText }] },
-          { role: 'assistant', content: first.content },
+          prefix,
+          { role: 'assistant', content: reply },
           { role: 'user', content: [{ type: 'tool_result', tool_use_id: call.id, content: [{ type: 'text', text: `[[c:g.call1]] ${prose(280)}` }] }] },
         ],
       });
-      const same = next(opening.messages[0].content.map((b) => b.text).join(''));
-      same.messages[0] = opening.messages[0];
-      assert.equal((await post(s.url, same)).status, 200);
-      const changed = next('user: [[c:g.in]] something else entirely');
+      assert.equal((await post(s.url, next(opening.messages[0], first.content))).status, 200, 'the block sent after the prefix it was minted under is taken');
+      const changedPrefix = { role: 'user', content: [{ type: 'text', text: 'user: [[c:g.in]] something else entirely' }] };
+      const changed = next(changedPrefix, first.content);
+      const count = async (body) => (await post(s.url, body, '/v1/messages/count_tokens')).json.input_tokens;
+      const withoutBlock = next(changedPrefix, first.content.filter((b) => b.type !== 'thinking'));
       const r = await post(s.url, changed);
-      if (binds) {
+      if (binds && !control) {
         assert.equal(r.status, 400);
-        assert.match(r.json.error.message, /thinking/);
+        assert.equal(r.json.error.message, 'messages.1.content.0: Invalid `signature` in `thinking` block. The block is bound to a different conversation.', 'the provider\'s own wording, which hosts read as a binding refusal');
+      } else if (binds) {
+        assert.equal(r.status, 200);
+        assert.equal(await count(changed), await count(withoutBlock), 'the block set aside counts for nothing');
       } else {
         assert.equal(r.status, 200);
+        assert.ok(await count(changed) > await count(withoutBlock), 'a block the model reads counts');
       }
     });
   }
+});
+
+test('T13b: a model that thinks leads every reply with signed thinking minted for its own request, and a scripted reply\'s thinking stands', async () => {
+  await withStandin({ binds: true, thinks: true }, async (s) => {
+    s.setStep({ ...step('h', [{ text: 'first' }, { thinking: 'scripted', text: 'second' }]), canaries: ['[[c:h.in]]'] });
+    const opening = agentBody({ canary: '[[c:h.in]]' });
+    const one = (await post(s.url, opening)).json;
+    assert.equal(one.content[0].type, 'thinking');
+    assert.ok(one.content[0].thinking.length > 0 && typeof one.content[0].signature === 'string');
+    const again = { ...opening, messages: [opening.messages[0], { role: 'assistant', content: one.content }, { role: 'user', content: [{ type: 'text', text: 'user: [[c:h.in]] and then?' }] }] };
+    const two = await post(s.url, again);
+    assert.equal(two.status, 200, 'its thinking, sent back after the prefix it was minted under, is taken by a binding model');
+    assert.equal(two.json.content[0].thinking, 'scripted');
+  });
+  await withStandin({}, async (s) => {
+    s.setStep({ ...step('k', [{ text: 'plain' }]), canaries: ['[[c:k.in]]'] });
+    const one = (await post(s.url, agentBody({ canary: '[[c:k.in]]' }))).json;
+    assert.deepEqual(one.content.map((b) => b.type), ['text'], 'a model that doesn\'t think replies without thinking');
+  });
 });
 
 test('T7/T14/T15: summariser requests are answered at once, every arrival is reported, and close() returns each request\'s normalised record', async () => {

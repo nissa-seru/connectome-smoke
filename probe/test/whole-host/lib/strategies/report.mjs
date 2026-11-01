@@ -26,8 +26,11 @@ export function runChecks({ records, log, script, products, store, agent = FIXTU
   // Check 6 holds a request to the two scripted turns before its step's, so it applies to requests at a turn after the first.
   const laterTurns = new Set(script.filter((st) => Array.isArray(st.replies) && st.replies.length).slice(1).map((st) => st.id));
   const turnRequests = records.filter((r) => own(r) && laterTurns.has(r.step)).length;
+  const missing = declaredProducts(records, script, products, store);
+  const declared = Object.values(products ?? {}).flat().length;
   const parts = [
     { check: 1, name: 'every turn answers', flags: everyTurnAnswers(records, log, script) },
+    { check: 2, name: 'declared products', flags: [], judged: missing.judged, applies: declared > 0 ? `the run declares ${declared} product(s)` : null },
     { check: 3, name: 'request shape', flags: wellFormed(records) },
     { check: 3, name: 'budgets', flags: budget.flags, judged: budget.judged, applies: budget.requests > 0 ? `the run's agent made ${budget.requests} request(s)` : null },
     ...(store ? [{ check: 4, name: 'coverage', flags: coverage(records, store, script, log, { agent, side }), applies: ownRequests > 0 ? `a store was read and the run's agent made ${ownRequests} request(s)` : null }] : []),
@@ -44,7 +47,7 @@ export function runChecks({ records, log, script, products, store, agent = FIXTU
     message: `couldn't judge: check ${p.check} (${p.name}) judged nothing, though it applies (${p.applies})`,
   }));
   const flags = [...parts.flatMap((p) => p.flags), ...unjudged];
-  return { flags, missing: declaredProducts(records, script, products, store), headroom: budget.headroom, notes: budget.notes, judged };
+  return { flags, missing, headroom: budget.headroom, notes: budget.notes, judged };
 }
 
 // A flag's identity in an expected failure's key and in its failure name: its check, its step, and
@@ -132,4 +135,15 @@ export function perCheckReport({ configuration, candidate, expected = [] }) {
   if (candidate.judged?.length) lines.push(`- judged: ${candidate.judged.map((j) => `check ${j.check} ${j.name} ${j.judged ?? '?'}`).join(', ')}`);
   if (candidate.headroom?.length) lines.push(`- budget headroom, each segment's least: ${candidate.headroom.map((h) => `${h.segment} ${h.bound - h.tokens} of ${h.bound}${h.kind === 'continuation' ? ' (a stream\'s fresh input through a continuation round, against the stream bound)' : ' (a compiled request\'s whole input, against the model\'s window)'}`).join(', ')}`);
   return { verdict, lines, invalid, flags, expected: covered.map((c) => c.f), missing };
+}
+
+export function workloadReport({ id, workload, owns = [], judged, breaches, completed, expected = [] }) {
+  const isOwned = (f) => owns.some((o) => o.check === f.check && (o.what === undefined || o.what === f.what));
+  const judgedFlags = judged.flags.filter((f) => !isOwned(f));
+  const owned = judged.flags.length - judgedFlags.length;
+  const flags = [...judgedFlags, ...breaches.map((b) => ({ check: 14, step: b.step ?? 'the run', ...(b.what ? { what: b.what } : {}), message: `${workload}'s property: ${b.message}` }))];
+  const counts = [...(judged.judged ?? []), ...(typeof breaches.judged === 'number' ? [{ check: 14, name: 'property', judged: breaches.judged }] : [])];
+  if (completed && breaches.judged === 0 && !breaches.length) flags.push({ check: 14, step: 'the run', what: 'judged-none:property', message: `couldn't judge: ${workload}'s property judged nothing, though the run completed` });
+  const notes = [...(judged.notes ?? []), ...(owned ? [`${owned} flag(s) are ${workload}'s by design, judged by its property (runOf owns)`] : [])];
+  return perCheckReport({ configuration: { name: id }, candidate: { flags, missing: judged.missing ?? [], notes, headroom: judged.headroom, judged: counts }, expected });
 }

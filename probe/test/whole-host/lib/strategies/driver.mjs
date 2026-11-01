@@ -90,6 +90,19 @@ export function hostFacts({ hostDir, configuration }) {
   }
 }
 
+/**
+ * The host process's environment for one boot. A configuration whose model binds thinking boots with the host's
+ * start-up thinking-binding probe off: the host shapes requests the same for no outcome as for an account that
+ * refuses or drops a block whose request changed (connectome-host `logging-adapter.ts`, `leavesOutChangedThinking`
+ * and `withBinding`, which tell only `shows` apart), and the probe's requests are none of a workload's.
+ */
+export function hostEnv({ configuration, standinUrl, control, clock }) {
+  return {
+    ANTHROPIC_BASE_URL: standinUrl, ANTHROPIC_API_KEY: 'sk-ant-fixture', TZ: 'UTC', FIXTURE_CONTROL: control, FIXTURE_EPOCH_MS: String(clock),
+    ...(configuration.binds ? { THINKING_BINDING_PROBE: 'off' } : {}),
+  };
+}
+
 const BASE_AGENT = { name: 'fixture', provider: 'anthropic', systemPrompt: 'You are the strategy fixture\'s agent.' };
 
 /** The lane's recipe for one boot, from the configuration. */
@@ -298,7 +311,7 @@ export async function runScript({ steps, configuration, standin, hostDir, facts,
     rmSync(sockPath, { force: true });
     const since = { server: ctl.generation('server'), clock: ctl.generation('clock'), module: ctl.generation('module') };
     log('boot', { boot: b.n, recipePath, storeDir });
-    const env = { ANTHROPIC_BASE_URL: standin.url, ANTHROPIC_API_KEY: 'sk-ant-fixture', TZ: 'UTC', FIXTURE_CONTROL: control, FIXTURE_EPOCH_MS: String(clock) };
+    const env = hostEnv({ configuration, standinUrl: standin.url, control, clock });
     const { child, out } = spawnHost({ hostDir, recipePath, dataDir: storeDir, cwd: work, sockPath, env, preload: PRELOAD });
     Object.assign(b, { child, out, sockPath });
     host = b;
