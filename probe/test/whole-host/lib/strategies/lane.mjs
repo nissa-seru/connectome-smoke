@@ -96,6 +96,9 @@ export function stackVersions(hostDir, { installDir, registry } = {}) {
 }
 
 export function keptWhole(dir) {
-  if (!existsSync(join(dir, 'answers')) || !existsSync(join(dir, 'store')) || !readdirSync(join(dir, 'store')).length) return false;
-  try { return typeof JSON.parse(readFileSync(join(dir, 'checkpoint.json'), 'utf-8')).key === 'string'; } catch { return false; }
+  for (const part of ['answers', 'store']) if (!existsSync(join(dir, part)) || !readdirSync(join(dir, part)).length) return false;
+  try {
+    const { key } = JSON.parse(readFileSync(join(dir, 'checkpoint.json'), 'utf-8'));
+    return typeof key === 'string' && key.length > 0 && dir.replace(/[\\/]+$/, '').endsWith(`-${key}`);
+  } catch { return false; }
 }

@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import { runVaryingMasker } from './compare.mjs';
 import { toolResult } from './results.mjs';
 import { TOOL } from './script.mjs';
-import { CANARY, SUMMARY, pngSize } from './standin.mjs';
+import { CANARY, SUMMARY, markerOf, pngSize } from './standin.mjs';
 
 const KEY = 32;
 const STRIDE = 16;
@@ -120,7 +120,7 @@ export function transcriptOf(body, generated, seen = new Set()) {
     if (v && typeof v === 'object') return `{${Object.entries(v).map(([k, x]) => `${JSON.stringify(k)}:${renderedJson(x)}`).join(',')}}`;
     return JSON.stringify(v ?? null);
   };
-  const cache = (b) => (b?.cache_control ? ` [cache ${b.cache_control.ttl ?? '5m'}]` : '');
+  const cache = (b) => (b?.cache_control != null ? ` [cache ${markerOf(b.cache_control)}]` : '');
   const blocksOf = (content) => (typeof content === 'string' ? [{ type: 'text', text: content }] : Array.isArray(content) ? content : []);
 
   const block = (b, indent) => {
@@ -152,7 +152,10 @@ export function transcriptOf(body, generated, seen = new Set()) {
   };
 
   const system = typeof body.system === 'string' ? [{ type: 'text', text: body.system }] : Array.isArray(body.system) ? body.system : [];
-  system.forEach((b, i) => emit(0, `system[${i}]${cache(b)}`, stack(`system[${i}]`, b.text ?? '')));
+  system.forEach(({ type, text, cache_control: _c, ...rest }, i) => {
+    const other = { ...(type !== 'text' ? { type } : {}), ...rest };
+    emit(0, `system[${i}]${cache(system[i])}${Object.keys(other).length ? ` ${JSON.stringify(mask(other))}` : ''}`, stack(`system[${i}]`, text ?? ''));
+  });
   for (const tool of body.tools ?? []) {
     const { cache_control: _c, name, description, input_schema: schema, ...rest } = tool;
     const shown = [`description: ${description ?? ''}`, `input_schema: ${JSON.stringify(schema ?? null)}`, ...(Object.keys(rest).length ? [`other: ${JSON.stringify(rest)}`] : [])];

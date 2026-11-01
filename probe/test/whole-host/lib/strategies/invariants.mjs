@@ -158,18 +158,20 @@ function readCompile(manager, compiled, messages, elsewhere) {
     const copy = raw.get(body);
     return !!copy && (copy.everyShard || partlyHeld.has(String(m.id)));
   };
-  return { stored, inOrder, bodyOf, membersOf, sequenceOf, leaves, blocks, textOf, sent, raw, bySummary, held, failed };
+  return { stored, inOrder, bodyOf, membersOf, sequenceOf, leaves, blocks, textOf, sent, raw, bySummary, held, failed, layoutRaw };
 }
 
 export function checkCompile(manager, budget, compiled, messages, { compresses = true, elsewhere } = {}) {
   const out = [];
   const read = readCompile(manager, compiled, messages, elsewhere);
   if (isUnreadable(read)) return [{ invariant: 'unreadable', detail: `getAllMessages: ${read.unreadable}; no invariant was judged` }];
-  const { stored, inOrder, bodyOf, membersOf, sequenceOf, leaves, blocks, textOf, sent, raw, bySummary, held, failed } = read;
+  const { stored, inOrder, bodyOf, membersOf, sequenceOf, leaves, blocks, textOf, sent, raw, bySummary, held, failed, layoutRaw } = read;
   if (isUnreadable(compresses)) out.push({ invariant: 'unreadable', detail: `getStrategy: ${compresses.unreadable}; coverage wasn't judged` });
   const compressing = compresses === true;
+  // A summary sent whose sources couldn't be read leaves coverage, order and pins unjudged, not judged on no sources.
+  const summaryUnread = failed.some((f) => f.startsWith('getSummary('));
   const uncovered = [], twice = [], beside = [];
-  for (const [body, members] of membersOf) {
+  for (const [body, members] of summaryUnread ? [] : membersOf) {
     const lost = compressing ? members.filter((m) => !bySummary.has(String(m.id)) && !held(body, m)) : [];
     if (lost.length === members.length) uncovered.push(body);
     else if (lost.length) uncovered.push(`${body} (shards ${lost.map((m) => m.id).join(', ')})`);
@@ -186,7 +188,9 @@ export function checkCompile(manager, budget, compiled, messages, { compresses =
 
   const firstCarried = (i, head) => {
     const sentText = textOf(sent[i]);
-    const shards = (membersOf.get(bodyOf.get(head) ?? head) ?? []).filter((x) => textOf(x).length > 0 && sentText.includes(textOf(x)));
+    const members = membersOf.get(bodyOf.get(head) ?? head) ?? [];
+    const named = members.filter((x) => layoutRaw.has(String(x.id)));
+    const shards = (named.length ? named : members).filter((x) => textOf(x).length > 0 && sentText.includes(textOf(x)));
     return shards.length ? Math.min(...shards.map((x) => x.sequence)) : (sequenceOf.get(head) ?? Infinity);
   };
   // After a head-window reset context-manager starts the head at the newest topic transition message (a 'Context
@@ -196,6 +200,7 @@ export function checkCompile(manager, budget, compiled, messages, { compresses =
   let inHead = false;
   let last = -Infinity, lastAt = -1;
   messages.forEach((m, i) => {
+    if (summaryUnread) return;
     let first = Infinity;
     for (const s of m.sources) {
       if (s.startsWith('r:')) {
@@ -289,7 +294,7 @@ export function checkCompile(manager, budget, compiled, messages, { compresses =
 
   const pins = readable(() => manager.listPins());
   if (isUnreadable(pins)) out.push({ invariant: 'unreadable', detail: `listPins: ${pins.unreadable}; pins weren't judged` });
-  else {
+  else if (!summaryUnread) {
     for (const p of pins) {
       const from = sequenceOf.get(String(p.firstMessageId)), to = sequenceOf.get(String(p.lastMessageId));
       if (from === undefined || to === undefined) continue;

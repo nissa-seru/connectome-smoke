@@ -180,7 +180,7 @@ function readSummariser(body, target) {
   };
 }
 
-const markerOf = (cc) => (cc.type === 'ephemeral' && Object.keys(cc).every((k) => k === 'type' || (k === 'ttl' && typeof cc.ttl === 'string')) ? cc.ttl || '5m' : JSON.stringify(sorted(cc)));
+export const markerOf = (cc) => (cc && typeof cc === 'object' && cc.type === 'ephemeral' && Object.keys(cc).every((k) => k === 'type' || k === 'ttl') && [undefined, '5m', '1h'].includes(cc.ttl) ? cc.ttl ?? '5m' : JSON.stringify(sorted(cc)));
 
 const headerValues = (v) => (Array.isArray(v) ? v : v === undefined ? [] : [v]).flatMap((x) => String(x).split(',')).map((x) => x.trim()).filter(Boolean);
 
@@ -197,10 +197,10 @@ function normalise(body, headers, mask) {
       out.toolUseId = b.tool_use_id;
       const images = blocksOf(b.content).filter((x) => x?.type === 'image').length;
       if (images) out.images = images;
-      const inner = blocksOf(b.content).map((x) => (x?.cache_control ? markerOf(x.cache_control) : null));
+      const inner = blocksOf(b.content).map((x) => (x?.cache_control != null ? markerOf(x.cache_control) : null));
       if (inner.some(Boolean)) out.contentCache = inner;
     }
-    if (b.cache_control) out.cache = markerOf(b.cache_control);
+    if (b.cache_control != null) out.cache = markerOf(b.cache_control);
     if (b.type === 'thinking') out.signature = b.signature ?? null;
     return out;
   };
@@ -214,7 +214,10 @@ function normalise(body, headers, mask) {
       maxTokens: body.max_tokens ?? null,
       toolChoice: body.tool_choice ?? null,
       thinking: body.thinking ?? null,
-      system: systemBlocks.map(({ type: _t, text, cache_control: cc, ...other }) => ({ text: mask(text ?? ''), cache: cc ? markerOf(cc) : null, ...(Object.keys(other).length ? { other: digest(other) } : {}) })),
+      system: systemBlocks.map(({ type, text, cache_control: cc, ...rest }) => {
+        const other = { ...(type !== 'text' ? { type } : {}), ...rest };
+        return { text: mask(text ?? ''), cache: cc != null ? markerOf(cc) : null, ...(Object.keys(other).length ? { other: digest(other) } : {}) };
+      }),
       tools: (body.tools || []).map((t) => ({ name: t.name, sha: digest(t) })),
       rest: Object.keys(rest).length ? digest(rest) : null,
       headers: { beta: [...new Set(headerValues(headers['anthropic-beta']))].sort(), version: headers['anthropic-version'] ?? null },
@@ -229,7 +232,7 @@ function normalise(body, headers, mask) {
   };
 }
 
-const digestOf = (m, mask) => sha(JSON.stringify(mask(unmarked({ role: m.role, content: blocksOf(m.content) })))).slice(0, 16);
+const digestOf = ({ role, content, ...envelope }, mask) => sha(JSON.stringify(mask(unmarked({ role, content: blocksOf(content), ...sorted(envelope) })))).slice(0, 16);
 
 export function tokensSent(records) {
   const sum = { input: 0, cacheRead: 0, cacheWrite: 0, output: 0 };

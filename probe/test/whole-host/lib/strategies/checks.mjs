@@ -166,10 +166,6 @@ export function assemblies(log = [], agent = FIXTURE_AGENT) {
   return out;
 }
 
-// A request is its agent's compile's when that compile is the agent's latest stamped before the request arrived and
-// no request has taken it; any other is a round. One agent's requests go one at a time, so a round arrives before the
-// agent compiles again. The module stamps a compile as it hands it back, the stand-in a request as it arrives, both
-// from CLOCK_MONOTONIC.
 export function requestPairs(records, log = [], agent = FIXTURE_AGENT, { side = agent === FIXTURE_AGENT ? 'primary' : 'sub' } = {}) {
   const sent = assemblies(log, agent).filter((l) => l.outcome === 'compiled');
   if (!sent.length) return null;
@@ -178,7 +174,7 @@ export function requestPairs(records, log = [], agent = FIXTURE_AGENT, { side = 
   const unstamped = [...sent.filter((l) => stampOf(l.stamp) === null).map((l) => `compile ${l.seq}`), ...requests.filter((r) => stampOf(r.arrived) === null).map((r) => `request ${r.id}`)];
   if (unstamped.length) return { pairs: [], continuations: requests, unpaired: [], unstamped, disagree: [] };
   const events = [...sent.map((l) => ({ at: stampOf(l.stamp), line: l })), ...requests.map((r) => ({ at: stampOf(r.arrived), request: r }))]
-    .sort((x, y) => (x.at < y.at ? -1 : x.at > y.at ? 1 : x.line ? -1 : 1));
+    .sort((x, y) => (x.at < y.at ? -1 : x.at > y.at ? 1 : x.line ? 1 : -1));
   const pairs = [];
   const continuations = [];
   let latest = null;
@@ -353,7 +349,7 @@ export function windowsRaw(records, script, log, store, { agent = FIXTURE_AGENT,
   const suppressed = (c, stepId) => suppressedAt.has(c) && suppressedAt.get(c) < (stepAt.get(stepId) ?? Infinity);
   const failed = new Set(log.filter((e) => e.kind === 'ipc' && /^inference:(failed|exhausted)$/.test(e.event?.type ?? '')).map((e) => e.step));
   const failedReply = (c, stepId) => failed.has(stepId) && /\.r\d+\]\]$/.test(c);
-  const held = (c, stepId, at_ = stepId) => (store ? at.has(c) || (suppressedAt.has(c) && !suppressed(c, at_) && !failedReply(c, stepId)) : !suppressed(c, at_) && !failedReply(c, stepId));
+  const held = (c, stepId, at_ = stepId) => (store ? at.has(c) || (suppressedAt.has(c) && !suppressed(c, at_)) : !suppressed(c, at_) && !failedReply(c, stepId));
   const asked = new Map();
   for (const r of records) {
     if (!own(r)) continue;
@@ -472,9 +468,11 @@ export function coverage(records, store, script = [], log = [], { agent = FIXTUR
   return withJudged(flags, judged);
 }
 
-export function bookkeeping(records, store) {
+export function bookkeeping(records, store, { side = 'primary' } = {}) {
+  const counted = side === 'sub' ? () => true : conversational;
   const flags = [];
   let judged = 0;
+  let written = 0;
   const byNumber = new Map(store.summaries.filter((s) => s.number).map((s) => [s.number, s]));
   const byId = new Map(store.summaries.map((s) => [s.id, s]));
   const messages = new Map(store.messages.map((m) => [m.id, m]));
@@ -483,6 +481,7 @@ export function bookkeeping(records, store) {
     if (!number) continue;
     const s = byNumber.get(number);
     if (!s) continue;
+    written++;
     const unread = s.sourceIds.filter((id) => !(s.sourceLevel === 0 ? messages.has(id) : byId.has(id)));
     if (unread.length) { flags.push({ check: 5, step: r.step, request: r.id, what: 'unread-source', message: `summary ${number} (${s.id}) has ${unread.length} source(s) the store read doesn't hold: ${unread.slice(0, 5).join(', ')}` }); continue; }
     const sentCanaries = new Set(r.sent?.canaries || []);
@@ -492,7 +491,7 @@ export function bookkeeping(records, store) {
       seen.add(child.id);
       if (child.number && sentSummaries.has(child.number)) return 'shown';
       if (child.sourceLevel > 0 && child.sourceIds.length && child.sourceIds.every((id) => byId.has(id) && shown(byId.get(id), seen) === 'shown')) return 'shown';
-      const covered = child.covers.filter(conversational);
+      const covered = child.covers.filter(counted);
       if (!covered.length) return 'unknown';
       return covered.every((c) => sentCanaries.has(c)) ? 'shown' : 'unseen';
     };
@@ -500,7 +499,7 @@ export function bookkeeping(records, store) {
     let held = 0;
     for (const id of s.sourceIds) {
       if (s.sourceLevel === 0) {
-        const own = messages.get(id).canaries.filter(conversational);
+        const own = messages.get(id).canaries.filter(counted);
         if (!own.length) continue;
         held++;
         if (own.some((c) => !sentCanaries.has(c))) unseen.push(id);
@@ -514,6 +513,7 @@ export function bookkeeping(records, store) {
     if (held) judged++;
     if (unseen.length) flags.push({ check: 5, step: r.step, request: r.id, message: `summary ${number} (${s.id}, L${s.level}) declares ${unseen.length} source(s) its request didn't show: ${unseen.slice(0, 5).join(', ')}` });
   }
+  Object.defineProperty(flags, 'written', { value: written, enumerable: false });
   return withJudged(flags, judged);
 }
 

@@ -1,7 +1,18 @@
-export function changedRequests(committed, lines) {
-  const before = committed.split('\n');
-  if (before.at(-1) === '') before.pop();
-  const after = lines.map((l) => l.text);
+const SENT = /^ {2}(compile|round|call)\b(?: \[(?!T:)([^\]]+)\])?/;
+const HEAD = /, head (H:[0-9a-f]{8})/;
+function effectiveHeads(texts) {
+  const last = new Map();
+  return texts.map((t) => {
+    const m = SENT.exec(t);
+    if (!m) return null;
+    const who = m[1] === 'call' ? 'summariser' : m[2] ?? '';
+    const named = HEAD.exec(t)?.[1];
+    if (named) last.set(who, named);
+    return last.get(who) ?? null;
+  });
+}
+
+function lineDiff(before, after) {
   let start = 0;
   while (start < before.length && start < after.length && before[start] === after[start]) start++;
   let tail = 0;
@@ -25,10 +36,16 @@ export function changedRequests(committed, lines) {
     removed++;
     i++;
   }
-  const committedHeads = new Set(before.filter((l) => l.startsWith('H:')).map((l) => l.slice(2, l.indexOf(' '))));
-  const changed = new Set(added);
-  lines.forEach((l, k) => { if (l.head && !committedHeads.has(l.head)) changed.add(k); });
-  const requests = [...new Set([...changed].sort((x, y) => x - y).map((k) => lines[k].request).filter(Boolean))];
+  return { added, removed };
+}
+
+export function changedRequests(committed, lines) {
+  const before = committed.split('\n');
+  if (before.at(-1) === '') before.pop();
+  const after = lines.map((l) => l.text);
+  const { added, removed } = lineDiff(before, after);
+  const sent = (texts) => effectiveHeads(texts).map((head, k) => `${texts[k].replace(HEAD, '')}\u0000${head ?? ''}`);
+  const requests = [...new Set(lineDiff(sent(before), sent(after)).added.map((k) => lines[k].request).filter(Boolean))];
   return { requests, added: added.length, removed, unattributed: added.filter((k) => !lines[k].request).length };
 }
 

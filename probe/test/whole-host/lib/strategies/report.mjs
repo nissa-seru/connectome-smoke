@@ -16,7 +16,7 @@ export function runChecks({ records, log, script, products, store, agent = FIXTU
     { check: 3, name: 'request shape', flags: wellFormed(records) },
     { check: 3, name: 'budgets', flags: budget.flags, judged: budget.judged, applies: budget.requests > 0 ? `the run's agent made ${budget.requests} request(s)` : null },
     ...(store ? [{ check: 4, name: 'coverage', flags: coverage(records, store, script, log, { agent, side }), applies: ownRequests > 0 ? `a store was read and the run's agent made ${ownRequests} request(s)` : null }] : []),
-    ...(store ? [{ check: 5, name: 'bookkeeping', flags: bookkeeping(records, store) }] : []),
+    ...(store ? [(() => { const flags = bookkeeping(records, store, { side }); return { check: 5, name: 'bookkeeping', flags, applies: flags.written > 0 ? `the store holds ${flags.written} summar${flags.written === 1 ? 'y' : 'ies'} a summariser request wrote` : null }; })()] : []),
     { check: 6, name: 'windows raw', flags: windowsRaw(records, script, log, store, { agent, side }), applies: side === 'primary' && turnRequests > 0 ? `the run's agent made ${turnRequests} request(s) at a scripted turn after the first` : null },
     { check: 10, name: 'calibration edge', flags: calibrationEdge(log), applies: adaptive && log.some((e) => e.kind === 'checkpoint') ? 'an adaptive configuration logged a checkpoint' : null },
     { check: 11, name: 'compile invariants', flags: compileInvariants(log), applies: budget.requests > 0 ? 'the run\'s agent made requests' : null },

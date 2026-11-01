@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { renderRecord, renderRecordLines } from '../lib/record.mjs';
+import { renderRecord, renderRecordLines, unrecordable } from '../lib/record.mjs';
 import { changedRequests } from '../lib/view.mjs';
 
 const header = { configuration: 'H1/W1', release: { tag: 'v0.0.1', versions: { '@animalabs/connectome-host': '0.0.1' } }, from: 'empty', candidate: { versions: { '@animalabs/connectome-host': '0.0.2' } } };
@@ -348,4 +348,48 @@ test('an agent request no compile pairs with, of a side no agent compiled for, s
   const own = r.find((l) => l.request === 's1');
   assert.ok(own, 'it has a line');
   assert.match(own.text, /^  round \[sub\] \+ q\.1\.k, body [0-9a-f]{8}$/);
+});
+
+test('a request moved to a head another request already used names it as changed, though its line is the same', () => {
+  const head = (maxTokens) => ({ model: 'm', maxTokens, toolChoice: null, thinking: null, system: [], tools: [], rest: null });
+  const req = (id, seq, step, h) => ({ id, seq, kind: 'agent', agent: 'primary', step, stream: true, head: h, messages: [{ role: 'user', digest: `d${step}`, blocks: [{ type: 'text', canaries: [`[[c:${step}.in]]`] }] }], answer: { shape: 'reply' } });
+  const lg = [
+    { kind: 'request', step: 'q.1', request: { id: 'a1', kind: 'agent' } },
+    { kind: 'compiles', step: 'q.1', blobs: { u1: text('[[c:q.1.in]] a') }, lines: [line(1, [m(1, 'u1')])] },
+    { kind: 'request', step: 'q.1', request: { id: 'a2', kind: 'agent' } },
+    { kind: 'request', step: 'q.2', request: { id: 'a3', kind: 'agent' } },
+    { kind: 'compiles', step: 'q.2', blobs: { u2: text('[[c:q.2.in]] b') }, lines: [line(2, [m(1, 'u1'), m(2, 'u2')])] },
+  ];
+  const at = (h1, h3) => ({ header, log: lg, records: [req('a1', 1, 'q.1', h1), req('a2', 2, 'q.1', h1), req('a3', 3, 'q.2', h3)], end: { ok: true } });
+  const committed = renderRecord(at(head(100), head(200)));
+  const moved = renderRecordLines(at(head(200), head(200)));
+  assert.deepEqual(changedRequests(committed, moved).requests, ['a1', 'a2'], 'a2 sends the head a3 already used, and its line is unchanged');
+});
+
+test('a run is unrecordable where a side sent agent requests with no request compile of its own, or a request compile carries no clock stamp', () => {
+  const compiles = (agent, stamp) => ({ kind: 'compiles', lines: [{ kind: 'request', agent, outcome: 'compiled', ...(stamp === undefined ? {} : { stamp }) }] });
+  const agentReq = (agent) => ({ kind: 'agent', agent });
+  assert.equal(unrecordable([agentReq('primary')], [compiles('fixture', '12')]), null);
+  assert.match(unrecordable([agentReq('primary'), agentReq('sub')], [compiles('fixture', '12')]), /sent sub agent requests, and its log holds no request compile line/);
+  assert.match(unrecordable([agentReq('primary')], []), /sent primary agent requests/);
+  assert.match(unrecordable([agentReq('primary')], [compiles('fixture')]), /1 request compile\(s\) carry no stamp/);
+  assert.equal(unrecordable([], []), null, 'a run with no agent request has nothing to tell apart');
+});
+
+test('a new boot whose store reports no receipt head names none, where the boot before had one', () => {
+  const head = (sequence) => ({ sequence, receiptHash: 'h', parentReceiptHash: null, requestHash: 'r', layoutHash: 'l', changes: [] });
+  const batch = (i, boot, st) => ({ kind: 'compiles', step: `q.${i}`, boot, blobs: { [`u${i}`]: text(`[[c:q.${i}.in]] a`) }, store: { fixture: st }, lines: [{ ...line(i, [m(i, `u${i}`)]), boot }] });
+  const render = (...batches) => renderRecord({ header, log: batches, records: [], end: { ok: true } }).split('\n');
+  assert.ok(render(batch(1, 1, { receiptHead: head(3) }), batch(2, 1, { messages: [] })).includes('receipt fixture #3'), 'the same boot keeps it');
+  assert.ok(!render(batch(1, 1, { receiptHead: head(3) }), batch(2, 2, { messages: [] })).some((l) => l.startsWith('receipt ')), 'a restart whose recorder reported none clears it');
+  assert.ok(render(batch(1, 1, { receiptHead: head(3) }), batch(2, 2, { receiptHead: head(1) })).includes('receipt fixture #1'));
+});
+
+test('the record\'s own agent is the fixture\'s, though another agent compiled first', () => {
+  const lg = [
+    { kind: 'compiles', step: 'q.1', blobs: { k1: text('[[c:q.1.task]] a') }, lines: [line(1, [m(1, 'k1')], { agent: 'spawn-k' })] },
+    { kind: 'compiles', step: 'q.1', blobs: { u1: text('[[c:q.1.in]] b') }, lines: [line(2, [m(2, 'u1')])] },
+  ];
+  const compiles = renderRecord({ header, log: lg, records: [], end: { ok: true } }).split('\n').filter((l) => l.startsWith('  compile'));
+  assert.deepEqual(compiles, ['  compile [spawn-k] q.1.task', '  compile q.1.in']);
 });

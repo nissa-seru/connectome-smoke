@@ -204,3 +204,13 @@ test('checks 4, 6 and 10 apply where they can anchor, and judging none there is 
   assert.deepEqual(what(runChecks({ records: [], log: [checkpoint], script, products: [], store: null, adaptive: true })), [10]);
   assert.deepEqual(what(runChecks({ records: [], log: [checkpoint], script, products: [], store: null, adaptive: false })), []);
 });
+
+test('check 5 applies where the store holds a summary a summariser request wrote, so one whose sources it can\'t judge is a couldn\'t-judge flag', () => {
+  const store = { messages: [{ id: 't1', canaries: ['[[c:a.call1]]'] }], summaries: [{ id: 'L1-1', level: 1, sourceLevel: 0, sourceIds: ['t1'], number: '[[s:C1]]', covers: ['[[c:a.call1]]'] }] };
+  const call = { id: 'c1', step: 'a', kind: 'summariser', answer: { summary: '[[s:C1]]' }, sent: { canaries: [], summaries: [] } };
+  const { flags, judged } = runChecks({ records: [call], log: [], script: [{ id: 'a', segment: 's' }], products: [], store, windowTokens: 1_000_000 });
+  assert.equal(judged.find((j) => j.check === 5).judged, 0);
+  assert.deepEqual(flags.filter((f) => f.check === 5).map((f) => f.what), ['judged-none:bookkeeping']);
+  const none = runChecks({ records: [], log: [], script: [{ id: 'a', segment: 's' }], products: [], store: { messages: [], summaries: [] }, windowTokens: 1_000_000 });
+  assert.deepEqual(none.flags.filter((f) => f.check === 5), [], 'with no summary written, check 5 doesn\'t apply');
+});

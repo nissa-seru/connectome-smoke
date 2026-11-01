@@ -58,3 +58,10 @@ test('ledgerOf names a message by its own agent\'s store first, so a fork\'s edi
   assert.deepEqual(ledgerOf(branches, { agent: 'fixture', layout: one })[0], '- raw (1): [[c:a.in]]');
   assert.deepEqual(ledgerOf(branches, { agent: 'fork', layout: one })[0], '- raw (1): [[c:b.in]]');
 });
+
+test('ledgerOf names an own message with no canary by its id, and another slot\'s member by the agents the compile read it from before any other', () => {
+  const stores = [{ kind: 'compiles', step: 'a', lines: [], store: { fixture: { messages: [['1', []], ['9', ['[[c:a.chat]]']]] }, fork: { messages: [['1', ['[[c:fork.in]]']], ['9', ['[[c:fork.chat]]']]] }, reader: { messages: [] } }, blobs: {} }];
+  const layout = (ids) => ({ memberIds: ids, units: ids.map(() => ({ k: 'r', t: 1 })) });
+  assert.deepEqual(ledgerOf(stores, { agent: 'fixture', layout: layout(['1']) })[0], '- raw (1): #1');
+  assert.deepEqual(ledgerOf(stores, { agent: 'reader', slots: ['fixture'], layout: layout(['9']) })[0], '- raw (1): [[c:a.chat]]');
+});

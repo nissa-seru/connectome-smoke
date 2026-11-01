@@ -96,8 +96,8 @@ test('module: a compile\'s view member another agent\'s slot holds is read from 
   shared.messages = [{ id: 9, sequence: 9, content: [{ type: 'text', text: '[[c:a.chat]] hi' }] }];
   const [module, Own] = harness({ listAgents: () => [{ name: 'fixture' }, { name: 'reader' }], getAgent: (name) => (name === 'fixture' ? { getContextManager: () => shared } : null) });
   const reader = new Own();
-  assert.deepEqual(module.elsewhere(reader, ['9', '10']), { found: shared.messages, unfound: ['10'] });
-  assert.deepEqual(module.elsewhere(shared, ['9']), { found: [], unfound: ['9'] }, 'never its own slot');
+  assert.deepEqual(module.elsewhere(reader, ['9', '10']), { found: shared.messages, unfound: ['10'], from: ['fixture'] }, 'and which agent\'s slot held them');
+  assert.deepEqual(module.elsewhere(shared, ['9']), { found: [], unfound: ['9'], from: [] }, 'never its own slot');
 });
 
 test('module: a reader\'s compile judges the members of its view another agent\'s slot holds, through the compile it records', async () => {
@@ -129,7 +129,7 @@ test('module: another slot is read only on the compiling manager\'s branch, so a
   assert.deepEqual(module.elsewhere(onFork, ['9']).found, fork.messages);
 });
 
-test('module: an ended agent\'s tick still in flight counts in ticks, and a take keeps its manager until it settles', async () => {
+test('module: an ended agent\'s tick still in flight counts in ticks, and its manager is read on each take until it settles, the change its tick made included', async () => {
   let registered = ['sub'];
   const managers = new Map();
   const [module, Own] = harness({ listAgents: () => registered.map((name) => ({ name })), getAgent: (name) => (registered.includes(name) ? { getContextManager: () => managers.get(name) } : null) });
@@ -143,11 +143,37 @@ test('module: an ended agent\'s tick still in flight counts in ticks, and a take
   const ticking = strategy.tick();
   registered = [];
   assert.deepEqual(await module.answer({ op: 'ticks' }), { 'sub (ended)': 1 });
-  await module.answer({ op: 'take' });
-  assert.ok(module.managers.has('sub'), 'kept while its tick runs');
+  const during = await module.answer({ op: 'take' });
+  assert.deepEqual(during.store.sub.messages, [['1', ['[[c:a.in]]']]]);
+  sub.messages = [...sub.messages, { id: 2, sequence: 2, content: [{ type: 'text', text: '[[c:a.summary]] done' }] }];
   finish();
   await ticking;
   assert.deepEqual(await module.answer({ op: 'ticks' }), {});
-  await module.answer({ op: 'take' });
-  assert.ok(!module.managers.has('sub'), 'forgotten once settled');
+  const after = await module.answer({ op: 'take' });
+  assert.deepEqual(after.store.sub.messages, [['2', ['[[c:a.summary]]']]], 'what its tick wrote after it left');
+  assert.deepEqual((await module.answer({ op: 'take' })).store, {}, 'then forgotten');
+});
+
+test('module: with recording off, an ended agent\'s tick in flight still counts in ticks', async () => {
+  let registered = ['fixture', 'sub'];
+  const fixtureManager = new (class extends Manager {})();
+  const Own = class extends Manager {};
+  const sub = new Own();
+  let finish;
+  const strategy = { tick: () => new Promise((resolve) => { finish = resolve; }) };
+  sub.getStrategy = () => strategy;
+  const module = new HarnessModule('/nowhere', { record: false });
+  module.connect = () => {};
+  const Agent = class { getContextManager() { return this.manager; } };
+  const agents = { fixture: Object.assign(new Agent(), { name: 'fixture', manager: fixtureManager }), sub: Object.assign(new Agent(), { name: 'sub', manager: sub }) };
+  module.setFramework({ getPrimaryAgentName: () => 'fixture', getAgent: (name) => (registered.includes(name) ? agents[name] : null), listAgents: (o) => (o?.includeEnded ? ['fixture', 'sub'] : registered).map((name) => ({ name })) });
+  module.wrapManagerCompile(Own.prototype);
+  await sub.compile();
+  const ticking = strategy.tick();
+  registered = ['fixture'];
+  const during = await module.answer({ op: 'ticks' });
+  assert.deepEqual(Object.entries(during).filter(([name]) => name.endsWith('(ended)')).map(([, n]) => n), [1], 'the ended agent\'s tick, though nothing recorded its name');
+  finish();
+  await ticking;
+  assert.deepEqual(await module.answer({ op: 'ticks' }), { fixture: 0 });
 });

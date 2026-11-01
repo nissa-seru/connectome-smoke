@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { requestPairs } from './strategies/checks.mjs';
+import { FIXTURE_AGENT, requestPairs } from './strategies/checks.mjs';
 
 export const LONG_TEXT_BYTES = 4096;
 
@@ -60,7 +60,7 @@ export function renderRecordLines({ header, log, records, end }) {
     return `\u0001${slot.get(k)}\u0001`;
   };
 
-  const primary = batches.flatMap((x) => x.lines ?? []).find((l) => l.agent)?.agent;
+  const primary = FIXTURE_AGENT;
   const stores = new Map();
   const storeOf = (agent) => {
     if (!stores.has(agent)) stores.set(agent, { ids: new Set(), canaryOf: new Map(), summaries: new Map(), order: null });
@@ -177,7 +177,6 @@ export function renderRecordLines({ header, log, records, end }) {
     ...(h.rest ? [`rest ${String(h.rest).slice(0, 8)}`] : []),
   ].join(', ');
   const messagesOf = (r) => (r.messages ?? []).map((m) => ({ role: m.role, digest: m.digest, cache: (m.blocks ?? []).map((b) => (b.contentCache ? [b.cache ?? null, b.contentCache] : b.cache ?? null)) }));
-  const headOf = (r) => (r.head ? sha8({ ...r.head, stream: r.stream ?? null }) : null);
   const sentNote = (who, r) => {
     const head = r.head ? { ...r.head, stream: r.stream ?? null } : null;
     let note = '';
@@ -220,6 +219,7 @@ export function renderRecordLines({ header, log, records, end }) {
 
   const totals = { compiles: 0, dry: 0, refused: 0, other: 0, calls: 0, rounds: 0, written: 0, actions: 0 };
   const receipt = new Map();
+  const receiptBoot = new Map();
   const known = new Map();
   const byStep = new Map();
   const at = (step) => { if (!byStep.has(step)) byStep.set(step, []); return byStep.get(step); };
@@ -251,6 +251,8 @@ export function renderRecordLines({ header, log, records, end }) {
     if (e.kind === 'compiles') {
       for (const [agent, st] of Object.entries(e.store ?? {})) {
         const tag = agent === primary ? '' : ` [${agent}]`;
+        if (receiptBoot.has(agent) && receiptBoot.get(agent) !== e.boot && !('receiptHead' in st)) receipt.delete(agent);
+        receiptBoot.set(agent, e.boot);
         if ('receiptHead' in st) {
           if (st.receiptHead?.unreadable) { seen(e.step); at(e.step).push({ text: `  unreadable${tag} receipt: ${st.receiptHead.unreadable}` }); receipt.delete(agent); }
           else if (st.receiptHead) receipt.set(agent, st.receiptHead);
@@ -295,16 +297,16 @@ export function renderRecordLines({ header, log, records, end }) {
       if (l.kind === 'compile') {
         lastCarried.set(l.agent, carriedBy(l.sent));
         lastSent.set(l.agent, l.compile);
-        return { text: `${l.base}${sentNote(l.agent, l.sent)}`, request: l.request, compile: l.compile, head: headOf(l.sent) };
+        return { text: `${l.base}${sentNote(l.agent, l.sent)}`, request: l.request, compile: l.compile };
       }
       if (l.kind === 'round') {
         const before = new Set(lastCarried.get(l.agent) ?? []);
         const carried = carriedBy(l.sent);
         lastCarried.set(l.agent, carried);
         const added = carried.filter((c) => !before.has(c));
-        return { text: `  round${l.agent === primary ? '' : ` [${l.agent}]`} ${added.length ? `+ ${added.join(' ')}` : '='}${sentNote(l.agent, l.sent)}`, request: l.request, compile: lastSent.get(l.agent) ?? null, round: true, head: headOf(l.sent) };
+        return { text: `  round${l.agent === primary ? '' : ` [${l.agent}]`} ${added.length ? `+ ${added.join(' ')}` : '='}${sentNote(l.agent, l.sent)}`, request: l.request, compile: lastSent.get(l.agent) ?? null, round: true };
       }
-      if (l.kind === 'call') return { text: `${l.base}${sentNote('summariser', l.sent)}`, request: l.request, head: headOf(l.sent) };
+      if (l.kind === 'call') return { text: `${l.base}${sentNote('summariser', l.sent)}`, request: l.request };
       return l;
     }));
   }
@@ -355,4 +357,15 @@ function nameTemplates(templates, slug) {
     for (const i of group) if (count.get(names[i]) > 1) names[i] = hashed(i);
   }
   return names;
+}
+
+export function unrecordable(records, log) {
+  const sideOf = (agent) => (agent === FIXTURE_AGENT ? 'primary' : 'sub');
+  const lines = log.filter((e) => e.kind === 'compiles').flatMap((e) => (e.lines ?? []).filter((l) => l.kind === 'request'));
+  const compiled = new Set(lines.map((l) => sideOf(l.agent)));
+  const uncompiled = [...new Set(records.filter((r) => r.kind === 'agent').map((r) => r.agent ?? 'primary'))].filter((side) => !compiled.has(side));
+  if (uncompiled.length) return `the run sent ${uncompiled.join(' and ')} agent requests, and its log holds no request compile line from the test module for ${uncompiled.length > 1 ? 'either' : 'that side'}, so its record couldn't tell their compiles from their rounds`;
+  const unstamped = lines.filter((l) => l.outcome === 'compiled' && !/^\d+$/.test(String(l.stamp ?? ''))).length;
+  if (unstamped) return `${unstamped} request compile(s) carry no stamp from the machine's monotonic clock, which the test module reads on Linux, so the record couldn't tell their requests from rounds`;
+  return null;
 }

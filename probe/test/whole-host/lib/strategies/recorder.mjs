@@ -55,7 +55,9 @@ export function compiledLine(manager, budget, compiled, blobs, elsewhere) {
     if (marker) entry.marker = plain(marker);
     return entry;
   });
-  const violations = checkCompile(manager, budget, compiled, entries, { compresses: compresses(manager), elsewhere });
+  let slots = [];
+  const reading = elsewhere && ((ids) => { const r = elsewhere(ids); slots = r.from ?? []; return r; });
+  const violations = checkCompile(manager, budget, compiled, entries, { compresses: compresses(manager), elsewhere: reading });
   const layout = compiled?.provenance?.layout;
   return {
     outcome: 'compiled',
@@ -64,6 +66,7 @@ export function compiledLine(manager, budget, compiled, blobs, elsewhere) {
     layout: !compiled?.provenance ? { unreadable: 'no provenance' } : layout ? untimed(plain({ ...layout, members: undefined })) : null,
     stats: untimed(plain(compiled?.renderStats ?? readable(() => manager.getRenderStats()))),
     violations,
+    ...(slots.length ? { slots } : {}),
   };
 }
 
@@ -107,10 +110,12 @@ export function storeDelta(manager, seen = { messages: new Map(), summaries: new
     for (const m of messages) {
       const id = String(m.id);
       const thinking = (Array.isArray(m.content) ? m.content : []).some((b) => b?.type === 'thinking' || b?.type === 'redacted_thinking');
+      const canaries = canariesOf(m.content);
       const before = seen.messages.get(id);
-      next.messages.set(id, thinking);
-      if (before === undefined) added.push(thinking ? [id, canariesOf(m.content), { thinking }] : [id, canariesOf(m.content)]);
-      else if (before !== thinking) added.push([id, canariesOf(m.content), { thinking }]);
+      next.messages.set(id, { thinking, canaries: JSON.stringify(canaries) });
+      if (before === undefined) added.push(thinking ? [id, canaries, { thinking }] : [id, canaries]);
+      else if (before.thinking !== thinking) added.push([id, canaries, { thinking }]);
+      else if (before.canaries !== JSON.stringify(canaries)) added.push(thinking ? [id, canaries, { thinking }] : [id, canaries]);
     }
     if (added.length) out.messages = added;
   } else out.messages = messages;
@@ -126,7 +131,10 @@ export function storeDelta(manager, seen = { messages: new Map(), summaries: new
     const removed = [...seen.summaries.keys()].filter((id) => !summaries.has(id));
     if (added.length) out.summaries = added;
     if (removed.length) out.removed = removed;
-  } else out.summaries = summaries;
+  } else {
+    out.summaries = summaries;
+    next.summaries = new Map(seen.summaries);
+  }
   const head = receiptHeadOf(manager);
   const headKey = JSON.stringify(head);
   if (headKey !== seen.head) { out.receiptHead = head; next.head = headKey; }

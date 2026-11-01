@@ -1,15 +1,19 @@
 import { assemblies, FIXTURE_AGENT } from './checks.mjs';
 
-function canaryNames(log, agent) {
-  const own = new Map(), others = new Map();
+function canaryNames(log, line) {
+  const stores = new Map();
   for (const e of log) {
     if (e.kind !== 'compiles') continue;
     for (const [name, store] of Object.entries(e.store ?? {})) {
-      const into = name === agent ? own : others;
-      for (const [id, canaries] of Array.isArray(store?.messages) ? store.messages : []) if (canaries?.length) into.set(String(id), canaries[0]);
+      if (!stores.has(name)) stores.set(name, new Map());
+      for (const [id, canaries] of Array.isArray(store?.messages) ? store.messages : []) stores.get(name).set(String(id), canaries?.[0] ?? null);
     }
   }
-  return (id) => own.get(id) ?? others.get(id);
+  const order = [line.agent, ...(line.slots ?? []), ...[...stores.keys()].filter((n) => n !== line.agent && !(line.slots ?? []).includes(n))];
+  return (id) => {
+    for (const name of order) if (stores.get(name)?.has(id)) return stores.get(name).get(id);
+    return null;
+  };
 }
 
 // context-manager's layout of a compile (buildRenderedLayout): the view's members in order, and one unit per raw
@@ -36,7 +40,7 @@ function fates(layout) {
 export function ledgerOf(log, line) {
   const f = fates(line?.layout);
   if (!f) return [`- no ledger: the compile line carries no layout context-manager gave${line?.layout?.unreadable ? ` (${line.layout.unreadable})` : ''}`];
-  const canaryOf = canaryNames(log, line.agent);
+  const canaryOf = canaryNames(log, line);
   const position = new Map(f.ids.map((id, i) => [id, i]));
   const name = (id) => canaryOf(id) ?? `#${id}`;
   const spans = (ids) => {

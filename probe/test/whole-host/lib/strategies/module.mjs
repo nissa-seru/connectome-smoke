@@ -161,6 +161,7 @@ export class HarnessModule {
   elsewhere(manager, ids) {
     const wanted = new Set(ids);
     const found = [];
+    const from = [];
     const others = new Set(this.managers.values());
     for (const record of this.framework?.listAgents() ?? []) {
       const agent = this.framework.getAgent(record.name);
@@ -175,9 +176,11 @@ export class HarnessModule {
       if (!wanted.size) break;
       const messages = readable(() => other.getAllMessages());
       if (isUnreadable(messages)) continue;
+      const before = found.length;
       for (const m of messages) if (wanted.delete(String(m.id))) found.push(m);
+      if (found.length > before) from.push(this.agentName(other, null));
     }
-    return { found, unfound: [...wanted] };
+    return { found, unfound: [...wanted], from: from.filter(Boolean) };
   }
 
   ticksInFlight(manager) {
@@ -241,7 +244,8 @@ export class HarnessModule {
           if (agent) live.set(record.name, agent.getContextManager());
         }
         // agent-framework deregisters an ephemeral agent at its run's end without closing its manager, so the
-        // last changes of one that compiled and has left are read from the manager kept from its compiles, once.
+        // changes of one that compiled and has left are read from the manager kept from its compiles until its
+        // ticks settle.
         for (const [name, manager] of this.managers) {
           if (live.get(name) === manager) continue;
           this.takeDelta(store, name, manager);

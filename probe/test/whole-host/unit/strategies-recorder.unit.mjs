@@ -45,3 +45,27 @@ test('storeDelta: a strategy that can\'t be read when the quarantine is first sa
   const failing = { ...manager([]), getStrategy: () => { throw new Error('gone'); } };
   assert.deepEqual(storeDelta(failing, undefined, blobStore()).out.quarantine, { unreadable: 'gone' });
 });
+
+test('storeDelta: a summary read that fails keeps the summaries last read, so a later removal is still reported', () => {
+  const blobs = blobStore();
+  let listed = [{ id: 'S' }];
+  let failing = false;
+  const m = { ...manager([]), getSummariesInRange: () => { if (failing) throw new Error('gone'); return listed; }, getSummary: (id) => ({ id, level: 1, sourceLevel: 0, sourceIds: [], content: 'c' }) };
+  const first = storeDelta(m, undefined, blobs);
+  assert.deepEqual(first.out.summaries.map((s) => s.id), ['S']);
+  failing = true;
+  const unread = storeDelta(m, first.seen, blobs);
+  assert.deepEqual(unread.out.summaries, { unreadable: 'gone' });
+  failing = false;
+  listed = [];
+  assert.deepEqual(storeDelta(m, unread.seen, blobs).out.removed, ['S']);
+});
+
+test('storeDelta: a stored message whose canaries change is reported again, its thinking bit with it', () => {
+  const blobs = blobStore();
+  const first = storeDelta(manager([{ id: 9, content: [text('[[c:a.in]] hi')] }]), undefined, blobs);
+  assert.deepEqual(first.out.messages, [['9', ['[[c:a.in]]']]]);
+  assert.deepEqual(storeDelta(manager([{ id: 9, content: [text('[[c:b.in]] hi')] }]), first.seen, blobs).out.messages, [['9', ['[[c:b.in]]']]]);
+  const thought = storeDelta(manager([{ id: 9, content: [thinking, text('[[c:a.in]] hi')] }]), undefined, blobs);
+  assert.deepEqual(storeDelta(manager([{ id: 9, content: [thinking, text('[[c:c.in]] hi')] }]), thought.seen, blobs).out.messages, [['9', ['[[c:c.in]]'], { thinking: true }]]);
+});

@@ -199,8 +199,39 @@ test('a partial copy\'s shards are those context-manager\'s layout names raw: a 
 });
 
 test('unreadable: a summary sent that the store doesn\'t return, and a compile with no layout, are named, never judged clean', () => {
-  assert.deepEqual(named(check(manager(), ['s:GONE@1', 'r:3', 'r:4'])).filter(([v]) => v === 'unreadable'), [['unreadable', 'getSummary(GONE): no such summary; what depends on it wasn\'t judged']]);
+  assert.deepEqual(named(check(manager(), ['s:GONE@1', 'r:3', 'r:4'])), [
+    ['shape', 'message 1: result t1 answers no call in the message before it'],
+    ['unreadable', 'getSummary(GONE): no such summary; what depends on it wasn\'t judged'],
+  ], 'coverage, order and pins give no verdict on sources they couldn\'t read; shape, which needs none, still does');
   const [compiled, messages] = compile(['r:1', 'r:2', 'r:3', 'r:4']);
   delete compiled.provenance;
   assert.deepEqual(named(checkCompile(manager(), BUDGET, compiled, messages)), [['unreadable', 'the compile gave no layout, so its view\'s members beyond its own slot weren\'t read; what depends on it wasn\'t judged']]);
+});
+
+test('store order takes a partial copy\'s shards from context-manager\'s layout too, so a text an earlier shard shares doesn\'t put the copy out of order', () => {
+  const body = [...STORE, shard('5', 5, 0, 'same words'), shard('6', 6, 1, 'other words'), shard('7', 7, 2, 'same words')];
+  for (const m of body) byId.set(m.id, m);
+  try {
+    const m = manager({ messages: body, summaries: { U: { sourceIds: ['5'] }, T: { sourceIds: ['6'] } } });
+    const [compiled, messages] = compile(['r:1', 'r:2', 'r:3', 'r:4', 's:U@1', 's:T@1', ['r:5!shards', [text('same words')]]]);
+    compiled.provenance.layout = { memberIds: ['1', '2', '3', '4', '5', '6', '7'], units: [{ k: 'r', t: 1 }, { k: 'r', t: 1 }, { k: 'r', t: 1 }, { k: 'r', t: 1 }, { k: 's', n: 1, sm: [['U', 1, 'llm', 0, 5]] }, { k: 's', n: 1, sm: [['T', 1, 'llm', 0, 5]] }, { k: 'r', t: 1, p: 1 }] };
+    assert.deepEqual(checkCompile(m, BUDGET, compiled, messages), []);
+  } finally {
+    for (const m of body) if (!STORE.includes(m)) byId.delete(m.id);
+  }
+});
+
+test('a raw source the compile sent that its layout doesn\'t list is read from the slot that holds it too', () => {
+  const shared = [stored('9', 9, 'user', [text('nine')])];
+  for (const m of shared) byId.set(m.id, m);
+  try {
+    const asked = [];
+    const elsewhere = (ids) => { asked.push(...ids); return { found: shared.filter((m) => ids.includes(m.id)), unfound: ids.filter((id) => !shared.some((m) => m.id === id)) }; };
+    const [compiled, messages] = compile(['r:1', 'r:2', 'r:3', 'r:4', 'r:9']);
+    compiled.provenance.layout = { memberIds: ['1', '2', '3', '4'], units: [{ k: 'r', t: 1 }, { k: 'r', t: 1 }, { k: 'r', t: 1 }, { k: 'r', t: 1 }] };
+    assert.deepEqual(checkCompile(manager(), BUDGET, compiled, messages, { elsewhere }), []);
+    assert.deepEqual(asked, ['9']);
+  } finally {
+    for (const m of shared) byId.delete(m.id);
+  }
 });

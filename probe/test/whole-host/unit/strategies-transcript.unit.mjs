@@ -61,6 +61,16 @@ test('X8: a stretch of one generated text that another also holds shows as part 
   assert.equal(line, `  text: user: ⟪[[c:x.5.in]] chars 1,001–${doc.length.toLocaleString('en-US')} of ${doc.length.toLocaleString('en-US')}: ${head(doc, at)}⟫`);
 });
 
+test('X10: a cache marker shows as the record shows it, its TTL when plain and whole otherwise, and a system block\'s other fields show beside its marker', () => {
+  const generated = generatedTexts({ steps: [turn] });
+  const odd = { type: 'ephemeral', ttl: '1h', scope: 'x' };
+  const lines = transcriptOf(body([user(said)], { system: [{ type: 'text', text: 'You are the fixture agent.', cache_control: odd, citations: { enabled: true } }] }), generated);
+  assert.equal(lines[0], 'system[0] [cache {"scope":"x","ttl":"1h","type":"ephemeral"}] {"citations":{"enabled":true}}: You are the fixture agent.');
+  const marked = (cc) => transcriptOf(body([{ role: 'user', content: [{ type: 'text', text: 'hello', cache_control: cc }] }]), generated).at(-1);
+  assert.equal(marked({ type: 'ephemeral', ttl: '1h' }), '  text [cache 1h]: hello');
+  assert.equal(marked({ type: 'persistent' }), '  text [cache {"type":"persistent"}]: hello');
+});
+
 test('X4: a long stack text already shown is named the next time, and a one-word change to it shows it whole again', () => {
   const long = (word) => [{ name: 'notes', description: `Keeps notes. ${'Each note is kept as written and returned on request. '.repeat(5)}The ${word} is optional.`, input_schema: { type: 'object' } }];
   const generated = generatedTexts({ steps: [turn] });

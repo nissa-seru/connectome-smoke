@@ -79,6 +79,8 @@ test('check 6 with a store read holds a request to a message an operator suppres
   const req = (canaries) => ({ id: 'r', step: 'c', kind: 'agent', messages: [msg('user', carrying(...canaries))] });
   assert.deepEqual(windowsRaw([req(['[[c:a.in]]', '[[c:b.in]]', '[[c:b.r1]]', '[[c:c.in]]'])], after, [], store).map((f) => f.message), ['the recent window lacks [[c:a.r1]]']);
   assert.deepEqual(windowsRaw([req(['[[c:a.in]]', '[[c:a.r1]]', '[[c:b.in]]', '[[c:b.r1]]', '[[c:c.in]]'])], after, [], store), []);
+  const failedLater = [{ kind: 'ipc', step: 'a', event: { type: 'inference:failed' } }];
+  assert.deepEqual(windowsRaw([req(['[[c:a.in]]', '[[c:b.in]]', '[[c:b.r1]]', '[[c:c.in]]'])], after, failedLater, store).map((f) => f.message), ['the recent window lacks [[c:a.r1]]'], 'a reply an operator suppressed was stored, even in a step that failed on a later round');
 });
 
 test('check 6 flags a request that loses a raw message of the head the host reported, or lacks the two turns before it raw', () => {
@@ -767,4 +769,22 @@ test('check 12: a fork call\'s UUID and its result\'s are masked together across
   ];
   assert.deepEqual(reloads(run(dry(7, ['callA', 'resA']), dry(1, ['callB', 'resB']))), [], 'a fresh UUID for the same call and result');
   assert.match(reloads(run(dry(7, ['callA', 'resA']), dry(1, ['callB', 'resC'])))[0].message, /differs from the one before at message 1/);
+});
+
+test('check 5 holds a subagent\'s summary to every source it covers, as check 4 does, since a subagent\'s inputs and replies carry their own canaries', () => {
+  const store = { messages: [{ id: 'k1', canaries: ['[[c:k.task]]'] }, { id: 'k2', canaries: ['[[c:k.s1]]'] }], summaries: [{ id: 'L1-1', level: 1, sourceLevel: 0, sourceIds: ['k1', 'k2'], number: '[[s:C1]]', covers: ['[[c:k.task]]', '[[c:k.s1]]'] }] };
+  const call = (canaries) => ({ id: 'c1', step: 'k', kind: 'summariser', answer: { summary: '[[s:C1]]' }, sent: { canaries, summaries: [] } });
+  const primary = bookkeeping([call([])], store);
+  assert.equal(primary.judged, 0, 'by the primary\'s rule these are no turn\'s input or reply');
+  const sub = bookkeeping([call(['[[c:k.task]]', '[[c:k.s1]]'])], store, { side: 'sub' });
+  assert.deepEqual(sub, []);
+  assert.equal(sub.judged, 1);
+  assert.deepEqual(bookkeeping([call(['[[c:k.task]]'])], store, { side: 'sub' }).map((f) => f.request), ['c1'], 'a source its request didn\'t show');
+});
+
+test('requestPairs: a request stamped the same nanosecond as a compile doesn\'t pair with it', () => {
+  const r = { ...opened('r1', 'h', 1_000), arrived: '10', messages: [{ role: 'user', digest: 'd', blocks: [text(['[[c:h.in]]'])] }] };
+  const log = [{ kind: 'compiles', step: 'h', lines: [{ seq: 1, agent: 'fixture', kind: 'request', assembly: 1, outcome: 'compiled', stamp: '10', messages: [{ sources: ['r:1'], content: 'x' }] }], blobs: { x: { role: 'user', content: [{ type: 'text', text: '[[c:h.in]] words' }] } } }];
+  const paired = requestPairs([r], log);
+  assert.deepEqual([paired.pairs.length, paired.unpaired.map((l) => l.seq)], [0, [1]]);
 });

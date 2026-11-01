@@ -160,19 +160,22 @@ test('a host that is the checkout itself is named by its version and its source,
 });
 
 test('a kept checkpoint is used only whole, with its record, its store and the answers its transcripts read', () => {
-  const record = JSON.stringify({ from: 'H1/W2', key: 'k', clockEnd: 1 });
-  const whole = tree({ 'checkpoint.json': record, 'store/x': '', 'answers/r1.answer.json': '[]' });
-  const noAnswers = tree({ 'checkpoint.json': record, 'store/x': '' });
-  const noRecord = tree({ 'store/x': '', 'answers/r1.answer.json': '[]' });
-  const brokenRecord = tree({ 'checkpoint.json': '{"from":', 'store/x': '', 'answers/r1.answer.json': '[]' });
-  const emptyStore = tree({ 'checkpoint.json': record, 'answers/r1.answer.json': '[]' });
-  mkdirSync(join(emptyStore, 'store'));
-  const all = [whole, noAnswers, noRecord, brokenRecord, emptyStore];
+  const root = mkdtempSync(join(tmpdir(), 'kept-'));
+  const make = (name, { record = JSON.stringify({ from: 'H1/W2', key: 'k1', clockEnd: 1 }), store = true, answers = true } = {}) => {
+    const dir = join(root, `H1_W2-${name}`, 'H1_W2-k1');
+    mkdirSync(join(dir, 'store'), { recursive: true });
+    mkdirSync(join(dir, 'answers'), { recursive: true });
+    if (store) writeFileSync(join(dir, 'store', 'x'), '');
+    if (answers) writeFileSync(join(dir, 'answers', 'r1.answer.json'), '[]');
+    if (record !== null) writeFileSync(join(dir, 'checkpoint.json'), record);
+    return dir;
+  };
   try {
-    assert.equal(keptWhole(whole), true);
-    assert.equal(keptWhole(noAnswers), false, 'one kept before its answers were, or that lost them, is written again');
-    assert.equal(keptWhole(noRecord), false);
-    assert.equal(keptWhole(brokenRecord), false, 'a record that doesn\'t parse');
-    assert.equal(keptWhole(emptyStore), false, 'a store that lost its contents');
-  } finally { for (const d of all) rmSync(d, { recursive: true, force: true }); }
+    assert.equal(keptWhole(make('whole')), true);
+    assert.equal(keptWhole(make('no-answers', { answers: false })), false, 'one kept before its answers were, or that lost them, is written again');
+    assert.equal(keptWhole(make('empty-store', { store: false })), false, 'a store that lost its contents');
+    assert.equal(keptWhole(make('no-record', { record: null })), false);
+    assert.equal(keptWhole(make('broken-record', { record: '{"from":' })), false, 'a record that doesn\'t parse');
+    assert.equal(keptWhole(make('other-key', { record: JSON.stringify({ from: 'H1/W2', key: 'k2', clockEnd: 1 }) })), false, 'a record whose key isn\'t its directory\'s');
+  } finally { rmSync(root, { recursive: true, force: true }); }
 });

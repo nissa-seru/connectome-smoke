@@ -14,7 +14,7 @@ import { FIXTURE_AGENT } from './lib/strategies/checks.mjs';
 import { readExpected, workloadReport } from './lib/strategies/report.mjs';
 import { RUNS, runOf } from './lib/strategies/workloads.mjs';
 import { configurations } from './lib/strategies/script.mjs';
-import { renderRecordLines } from './lib/record.mjs';
+import { renderRecordLines, unrecordable } from './lib/record.mjs';
 import { changedRequests, stepSummary, summaryTable, viewOf } from './lib/view.mjs';
 import { generatedTexts, transcriptOf } from './lib/strategies/transcript.mjs';
 import { ledgerOf, moduleCounts } from './lib/strategies/ledger.mjs';
@@ -189,11 +189,9 @@ for (const id of names) {
   seconds.runs[id] = Math.round((since(t) - (checkpointTime - before)) * 10) / 10;
   console.log((r.lines?.length ? r.lines : [`${id}: couldn't run: ${r.reason}`]).join('\n'));
   let record = null;
-  const sideOf = (agent) => (agent === FIXTURE_AGENT ? 'primary' : 'sub');
-  const compiledSides = new Set(r.outcome === 'couldnt-run' ? [] : r.log.filter((e) => e.kind === 'compiles').flatMap((e) => (e.lines ?? []).filter((l) => l.kind === 'request').map((l) => sideOf(l.agent))));
-  const uncompiled = r.outcome === 'couldnt-run' ? [] : [...new Set(r.records.filter((x) => x.kind === 'agent').map((x) => x.agent ?? 'primary'))].filter((side) => !compiledSides.has(side));
-  if (uncompiled.length) {
-    Object.assign(r, { outcome: 'couldnt-run', reason: `the run sent ${uncompiled.join(' and ')} agent requests, and its log holds no request compile line from the test module for ${uncompiled.length > 1 ? 'either' : 'that side'}, so its record couldn't tell their compiles from their rounds` });
+  const cannot = r.outcome === 'couldnt-run' ? null : unrecordable(r.records, r.log);
+  if (cannot) {
+    Object.assign(r, { outcome: 'couldnt-run', reason: cannot });
     console.log(`${LABEL} ${id}: couldn't run: ${r.reason}`);
   }
   if (r.outcome !== 'couldnt-run') {
