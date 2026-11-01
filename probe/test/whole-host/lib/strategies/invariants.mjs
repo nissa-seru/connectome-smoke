@@ -65,10 +65,9 @@ export function readSummaries(manager, name = (id) => String(id)) {
   return out;
 }
 
-export function checkCompile(manager, budget, compiled, messages, { compresses: compressing = true } = {}) {
-  const out = [];
+export function readCompile(manager, compiled, messages) {
   const stored = readable(() => manager.getAllMessages());
-  if (isUnreadable(stored)) return [{ invariant: 'unreadable', detail: `getAllMessages: ${stored.unreadable}; no invariant was judged` }];
+  if (isUnreadable(stored)) return stored;
   const inOrder = [...stored].sort((a, b) => a.sequence - b.sequence);
   const bodyOf = new Map();
   const membersOf = new Map();
@@ -113,7 +112,6 @@ export function checkCompile(manager, budget, compiled, messages, { compresses: 
   });
   const bySummary = new Map();
   for (const id of summariesSent) for (const leaf of leaves(id)) bySummary.set(leaf, [...(bySummary.get(leaf) ?? []), id]);
-  const uncovered = [], twice = [], beside = [];
   // A raw copy of a body holds a shard when it carries every shard (context-manager marks one that
   // doesn't `!shards`; `!content` alone is every shard, altered), or when it carries that shard's text
   // (a shard with no text, by any raw copy of its body).
@@ -123,6 +121,52 @@ export function checkCompile(manager, budget, compiled, messages, { compresses: 
     const own = textOf(m);
     return copy.everyShard || own.length === 0 || copy.text.includes(own);
   };
+  return { stored, inOrder, bodyOf, membersOf, sequenceOf, leaves, blocks, textOf, sent, raw, summariesSent, bySummary, held };
+}
+
+export function compileLedger(read, messages) {
+  if (isUnreadable(read)) return read;
+  const { inOrder, bodyOf, bySummary, held } = read;
+  const levels = new Map();
+  for (const m of messages) {
+    for (const s of m.sources) {
+      if (!s.startsWith('s:')) continue;
+      const [id, level] = s.slice(2).replace('~', '').split('@');
+      levels.set(id, Number(level));
+    }
+  }
+  const at = new Map(inOrder.map((m, i) => [String(m.id), i]));
+  const spans = (ids) => {
+    const out = [];
+    for (const id of ids) {
+      const last = out.at(-1);
+      if (last && at.get(id) === at.get(last[1]) + 1) { last[1] = id; last[2]++; } else out.push([id, id, 1]);
+    }
+    return out;
+  };
+  const raw = [], out = [], under = new Map();
+  for (const m of inOrder) {
+    const id = String(m.id);
+    const summaries = bySummary.get(id) ?? [];
+    const isRaw = held(bodyOf.get(id), m);
+    if (isRaw) raw.push(id);
+    for (const s of summaries) under.set(s, [...(under.get(s) ?? []), id]);
+    if (!isRaw && !summaries.length) out.push(id);
+  }
+  const summarised = new Set([...under.values()].flat());
+  return {
+    raw: spans(raw),
+    summaries: [...under].map(([id, ids]) => [id, levels.get(id) ?? null, spans(ids)]),
+    out: spans(out),
+    counts: { raw: raw.length, summarised: summarised.size, out: out.length },
+  };
+}
+
+export function checkCompile(manager, budget, compiled, messages, { compresses: compressing = true, read = readCompile(manager, compiled, messages) } = {}) {
+  const out = [];
+  if (isUnreadable(read)) return [{ invariant: 'unreadable', detail: `getAllMessages: ${read.unreadable}; no invariant was judged` }];
+  const { stored, inOrder, bodyOf, membersOf, sequenceOf, leaves, blocks, textOf, sent, raw, bySummary, held } = read;
+  const uncovered = [], twice = [], beside = [];
   for (const [body, members] of membersOf) {
     const lost = compressing ? members.filter((m) => !bySummary.has(String(m.id)) && !held(body, m)) : [];
     if (lost.length === members.length) uncovered.push(body);

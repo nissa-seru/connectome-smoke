@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { maskRunVarying } from './compare.mjs';
 import { CANARY } from './standin.mjs';
-import { checkCompile, digest, isUnreadable, normalizeMessage, readSummaries, readable, sourceStrings } from './invariants.mjs';
+import { checkCompile, compileLedger, digest, isUnreadable, normalizeMessage, readCompile, readSummaries, readable, sourceStrings } from './invariants.mjs';
 
 const PASSTHROUGH = ['PassthroughStrategy', 'WindowedPassthroughStrategy'];
 
@@ -55,7 +55,8 @@ export function compiledLine(manager, budget, compiled, blobs) {
     if (marker) entry.marker = plain(marker);
     return entry;
   });
-  const violations = checkCompile(manager, budget, compiled, entries, { compresses: compresses(manager) });
+  const read = readCompile(manager, compiled, entries);
+  const violations = checkCompile(manager, budget, compiled, entries, { compresses: compresses(manager), read });
   const layout = compiled?.provenance?.layout;
   return {
     outcome: 'compiled',
@@ -64,6 +65,7 @@ export function compiledLine(manager, budget, compiled, blobs) {
     layout: !compiled?.provenance ? { unreadable: 'no provenance' } : layout ? untimed(plain({ ...layout, members: undefined })) : null,
     stats: untimed(plain(compiled?.renderStats ?? readable(() => manager.getRenderStats()))),
     violations,
+    ledger: compileLedger(read, entries),
   };
 }
 
@@ -98,9 +100,9 @@ export function receiptHeadOf(manager) {
   }));
 }
 
-export function storeDelta(manager, seen = { messages: new Map(), summaries: new Map(), head: 'null' }, blobs) {
+export function storeDelta(manager, seen = { messages: new Map(), summaries: new Map(), head: 'null', quarantine: 'null' }, blobs) {
   const out = {};
-  const next = { messages: new Map(seen.messages), summaries: new Map(), head: seen.head };
+  const next = { messages: new Map(seen.messages), summaries: new Map(), head: seen.head, quarantine: seen.quarantine };
   const messages = readable(() => manager.getAllMessages());
   if (!isUnreadable(messages)) {
     const added = [];
@@ -130,7 +132,21 @@ export function storeDelta(manager, seen = { messages: new Map(), summaries: new
   const head = receiptHeadOf(manager);
   const headKey = JSON.stringify(head);
   if (headKey !== seen.head) { out.receiptHead = head; next.head = headKey; }
+  const quarantine = quarantineOf(manager);
+  const quarantineKey = JSON.stringify(quarantine);
+  if (quarantineKey !== seen.quarantine) { out.quarantine = quarantine; next.quarantine = quarantineKey; }
   return { out, seen: next, changed: Object.keys(out).length > 0 };
+}
+
+// context-manager's AutobiographicalStrategy reports its quarantines publicly: compression's as the spans it holds out,
+// merges' as a count. A strategy without them, such as a passthrough, has none to report.
+function quarantineOf(manager) {
+  const strategy = readable(() => manager.getStrategy());
+  if (isUnreadable(strategy) || typeof strategy?.getMergeQuarantineStatus !== 'function') return null;
+  return plain(readable(() => {
+    const compression = strategy.getCompressionQuarantineStatus();
+    return { compression: compression.unreadable ? null : compression.spans.length, merge: strategy.getMergeQuarantineStatus().count };
+  }));
 }
 
 export function messagesOf(manager) {

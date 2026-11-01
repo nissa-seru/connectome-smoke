@@ -787,7 +787,7 @@
   "check": 4,
   "step": "648143.11",
   "what": "more-than-once",
-  "match": "^3 message\\(s\\) reach the request more than once: \\[\\[c:648143\\.1\\.in\\]\\] \\[\\[c:648143\\.1\\.r1\\]\\] \\[\\[c:648143\\.1\\.r2\\]\\]$",
+  "match": "^2 message\\(s\\) reach the request more than once: \\[\\[c:648143\\.1\\.in\\]\\] \\[\\[c:648143\\.1\\.r1\\]\\]$",
   "finding": "raw-pin-sent-beside-covering-summary",
   "reason": "A message pinned raw after an L1 summary covers it is also sent inside that summary."
  },
@@ -823,7 +823,7 @@
   "check": 11,
   "step": "648143.11",
   "what": "fixture:request:beside-sources",
-  "match": "^4 stored messages sent raw beside a summary of them: 1700 raw beside L1-132; 1704 raw beside L1-132; 1705 raw beside L1-132; 1707 raw beside L1-133$",
+  "match": "^3 stored messages sent raw beside a summary of them: 1702 raw beside L1-132; 1706 raw beside L1-132; 1707 raw beside L1-132$",
   "finding": "raw-pin-sent-beside-covering-summary",
   "reason": "A message pinned raw after an L1 summary covers it is also sent inside that summary."
  },
@@ -832,16 +832,7 @@
   "check": 11,
   "step": "648143.11",
   "what": "fixture:request:pins",
-  "match": "^summary L1-132 at L1 covers 1700, inside pin pin-87 allowing L0$",
-  "finding": "raw-pin-sent-beside-covering-summary",
-  "reason": "A message pinned raw after an L1 summary covers it is also sent inside that summary."
- },
- {
-  "configuration": "H1/W9",
-  "check": 11,
-  "step": "648143.11",
-  "what": "fixture:request:pins",
-  "match": "^summary L1-133 at L1 covers 1707, inside pin pin-87 allowing L0$",
+  "match": "^summary L1-132 at L1 covers 1702, inside pin pin-87 allowing L0$",
   "finding": "raw-pin-sent-beside-covering-summary",
   "reason": "A message pinned raw after an L1 summary covers it is also sent inside that summary."
  },
@@ -850,7 +841,7 @@
   "check": 11,
   "step": "648143.12",
   "what": "fixture:request:beside-sources",
-  "match": "^4 stored messages sent raw beside a summary of them: 1700 raw beside L1-132; 1704 raw beside L1-132; 1705 raw beside L1-132; 1707 raw beside L1-133$",
+  "match": "^4 stored messages sent raw beside a summary of them: 1702 raw beside L1-132; 1706 raw beside L1-132; 1707 raw beside L1-132; 1709 raw beside L1-133$",
   "finding": "raw-pin-sent-beside-covering-summary",
   "reason": "A message pinned raw after an L1 summary covers it is also sent inside that summary."
  },
@@ -859,7 +850,7 @@
   "check": 11,
   "step": "648143.12",
   "what": "fixture:request:pins",
-  "match": "^summary L1-132 at L1 covers 1700, inside pin pin-87 allowing L0$",
+  "match": "^summary L1-132 at L1 covers 1702, inside pin pin-87 allowing L0$",
   "finding": "raw-pin-sent-beside-covering-summary",
   "reason": "A message pinned raw after an L1 summary covers it is also sent inside that summary."
  },
@@ -868,7 +859,7 @@
   "check": 11,
   "step": "648143.12",
   "what": "fixture:request:pins",
-  "match": "^summary L1-133 at L1 covers 1707, inside pin pin-87 allowing L0$",
+  "match": "^summary L1-133 at L1 covers 1709, inside pin pin-87 allowing L0$",
   "finding": "raw-pin-sent-beside-covering-summary",
   "reason": "A message pinned raw after an L1 summary covers it is also sent inside that summary."
  },
@@ -877,7 +868,7 @@
   "check": 11,
   "step": "648143.13",
   "what": "fixture:request:beside-sources",
-  "match": "^4 stored messages sent raw beside a summary of them: 1700 raw beside L1-132; 1704 raw beside L1-132; 1705 raw beside L1-132; 1707 raw beside L1-133$",
+  "match": "^4 stored messages sent raw beside a summary of them: 1702 raw beside L1-132; 1706 raw beside L1-132; 1707 raw beside L1-132; 1709 raw beside L1-133$",
   "finding": "raw-pin-sent-beside-covering-summary",
   "reason": "A message pinned raw after an L1 summary covers it is also sent inside that summary."
  },
@@ -886,7 +877,7 @@
   "check": 11,
   "step": "648143.13",
   "what": "fixture:request:pins",
-  "match": "^summary L1-132 at L1 covers 1700, inside pin pin-87 allowing L0$",
+  "match": "^summary L1-132 at L1 covers 1702, inside pin pin-87 allowing L0$",
   "finding": "raw-pin-sent-beside-covering-summary",
   "reason": "A message pinned raw after an L1 summary covers it is also sent inside that summary."
  },
@@ -895,7 +886,7 @@
   "check": 11,
   "step": "648143.13",
   "what": "fixture:request:pins",
-  "match": "^summary L1-133 at L1 covers 1707, inside pin pin-87 allowing L0$",
+  "match": "^summary L1-133 at L1 covers 1709, inside pin pin-87 allowing L0$",
   "finding": "raw-pin-sent-beside-covering-summary",
   "reason": "A message pinned raw after an L1 summary covers it is also sent inside that summary."
  },
@@ -904,7 +895,7 @@
   "check": 11,
   "step": "648143.14",
   "what": "fixture:dry:beside-sources",
-  "match": "^4 stored messages sent raw beside a summary of them: 1700 raw beside L1-132; 1704 raw beside L1-132; 1705 raw beside L1-132; 1707 raw beside L1-133$",
+  "match": "^4 stored messages sent raw beside a summary of them: 1702 raw beside L1-132; 1706 raw beside L1-132; 1707 raw beside L1-132; 1709 raw beside L1-133$",
   "finding": "raw-pin-sent-beside-covering-summary",
   "reason": "A message pinned raw after an L1 summary covers it is also sent inside that summary."
  },
@@ -913,7 +904,7 @@
   "check": 11,
   "step": "648143.14",
   "what": "fixture:dry:pins",
-  "match": "^summary L1-132 at L1 covers 1700, inside pin pin-87 allowing L0$",
+  "match": "^summary L1-132 at L1 covers 1702, inside pin pin-87 allowing L0$",
   "finding": "raw-pin-sent-beside-covering-summary",
   "reason": "A message pinned raw after an L1 summary covers it is also sent inside that summary."
  },
@@ -922,7 +913,7 @@
   "check": 11,
   "step": "648143.14",
   "what": "fixture:dry:pins",
-  "match": "^summary L1-133 at L1 covers 1707, inside pin pin-87 allowing L0$",
+  "match": "^summary L1-133 at L1 covers 1709, inside pin pin-87 allowing L0$",
   "finding": "raw-pin-sent-beside-covering-summary",
   "reason": "A message pinned raw after an L1 summary covers it is also sent inside that summary."
  },
@@ -931,7 +922,7 @@
   "check": 11,
   "step": "648143.14",
   "what": "fixture:request:beside-sources",
-  "match": "^4 stored messages sent raw beside a summary of them: 1700 raw beside L1-132; 1704 raw beside L1-132; 1705 raw beside L1-132; 1707 raw beside L1-133$",
+  "match": "^4 stored messages sent raw beside a summary of them: 1702 raw beside L1-132; 1706 raw beside L1-132; 1707 raw beside L1-132; 1709 raw beside L1-133$",
   "finding": "raw-pin-sent-beside-covering-summary",
   "reason": "A message pinned raw after an L1 summary covers it is also sent inside that summary."
  },
@@ -940,7 +931,7 @@
   "check": 11,
   "step": "648143.14",
   "what": "fixture:request:pins",
-  "match": "^summary L1-132 at L1 covers 1700, inside pin pin-87 allowing L0$",
+  "match": "^summary L1-132 at L1 covers 1702, inside pin pin-87 allowing L0$",
   "finding": "raw-pin-sent-beside-covering-summary",
   "reason": "A message pinned raw after an L1 summary covers it is also sent inside that summary."
  },
@@ -949,7 +940,7 @@
   "check": 11,
   "step": "648143.14",
   "what": "fixture:request:pins",
-  "match": "^summary L1-133 at L1 covers 1707, inside pin pin-87 allowing L0$",
+  "match": "^summary L1-133 at L1 covers 1709, inside pin pin-87 allowing L0$",
   "finding": "raw-pin-sent-beside-covering-summary",
   "reason": "A message pinned raw after an L1 summary covers it is also sent inside that summary."
  },
@@ -1667,6 +1658,15 @@
  {
   "configuration": "H1/W11",
   "check": 4,
+  "step": "232330.10",
+  "what": "more-than-once",
+  "match": "^8 message\\(s\\) reach the request more than once: \\[\\[c:204810\\.9\\.r1\\]\\] \\[\\[c:204810\\.10\\.r1\\]\\] \\[\\[c:204810\\.17\\.r1\\]\\] \\[\\[c:204810\\.39\\.r1\\]\\] \\[\\[c:204810\\.40\\.in\\]\\] …$",
+  "finding": "raw-pin-sent-beside-covering-summary, level-pin-under-covering-summary",
+  "reason": "A raw pin and a level pin, each set after a summary covers its range, both send content twice."
+ },
+ {
+  "configuration": "H1/W11",
+  "check": 4,
   "step": "232330.11",
   "what": "more-than-once",
   "match": "^8 message\\(s\\) reach the request more than once: \\[\\[c:204810\\.9\\.r1\\]\\] \\[\\[c:204810\\.10\\.r1\\]\\] \\[\\[c:204810\\.17\\.r1\\]\\] \\[\\[c:204810\\.39\\.r1\\]\\] \\[\\[c:204810\\.40\\.in\\]\\] …$",
@@ -2054,6 +2054,69 @@
  {
   "configuration": "H1/W11",
   "check": 11,
+  "step": "232330.10",
+  "what": "fixture:request:coverage",
+  "match": "^8 stored messages under two summaries sent: 881 in L2-82, L1-74; 885 in L2-82, L1-74; 937 in L2-82, L1-74; 941 in L2-82, L1-74$",
+  "finding": "level-pin-under-covering-summary",
+  "reason": "A level pin set after a higher summary covers its range sends the pinned part beside the summary over it."
+ },
+ {
+  "configuration": "H1/W11",
+  "check": 11,
+  "step": "232330.10",
+  "what": "fixture:request:beside-sources",
+  "match": "^4 stored messages sent raw beside a summary of them: 158 raw beside L3-44; 193 raw beside L3-44; 306 raw beside L3-44; 485 raw beside L3-44$",
+  "finding": "raw-pin-sent-beside-covering-summary, level-pin-under-covering-summary",
+  "reason": "A raw pin and a level pin, each set after a summary covers its range, both send content twice."
+ },
+ {
+  "configuration": "H1/W11",
+  "check": 11,
+  "step": "232330.10",
+  "what": "fixture:request:pins",
+  "match": "^summary L3-44 at L3 covers 158, inside pin pin-72 allowing L0$",
+  "finding": "raw-pin-sent-beside-covering-summary",
+  "reason": "A message pinned raw after an L1 summary covers it is also sent inside that summary."
+ },
+ {
+  "configuration": "H1/W11",
+  "check": 11,
+  "step": "232330.10",
+  "what": "fixture:request:pins",
+  "match": "^summary L3-44 at L3 covers 193, inside pin pin-73 allowing L0$",
+  "finding": "raw-pin-sent-beside-covering-summary",
+  "reason": "A message pinned raw after an L1 summary covers it is also sent inside that summary."
+ },
+ {
+  "configuration": "H1/W11",
+  "check": 11,
+  "step": "232330.10",
+  "what": "fixture:request:pins",
+  "match": "^summary L3-44 at L3 covers 485, inside pin pin-75 allowing L0$",
+  "finding": "raw-pin-sent-beside-covering-summary",
+  "reason": "A message pinned raw after an L1 summary covers it is also sent inside that summary."
+ },
+ {
+  "configuration": "H1/W11",
+  "check": 11,
+  "step": "232330.10",
+  "what": "fixture:request:pins",
+  "match": "^summary L2-82 at L2 covers 946, inside pin pin-78 allowing L1$",
+  "finding": "level-pin-under-covering-summary",
+  "reason": "A level pin set after a higher summary covers its range sends the pinned part beside the summary over it."
+ },
+ {
+  "configuration": "H1/W11",
+  "check": 11,
+  "step": "232330.10",
+  "what": "fixture:request:pins",
+  "match": "^summary L3-44 at L3 covers 306, inside pin pin-83 allowing L1$",
+  "finding": "level-pin-under-covering-summary",
+  "reason": "A level pin set after a higher summary covers its range sends the pinned part beside the summary over it."
+ },
+ {
+  "configuration": "H1/W11",
+  "check": 11,
   "step": "232330.11",
   "what": "fixture:request:coverage",
   "match": "^8 stored messages under two summaries sent: 881 in L2-82, L1-74; 885 in L2-82, L1-74; 937 in L2-82, L1-74; 941 in L2-82, L1-74$",
@@ -2065,7 +2128,7 @@
   "check": 11,
   "step": "232330.11",
   "what": "fixture:request:beside-sources",
-  "match": "^4 stored messages sent raw beside a summary of them: 158 raw beside L2-25; 193 raw beside L2-25; 306 raw beside L2-28; 485 raw beside L2-43$",
+  "match": "^4 stored messages sent raw beside a summary of them: 158 raw beside L3-44; 193 raw beside L3-44; 306 raw beside L3-44; 485 raw beside L3-44$",
   "finding": "raw-pin-sent-beside-covering-summary, level-pin-under-covering-summary",
   "reason": "A raw pin and a level pin, each set after a summary covers its range, both send content twice."
  },
@@ -2074,7 +2137,7 @@
   "check": 11,
   "step": "232330.11",
   "what": "fixture:request:pins",
-  "match": "^summary L2-25 at L2 covers 158, inside pin pin-72 allowing L0$",
+  "match": "^summary L3-44 at L3 covers 158, inside pin pin-72 allowing L0$",
   "finding": "raw-pin-sent-beside-covering-summary",
   "reason": "A message pinned raw after an L1 summary covers it is also sent inside that summary."
  },
@@ -2083,7 +2146,7 @@
   "check": 11,
   "step": "232330.11",
   "what": "fixture:request:pins",
-  "match": "^summary L2-25 at L2 covers 193, inside pin pin-73 allowing L0$",
+  "match": "^summary L3-44 at L3 covers 193, inside pin pin-73 allowing L0$",
   "finding": "raw-pin-sent-beside-covering-summary",
   "reason": "A message pinned raw after an L1 summary covers it is also sent inside that summary."
  },
@@ -2092,7 +2155,7 @@
   "check": 11,
   "step": "232330.11",
   "what": "fixture:request:pins",
-  "match": "^summary L2-43 at L2 covers 485, inside pin pin-75 allowing L0$",
+  "match": "^summary L3-44 at L3 covers 485, inside pin pin-75 allowing L0$",
   "finding": "raw-pin-sent-beside-covering-summary",
   "reason": "A message pinned raw after an L1 summary covers it is also sent inside that summary."
  },
@@ -2110,7 +2173,7 @@
   "check": 11,
   "step": "232330.11",
   "what": "fixture:request:pins",
-  "match": "^summary L2-28 at L2 covers 306, inside pin pin-83 allowing L1$",
+  "match": "^summary L3-44 at L3 covers 306, inside pin pin-83 allowing L1$",
   "finding": "level-pin-under-covering-summary",
   "reason": "A level pin set after a higher summary covers its range sends the pinned part beside the summary over it."
  },

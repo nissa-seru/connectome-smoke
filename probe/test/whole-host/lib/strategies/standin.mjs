@@ -4,6 +4,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { performance } from 'node:perf_hooks';
 import { maskRunVarying } from './compare.mjs';
+import { prose } from './prose.mjs';
 
 // The openings of context-manager's compression instructions (autobiographical.ts, knowledge.ts) and of
 // connectome-host's frontdesk strategy (frontdesk-strategy.ts).
@@ -46,7 +47,6 @@ const MESSAGE_OVERHEAD = 4;
 // https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching
 const FIVE_MINUTES = 5 * 60_000;
 const ONE_HOUR = 60 * 60_000;
-const WORDS = 'river stone lantern harbor quiet orchard ledger signal meadow copper window thread garden compass winter'.split(' ');
 
 const sha = (s) => createHash('sha256').update(s).digest('hex');
 const sorted = (v) => (Array.isArray(v) ? v.map(sorted) : v && typeof v === 'object' ? Object.fromEntries(Object.keys(v).sort().map((k) => [k, sorted(v[k])])) : v);
@@ -73,7 +73,7 @@ function textTokens(text) {
   return Math.ceil(chars);
 }
 
-function pngSize(data) {
+export function pngSize(data) {
   try {
     const b = Buffer.from(data.slice(0, 64), 'base64');
     if (b.toString('latin1', 12, 16) !== 'IHDR') return null;
@@ -169,19 +169,6 @@ const THINKING_CHARS = 600;
 
 const signatureFor = (identity) => `fx1.${Buffer.from(identity, 'hex').toString('base64url')}`;
 
-function padding(chars, seed) {
-  let a = seed >>> 0;
-  const next = () => {
-    a = (a + 0x6d2b79f5) | 0;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-  let s = '';
-  while (s.length < chars) s += `${WORDS[Math.floor(next() * WORDS.length)]} `;
-  return s.slice(0, Math.max(0, chars)).trimEnd();
-}
-
 const systemText = (body) => (typeof body.system === 'string' ? body.system : (body.system || []).map((b) => b.text || '').join(''));
 
 function readSummariser(body, target) {
@@ -236,6 +223,18 @@ function normalise(body) {
 }
 
 const digestOf = (m) => sha(JSON.stringify(maskRunVarying(unmarked({ role: m.role, content: blocksOf(m.content) })))).slice(0, 16);
+
+export function tokensSent(records) {
+  const sum = { input: 0, cacheRead: 0, cacheWrite: 0, output: 0 };
+  for (const { usage } of records) {
+    if (!usage) continue;
+    sum.input += usage.input_tokens;
+    sum.cacheRead += usage.cache_read_input_tokens;
+    sum.cacheWrite += usage.cache_creation_input_tokens;
+    sum.output += usage.output_tokens;
+  }
+  return sum;
+}
 
 const summariserTexts = (body) => (body.messages || []).flatMap((m) => blocksOf(m.content).filter((b) => b.type === 'text' && !(b.text || '').match(CANARY)).map((b) => maskRunVarying(b.text || '')));
 
@@ -345,6 +344,7 @@ export async function startStandin({ configuration, rawDir = null, refuseMerges 
     const outputTokens = content.reduce((t, b) => t + blockTokens(b), 0) || 1;
     const usage = usageFor(asRead(body), stop === 'max_tokens' && body.max_tokens ? body.max_tokens : outputTokens);
     record.usage = usage;
+    if (rawDir) writeFileSync(join(rawDir, `${record.id}.answer.json`), JSON.stringify(content));
     const message = { id: `msg_${record.id}`, type: 'message', role: 'assistant', model: body.model, content, stop_reason: stop, stop_sequence: null, usage };
     if (!body.stream) {
       const out = JSON.stringify(message);
@@ -377,7 +377,7 @@ export async function startStandin({ configuration, rawDir = null, refuseMerges 
   function answerAgent(res, body, record, reply) {
     const identity = bindingIdentity(body, body.messages.length);
     const content = [];
-    const thinking = reply.thinking ?? (config.thinks ? padding(THINKING_CHARS, parseInt(identity.slice(0, 8), 16)) : undefined);
+    const thinking = reply.thinking ?? (config.thinks ? prose(THINKING_CHARS, parseInt(identity.slice(0, 8), 16)) : undefined);
     if (thinking !== undefined) content.push({ type: 'thinking', thinking, signature: signatureFor(identity) });
     if (reply.text !== undefined) content.push({ type: 'text', text: reply.text });
     for (const call of reply.calls || []) content.push({ type: 'tool_use', id: call.id ?? `toolu_fx${String(++toolNumber).padStart(6, '0')}`, name: call.name, input: call.input });
@@ -401,11 +401,11 @@ export async function startStandin({ configuration, rawDir = null, refuseMerges 
     const words = parseInt(seed.slice(8, 16), 16);
     const summary = `[[s:M${seed.slice(0, 8)}]]`;
     const head = `${summary} Memory ${seed.slice(0, 8)}, carried ${read.canaries.length} canaries to ${read.canaries.at(-1)?.slice(2, -2) ?? 'none'}:`;
-    const memory = (chars) => `${head} ${padding(chars - head.length - 1, words)}`;
+    const memory = (chars) => `${head} ${prose(chars - head.length - 1, words)}`;
     let content; let stop = 'end_turn';
     if (shape === 'refusal') { content = [{ type: 'text', text: 'I can\'t help with that.' }]; stop = 'refusal'; }
     else if (shape === 'empty') content = [{ type: 'text', text: '' }];
-    else if (shape === 'thinking-only') content = [{ type: 'text', text: `<thinking>${padding(200, words)}</thinking>` }];
+    else if (shape === 'thinking-only') content = [{ type: 'text', text: `<thinking>${prose(200, words)}</thinking>` }];
     else if (shape === 'max-tokens') content = [{ type: 'text', text: memory(Math.ceil(body.max_tokens * RATE.prose * 2)) }];
     else content = [{ type: 'text', text: memory(Math.floor(record.target * RATE.prose)) }];
     if (['summary', 'max-tokens'].includes(shape)) record.answer.summary = summary;

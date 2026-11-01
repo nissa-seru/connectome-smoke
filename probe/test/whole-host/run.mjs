@@ -1,18 +1,22 @@
 #!/usr/bin/env node
 import { createHash } from 'node:crypto';
-import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
+import { appendFileSync, cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs, sh } from './lib/common.mjs';
 import { EPOCH, EXPECTED_FAILURES, KEY_PACKAGES, asRun, laneVersion, stackVersions } from './lib/strategies/lane.mjs';
 import { hostFacts, runScript } from './lib/strategies/driver.mjs';
-import { startStandin } from './lib/strategies/standin.mjs';
-import { judge } from './lib/strategies/judge.mjs';
+import { startStandin, tokensSent } from './lib/strategies/standin.mjs';
+import { judge, judgedAgent } from './lib/strategies/judge.mjs';
+import { FIXTURE_AGENT } from './lib/strategies/checks.mjs';
 import { readExpected, workloadReport } from './lib/strategies/report.mjs';
 import { RUNS, runOf } from './lib/strategies/workloads.mjs';
 import { configurations } from './lib/strategies/script.mjs';
-import { renderRecord } from './lib/record.mjs';
+import { renderRecordLines } from './lib/record.mjs';
+import { changedRequests, stepSummary, summaryTable, viewOf } from './lib/view.mjs';
+import { generatedTexts, transcriptOf } from './lib/strategies/transcript.mjs';
+import { ledgerOf, moduleCounts } from './lib/strategies/ledger.mjs';
 import { shares } from './lib/shares.mjs';
 import { maskRunVarying } from './lib/strategies/compare.mjs';
 
@@ -118,6 +122,7 @@ async function drive(job, side, { storeDir, epoch, dir, scratch = dir, rawDir = 
   const facts = hostFacts({ hostDir: side.hostDir, configuration: job.configuration });
   const configuration = asRun(job.configuration, facts);
   rmSync(dir, { recursive: true, force: true });
+  if (rawDir) rmSync(rawDir, { recursive: true, force: true });
   mkdirSync(dir, { recursive: true });
   mkdirSync(storeDir, { recursive: true });
   const standin = await startStandin({ configuration, ...job.standin, ...(rawDir ? { rawDir } : {}) });
@@ -144,19 +149,23 @@ async function checkpointOf(from) {
     const job = runOf(from, all, hostFacts({ hostDir: release.hostDir, configuration: all[from.split('/')[0]] }), runOptions);
     const key = createHash('sha256').update(JSON.stringify({ lane, release: release.versions, from, configuration: job.configuration, epoch: EPOCH, steps: job.steps() })).digest('hex').slice(0, 16);
     const kept = checkpointsDir ? join(checkpointsDir, 'workloads', `${slug(from)}-${key}`) : null;
+    const texts = (dir) => ({ steps: job.steps(), answers: join(dir, 'answers') });
     if (kept && existsSync(join(kept, 'checkpoint.json'))) {
-      checkpoints.set(from, { ...JSON.parse(readFileSync(join(kept, 'checkpoint.json'), 'utf-8')), storeDir: join(kept, 'store') });
+      checkpoints.set(from, { ...JSON.parse(readFileSync(join(kept, 'checkpoint.json'), 'utf-8')), storeDir: join(kept, 'store'), ...texts(kept) });
       console.log(`${LABEL} checkpoint ${from}: reused ${kept}`);
     } else {
       const dir = kept ? `${kept}.writing-${process.pid}` : join(work, 'checkpoints', slug(from));
       rmSync(dir, { recursive: true, force: true });
-      const d = await drive(job, release, { storeDir: join(dir, 'store'), epoch: EPOCH, dir });
+      const d = await drive(job, release, { storeDir: join(dir, 'store'), epoch: EPOCH, dir, rawDir: join(dir, 'raw') });
+      mkdirSync(join(dir, 'answers'), { recursive: true });
+      for (const f of readdirSync(join(dir, 'raw'))) if (/^r\d+\.answer\.json$/.test(f)) renameSync(join(dir, 'raw', f), join(dir, 'answers', f));
+      rmSync(join(dir, 'raw'), { recursive: true, force: true });
       if (!d.run.ok) checkpoints.set(from, { failed: d.run.failure?.reason ?? 'no reason given' });
-      else if (!kept) checkpoints.set(from, { storeDir: join(dir, 'store'), clockEnd: d.run.clockEnd });
+      else if (!kept) checkpoints.set(from, { storeDir: join(dir, 'store'), clockEnd: d.run.clockEnd, ...texts(dir) });
       else {
         writeFileSync(join(dir, 'checkpoint.json'), `${JSON.stringify({ from, key, clockEnd: d.run.clockEnd })}\n`);
         try { renameSync(dir, kept); } catch { rmSync(dir, { recursive: true, force: true }); }
-        checkpoints.set(from, { ...JSON.parse(readFileSync(join(kept, 'checkpoint.json'), 'utf-8')), storeDir: join(kept, 'store') });
+        checkpoints.set(from, { ...JSON.parse(readFileSync(join(kept, 'checkpoint.json'), 'utf-8')), storeDir: join(kept, 'store'), ...texts(kept) });
       }
       seconds.checkpoints[from] = since(t);
       checkpointTime += seconds.checkpoints[from];
@@ -202,15 +211,20 @@ async function workloadRun(id, { rawDir = null, dir }) {
     records: d.records,
     end: { ok: d.run.ok, reason: d.run.failure?.reason },
     from: job.from ?? 'empty',
+    steps: d.steps,
+    agent: (() => { try { return judgedAgent(d.configuration, d.log).agent; } catch { return d.configuration.agent?.name ?? FIXTURE_AGENT; } })(),
   };
 }
 
 const results = [];
+const rows = [];
+const views = [];
 for (const id of names) {
   const dir = join(out, slug(id));
   const t = performance.now();
   const before = checkpointTime;
-  const r = await workloadRun(id, { dir, rawDir: flag('self-check') ? join(dir, 'raw') : null });
+  const bodies = join(work, 'runs', slug(id), 'raw');
+  const r = await workloadRun(id, { dir, rawDir: bodies });
   seconds.runs[id] = Math.round((since(t) - (checkpointTime - before)) * 10) / 10;
   console.log((r.lines?.length ? r.lines : [`${id}: couldn't run: ${r.reason}`]).join('\n'));
   let record = null;
@@ -219,26 +233,51 @@ for (const id of names) {
     console.log(`${LABEL} ${id}: couldn't run: ${r.reason}`);
   }
   if (r.outcome !== 'couldnt-run') {
-    const text = renderRecord({
+    const recordLines = renderRecordLines({
       header: { configuration: id, release: { tag: stack.release, versions: versionsOnly(release.versions) }, from: r.from, candidate: { versions: versionsOnly(candidate.versions) } },
       log: r.log, records: r.records, end: r.end,
     });
+    const text = `${recordLines.map((l) => l.text).join('\n')}\n`;
     writeFileSync(join(dir, `${slug(id)}.record`), text);
     const committed = join(RECORDS, `${slug(id)}.record`);
     if (flag('update-records')) { mkdirSync(RECORDS, { recursive: true }); writeFileSync(committed, text); record = 'updated'; }
     else record = existsSync(committed) && readFileSync(committed, 'utf-8') === text ? 'same' : existsSync(committed) ? 'differs' : 'missing';
-    if (record === 'differs' || record === 'missing') console.log(`${LABEL} ${id}: the record ${record === 'missing' ? 'isn\'t committed' : 'differs from the committed one'}; the run's is ${join(dir, `${slug(id)}.record`)}`);
-  }
+    let changed = null;
+    if (record === 'differs' || record === 'missing') {
+      changed = changedRequests(record === 'missing' ? '' : readFileSync(committed, 'utf-8'), recordLines);
+      const answersIn = (dir) => (existsSync(dir) ? readdirSync(dir) : []).filter((f) => /^r\d+\.answer\.json$/.test(f)).map((f) => JSON.parse(readFileSync(join(dir, f), 'utf-8')));
+      const cp = r.from === 'empty' ? null : checkpoints.get(r.from);
+      const generated = generatedTexts({ steps: [...(cp?.steps ?? []), ...r.steps], answers: [...(cp ? answersIn(cp.answers) : []), ...answersIn(bodies)] });
+      const owner = new Map(recordLines.filter((l) => l.request).map((l) => [l.request, l]));
+      const view = viewOf({
+        run: id, record, changed, lines: recordLines,
+        ledger: (request) => {
+          const l = owner.get(request);
+          if (!l?.compile) return [];
+          return [...(l.round ? ['As compiled for the turn:'] : []), ...ledgerOf(r.log, l.compile)];
+        },
+        transcript: (request, seen) => transcriptOf(JSON.parse(readFileSync(join(bodies, `${request}.json`), 'utf-8')), generated, seen),
+      });
+      writeFileSync(join(dir, 'view.md'), view);
+      views.push({ run: id, path: `${slug(id)}/view.md`, text: view });
+      console.log(`${LABEL} ${id}: the record ${record === 'missing' ? 'isn\'t committed' : 'differs from the committed one'}; the run's is ${join(dir, `${slug(id)}.record`)}, and what changed is in ${join(dir, 'view.md')}`);
+    }
+    rows.push({ run: id, record, changed, ledgerOf: r.agent, counts: moduleCounts(r.log, r.records, r.agent), tokens: tokensSent(r.records) });
+  } else rows.push({ run: id, record: 'couldn\'t run' });
   let selfCheck = null;
   if (flag('self-check') && r.outcome !== 'couldnt-run') {
     const offDir = join(out, `${slug(id)}.recording-off`);
-    const off = await driven(id, { recording: false, dir: offDir, rawDir: join(offDir, 'raw') });
+    const offBodies = join(work, 'runs', `${slug(id)}.recording-off`, 'raw');
+    const off = await driven(id, { recording: false, dir: offDir, rawDir: offBodies });
     const failed = off.couldnt ?? (off.d.run.ok ? null : `the run with recording off failed: ${off.d.run.failure?.reason ?? 'no reason given'}`) ?? (r.end?.ok ? null : `the run with recording on failed: ${r.end?.reason ?? 'no reason given'}`);
-    selfCheck = failed ? { outcome: 'couldnt-run', reason: failed } : sameRequests(join(dir, 'raw'), join(offDir, 'raw'));
+    selfCheck = failed ? { outcome: 'couldnt-run', reason: failed } : sameRequests(bodies, offBodies);
     console.log(`${LABEL} ${id}: self-check: ${selfCheck.outcome === 'same' ? `the stand-in received the same ${selfCheck.requests} requests with the test module's recording off` : selfCheck.outcome === 'couldnt-run' ? `the run with recording off couldn't run: ${selfCheck.reason}` : `request ${selfCheck.at} differs with recording off: ${selfCheck.detail}`}`);
   }
   results.push({ run: id, outcome: r.outcome, reason: r.reason, failures: r.failures, record, ...(selfCheck ? { selfCheck } : {}) });
 }
+const table = summaryTable(rows);
+writeFileSync(join(out, 'summary.md'), `${table}\n`);
+if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, stepSummary({ table, views }));
 writeFileSync(join(out, 'run.json'), JSON.stringify({ lane, release: { tag: stack.release, versions: release.versions }, candidate: { versions: candidate.versions, overlays: packs }, seconds, results }, null, 1));
 if (flag('update-seconds')) {
   const merged = { runs: { ...stack.seconds?.runs, ...seconds.runs }, checkpoints: { ...stack.seconds?.checkpoints, ...seconds.checkpoints } };

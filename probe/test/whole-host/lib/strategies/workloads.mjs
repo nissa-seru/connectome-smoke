@@ -1,5 +1,6 @@
 import { FIXTURE_AGENT, assemblies, requestPairs, withJudged } from './checks.mjs';
 import { png } from './png.mjs';
+import { hash32, prose, seeded } from './prose.mjs';
 import { CHANNEL, READER, TOOL, continuation, prefix, products } from './script.mjs';
 
 // A `document` is about six times the host's default 10,000-token message cap (framework-strategy.ts), so it's stored
@@ -20,45 +21,15 @@ const PARTICIPANTS = ['Ash', 'Tavy', 'Wren'];
 // agent-framework's preflight refuses a budget no store fits and names its floor; the panel refuses one at or below
 // the response reserve.
 const edge = (ctx) => ctx.reserve + 1000;
-const WORDS = ('river stone lantern harbor quiet orchard ledger signal meadow copper window thread garden compass winter '
-  + 'bridge morning letter answer kettle market island pencil shadow ribbon station velvet canyon basket').split(' ');
-
-function mulberry32(seed) {
-  let a = seed >>> 0;
-  return () => {
-    a = (a + 0x6d2b79f5) | 0;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-function hash32(s) {
-  let x = 2166136261;
-  for (const ch of s) x = Math.imul(x ^ ch.charCodeAt(0), 16777619) >>> 0;
-  return x;
-}
-
-function prose(chars, seed) {
-  const r = mulberry32(hash32(seed));
-  let s = '';
-  while (s.length < chars) {
-    const n = 6 + Math.floor(r() * 12);
-    const words = Array.from({ length: n }, () => WORDS[Math.floor(r() * WORDS.length)]);
-    s += `${words[0][0].toUpperCase()}${words.join(' ').slice(1)}. `;
-  }
-  return s.slice(0, chars).trimEnd();
-}
-
 export const canary = (seed, step, part) => `[[c:${seed}.${step}.${part}]]`;
 
 function image(seed) {
-  let k = seed >>> 0;
-  return png(16, 16, (m) => { k = (Math.imul(k, 1103515245) + 12345) >>> 0; return (k >>> 16) % m; });
+  const r = seeded(seed);
+  return png(16, 16, (m) => Math.floor(r() * m));
 }
 
 function writer(ctx, workload) {
-  const r = mulberry32(hash32(`${ctx.seed}:${workload}`));
+  const r = seeded(`${ctx.seed}:${workload}`);
   const between = ([lo, hi]) => lo + Math.floor(r() * (hi - lo + 1));
   const c = (step, part) => canary(ctx.seed, step, part);
   const id = (step) => `${ctx.seed}.${step}`;

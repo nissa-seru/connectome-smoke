@@ -1,6 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { startStandin } from '../lib/strategies/standin.mjs';
+import { mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { startStandin, tokensSent } from '../lib/strategies/standin.mjs';
 
 const TOOLS = [{ name: 'time--now', description: 'now', input_schema: { type: 'object', properties: {} } }];
 const NOTE = '[host note: this message arrived over IPC and carries no channel locus.]';
@@ -486,6 +489,25 @@ test('T7/T14/T15: summariser requests are answered at once, every arrival is rep
   assert.equal(typeof agent.usage.input_tokens, 'number');
   assert.equal(summ.kind, 'summariser');
   assert.equal(summ.answer.shape, 'summary');
+});
+
+test('T28: with a raw directory, each answer\'s content goes beside its request as r<n>.answer.json, a refused request leaves none, and tokensSent sums what the answers billed', async () => {
+  const rawDir = mkdtempSync(join(tmpdir(), 'standin-raw-'));
+  try {
+    const s = await startStandin({ configuration: { windowTokens: 50_000 }, rawDir });
+    s.setStep(step('w', [{ text: '[[c:w.r1]] noted', thinking: 'a thought' }]));
+    const summ = await post(s.url, summariserBody({ canaries: ['[[c:w.in]]'] }));
+    const agent = await post(s.url, agentBody({ canary: '[[c:w.in]]' }));
+    const refused = await post(s.url, agentBody({ canary: '[[c:other.in]]' }));
+    const records = await s.close();
+    assert.equal(refused.status, 400);
+    assert.deepEqual(readdirSync(rawDir).sort(), ['r1.answer.json', 'r1.json', 'r2.answer.json', 'r2.json', 'r3.json']);
+    assert.deepEqual(JSON.parse(readFileSync(join(rawDir, 'r1.answer.json'), 'utf-8')), summ.json.content);
+    assert.deepEqual(JSON.parse(readFileSync(join(rawDir, 'r2.answer.json'), 'utf-8')), agent.json.content);
+    const billed = [summ.json.usage, agent.json.usage];
+    const sum = (k) => billed.reduce((t, u) => t + u[k], 0);
+    assert.deepEqual(tokensSent(records), { input: sum('input_tokens'), cacheRead: sum('cache_read_input_tokens'), cacheWrite: sum('cache_creation_input_tokens'), output: sum('output_tokens') });
+  } finally { rmSync(rawDir, { recursive: true, force: true }); }
 });
 
 test('T18: each message in a record has a digest, the same wherever it is carried unchanged, whatever its cache marker or a tool image ref\'s nonce, and an answer records the tool_use ids it minted', async () => {

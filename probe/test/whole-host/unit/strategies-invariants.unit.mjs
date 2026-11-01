@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { checkCompile } from '../lib/strategies/invariants.mjs';
+import { checkCompile, compileLedger, readCompile } from '../lib/strategies/invariants.mjs';
 const text = (t) => ({ type: 'text', text: t });
 const call = (id) => ({ type: 'tool_use', id, name: 'look', input: {} });
 const result = (id) => ({ type: 'tool_result', toolUseId: id, content: 'seen' });
@@ -153,4 +153,27 @@ test('bodies are context-manager\'s: two ingestions of one text, sharing a group
   } finally {
     for (const m of twice) if (!STORE.includes(m)) byId.delete(m.id);
   }
+});
+
+test('compileLedger: each stored message as the compile left it, raw, in which summary, or left out, as spans of store order with counts', () => {
+  const sharded = [...STORE, shard('5', 5, 0, 'first half'), shard('6', 6, 1, 'second half')];
+  for (const m of sharded) byId.set(m.id, m);
+  try {
+    const m = manager({ messages: sharded, summaries: { S: { sourceIds: ['3', '4'] } } });
+    const [compiled, messages] = compile(['r:1', 'r:2', 's:S@1', ['r:5!shards', [text('first half')]]]);
+    assert.deepEqual(compileLedger(readCompile(m, compiled, messages), messages), {
+      raw: [['1', '2', 2], ['5', '5', 1]],
+      summaries: [['S', 1, [['3', '4', 2]]]],
+      out: [['6', '6', 1]],
+      counts: { raw: 3, summarised: 2, out: 1 },
+    });
+    const both = manager({ messages: sharded, summaries: { S: { sourceIds: ['2', '3'] }, T: { sourceIds: ['3', '4'] } } });
+    const [c2, m2] = compile(['r:1', 's:S@1', 's:T@2', 'r:5']);
+    const ledger = compileLedger(readCompile(both, c2, m2), m2);
+    assert.deepEqual(ledger.summaries, [['S', 1, [['2', '3', 2]]], ['T', 2, [['3', '4', 2]]]]);
+    assert.deepEqual(ledger.counts, { raw: 3, summarised: 3, out: 0 }, 'a message under two summaries counts once');
+  } finally {
+    for (const m of sharded) if (!STORE.includes(m)) byId.delete(m.id);
+  }
+  assert.deepEqual(compileLedger(readCompile({ ...manager(), getAllMessages: () => { throw new Error('gone'); } }, ...compile(['r:1'])), []), { unreadable: 'gone' });
 });

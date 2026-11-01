@@ -1,4 +1,4 @@
-import { createHash } from 'node:crypto';
+import { prose, seeded } from './prose.mjs';
 
 export const TOOL = 'mcpl--fixture--result';
 export const CHANNEL = 'chat';
@@ -25,29 +25,10 @@ export function configurations() {
   };
 }
 
-const WORDS = ('river stone lantern harbor quiet orchard ledger signal meadow copper window thread garden compass winter '
-  + 'bridge morning letter answer kettle market island pencil shadow ribbon station velvet canyon basket').split(' ');
-
-function rng(seed) {
-  let k = parseInt(createHash('sha256').update(seed).digest('hex').slice(0, 8), 16) || 1;
-  return () => { k = (k * 1103515245 + 12345) % 2147483648; return k / 2147483648; };
-}
-
-function prose(chars, seed) {
-  const r = rng(seed);
-  let s = '';
-  while (s.length < chars) {
-    const n = 6 + Math.floor(r() * 12);
-    const words = Array.from({ length: n }, () => WORDS[Math.floor(r() * WORDS.length)]);
-    s += words[0][0].toUpperCase() + words.join(' ').slice(1) + '. ';
-  }
-  return s.slice(0, chars).trimEnd();
-}
-
 const canary = (id, part) => `[[c:${id}.${part}]]`;
 
 function turn(id, segment, { chars, replyChars = 2400, calls = [], rounds = null, thinking = null, more = {} }) {
-  const r = rng(`${id}:sizes`);
+  const r = seeded(`${id}:sizes`);
   const input = `${canary(id, 'in')} ${prose(chars, `${id}:in`)}`;
   const replies = [];
   const canaries = [canary(id, 'in')];
@@ -82,7 +63,7 @@ export function prefix(turns) {
   const steps = [{ id: 'p.name', segment: 'prefix', kind: 'command', command: '/session rename fixture' }];
   for (let i = 1; i <= turns; i++) {
     const id = `p.${i}`;
-    const r = rng(id);
+    const r = seeded(id);
     steps.push(advance(`${id}.adv`, 'prefix', 4 * MINUTE));
     if (i === 1) steps.push(turn(id, 'prefix', { chars: 2250, replyChars: 1800 }));
     else if (i % 17 === 0) steps.push(turn(id, 'prefix', { chars: 90_000 }));

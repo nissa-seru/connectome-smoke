@@ -13,6 +13,7 @@ s=$(date +%s); npm ci --ignore-scripts --no-audit --no-fund --loglevel=error > "
 T=${RUNNER_TEMP:-${TMPDIR:-/tmp}}
 if [ -n "${UNIT:-}" ]; then s=$(date +%s); node --test test/whole-host/unit/*.unit.mjs > "$E/unit.txt" 2>&1; echo "unit $? $(( $(date +%s) - s )) s" >> "$E/times.txt"; cat "$E/times.txt"; exit 0; fi
 s=$(date +%s); node test/whole-host/run.mjs --shard "${SHARD:-1/1}" ${RUNS:+--runs "$RUNS"} --workdir "$T/wh" --out "$T/out" > "$E/run.log" 2>&1; echo "run $? $(( $(date +%s) - s )) s" >> "$E/times.txt"
-# What comes back is what judges: each run's record and report, and run.json (logs stay on the runner).
-mkdir -p "$E/out" && (cd "$T/out" && cp run.json "$E/out/" && for d in */; do mkdir -p "$E/out/$d"; cp "$d"*.record "$d"report.txt "$E/out/$d" 2>/dev/null; done)
+# What comes back is what judges: each run's record, report and view, run.json and summary.md (logs stay on the runner).
+mkdir -p "$E/out" && (cd "$T/out" && cp run.json summary.md "$E/out/" 2>/dev/null; for d in */; do mkdir -p "$E/out/$d"; cp "$d"*.record "$d"report.txt "$d"view.md "$E/out/$d" 2>/dev/null; done)
+[ -n "${GITHUB_STEP_SUMMARY:-}" ] && wc -c "$GITHUB_STEP_SUMMARY" >> "$E/times.txt"
 cat "$E/times.txt"

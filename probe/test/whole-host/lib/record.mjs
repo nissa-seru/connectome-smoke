@@ -27,7 +27,11 @@ const textOf = (content) => {
   return out.join('\n');
 };
 
-export function renderRecord({ header, log, records, end }) {
+export function renderRecord(args) {
+  return `${renderRecordLines(args).map((l) => l.text).join('\n')}\n`;
+}
+
+export function renderRecordLines({ header, log, records, end }) {
   const blobs = new Map();
   const batches = [];
   for (const e of log) {
@@ -181,6 +185,7 @@ export function renderRecord({ header, log, records, end }) {
     return `${note}, body ${sha8(messagesOf(r))}`;
   };
   const lastCarried = new Map();
+  const lastSent = new Map();
   const carriedBy = (r) => [...new Set((r.messages ?? []).flatMap((m) => (m.blocks ?? []).flatMap((b) => b.canaries ?? [])).map((c) => CANARY.exec(c)?.[1] ?? c))];
   const compileLine = (l, boot) => {
     const list = (l.messages ?? []).map((m) => item(m, l.agent));
@@ -199,8 +204,8 @@ export function renderRecord({ header, log, records, end }) {
     const added = dropped < 0 ? null : list.slice(before.length - dropped);
     const shown = dropped < 0 ? items(list) : [dropped ? `-${dropped}` : '', added.length ? `+ ${items(added)}` : ''].filter(Boolean).join(' ') || '= (as before)';
     const sent = l.kind === 'request' ? sentAs.get(`${l.agent}|${boot ?? null}|${l.seq}`) : null;
-    if (sent) lastCarried.set(l.agent, carriedBy(sent));
-    return `  compile${l.agent === primary ? '' : ` [${l.agent}]`}${l.kind === 'dry' ? ' dry' : ''} ${shown}${marks.length ? ` ^ ${marks.join(',')}` : ''}${sent ? sentNote(l.agent, sent) : ''}`;
+    if (sent) { lastCarried.set(l.agent, carriedBy(sent)); lastSent.set(l.agent, l); }
+    return { compile: sent ? l : null, text: `  compile${l.agent === primary ? '' : ` [${l.agent}]`}${l.kind === 'dry' ? ' dry' : ''} ${shown}${marks.length ? ` ^ ${marks.join(',')}` : ''}${sent ? sentNote(l.agent, sent) : ''}`, request: sent?.id ?? null };
   };
 
   const lines = [];
@@ -218,7 +223,7 @@ export function renderRecord({ header, log, records, end }) {
   const seen = (step) => { if (!steps.includes(step)) steps.push(step); };
   const summariser = new Map((records ?? []).filter((r) => r.kind === 'summariser').map((r) => [r.id, r]));
   for (const e of log) {
-    if (e.kind === 'send' && e.via === 'ipc' && e.command) { seen(e.step); at(e.step).push(`  action ${e.command}`); totals.actions++; }
+    if (e.kind === 'send' && e.via === 'ipc' && e.command) { seen(e.step); at(e.step).push({ text: `  action ${e.command}` }); totals.actions++; }
     if (e.kind === 'request' && rounds.has(e.request?.id)) {
       const { agent, request } = rounds.get(e.request.id);
       seen(e.step);
@@ -227,7 +232,7 @@ export function renderRecord({ header, log, records, end }) {
       const carried = carriedBy(request);
       lastCarried.set(agent, carried);
       const added = carried.filter((c) => !before.has(c));
-      at(e.step).push(`  round${agent === primary ? '' : ` [${agent}]`} ${added.length ? `+ ${added.join(' ')}` : '='}${sentNote(agent, request)}`);
+      at(e.step).push({ text: `  round${agent === primary ? '' : ` [${agent}]`} ${added.length ? `+ ${added.join(' ')}` : '='}${sentNote(agent, request)}`, request: request.id, compile: lastSent.get(agent) ?? null, round: true });
     }
     if (e.kind === 'request' && summariser.has(e.request?.id)) {
       const r = summariser.get(e.request.id);
@@ -241,7 +246,7 @@ export function renderRecord({ header, log, records, end }) {
         const numbers = text.match(/\d+/g) ?? [];
         return `[${template('call', text.replace(/\d+/g, '#'))}]${numbers.length ? `(${numbers.join(',')})` : ''}`;
       });
-      at(e.step).push(`  call ${[carried.length ? carried.join(' ') : '-', ...words].join(' ')} -> ${r.answer?.shape ?? 'none'}${sentNote('summariser', r)}`);
+      at(e.step).push({ text: `  call ${[carried.length ? carried.join(' ') : '-', ...words].join(' ')} -> ${r.answer?.shape ?? 'none'}${sentNote('summariser', r)}`, request: r.id });
     }
     if (e.kind === 'compiles') {
       for (const [agent, st] of Object.entries(e.store ?? {})) {
@@ -252,10 +257,10 @@ export function renderRecord({ header, log, records, end }) {
           const now = canonical({ level: sm.level, sources: sm.sources, content: sm.content, parent: sm.parent ?? null });
           known.set(`${agent} ${sm.id}`, now);
           if (was === now) continue;
-          seen(e.step); at(e.step).push(`  wrote${agent === primary ? '' : ` [${agent}]`} ${summaryName(agent, sm.id, sm.level)} [${summaryTemplate(sm)}]`); totals.written++;
+          seen(e.step); at(e.step).push({ text: `  wrote${agent === primary ? '' : ` [${agent}]`} ${summaryName(agent, sm.id, sm.level)} [${summaryTemplate(sm)}]` }); totals.written++;
         }
         for (const id of st.removed ?? []) known.delete(`${agent} ${id}`);
-        if (st.removed?.length) { seen(e.step); at(e.step).push(`  removed${agent === primary ? '' : ` [${agent}]`} ${st.removed.map((id) => leafName(agent, id)).join(' ')}`); }
+        if (st.removed?.length) { seen(e.step); at(e.step).push({ text: `  removed${agent === primary ? '' : ` [${agent}]`} ${st.removed.map((id) => leafName(agent, id)).join(' ')}` }); }
       }
       for (const l of e.lines ?? []) {
         if (l.kind === 'other') { totals.other++; continue; }
@@ -263,20 +268,20 @@ export function renderRecord({ header, log, records, end }) {
         if (l.outcome === 'refused' || l.error) {
           totals.refused++;
           const text = typeof l.error?.message === 'string' ? (blobs.get(l.error.message) ?? l.error.message) : '';
-          at(e.step).push(`  compile${l.agent === primary ? '' : ` [${l.agent}]`} refused ${l.error?.class ?? 'unknown'}${text ? ` [${template(`error-${l.error?.class ?? 'unknown'}`, String(text).replace(/\d+/g, '#'))}]` : ''}`);
+          at(e.step).push({ text: `  compile${l.agent === primary ? '' : ` [${l.agent}]`} refused ${l.error?.class ?? 'unknown'}${text ? ` [${template(`error-${l.error?.class ?? 'unknown'}`, String(text).replace(/\d+/g, '#'))}]` : ''}` });
           continue;
         }
         if (l.kind === 'dry') totals.dry++; else totals.compiles++;
         at(e.step).push(compileLine(l, e.boot));
       }
     }
-    if (e.kind === 'checkpoint') { seen(e.step); at(e.step).push(`checkpoint ${e.name}`); }
+    if (e.kind === 'checkpoint') { seen(e.step); at(e.step).push({ text: `checkpoint ${e.name}` }); }
   }
   for (const step of steps) {
     const own = byStep.get(step) ?? [];
-    const body = own.filter((l) => l.startsWith('  '));
+    const body = own.filter((l) => l.text.startsWith('  '));
     if (body.length) lines.push(`step ${step}`, ...body);
-    lines.push(...own.filter((l) => !l.startsWith('  ')));
+    lines.push(...own.filter((l) => !l.text.startsWith('  ')));
   }
   lines.push(`end ${end?.ok ? 'ok' : 'failed'}`);
   for (const [agent, head] of [...receipt.entries()].sort(([a], [b]) => (a < b ? -1 : 1))) {
@@ -285,12 +290,13 @@ export function renderRecord({ header, log, records, end }) {
   }
   lines.push(`totals ${canonical(totals)}`);
   const names = nameTemplates(templates, slug);
-  const head = lines.findIndex((l) => !l.startsWith('#'));
+  const head = lines.findIndex((l) => typeof l === 'string' && !l.startsWith('#'));
   const block = ['templates', ...templates.map((t, i) => [names[i], t.shaped]).sort(([a], [b]) => (a < b ? -1 : 1))
-    .map(([name, text]) => `T:${name} = ${text.split('\n').join('\n  ')}`)];
+    .flatMap(([name, text]) => `T:${name} = ${text.split('\n').join('\n  ')}`.split('\n'))];
   const headBlock = heads.size ? ['heads', ...[...heads.entries()].sort(([a], [b]) => (a < b ? -1 : 1)).map(([key, text]) => `H:${key} = ${text}`)] : [];
   lines.splice(head < 0 ? lines.length : head, 0, ...block, ...headBlock);
-  return `${lines.join('\n').replace(/\u0001(\d+)\u0001/g, (_, i) => `T:${names[i]}`)}\n`;
+  const named = (text) => text.replace(/\u0001(\d+)\u0001/g, (_, i) => `T:${names[i]}`);
+  return lines.map((l) => (typeof l === 'string' ? { text: named(l), request: null } : { ...l, text: named(l.text), request: l.request ?? null }));
 }
 
 function nameTemplates(templates, slug) {
