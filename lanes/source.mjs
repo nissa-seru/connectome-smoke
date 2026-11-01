@@ -19,7 +19,9 @@
  *      box runs after the merge: it links only `file:` siblings, and takes the
  *      rest from npm through the lockfile or the declared ranges.
  *   3. Compose one tree: every stack package linked under a single
- *      <work>/src/node_modules/@animalabs root, every nested copy removed,
+ *      <work>/src/node_modules/@animalabs root, and every nested copy
+ *      replaced by a link to the same checkout, so a package's own
+ *      node_modules names its stack dependencies as an install does;
  *      chronicle from the host's npm install unless chronicle is the change.
  *      A resolution proof, run under node and under bun from each checkout,
  *      fails the run if any package resolves a stack dependency to anything
@@ -449,7 +451,7 @@ function topLevelVersions(dir, id) {
   } catch { return null; }
 }
 
-/** Link every stack package under one root, remove every nested copy, and record each link against its declared range. */
+/** Link every stack package under one root, replace every nested copy with a link to the same checkout, and record each link against its declared range. */
 function compose() {
   const id = 'compose:link';
   const root = join(SRC, 'node_modules', '@animalabs');
@@ -467,7 +469,7 @@ function compose() {
     symlinkSync(target, link);
   }
   const keep = new Set(provided.values());
-  const removed = [];
+  const relinked = [];
   for (const p of PKGS) {
     const nm = join(p.dir, 'node_modules', '@animalabs');
     if (!existsSync(nm)) continue;
@@ -477,8 +479,12 @@ function compose() {
       // The npm chronicle the root links to stays, and so does a `file:`
       // link, which already points at the checkout the root provides.
       if (keep.has(realpathOr(full))) continue;
+      // A link, not a gap: code run from a copy of the package elsewhere,
+      // whose node_modules is this one, finds the checkout as it would an
+      // install's copy.
       rmSync(full, { recursive: true, force: true });
-      removed.push(`${p.key}/node_modules/@animalabs/${d}`);
+      symlinkSync(provided.get(`@animalabs/${d}`), full);
+      relinked.push(`${p.key}/node_modules/@animalabs/${d}`);
     }
   }
   const versionOf = (name) => { try { return readJson(join(provided.get(name), 'package.json')).version; } catch { return null; } };
@@ -491,10 +497,10 @@ function compose() {
       }
     }
   }
-  report.compose = { root: rel(root), provided: Object.fromEntries([...provided].map(([n, t]) => [n, rel(t)])), removed };
+  report.compose = { root: rel(root), provided: Object.fromEntries([...provided].map(([n, t]) => [n, rel(t)])), relinked };
   appendFileSync(logFile(id), `${JSON.stringify(report.compose, null, 2)}\n`);
   const outOfRange = report.links.filter((l) => l.admits === false);
-  return `${provided.size} packages linked, ${removed.length} nested copies removed`
+  return `${provided.size} packages linked, ${relinked.length} nested copies relinked`
     + (outOfRange.length ? `; ${outOfRange.length} links outside the declared range (see links)` : '');
 }
 
