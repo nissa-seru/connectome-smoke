@@ -121,21 +121,27 @@ export function receiptHeadOf(manager) {
 
 /**
  * What changed in an agent's store since `seen` (the last call's `seen`, or none): the stored
- * messages added, each as [id, its canaries]; the summaries added or changed, each with its level,
+ * messages added, each as [id, its canaries], or [id, its canaries, { thinking: true }] where it
+ * holds a thinking block, and any whose thinking came or went since, again with `{ thinking }`,
+ * false where it went, so the record writer can tell a message sent without the thinking its
+ * stored copy holds (a binding leaves it out); the summaries added or changed, each with its level,
  * source level, sources, parent and its content's digest (the content in `blobs`), and those
  * removed, by id; and the receipt head where it moved. `out` holds only what changed, and `changed`
  * says whether anything did.
  */
-export function storeDelta(manager, seen = { messages: new Set(), summaries: new Map(), head: 'null' }, blobs) {
+export function storeDelta(manager, seen = { messages: new Map(), summaries: new Map(), head: 'null' }, blobs) {
   const out = {};
-  const next = { messages: new Set(seen.messages), summaries: new Map(), head: seen.head };
+  const next = { messages: new Map(seen.messages), summaries: new Map(), head: seen.head };
   const messages = readable(() => manager.getAllMessages());
   if (!isUnreadable(messages)) {
     const added = [];
     for (const m of messages) {
       const id = String(m.id);
-      next.messages.add(id);
-      if (!seen.messages.has(id)) added.push([id, canariesOf(m.content)]);
+      const thinking = (Array.isArray(m.content) ? m.content : []).some((b) => b?.type === 'thinking' || b?.type === 'redacted_thinking');
+      const before = seen.messages.get(id);
+      next.messages.set(id, thinking);
+      if (before === undefined) added.push(thinking ? [id, canariesOf(m.content), { thinking }] : [id, canariesOf(m.content)]);
+      else if (before !== thinking) added.push([id, canariesOf(m.content), { thinking }]);
     }
     if (added.length) out.messages = added;
   } else out.messages = messages;

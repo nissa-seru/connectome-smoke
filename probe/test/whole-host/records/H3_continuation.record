@@ -1,6 +1,10 @@
 # whole-host record H3/continuation
 # checkpoint v0.21.0, H3/W1: connectome-host 0.21.0 (source 54321fd3af80), agent-framework 0.32.0, context-manager 0.24.0, membrane 0.8.0, chronicle 0.5.1, bun 1.4.4
 # candidate: connectome-host 0.21.0, agent-framework 0.32.0, context-manager 0.24.0, membrane 0.8.0, chronicle 0.5.1, bun 1.4.4
+templates
+T:user-clock-#-#-utc = Clock: #:# UTC
+T:user-clock-tuesday-#-#-# = Clock: Tuesday #-#-#, #:# UTC
+T:user-delivered-plain-speech = [delivered] plain speech → chat
 step c.name
   action /session rename fixture
 step c.cm.1
@@ -33,7 +37,3 @@ step c.debt
 checkpoint debt
 end ok
 totals {"actions":1,"calls":0,"compiles":15,"dry":0,"other":0,"refused":0,"written":0}
-templates
-T:user-clock-#-#-utc = Clock: #:# UTC
-T:user-clock-tuesday-#-#-# = Clock: Tuesday #-#-#, #:# UTC
-T:user-delivered-plain-speech = [delivered] plain speech → chat

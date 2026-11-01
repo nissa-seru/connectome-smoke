@@ -85,6 +85,29 @@ test('texts that share a key are named by their words, whatever order they first
   assert.deepEqual(named([2, 1, 0]), named([0, 1, 2]), 'the order they first appear in changes no name');
 });
 
+test('a stored message sent without its thinking, or altered or in part, says so, and never joins a range', () => {
+  const reply = (c, withThinking) => ({ participant: 'fixture', content: [...(withThinking ? [{ type: 'thinking', thinking: 'hm', signature: 's' }] : []), { type: 'text', text: `[[c:${c}]] ok` }] });
+  const b = { u1: text('[[c:q.1.in]] a'), r1: reply('q.1.r1', true), r1bare: reply('q.1.r1', false), u2: text('[[c:q.2.in]] b'), r2: reply('q.2.r1', false) };
+  const store = { fixture: { messages: [['1', ['[[c:q.1.in]]']], ['2', ['[[c:q.1.r1]]'], { thinking: true }], ['3', ['[[c:q.2.in]]']], ['4', ['[[c:q.2.r1]]']]] } };
+  const lg = [
+    { kind: 'send', via: 'channel', step: 'q.1' },
+    { kind: 'compiles', step: 'q.1', blobs: b, store, lines: [
+      line(1, [m(1, 'u1'), m(2, 'r1'), m(3, 'u2'), m(4, 'r2')]),
+      line(2, [m(1, 'u1'), m(2, 'r1bare'), m(3, 'u2'), { sources: ['r:4!content'], content: 'r2' }]),
+      line(3, [m(1, 'u1'), m(2, 'r1bare'), m(3, 'u2'), m(4, 'r2')]),
+    ] },
+  ];
+  const compiles = (l) => renderRecord({ header, log: l, records: [], end: { ok: true } }).split('\n').filter((x) => x.startsWith('  compile'));
+  assert.deepEqual(compiles(lg), [
+    '  compile q.1.in-q.2.r1',
+    '  compile q.1.in q.1.r1:no-thinking q.2.in q.2.r1!content',
+    '  compile q.1.in q.1.r1:no-thinking q.2.in-q.2.r1',
+  ], 'the thinking left out by the bytes sent, the body altered by its provenance');
+  const stripped = JSON.parse(JSON.stringify(lg));
+  stripped[1].store.fixture.messages.push(['2', ['[[c:q.1.r1]]'], { thinking: false }]);
+  assert.equal(compiles(stripped)[1], '  compile q.1.in-q.2.in q.2.r1!content', 'a stored copy whose thinking went is sent as it is, so it says nothing, and joins its range');
+});
+
 test('two runs whose image nonces differ write the same record', () => {
   const other = JSON.parse(JSON.stringify(log).replaceAll('k7x3q2', 'a1b2c3').replaceAll('zz9yy8', 'q0q0q0'));
   assert.equal(renderRecord({ header, log: other, records, end: { ok: true } }), renderRecord({ header, log, records, end: { ok: true } }));

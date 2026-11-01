@@ -1,6 +1,11 @@
 # whole-host record C3h/W7/fable-no-tools
 # checkpoint v0.21.0, empty: connectome-host 0.21.0 (source 54321fd3af80), agent-framework 0.32.0, context-manager 0.24.0, membrane 0.8.0, chronicle 0.5.1, bun 1.4.4
 # candidate: connectome-host 0.21.0, agent-framework 0.32.0, context-manager 0.24.0, membrane 0.8.0, chronicle 0.5.1, bun 1.4.4
+templates
+T:user-clock-monday-#-#-# = Clock: Monday #-#-#, #:# UTC
+T:user-delivered-plain-speech = [delivered] plain speech → chat
+T:user-routing-your-plain = [routing] Your plain speech now lands in chat. Other channels need an explicit send tool.
+T:user-the-local-time = The local time at the start of this session is #-#-#T#:#:#.#+#:# [UTC].
 step 2057.1
   compile [T:user-clock-monday-#-#-#](2026,01,05,09,00) [T:user-the-local-time](2026,01,05,09,00,00,000,00,00) 2057.1.in [T:user-routing-your-plain] ^ 4
 step 2057.2
@@ -67,8 +72,3 @@ step 2057.32
   compile + 2057.31.r1 [T:user-delivered-plain-speech] 2057.32.in ^ 4
 end ok
 totals {"actions":0,"calls":0,"compiles":32,"dry":0,"other":0,"refused":0,"written":0}
-templates
-T:user-clock-monday-#-#-# = Clock: Monday #-#-#, #:# UTC
-T:user-delivered-plain-speech = [delivered] plain speech → chat
-T:user-routing-your-plain = [routing] Your plain speech now lands in chat. Other channels need an explicit send tool.
-T:user-the-local-time = The local time at the start of this session is #-#-#T#:#:#.#+#:# [UTC].

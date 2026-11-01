@@ -1,6 +1,25 @@
 # whole-host record C3h/W7/no-tools
 # checkpoint v0.21.0, empty: connectome-host 0.21.0 (source 54321fd3af80), agent-framework 0.32.0, context-manager 0.24.0, membrane 0.8.0, chronicle 0.5.1, bun 1.4.4
 # candidate: connectome-host 0.21.0, agent-framework 0.32.0, context-manager 0.24.0, membrane 0.8.0, chronicle 0.5.1, bun 1.4.4
+templates
+T:call-context-manager-cm = Context Manager: [CM] Recall memory L#-#.
+T:call-context-manager-system = Context Manager: System: You will soon form a new memory, get ready. The messages that follow are the slice of recent experience you are about to compress. After them, write the memory in your own voice.
+T:call-context-manager-write = Context Manager: Write the memory of events since the most recent memory system notification. Speak in the first person from your own perspective. Preserve concrete details — file paths, exact values, decisions, unresolved questions, the user's active asks. Target ~# tokens. Output only the memory body — no preamble, no section headers unless they help preservation, no meta-commentary about summarizing. Memorize only what actually happened in that slice: if it holds little beyond routine system traffic (heartbeats, empty turns, failure notices), a short memory saying so is correct — do not pad it by re-narrating events you already remember from earlier as if they had just happened again.
+T:call-empty = 
+  
+  ---
+  
+  
+T:call-routing-your-plain = [routing] Your plain speech now lands in chat. Other channels need an explicit send tool.
+T:call-the-local-time = The local time at the start of this session is #-#-#T#:#:#.#+#:# [UTC].
+T:call-user-clock-monday = user: Clock: Monday #-#-#, #:# UTC
+T:call-user-delivered-plain = user: [delivered] plain speech → chat
+T:summary-l1-96ef0f69 = {"bytes":4400,"head":"[[s:M78c15cd0]] Memory 78c15cd0, carried 3 canaries to c:634200.3.r1: compass ga","sha256":"96ef0f696dcbd3fa","tail":"edger quiet quiet garden meadow stone river compass river window thread signal q"}
+T:summary-l1-de279481 = {"bytes":4400,"head":"[[s:M093c7b7e]] Memory 093c7b7e, carried 4 canaries to c:634200.2.r1: harbor mea","sha256":"de27948164f31d02","tail":"winter orchard winter harbor meadow compass winter thread quiet quiet quiet comp"}
+T:user-clock-monday-#-#-# = Clock: Monday #-#-#, #:# UTC
+T:user-delivered-plain-speech = [delivered] plain speech → chat
+T:user-routing-your-plain = [routing] Your plain speech now lands in chat. Other channels need an explicit send tool.
+T:user-the-local-time = The local time at the start of this session is #-#-#T#:#:#.#+#:# [UTC].
 step 634200.1
   compile [T:user-clock-monday-#-#-#](2026,01,05,09,00) [T:user-the-local-time](2026,01,05,09,00,00,000,00,00) 634200.1.in [T:user-routing-your-plain] ^ 4
 step 634200.2
@@ -71,22 +90,3 @@ step 634200.32
   compile + 634200.31.r1 [T:user-delivered-plain-speech] 634200.32.in ^ 4
 end ok
 totals {"actions":0,"calls":2,"compiles":32,"dry":0,"other":0,"refused":0,"written":2}
-templates
-T:call-context-manager-cm = Context Manager: [CM] Recall memory L#-#.
-T:call-context-manager-system = Context Manager: System: You will soon form a new memory, get ready. The messages that follow are the slice of recent experience you are about to compress. After them, write the memory in your own voice.
-T:call-context-manager-write = Context Manager: Write the memory of events since the most recent memory system notification. Speak in the first person from your own perspective. Preserve concrete details — file paths, exact values, decisions, unresolved questions, the user's active asks. Target ~# tokens. Output only the memory body — no preamble, no section headers unless they help preservation, no meta-commentary about summarizing. Memorize only what actually happened in that slice: if it holds little beyond routine system traffic (heartbeats, empty turns, failure notices), a short memory saying so is correct — do not pad it by re-narrating events you already remember from earlier as if they had just happened again.
-T:call-empty = 
-
----
-
-
-T:call-routing-your-plain = [routing] Your plain speech now lands in chat. Other channels need an explicit send tool.
-T:call-the-local-time = The local time at the start of this session is #-#-#T#:#:#.#+#:# [UTC].
-T:call-user-clock-monday = user: Clock: Monday #-#-#, #:# UTC
-T:call-user-delivered-plain = user: [delivered] plain speech → chat
-T:summary-l1-96ef0f69 = {"bytes":4400,"head":"[[s:M78c15cd0]] Memory 78c15cd0, carried 3 canaries to c:634200.3.r1: compass ga","sha256":"96ef0f696dcbd3fa","tail":"edger quiet quiet garden meadow stone river compass river window thread signal q"}
-T:summary-l1-de279481 = {"bytes":4400,"head":"[[s:M093c7b7e]] Memory 093c7b7e, carried 4 canaries to c:634200.2.r1: harbor mea","sha256":"de27948164f31d02","tail":"winter orchard winter harbor meadow compass winter thread quiet quiet quiet comp"}
-T:user-clock-monday-#-#-# = Clock: Monday #-#-#, #:# UTC
-T:user-delivered-plain-speech = [delivered] plain speech → chat
-T:user-routing-your-plain = [routing] Your plain speech now lands in chat. Other channels need an explicit send tool.
-T:user-the-local-time = The local time at the start of this session is #-#-#T#:#:#.#+#:# [UTC].

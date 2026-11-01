@@ -21,7 +21,11 @@ import { createHash } from 'node:crypto';
  *     by the canary its text carries (`p.12.in`, `c.tool.call1`), and a run of them stored
  *     next to each other, among the messages the run's compiles sent, as a range
  *     `p.3.in-p.9.r1`. Any other stored message, such as a clock row or a host notice, is its
- *     template with its numbers after it (`[T:user-clock-#-#-utc](12,10)`); a summary is its
+ *     template with its numbers after it (`[T:user-clock-#-#-utc](12,10)`). Where
+ *     context-manager's provenance says a stored message went altered or in part, its
+ *     name has the reasons after it (`p.8.r1!content`, `p.9.r1!shards`), and where the stored
+ *     message holds thinking and the copy sent holds none, `:no-thinking` (`p.8.r1!content:no-thinking`);
+ *     either way it never joins a range. A summary is its
  *     name (below), or, where the store didn't report it, its level and a template named by
  *     its text's hash (`L2[T:summary-l2-0a1b2c3d]`). The line
  *     ends `^ N,M` with the places, in the whole list the compile sent, of the messages
@@ -126,7 +130,7 @@ export function renderRecord({ header, log, records, end }) {
 
   // Where each stored message sits among those the run's compiles sent, by its stored id.
   const storedIds = new Set();
-  for (const b of batches) for (const l of b.lines) for (const m of l.messages ?? []) if (m.sources.length === 1 && m.sources[0].startsWith('r:')) storedIds.add(m.sources[0].slice(2));
+  for (const b of batches) for (const l of b.lines) for (const m of l.messages ?? []) if (m.sources.length === 1 && m.sources[0].startsWith('r:')) storedIds.add(m.sources[0].slice(2).split('!')[0]);
   const order = new Map([...storedIds].sort((a, b) => (Number(a) - Number(b)) || (a < b ? -1 : 1)).map((id, i) => [id, i]));
   // What each agent's store holds, as the module reports it with each batch (`store`): the
   // canaries of the messages it added, its summaries with their sources, its receipt head.
@@ -164,16 +168,25 @@ export function renderRecord({ header, log, records, end }) {
     }
     return marks;
   };
-  // A stored message's name: the canary its text carries, else its template and its numbers.
-  const item = (m) => {
+  // Whether each agent's stored message holds thinking, as the module last reported it with a
+  // batch (a store entry's `{ thinking }`), as of the batch being rendered.
+  const thinking = new Map();
+  // A stored message's name: the canary its text carries, else its template and its numbers;
+  // `:no-thinking` after it where the stored message holds thinking and the copy sent holds
+  // none, which never joins a range.
+  const item = (m, agent) => {
     const value = blobs.get(m.content);
     const raw = textOf(value?.content ?? value);
     if (m.sources.length === 1 && m.sources[0].startsWith('r:')) {
+      const [id, why] = m.sources[0].slice(2).split('!');
+      const bare = thinking.get(`${agent} ${id}`) === true && !(Array.isArray(value?.content) && value.content.some((b) => b?.type === 'thinking' || b?.type === 'redacted_thinking'));
+      const after = `${why ? `!${why}` : ''}${bare ? ':no-thinking' : ''}`;
       const canary = CANARY.exec(raw)?.[1];
-      if (canary) return { name: canary, pos: order.get(m.sources[0].slice(2)) };
+      if (canary && !after) return { name: canary, pos: order.get(id) };
+      if (canary) return { text: `${canary}${after}` };
       const text = nameNonces(raw);
       const numbers = text.match(/\d+/g) ?? [];
-      return { text: `[${template(value?.participant ?? 'message', text.replace(/\d+/g, '#'))}]${numbers.length ? `(${numbers.join(',')})` : ''}` };
+      return { text: `[${template(value?.participant ?? 'message', text.replace(/\d+/g, '#'))}]${numbers.length ? `(${numbers.join(',')})` : ''}${after}` };
     }
     const ids = m.sources.map((s) => /^s:([^@]+)@?(.*)$/.exec(s));
     if (ids.every((x) => x && summaries.has(x[1]))) return { text: ids.map((x) => summaryName(x[1], x[2])).join('+') };
@@ -195,7 +208,7 @@ export function renderRecord({ header, log, records, end }) {
   const previous = new Map();
   const keyOf = (it) => it.name ?? it.text;
   const compileLine = (l) => {
-    const list = (l.messages ?? []).map(item);
+    const list = (l.messages ?? []).map((m) => item(m, l.agent));
     const marks = (l.messages ?? []).flatMap((m, i) => (m.marker ? [i + 1] : []));
     const keys = list.map(keyOf);
     const whose = `${l.agent} ${l.kind}`;
@@ -253,6 +266,7 @@ export function renderRecord({ header, log, records, end }) {
     if (e.kind === 'compiles') {
       for (const [agent, st] of Object.entries(e.store ?? {})) {
         if (st.receiptHead) receipt.set(agent, st.receiptHead);
+        for (const [id, , more] of st.messages ?? []) if (typeof more?.thinking === 'boolean') thinking.set(`${agent} ${id}`, more.thinking);
         for (const sm of st.summaries ?? []) {
           // A new process's first batch lists the store whole; a summary it already had isn't written again.
           const was = known.get(`${agent} ${sm.id}`);

@@ -1,6 +1,25 @@
 # whole-host record H3/W9
 # checkpoint v0.21.0, H3/W1: connectome-host 0.21.0 (source 54321fd3af80), agent-framework 0.32.0, context-manager 0.24.0, membrane 0.8.0, chronicle 0.5.1, bun 1.4.4
 # candidate: connectome-host 0.21.0, agent-framework 0.32.0, context-manager 0.24.0, membrane 0.8.0, chronicle 0.5.1, bun 1.4.4
+templates
+T:call-context-manager-capture = Context Manager: Capture the reasoning and conclusions from this discussion. What connections were drawn? What hypotheses were formed or rejected? What decisions were made about what to investigate next? Preserve the logic chain. If any leads or open questions were identified but not yet pursued, mark them with [LEAD]. Aim for about # tokens.
+T:call-context-manager-system = Context Manager: System: You will soon form a new memory, get ready. The messages that follow are the slice of recent experience you are about to compress. After them, write the memory in your own voice.
+T:call-empty = 
+  
+  ---
+  
+  
+T:call-user-delivered-plain = user: [delivered] plain speech → chat
+T:user-clock-tuesday-#-#-# = Clock: Tuesday #-#-#, #:# UTC
+T:user-contextbudgettokens-#-effectivecontextbu = {"contextBudgetTokens":#,"effectiveContextBudgetTokens":#,"sameRoundThinkTextPolicy":"public","sameRoundThinkTextPolicySource":"compatibility_default","transition":"stable","tool_result_inline_max_chars":null,"tool_result_inline_max_chars_effective":#,"tool_result_inline_max_chars_source":"default","tool_result_inline_max_chars_clamped_by":null,"tool_result_guard":true,"tool_result_guard_source":"runtime_override","closed_channel_note":true,"reasoning_enabled":false,"reasoning_budget_tokens":#,"reasoning_display":"summarized","reasoning_effort":"default","channel_idle_limits":{},"channel_idle_default":#,"channel_idle_counters":{},"channel_idle_pinned":[]}
+T:user-delivered-plain-speech = [delivered] plain speech → chat
+T:user-settings-open-call = [settings] open: call these with toolsets--act {tool, args}; they aren't in your tool list.
+    observers--get() — List who is currently authorized to observe your internals through the web viewer (thinking, tool calls, conversation stream — by scope).
+    observers--grant(key: string, label: string, scopes: ("health"|"ops"|"messages"|"tools"|"thinking"|"debug")[], expires?: string) — Authorize an observer key to watch your internals through the web viewer.
+    observers--revoke(key?: string, label?: string) — Remove an observer grant by key or by label.
+    agent_settings(action: "get"|"update"|"reset"|"cancel", context_budget_tokens?: number, tail_tokens?: number, transition_pace_tokens?: number, immediate?: boolean, same_round_think_text_policy?: "public"|"private", settings?: ("context_budget_tokens"|"tail_tokens"|"transition_pace_tokens"|"same_round_think_text_policy"|"tool_result_inline_max_chars"|"tool_result_guard"|"closed_channel_note"|"reasoning_enabled"|"reasoning_budget_tokens"|"reasoning_display"|"reasoning_effort"|"channel_idle_limits")[], tool_result_inline_max_chars?: number, tool_result_guard?: boolean, closed_channel_note?: boolean, reasoning_enabled?: boolean, reasoning_budget_tokens?: number, reasoning_display?: "summarized"|"omitted", reasoning_effort?: "default"|"low"|"medium"|"high"|"xhigh"|"max", channel_idle_limits?: object) — Read or change your hot runtime settings.
+  toolsets--close {toolset:"settings"} closes it.
+T:user-tool-result-withheld = Tool result withheld by the guard. The tool has already executed.
 step 321741.1
   compile 442693.42.r1-442693.42.r4 [T:user-delivered-plain-speech] 442693.43.in-442693.43.r3 [T:user-delivered-plain-speech] 442693.44.in-442693.44.r3 [T:user-delivered-plain-speech] 442693.45.in-442693.45.r4 [T:user-delivered-plain-speech] 442693.46.in-442693.46.r4 [T:user-delivered-plain-speech] 442693.47.in-442693.47.r2 [T:user-delivered-plain-speech] 442693.48.in-442693.48.r2 [T:user-delivered-plain-speech] 442693.49.in-442693.49.r1 [T:user-delivered-plain-speech] 442693.50.in-442693.50.r2 [T:user-delivered-plain-speech] 442693.51.in-442693.51.r2 [T:user-delivered-plain-speech] 442693.52.in-442693.52.r4 [T:user-delivered-plain-speech] 442693.53.in-442693.53.r4 [T:user-delivered-plain-speech] 442693.54.in-442693.54.r4 [T:user-delivered-plain-speech] 442693.55.in-442693.55.r1 [T:user-delivered-plain-speech] 442693.56.in-442693.56.r1 [T:user-delivered-plain-speech] 442693.57.in-442693.57.r1 [T:user-delivered-plain-speech] 442693.58.in-442693.58.r4 [T:user-delivered-plain-speech] 442693.59.in-442693.59.r4 [T:user-delivered-plain-speech] 442693.60.in-442693.60.r3 [T:user-delivered-plain-speech] 442693.61.in-442693.61.r3 [T:user-delivered-plain-speech] 442693.62.in-442693.62.r4 [T:user-delivered-plain-speech] 442693.63.in-442693.63.r4 [T:user-delivered-plain-speech] 442693.64.in-442693.64.r2 [T:user-delivered-plain-speech] 442693.65.in-442693.65.r2 [T:user-delivered-plain-speech] 442693.66.in-442693.66.r1 [T:user-delivered-plain-speech] 442693.67.in-442693.67.r2 [T:user-delivered-plain-speech] 442693.68.in-442693.68.r2 [T:user-delivered-plain-speech] 442693.69.in-442693.69.r4 [T:user-delivered-plain-speech] 442693.70.in-442693.70.r4 [T:user-delivered-plain-speech] [T:user-clock-tuesday-#-#-#](2026,01,06,09,00) 321741.1.in
   compile -3 + 321741.1.r1-321741.1.call1
@@ -85,22 +104,3 @@ step 321741.20
   compile + 321741.20.r1 [T:user-tool-result-withheld]
 end ok
 totals {"actions":3,"calls":1,"compiles":42,"dry":6,"other":1,"refused":0,"written":0}
-templates
-T:call-context-manager-capture = Context Manager: Capture the reasoning and conclusions from this discussion. What connections were drawn? What hypotheses were formed or rejected? What decisions were made about what to investigate next? Preserve the logic chain. If any leads or open questions were identified but not yet pursued, mark them with [LEAD]. Aim for about # tokens.
-T:call-context-manager-system = Context Manager: System: You will soon form a new memory, get ready. The messages that follow are the slice of recent experience you are about to compress. After them, write the memory in your own voice.
-T:call-empty = 
-
----
-
-
-T:call-user-delivered-plain = user: [delivered] plain speech → chat
-T:user-clock-tuesday-#-#-# = Clock: Tuesday #-#-#, #:# UTC
-T:user-contextbudgettokens-#-effectivecontextbu = {"contextBudgetTokens":#,"effectiveContextBudgetTokens":#,"sameRoundThinkTextPolicy":"public","sameRoundThinkTextPolicySource":"compatibility_default","transition":"stable","tool_result_inline_max_chars":null,"tool_result_inline_max_chars_effective":#,"tool_result_inline_max_chars_source":"default","tool_result_inline_max_chars_clamped_by":null,"tool_result_guard":true,"tool_result_guard_source":"runtime_override","closed_channel_note":true,"reasoning_enabled":false,"reasoning_budget_tokens":#,"reasoning_display":"summarized","reasoning_effort":"default","channel_idle_limits":{},"channel_idle_default":#,"channel_idle_counters":{},"channel_idle_pinned":[]}
-T:user-delivered-plain-speech = [delivered] plain speech → chat
-T:user-settings-open-call = [settings] open: call these with toolsets--act {tool, args}; they aren't in your tool list.
-  observers--get() — List who is currently authorized to observe your internals through the web viewer (thinking, tool calls, conversation stream — by scope).
-  observers--grant(key: string, label: string, scopes: ("health"|"ops"|"messages"|"tools"|"thinking"|"debug")[], expires?: string) — Authorize an observer key to watch your internals through the web viewer.
-  observers--revoke(key?: string, label?: string) — Remove an observer grant by key or by label.
-  agent_settings(action: "get"|"update"|"reset"|"cancel", context_budget_tokens?: number, tail_tokens?: number, transition_pace_tokens?: number, immediate?: boolean, same_round_think_text_policy?: "public"|"private", settings?: ("context_budget_tokens"|"tail_tokens"|"transition_pace_tokens"|"same_round_think_text_policy"|"tool_result_inline_max_chars"|"tool_result_guard"|"closed_channel_note"|"reasoning_enabled"|"reasoning_budget_tokens"|"reasoning_display"|"reasoning_effort"|"channel_idle_limits")[], tool_result_inline_max_chars?: number, tool_result_guard?: boolean, closed_channel_note?: boolean, reasoning_enabled?: boolean, reasoning_budget_tokens?: number, reasoning_display?: "summarized"|"omitted", reasoning_effort?: "default"|"low"|"medium"|"high"|"xhigh"|"max", channel_idle_limits?: object) — Read or change your hot runtime settings.
-toolsets--close {toolset:"settings"} closes it.
-T:user-tool-result-withheld = Tool result withheld by the guard. The tool has already executed.
