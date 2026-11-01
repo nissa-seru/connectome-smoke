@@ -246,13 +246,14 @@ const compiledAs = (records, compiled, agent = 'fixture') => {
     const key = `${r.agent ?? 'primary'}|${r.step}`;
     if (compiled.includes(r.id)) turn.set(key, canaryOf(r));
     const canary = turn.get(key);
-    return canary ? { ...r, messages: [...r.messages.slice(0, -1), { ...r.messages.at(-1), blocks: [...r.messages.at(-1).blocks, text([canary])] }] } : r;
+    const arrived = { arrived: String((records.indexOf(r) + 1) * 10) };
+    return canary ? { ...r, ...arrived, messages: [...r.messages.slice(0, -1), { ...r.messages.at(-1), blocks: [...r.messages.at(-1).blocks, text([canary])] }] } : { ...r, ...arrived };
   });
   const sentFrom = records.filter((r) => compiled.includes(r.id));
   const steps = [...new Set(sentFrom.map((r) => r.step))];
   const entries = steps.map((step) => ({
     kind: 'compiles', step,
-    lines: sentFrom.map((r, i) => [r, i]).filter(([r]) => r.step === step).map(([r, i]) => ({ seq: i + 1, agent, kind: 'request', assembly: i + 1, outcome: 'compiled', messages: [{ sources: ['r:1'], content: `x.${r.id}` }] })),
+    lines: sentFrom.map((r, i) => [r, i]).filter(([r]) => r.step === step).map(([r, i]) => ({ seq: i + 1, agent, kind: 'request', assembly: i + 1, outcome: 'compiled', stamp: String((records.indexOf(r) + 1) * 10 - 5), messages: [{ sources: ['r:1'], content: `x.${r.id}` }] })),
     blobs: Object.fromEntries(sentFrom.filter((r) => r.step === step).map((r) => [`x.${r.id}`, { role: 'user', content: [{ type: 'text', text: `${canaryOf(r)} words` }] }])),
   }));
   return [marked, entries];
@@ -266,24 +267,24 @@ const crossing = () => crossingAs()[0];
 const R1_COMPILED = crossingAs()[1];
 const under = (report) => [...(report ? [report] : []), ...R1_COMPILED, sent('r1'), sent('r2'), sent('r3'), panel('s')];
 
-test('K2e: with the module\'s compile lines, a request is compiled when the next sent compile\'s last canary is its own, so a restart that sends what a continuation would is compiled', () => {
-  const withCanary = (r, canary) => ({ ...r, messages: [...r.messages.slice(0, -1), { ...r.messages.at(-1), blocks: [{ type: 'text', canaries: [canary] }] }] });
-  const r1 = withCanary(opened('r1', 'a', 15_000, 23_000, ['t1']), '[[c:a.in]]');
-  const r2 = withCanary(continued(r1, 'r2', 19_000, 25_000, ['t2']), '[[c:a.call1]]');
-  const r3 = withCanary(continued(r2, 'r3', 20_000, 26_000), '[[c:a.call2]]');
+test('K2e: with the module\'s compile lines, a request is compiled when it arrives after its agent\'s latest compile stamped before it, so a restart that sends what a continuation would is compiled', () => {
+  const withCanary = (r, canary, arrived) => ({ ...r, arrived: String(arrived), messages: [...r.messages.slice(0, -1), { ...r.messages.at(-1), blocks: [{ type: 'text', canaries: [canary] }] }] });
+  const r1 = withCanary(opened('r1', 'a', 15_000, 23_000, ['t1']), '[[c:a.in]]', 11);
+  const r2 = withCanary(continued(r1, 'r2', 19_000, 25_000, ['t2']), '[[c:a.call1]]', 31);
+  const r3 = withCanary(continued(r2, 'r3', 20_000, 26_000), '[[c:a.call2]]', 41);
   const b = (id, canary) => ({ [id]: { role: 'user', content: [{ type: 'text', text: `${canary} words` }] } });
-  const line = (seq, assembly, content, outcome = 'compiled') => ({ seq, agent: 'fixture', kind: 'request', assembly, outcome, messages: [{ sources: ['r:1'], content }] });
+  const line = (seq, assembly, content, stamp, outcome = 'compiled') => ({ seq, agent: 'fixture', kind: 'request', assembly, outcome, ...(stamp ? { stamp: String(stamp) } : {}), messages: [{ sources: ['r:1'], content }] });
   const log = [
-    { kind: 'compiles', step: 'a', lines: [line(1, 1, 'x1'), line(2, 2, 'x2', 'refused'), line(3, 2, 'x2'), { ...line(4, 3, 'x9'), kind: 'dry' }, line(5, 4, 'x5')], blobs: { ...b('x1', '[[c:a.in]]'), ...b('x2', '[[c:a.call1]]'), ...b('x9', '[[c:a.call2]]'), ...b('x5', '[[c:z.in]]') } },
+    { kind: 'compiles', step: 'a', lines: [line(1, 1, 'x1', 10), line(2, 2, 'x2', null, 'refused'), line(3, 2, 'x2', 30), { ...line(4, 3, 'x9', 35), kind: 'dry' }, line(5, 4, 'x5', 50)], blobs: { ...b('x1', '[[c:a.in]]'), ...b('x2', '[[c:a.call1]]'), ...b('x9', '[[c:a.call2]]'), ...b('x5', '[[c:z.in]]') } },
   ];
   const paired = compileKinds([r1, r2, r3], log);
   assert.deepEqual(Object.fromEntries(paired.kinds), { r1: 'compiled', r2: 'compiled', r3: 'continuation' }, 'a refused compile, retried in its assembly, and a dry compile take no request');
   assert.deepEqual(paired.unpaired.map((l) => l.seq), [5], 'a compile no request was sent from');
-  assert.equal(compileKinds([r1], [{ kind: 'compiles', lines: [{ ...line(1, 1, 'x1'), agent: 'other' }], blobs: b('x1', '[[c:a.in]]') }]), null, 'no line for the agent: nothing to pair by');
+  assert.equal(compileKinds([r1], [{ kind: 'compiles', lines: [{ ...line(1, 1, 'x1', 10), agent: 'other' }], blobs: b('x1', '[[c:a.in]]') }]), null, 'no line for the agent: nothing to pair by');
   for (const boot of [2, 1]) {
     const twoProcesses = [
-      { kind: 'compiles', step: 'a', boot: 1, lines: [line(1, 1, 'x1')], blobs: b('x1', '[[c:a.in]]') },
-      { kind: 'compiles', step: 'a', boot, lines: [line(1, 1, 'x2')], blobs: b('x2', '[[c:a.call1]]') },
+      { kind: 'compiles', step: 'a', boot: 1, lines: [line(1, 1, 'x1', 10)], blobs: b('x1', '[[c:a.in]]') },
+      { kind: 'compiles', step: 'a', boot, lines: [line(1, 1, 'x2', 30)], blobs: b('x2', '[[c:a.call1]]') },
     ];
     assert.deepEqual(Object.fromEntries(compileKinds([r1, r2], twoProcesses).kinds), { r1: 'compiled', r2: 'compiled' }, `each process's assembly 1 is its own (second boot numbered ${boot})`);
   }
@@ -443,61 +444,80 @@ test('K2b: a continuation round with no usage recorded, or with no window given,
   assert.match(windowless[1].message, /couldn't judge this continuation round: the check was given no window/);
 });
 
-test('requestPairs: each compiled assembly takes the next request carrying its last canary; a refusal retried in its assembly counts once; a subagent\'s requests pair only with its own lines', () => {
-  const withCanary = (r, canary, agent) => ({ ...r, ...(agent ? { agent } : {}), messages: [...r.messages.slice(0, -1), { ...r.messages.at(-1), blocks: [{ type: 'text', canaries: [canary] }] }] });
-  const p1 = withCanary(opened('p1', 'a', 1_000, undefined, ['t1']), '[[c:a.in]]', 'primary');
-  const p2 = withCanary(continued(p1, 'p2', 1_100), '[[c:a.call1]]', 'primary');
-  const s1 = withCanary(opened('s1', 'a', 900), '[[c:a.task]]', 'sub');
-  const p3 = withCanary(opened('p3', 'a', 1_000), '[[c:b.in]]', 'primary');
+test('requestPairs: each compiled assembly takes the request that arrives after it, before its agent compiles again; a refusal retried in its assembly counts once; a subagent\'s requests pair only with its own lines', () => {
+  const withCanary = (r, canary, agent, arrived) => ({ ...r, ...(agent ? { agent } : {}), arrived: String(arrived), messages: [...r.messages.slice(0, -1), { ...r.messages.at(-1), blocks: [{ type: 'text', canaries: [canary] }] }] });
+  const p1 = withCanary(opened('p1', 'a', 1_000, undefined, ['t1']), '[[c:a.in]]', 'primary', 11);
+  const s1 = withCanary(opened('s1', 'a', 900), '[[c:a.task]]', 'sub', 21);
+  const p2 = withCanary(continued(p1, 'p2', 1_100), '[[c:a.in]]', 'primary', 31);
+  const p3 = withCanary(opened('p3', 'a', 1_000), '[[c:b.in]]', 'primary', 41);
   const b = (id, canary) => ({ [id]: { role: 'user', content: [{ type: 'text', text: `${canary} words` }] } });
-  const line = (seq, agent, assembly, content, outcome = 'compiled') => ({ seq, agent, kind: 'request', assembly, outcome, messages: [{ sources: ['r:1'], content }] });
+  const line = (seq, agent, assembly, content, stamp, outcome = 'compiled') => ({ seq, agent, kind: 'request', assembly, outcome, ...(stamp ? { stamp: String(stamp) } : {}), messages: [{ sources: ['r:1'], content }] });
   const log = [
-    { kind: 'compiles', step: 'a', boot: 1, lines: [line(1, 'fixture', 1, 'x1'), line(2, 'knowledge', 1, 'xs'), line(3, 'fixture', 2, 'x3', 'refused'), line(4, 'fixture', 2, 'x3')], blobs: { ...b('x1', '[[c:a.in]]'), ...b('xs', '[[c:a.task]]'), ...b('x3', '[[c:b.in]]') } },
-    { kind: 'compiles', step: 'b', boot: 1, lines: [line(5, 'fixture', 3, 'x5', 'refused')], blobs: b('x5', '[[c:b.again]]') },
+    { kind: 'compiles', step: 'a', boot: 1, lines: [line(1, 'fixture', 1, 'x1', 10), line(2, 'knowledge', 1, 'xs', 20), line(3, 'fixture', 2, 'x3', null, 'refused'), line(4, 'fixture', 2, 'x3', 40)], blobs: { ...b('x1', '[[c:a.in]]'), ...b('xs', '[[c:a.task]]'), ...b('x3', '[[c:b.in]]') } },
+    { kind: 'compiles', step: 'b', boot: 1, lines: [line(5, 'fixture', 3, 'x5', null, 'refused')], blobs: b('x5', '[[c:b.again]]') },
   ];
   assert.deepEqual(assemblies(log).map((l) => [l.seq, l.outcome, l.step]), [[1, 'compiled', 'a'], [4, 'compiled', 'a'], [5, 'refused', 'b']], 'a retried refusal counts once, by its last line; a refusal not retried stays');
   const primary = requestPairs([p1, s1, p2, p3], log);
   assert.deepEqual(primary.pairs.map(({ line: l, request }) => [l.seq, request.id]), [[1, 'p1'], [4, 'p3']]);
   assert.deepEqual(primary.continuations.map((r) => r.id), ['p2']);
-  assert.deepEqual(primary.unpaired, []);
+  assert.deepEqual([primary.unpaired, primary.disagree], [[], []]);
   const sub = requestPairs([p1, s1, p2, p3], log, 'knowledge');
   assert.deepEqual(sub.pairs.map(({ line: l, request }) => [l.seq, request.id]), [[2, 's1']], 'the second agent\'s lines pair with the stand-in\'s sub requests alone');
   assert.equal(requestPairs([p1], []), null);
 });
 
-test('requestPairs: a compile pairs only at its own step; one carrying no canary pairs with a request carrying none; one no request took is passed over without shifting the pairs after it', () => {
-  const at = (id, step, canary) => {
-    const r = opened(id, step, 1_000);
-    return { ...r, messages: [{ ...r.messages[0], blocks: [text(canary ? [canary] : undefined)] }] };
+test('requestPairs by the clock: a round between two compiles carrying one canary stays a round', () => {
+  const at = (id, canary, arrived) => {
+    const r = opened(id, 'h', 1_000);
+    return { ...r, arrived: String(arrived), messages: [{ ...r.messages[0], blocks: [text(canary ? [canary] : undefined)] }] };
   };
   const b = (id, canary) => ({ [id]: { role: 'user', content: [{ type: 'text', text: canary ? `${canary} words` : '[Tune-out wake: chat \u2014 1 addressed message]' }] } });
-  const line = (seq, content) => ({ seq, agent: 'fixture', kind: 'request', assembly: seq, outcome: 'compiled', messages: [{ sources: ['r:1'], content }] });
-  const log = [
-    { kind: 'compiles', step: 'h8', lines: [line(1, 'x8')], blobs: b('x8', '[[c:h8.in]]') },
-    { kind: 'compiles', step: 'h9', lines: [line(2, 'x9')], blobs: b('x9', null) },
-    { kind: 'compiles', step: 'h10', lines: [line(3, 'xlost'), line(4, 'x10')], blobs: { ...b('xlost', '[[c:h10.lost]]'), ...b('x10', '[[c:h10.in]]') } },
-    { kind: 'compiles', step: 'h11', lines: [line(5, 'x11')], blobs: b('x11', '[[c:h11.in]]') },
-  ];
-  const records = [at('r8', 'h8', '[[c:h8.in]]'), at('r8b', 'h8', '[[c:h8.in]]'), at('r9', 'h9'), at('r9b', 'h9'), at('r10', 'h10', '[[c:h10.in]]'), at('r11', 'h11', '[[c:h11.in]]')];
-  const paired = requestPairs(records, log);
-  assert.deepEqual(paired.pairs.map(({ line: l, request }) => [l.seq, request.id]), [[1, 'r8'], [2, 'r9'], [4, 'r10'], [5, 'r11']]);
-  assert.deepEqual(paired.continuations.map((r) => r.id), ['r8b', 'r9b']);
-  assert.deepEqual(paired.unpaired.map((l) => l.seq), [3], 'named, and the compiles after it still pair');
-  assert.deepEqual(requestPairs([at('r7', 'h7', '[[c:h8.in]]')], log.slice(0, 1)).pairs, [], 'another step\'s compile, though it carries the request\'s canary');
+  const line = (seq, content, stamp) => ({ seq, agent: 'fixture', kind: 'request', assembly: seq, outcome: 'compiled', stamp: String(stamp), messages: [{ sources: ['r:1'], content }] });
+  const restart = [{ kind: 'compiles', step: 'h', lines: [line(1, 'x', 10), line(2, 'x', 40)], blobs: b('x', '[[c:h.in]]') }];
+  const rounds = requestPairs([at('r1', '[[c:h.in]]', 11), at('ra', '[[c:h.in]]', 21), at('rb', '[[c:h.in]]', 41)], restart);
+  assert.deepEqual(rounds.pairs.map(({ line: l, request }) => [l.seq, request.id]), [[1, 'r1'], [2, 'rb']], 'the round sent before the second compile doesn\'t take it');
+  assert.deepEqual(rounds.continuations.map((r) => r.id), ['ra']);
+});
+
+test('requestPairs by the clock: a compile never sent leaves the next compile\'s request to it, though the request carries its canary', () => {
+  const at = (id, canary, arrived) => {
+    const r = opened(id, 'h', 1_000);
+    return { ...r, arrived: String(arrived), messages: [{ ...r.messages[0], blocks: [text(canary ? [canary] : undefined)] }] };
+  };
+  const b = (id, canary) => ({ [id]: { role: 'user', content: [{ type: 'text', text: canary ? `${canary} words` : '[Tune-out wake: chat \u2014 1 addressed message]' }] } });
+  const line = (seq, content, stamp) => ({ seq, agent: 'fixture', kind: 'request', assembly: seq, outcome: 'compiled', stamp: String(stamp), messages: [{ sources: ['r:1'], content }] });
+  const unsent = [{ kind: 'compiles', step: 'h', lines: [line(1, 'x', 10), line(2, 'x', 20), line(3, 'x', 30)], blobs: b('x', '[[c:h.in]]') }];
+  const retried = requestPairs([at('r1', '[[c:h.in]]', 11), at('r3', '[[c:h.in]]', 31)], unsent);
+  assert.deepEqual(retried.pairs.map(({ line: l, request }) => [l.seq, request.id]), [[1, 'r1'], [3, 'r3']]);
+  assert.deepEqual(retried.unpaired.map((l) => l.seq), [2], 'named unsent, though the next request carries its canary');
+  const wake = [{ kind: 'compiles', step: 'h', lines: [line(1, 'w', 10)], blobs: b('w', null) }];
+  assert.deepEqual(requestPairs([at('r1', null, 11)], wake).pairs.map(({ request }) => request.id), ['r1'], 'a compile and request with no canary at all');
+});
+
+test('requestPairs: a compile or request with no stamp, or a pair whose request doesn\'t end on its compile\'s last canary, leaves check 13 unable to judge the agent, never pairing silently', () => {
+  const r1 = { ...opened('r1', 'h', 1_000), messages: [{ role: 'user', digest: 'd', blocks: [text(['[[c:h.in]]'])] }] };
+  const b = { x: { role: 'user', content: [{ type: 'text', text: '[[c:h.in]] words' }] }, y: { role: 'user', content: [{ type: 'text', text: '[[c:h.other]] words' }] } };
+  const line = (content, stamp) => ({ seq: 1, agent: 'fixture', kind: 'request', assembly: 1, outcome: 'compiled', ...(stamp ? { stamp } : {}), messages: [{ sources: ['r:1'], content }] });
+  const log = (l) => [{ kind: 'compiles', step: 'h', lines: [l], blobs: b }];
+  assert.deepEqual(pairing([{ ...r1, arrived: '11' }], log(line('x'))).map((f) => f.what), ['fixture:unstamped'], 'a compile with no stamp');
+  assert.deepEqual(pairing([r1], log(line('x', '10'))).map((f) => f.what), ['fixture:unstamped'], 'a request with no arrival stamp');
+  assert.deepEqual(pairing([{ ...r1, arrived: '11' }], log(line('y', '10'))).map((f) => f.what), ['fixture:disagree']);
+  assert.equal(pairing([{ ...r1, arrived: '11' }], log(line('y', '10'))).judged, null);
+  assert.deepEqual(pairing([{ ...r1, arrived: '11' }], log(line('x', '10'))), []);
 });
 
 test('check 13: a request compile no stand-in request took is a flag at its batch\'s step; a run whose compiles all paired, or with no compile lines, has none', () => {
-  const r1 = opened('r1', 'a', 1_000, undefined, ['t1']);
+  const r1 = { ...opened('r1', 'a', 1_000, undefined, ['t1']), arrived: '11' };
   r1.messages[0] = { ...r1.messages[0], blocks: [{ type: 'text', canaries: ['[[c:a.in]]'] }] };
   const b = (id, canary) => ({ [id]: { role: 'user', content: [{ type: 'text', text: `${canary} words` }] } });
-  const line = (seq, assembly, content) => ({ seq, agent: 'fixture', kind: 'request', assembly, outcome: 'compiled', messages: [{ sources: ['r:1'], content }] });
+  const line = (seq, assembly, content, stamp) => ({ seq, agent: 'fixture', kind: 'request', assembly, outcome: 'compiled', stamp: String(stamp), messages: [{ sources: ['r:1'], content }] });
   const log = [
-    { kind: 'compiles', step: 'a', lines: [line(1, 1, 'x1')], blobs: b('x1', '[[c:a.in]]') },
-    { kind: 'compiles', step: 'b', lines: [line(2, 2, 'x2')], blobs: b('x2', '[[c:b.in]]') },
+    { kind: 'compiles', step: 'a', lines: [line(1, 1, 'x1', 10)], blobs: b('x1', '[[c:a.in]]') },
+    { kind: 'compiles', step: 'b', lines: [line(2, 2, 'x2', 20)], blobs: b('x2', '[[c:b.in]]') },
   ];
   const flags = pairing([r1], log);
   assert.deepEqual(flags.map((f) => [f.check, f.step, f.what]), [[13, 'b', 'fixture:unpaired']]);
-  assert.match(flags[0].message, /compile 2 \(assembly 2\) went out in no request the stand-in received/);
+  assert.match(flags[0].message, /compile 2 \(assembly 2\) went out in no request: none arrived at the stand-in after it/);
   assert.deepEqual(pairing([r1], log.slice(0, 1)), []);
   assert.deepEqual(pairing([r1], []), [], 'no compile lines: nothing to pair');
 });

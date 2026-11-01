@@ -421,7 +421,7 @@ export async function startStandin({ configuration, rawDir = null, refuseMerges 
     sendMessage(res, body, record, { content, stop });
   }
 
-  function handle(req, res, raw) {
+  function handle(req, res, raw, arrived) {
     const path = (req.url || '').split('?')[0];
     let body = null;
     try { body = raw ? JSON.parse(raw) : null; } catch { body = null; }
@@ -436,7 +436,7 @@ export async function startStandin({ configuration, rawDir = null, refuseMerges 
     const id = `r${seq}`;
     const { kind, agent, reason } = classify(body);
     const mask = runVaryingMasker();
-    const record = { id, seq, at: Math.round(performance.now() - t0), clock, step: step?.id ?? null, kind, ...(agent ? { agent } : {}), ...(reason ? { reason } : {}), ...(body ? normalise(body, req.headers, mask) : {}) };
+    const record = { id, seq, at: Math.round(performance.now() - t0), arrived, clock, step: step?.id ?? null, kind, ...(agent ? { agent } : {}), ...(reason ? { reason } : {}), ...(body ? normalise(body, req.headers, mask) : {}) };
     if (kind === 'summariser' && body) record.texts = summariserTexts(body, mask);
     records.push(record);
     if (rawDir) writeFileSync(join(rawDir, `${id}.json`), raw);
@@ -490,10 +490,11 @@ export async function startStandin({ configuration, rawDir = null, refuseMerges 
   }
 
   const server = createServer((req, res) => {
+    const arrived = String(process.hrtime.bigint());
     let raw = '';
     req.setEncoding('utf-8');
     req.on('data', (c) => { raw += c; });
-    req.on('end', () => handle(req, res, raw));
+    req.on('end', () => handle(req, res, raw, arrived));
   });
   server.on('connection', (socket) => { sockets.add(socket); socket.on('close', () => sockets.delete(socket)); });
   await new Promise((resolve, reject) => { server.once('error', reject); server.listen(0, '127.0.0.1', resolve); });

@@ -5,6 +5,21 @@ import { isUnreadable, readable } from './invariants.mjs';
 import { blobStore, compiledLine, messagesOf, plain, refusedLine, stateOf, storeDelta } from './recorder.mjs';
 
 const CALLER = new AsyncLocalStorage();
+// Each request compile is stamped from CLOCK_MONOTONIC, the clock the driver's Node reads for process.hrtime on Linux
+// (libuv's uv_hrtime), so the stand-in's arrival stamps order against it. Bun's process.hrtime counts from its own
+// start, and elsewhere than Linux libuv reads another clock, so there the compile goes unstamped and unjudged.
+const monotonic = await (async () => {
+  if (typeof Bun === 'undefined') return () => process.hrtime.bigint();
+  if (process.platform !== 'linux') return () => null;
+  try {
+    const { dlopen, FFIType, ptr } = await import('bun:ffi');
+    const { symbols } = dlopen('libc.so.6', { clock_gettime: { args: [FFIType.i32, FFIType.ptr], returns: FFIType.i32 } });
+    const ts = new BigInt64Array(2);
+    return () => (symbols.clock_gettime(1, ptr(ts)) === 0 ? ts[0] * 1_000_000_000n + ts[1] : null);
+  } catch {
+    return () => null;
+  }
+})();
 const WRAPPED = Symbol.for('connectome-host.whole-host.wrapped');
 const AGENT_COMPILES = ['compileWithInjections', 'compileContext'];
 // context-manager's compile takes this budget when it's given none (context-manager.ts `compile`).
@@ -107,7 +122,8 @@ export class HarnessModule {
         module.record(head, () => refusedLine(error, module.blobs));
         throw error;
       }
-      module.record(head, () => compiledLine(this, budget ?? DEFAULT_BUDGET, result, module.blobs, (ids) => module.elsewhere(this, ids)));
+      const line = module.record(head, () => compiledLine(this, budget ?? DEFAULT_BUDGET, result, module.blobs, (ids) => module.elsewhere(this, ids)));
+      if (own && !dry) line.stamp = String(monotonic());
       return result;
     };
     wrapped[WRAPPED] = true;
@@ -122,6 +138,7 @@ export class HarnessModule {
       line = { ...head, outcome: 'unrecordable', reason: String(error?.message ?? error).slice(0, 300) };
     }
     this.lines.push(line);
+    return line;
   }
 
 

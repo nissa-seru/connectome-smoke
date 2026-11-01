@@ -623,6 +623,25 @@ test('T30: a request\'s messages are masked together, so a result answering anot
   assert.notEqual(crossed.messages[2].digest, matched.messages[2].digest, 'a result naming another fork');
 });
 
+test('T31: each request\'s record carries when it arrived, in nanoseconds on the process\'s monotonic clock, taken before its body is read', async () => {
+  const s = await startStandin({ configuration: { windowTokens: 50_000 } });
+  let records = null;
+  const stamps = [];
+  try {
+    s.setStep({ ...step('h', [{ text: 'a' }, { text: 'b' }]), canaries: ['[[c:h.in]]'] });
+    for (let i = 0; i < 2; i++) {
+      const before = process.hrtime.bigint();
+      assert.equal((await post(s.url, agentBody({ canary: '[[c:h.in]]', stream: false }))).status, 200);
+      stamps.push([before, process.hrtime.bigint()]);
+    }
+    records = await s.close();
+  } finally { if (!records) await s.close(); }
+  records.forEach((r, i) => {
+    assert.match(r.arrived, /^\d+$/);
+    assert.ok(BigInt(r.arrived) > stamps[i][0] && BigInt(r.arrived) < stamps[i][1], `${r.arrived} within its post`);
+  });
+});
+
 test('T18: each message in a record has a digest that its cache marker and a tool image ref\'s nonce leave unchanged and any other change in it moves, and an answer records the tool_use ids it minted', async () => {
   const standin = await startStandin({ configuration: { windowTokens: 50_000 } });
   let records = null;

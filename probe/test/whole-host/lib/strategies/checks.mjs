@@ -44,7 +44,9 @@ export function bindingControl(records) {
 export function pairing(records, log = [], agent = FIXTURE_AGENT) {
   const paired = requestPairs(records, log, agent);
   if (!paired) return withJudged([], 0);
-  return withJudged(paired.unpaired.map((l) => ({ check: 13, step: l.step ?? 'the run', what: `${agent}:unpaired`, message: `${agent}'s request compile ${l.seq} (assembly ${l.assembly}) went out in no request the stand-in received at its step: a compile agent-framework never sent, or a pairing that went wrong` })), paired.pairs.length + paired.unpaired.length);
+  if (paired.disagree?.length) return withJudged([{ check: 13, step: 'the run', what: `${agent}:disagree`, message: `couldn't judge ${agent}'s pairing: by the clock ${paired.disagree.slice(0, 4).join(', ')} pair, but the request doesn't end on the compile's last canary, so the two processes' stamps may not share a clock` }], null);
+  if (paired.unstamped.length) return withJudged([{ check: 13, step: 'the run', what: `${agent}:unstamped`, message: `couldn't judge ${agent}'s pairing: ${paired.unstamped.slice(0, 4).join(', ')}${paired.unstamped.length > 4 ? ` and ${paired.unstamped.length - 4} more` : ''} carry no clock stamp to order by` }], null);
+  return withJudged(paired.unpaired.map((l) => ({ check: 13, step: l.step ?? 'the run', what: `${agent}:unpaired`, message: `${agent}'s request compile ${l.seq} (assembly ${l.assembly}) went out in no request: none arrived at the stand-in after it and before the agent's next compile, so agent-framework never sent it, or the pairing went wrong` })), paired.pairs.length + paired.unpaired.length);
 }
 
 export function reloads(log = []) {
@@ -164,12 +166,28 @@ export function assemblies(log = [], agent = FIXTURE_AGENT) {
   return out;
 }
 
-// agent-framework restarts a stream by compiling again, and a passthrough's restart sends what a continuation round
-// would, so only the compile lines tell the two apart. A windowed reader's compile can carry no canary at all, a wake
-// notice alone, and its request then carries none either.
+// A request is its agent's compile's when that compile is the agent's latest stamped before the request arrived and
+// no request has taken it; any other is a round. One agent's requests go one at a time, so a round arrives before the
+// agent compiles again. The module stamps a compile as it hands it back, the stand-in a request as it arrives, both
+// from CLOCK_MONOTONIC.
 export function requestPairs(records, log = [], agent = FIXTURE_AGENT, { side = agent === FIXTURE_AGENT ? 'primary' : 'sub' } = {}) {
   const sent = assemblies(log, agent).filter((l) => l.outcome === 'compiled');
   if (!sent.length) return null;
+  const requests = records.filter((r) => r.kind === 'agent' && (r.agent ?? 'primary') === side);
+  const stampOf = (v) => (typeof v === 'string' && /^\d+$/.test(v) ? BigInt(v) : null);
+  const unstamped = [...sent.filter((l) => stampOf(l.stamp) === null).map((l) => `compile ${l.seq}`), ...requests.filter((r) => stampOf(r.arrived) === null).map((r) => `request ${r.id}`)];
+  if (unstamped.length) return { pairs: [], continuations: requests, unpaired: [], unstamped, disagree: [] };
+  const events = [...sent.map((l) => ({ at: stampOf(l.stamp), line: l })), ...requests.map((r) => ({ at: stampOf(r.arrived), request: r }))]
+    .sort((x, y) => (x.at < y.at ? -1 : x.at > y.at ? 1 : x.line ? -1 : 1));
+  const pairs = [];
+  const continuations = [];
+  let latest = null;
+  for (const e of events) {
+    if (e.line) latest = e.line;
+    else if (latest) { pairs.push({ line: latest, request: e.request }); latest = null; }
+    else continuations.push(e.request);
+  }
+  const paired = new Set(pairs.map((p) => p.line));
   const blobs = Object.assign({}, ...log.filter((e) => e.kind === 'compiles').map((e) => e.blobs ?? {}));
   const lineCanary = (l) => {
     for (let i = (l.messages ?? []).length - 1; i >= 0; i--) {
@@ -179,21 +197,8 @@ export function requestPairs(records, log = [], agent = FIXTURE_AGENT, { side = 
     return null;
   };
   const requestCanary = (r) => (r.messages ?? []).flatMap((m) => (m.blocks ?? []).flatMap((b) => b.canaries ?? [])).at(-1) ?? null;
-  const waiting = new Map();
-  for (const l of sent) waiting.set(l.step, [...(waiting.get(l.step) ?? []), l]);
-  const pairs = [];
-  const continuations = [];
-  for (const r of records) {
-    if (r.kind !== 'agent' || (r.agent ?? 'primary') !== side) continue;
-    const queue = waiting.get(r.step) ?? [];
-    const here = requestCanary(r);
-    const at = queue.findIndex((l) => lineCanary(l) === here);
-    if (at < 0) { continuations.push(r); continue; }
-    queue.splice(0, at);
-    pairs.push({ line: queue.shift(), request: r });
-  }
-  const paired = new Set(pairs.map((p) => p.line));
-  return { pairs, continuations, unpaired: sent.filter((l) => !paired.has(l)) };
+  const disagree = pairs.filter(({ line, request }) => lineCanary(line) !== requestCanary(request)).map(({ line, request }) => `compile ${line.seq} and request ${request.id}`);
+  return { pairs, continuations, unpaired: sent.filter((l) => !paired.has(l)), unstamped: [], disagree };
 }
 
 export function compilingAgents(log = []) {

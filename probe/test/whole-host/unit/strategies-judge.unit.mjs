@@ -21,12 +21,12 @@ const side = (configuration, over = {}) => ({
 
 test('K2d: the judge holds a reported window against its configuration\'s stand-in window', async () => {
   const usage = { input_tokens: 100, cache_read_input_tokens: 900, cache_creation_input_tokens: 0 };
-  const r1 = { id: 'r1', step: 'a', kind: 'agent', maxTokens: 2_048, usage, messages: [{ role: 'user', digest: 'd1', blocks: [{ type: 'text', canaries: ['[[c:a.in]]'] }] }], answer: { shape: 'reply', toolUseIds: ['t1'] } };
-  const r2 = { ...r1, id: 'r2', messages: [...r1.messages, { role: 'assistant', digest: 'd2', blocks: [{ type: 'tool_use', toolUseId: 't1' }] }, { role: 'user', digest: 'd3', blocks: [] }], answer: { shape: 'reply', toolUseIds: [] } };
+  const r1 = { id: 'r1', step: 'a', kind: 'agent', arrived: '11', maxTokens: 2_048, usage, messages: [{ role: 'user', digest: 'd1', blocks: [{ type: 'text', canaries: ['[[c:a.in]]'] }] }], answer: { shape: 'reply', toolUseIds: ['t1'] } };
+  const r2 = { ...r1, id: 'r2', arrived: '21', messages: [...r1.messages, { role: 'assistant', digest: 'd2', blocks: [{ type: 'tool_use', toolUseId: 't1' }] }, { role: 'user', digest: 'd3', blocks: [] }], answer: { shape: 'reply', toolUseIds: [] } };
   const report = (window) => ({ kind: 'budget-report', boot: 1, lines: ['--- Stream Token Budgets ---', `  fixture: 150.0k (last: 0, 0%); its stream doesn't break at this budget mid-turn: for its size, only before a request its ${window} window can't hold`] });
   const checkpoint = { kind: 'checkpoint', name: 's', step: 's.cp', health: { data: { contextComposition: { fixture: { planVsActual: { budgetMet: true } } }, runtimeSettings: { fixture: { effectiveContextBudgetTokens: 20_000 } } } } };
   const sent = (id) => ({ kind: 'request', request: { id, kind: 'agent' } });
-  const compiled = { kind: 'compiles', lines: [{ seq: 1, agent: 'fixture', kind: 'request', assembly: 1, outcome: 'compiled', messages: [{ sources: ['r:1'], content: 'x1' }] }], blobs: { x1: { role: 'user', content: [{ type: 'text', text: '[[c:a.in]] words' }] } } };
+  const compiled = { kind: 'compiles', lines: [{ seq: 1, agent: 'fixture', kind: 'request', assembly: 1, outcome: 'compiled', stamp: '10', messages: [{ sources: ['r:1'], content: 'x1' }] }], blobs: { x1: { role: 'user', content: [{ type: 'text', text: '[[c:a.in]] words' }] } } };
   const configuration = asRun(configurations().H1, { window: 1_000_000 });
   const run = (window) => judge({ ...side(configuration, { records: [r1, r2], script: [{ id: 'a', segment: 's' }], log: [compiled, report(window), sent('r1'), sent('r2'), checkpoint] }), readers: counting().readers });
   assert.equal(configuration.windowTokens, 1_000_000, 'the host\'s window for the model');
@@ -91,7 +91,7 @@ test('a run is judged by its configuration\'s agent, or, where it judges its sub
 test('H2 is judged by its subagent: its own store, read in its own slot, its violations flagged, and its stream bound the one its launch notice states', async () => {
   const configuration = configurations().H2;
   const launch = { role: 'user', content: [{ type: 'text', text: "Launch of spawn 'knowledge-1':\n- Stream budget: 500,000 tokens (fixture's: 320,000 tokens).\n" }] };
-  const log = [{ kind: 'compiles', step: 'k', blobs: { l1: launch }, lines: [{ seq: 1, agent: 'knowledge-1', kind: 'request', assembly: 1, outcome: 'compiled', messages: [{ sources: ['r:1'], content: 'l1' }] }] }];
+  const log = [{ kind: 'compiles', step: 'k', blobs: { l1: launch }, lines: [{ seq: 1, agent: 'knowledge-1', kind: 'request', assembly: 1, outcome: 'compiled', stamp: '10', messages: [{ sources: ['r:1'], content: 'l1' }] }] }];
   assert.equal(launchStreamBound(log, 'knowledge-1'), 500_000);
   assert.equal(streamBoundFor(configuration, launchStreamBound(log, 'knowledge-1')), 500_000, 'the bound check 3 is given is the notice\'s, not the configuration\'s');
   assert.notEqual(streamBoundFor(configuration), 500_000, 'which differs from the one it would be given otherwise');
@@ -109,10 +109,10 @@ test('H2\'s check 3 holds a subagent\'s continuation round to the stream budget 
   const configuration = asRun(configurations().H2, { window: 1_000_000 });
   const notice = (n) => ({ role: 'user', content: [{ type: 'text', text: `Launch of spawn 'knowledge-1':\n- Stream budget: ${n} tokens (fixture's: 320,000 tokens).\n` }] });
   const usage = (input) => ({ input_tokens: input, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 });
-  const r1 = { id: 'r1', step: 'k', kind: 'agent', agent: 'sub', maxTokens: 2_048, usage: usage(400_000), messages: [{ role: 'user', digest: 'd1', blocks: [{ type: 'text', canaries: ['[[c:k.in]]'] }] }], answer: { shape: 'reply', toolUseIds: ['t1'] } };
-  const r2 = { ...r1, id: 'r2', usage: usage(100), messages: [...r1.messages, { role: 'assistant', digest: 'd2', blocks: [{ type: 'tool_use', toolUseId: 't1' }] }, { role: 'user', digest: 'd3', blocks: [{ type: 'tool_result', toolUseId: 't1' }] }], answer: { shape: 'reply', toolUseIds: [] } };
+  const r1 = { id: 'r1', step: 'k', kind: 'agent', agent: 'sub', arrived: '11', maxTokens: 2_048, usage: usage(400_000), messages: [{ role: 'user', digest: 'd1', blocks: [{ type: 'text', canaries: ['[[c:k.in]]'] }] }], answer: { shape: 'reply', toolUseIds: ['t1'] } };
+  const r2 = { ...r1, id: 'r2', arrived: '21', usage: usage(100), messages: [...r1.messages, { role: 'assistant', digest: 'd2', blocks: [{ type: 'tool_use', toolUseId: 't1' }] }, { role: 'user', digest: 'd3', blocks: [{ type: 'tool_result', toolUseId: 't1' }] }], answer: { shape: 'reply', toolUseIds: [] } };
   const log = (n) => [
-    { kind: 'compiles', step: 'k', blobs: { l1: notice(n), x1: { role: 'user', content: [{ type: 'text', text: '[[c:k.in]] words' }] } }, lines: [{ seq: 1, agent: 'knowledge-1', kind: 'request', assembly: 1, outcome: 'compiled', messages: [{ sources: ['r:1'], content: 'l1' }, { sources: ['r:2'], content: 'x1' }] }] },
+    { kind: 'compiles', step: 'k', blobs: { l1: notice(n), x1: { role: 'user', content: [{ type: 'text', text: '[[c:k.in]] words' }] } }, lines: [{ seq: 1, agent: 'knowledge-1', kind: 'request', assembly: 1, outcome: 'compiled', stamp: '10', messages: [{ sources: ['r:1'], content: 'l1' }, { sources: ['r:2'], content: 'x1' }] }] },
     { kind: 'request', step: 'k', request: { id: 'r1', kind: 'agent' } },
     { kind: 'request', step: 'k', request: { id: 'r2', kind: 'agent' } },
   ];

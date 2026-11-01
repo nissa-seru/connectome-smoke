@@ -102,11 +102,11 @@ test('K1b: the report names each operator alert by its kind, and prints the chec
 
 test('K2d: the checks carry check 3\'s note that the host reported its window governs the agent\'s stream', () => {
   const usage = { input_tokens: 100, cache_read_input_tokens: 900, cache_creation_input_tokens: 0 };
-  const r1 = { id: 'r1', step: 'a', kind: 'agent', maxTokens: 2_048, usage, messages: [{ role: 'user', digest: 'd1', blocks: [{ type: 'text', canaries: ['[[c:a.in]]'] }] }], answer: { shape: 'reply', toolUseIds: ['t1'] } };
-  const r2 = { ...r1, id: 'r2', messages: [...r1.messages, { role: 'assistant', digest: 'd2', blocks: [{ type: 'tool_use', toolUseId: 't1' }] }, { role: 'user', digest: 'd3', blocks: [] }], answer: { shape: 'reply', toolUseIds: [] } };
+  const r1 = { id: 'r1', step: 'a', kind: 'agent', arrived: '11', maxTokens: 2_048, usage, messages: [{ role: 'user', digest: 'd1', blocks: [{ type: 'text', canaries: ['[[c:a.in]]'] }] }], answer: { shape: 'reply', toolUseIds: ['t1'] } };
+  const r2 = { ...r1, id: 'r2', arrived: '21', messages: [...r1.messages, { role: 'assistant', digest: 'd2', blocks: [{ type: 'tool_use', toolUseId: 't1' }] }, { role: 'user', digest: 'd3', blocks: [] }], answer: { shape: 'reply', toolUseIds: [] } };
   const report = { kind: 'budget-report', boot: 1, lines: ['--- Stream Token Budgets ---', '  fixture: 150.0k (last: 0, 0%); its stream doesn\'t break at this budget mid-turn: for its size, only before a request its 1.0M window can\'t hold'] };
   const checkpoint = { kind: 'checkpoint', name: 's', step: 's.cp', health: { data: { contextComposition: { fixture: { planVsActual: { budgetMet: true } } }, runtimeSettings: { fixture: { effectiveContextBudgetTokens: 20_000 } } } } };
-  const compiled = { kind: 'compiles', step: 'a', lines: [{ seq: 1, agent: 'fixture', kind: 'request', assembly: 1, outcome: 'compiled', messages: [{ sources: ['r:1'], content: 'x1' }] }], blobs: { x1: { role: 'user', content: [{ type: 'text', text: '[[c:a.in]] words' }] } } };
+  const compiled = { kind: 'compiles', step: 'a', lines: [{ seq: 1, agent: 'fixture', kind: 'request', assembly: 1, outcome: 'compiled', stamp: '10', messages: [{ sources: ['r:1'], content: 'x1' }] }], blobs: { x1: { role: 'user', content: [{ type: 'text', text: '[[c:a.in]] words' }] } } };
   const log = [compiled, report, { kind: 'request', request: { id: 'r1', kind: 'agent' } }, { kind: 'request', request: { id: 'r2', kind: 'agent' } }, checkpoint];
   const { notes } = runChecks({ records: [r1, r2], log, script: [{ id: 'a', segment: 's' }], products: [], store: null, windowTokens: 1_000_000 });
   assert.equal(notes.length, 1);
@@ -115,22 +115,22 @@ test('K2d: the checks carry check 3\'s note that the host reported its window go
 
 test('check 13 judges every agent that compiles, each with its own count, so a reader\'s compile no request took is a flag', () => {
   const usage = { input_tokens: 1_000, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 };
-  const req = (id, agent, canary) => ({ id, step: 'a', kind: 'agent', agent, maxTokens: 2_048, usage, messages: [{ role: 'user', digest: `d.${id}`, blocks: [{ type: 'text', canaries: [canary] }] }], answer: { shape: 'reply', toolUseIds: [] } });
+  const req = (id, agent, canary, arrived) => ({ id, step: 'a', kind: 'agent', agent, arrived, maxTokens: 2_048, usage, messages: [{ role: 'user', digest: `d.${id}`, blocks: [{ type: 'text', canaries: [canary] }] }], answer: { shape: 'reply', toolUseIds: [] } });
   const blob = (canary) => ({ role: 'user', content: [{ type: 'text', text: `${canary} words` }] });
-  const line = (seq, agent, content) => ({ seq, agent, kind: 'request', assembly: seq, outcome: 'compiled', messages: [{ sources: ['r:1'], content }] });
+  const line = (seq, agent, content) => ({ seq, agent, kind: 'request', assembly: seq, outcome: 'compiled', stamp: String(seq * 10), messages: [{ sources: ['r:1'], content }] });
   const log = [{ kind: 'compiles', step: 'a', lines: [line(1, 'fixture', 'x1'), line(2, 'Subconscious', 'xs'), line(3, 'Subconscious', 'xl')], blobs: { x1: blob('[[c:a.in]]'), xs: blob('[[c:a.wake]]'), xl: blob('[[c:a.lost]]') } }];
-  const { flags, judged } = runChecks({ records: [req('r1', 'primary', '[[c:a.in]]'), req('s1', 'sub', '[[c:a.wake]]')], log, script: [{ id: 'a', segment: 's', kind: 'channel' }], products: [], store: null, windowTokens: 1_000_000 });
+  const { flags, judged } = runChecks({ records: [req('r1', 'primary', '[[c:a.in]]', '11'), req('s1', 'sub', '[[c:a.wake]]', '21')], log, script: [{ id: 'a', segment: 's', kind: 'channel' }], products: [], store: null, windowTokens: 1_000_000 });
   assert.deepEqual(Object.fromEntries(judged.filter((j) => j.check === 13).map((j) => [j.name, j.judged])), { 'pairing fixture': 1, 'pairing Subconscious': 2 });
   assert.deepEqual(flags.filter((f) => f.check === 13).map((f) => [f.step, f.what]), [['a', 'Subconscious:unpaired']]);
 });
 
 test('check 13 can\'t judge two agents besides the configuration\'s own, since the stand-in pools their requests: a couldn\'t-judge flag naming both, not a pairing', () => {
   const usage = { input_tokens: 1_000, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 };
-  const req = (id, agent, canary) => ({ id, step: 'a', kind: 'agent', agent, maxTokens: 2_048, usage, messages: [{ role: 'user', digest: `d.${id}`, blocks: [{ type: 'text', canaries: [canary] }] }], answer: { shape: 'reply', toolUseIds: [] } });
+  const req = (id, agent, canary, arrived) => ({ id, step: 'a', kind: 'agent', agent, arrived, maxTokens: 2_048, usage, messages: [{ role: 'user', digest: `d.${id}`, blocks: [{ type: 'text', canaries: [canary] }] }], answer: { shape: 'reply', toolUseIds: [] } });
   const blob = (canary) => ({ role: 'user', content: [{ type: 'text', text: `${canary} words` }] });
-  const line = (seq, agent, content) => ({ seq, agent, kind: 'request', assembly: seq, outcome: 'compiled', messages: [{ sources: ['r:1'], content }] });
+  const line = (seq, agent, content) => ({ seq, agent, kind: 'request', assembly: seq, outcome: 'compiled', stamp: String(seq * 10), messages: [{ sources: ['r:1'], content }] });
   const log = [{ kind: 'compiles', step: 'a', lines: [line(1, 'fixture', 'x1'), line(2, 'Subconscious', 'xs'), line(3, 'knowledge', 'xk')], blobs: { x1: blob('[[c:a.in]]'), xs: blob('[[c:a.wake]]'), xk: blob('[[c:a.task]]') } }];
-  const { flags, judged } = runChecks({ records: [req('r1', 'primary', '[[c:a.in]]'), req('s1', 'sub', '[[c:a.wake]]'), req('k1', 'sub', '[[c:a.task]]')], log, script: [{ id: 'a', segment: 's', kind: 'channel' }], products: [], store: null, windowTokens: 1_000_000 });
+  const { flags, judged } = runChecks({ records: [req('r1', 'primary', '[[c:a.in]]', '11'), req('s1', 'sub', '[[c:a.wake]]', '21'), req('k1', 'sub', '[[c:a.task]]', '31')], log, script: [{ id: 'a', segment: 's', kind: 'channel' }], products: [], store: null, windowTokens: 1_000_000 });
   assert.deepEqual(flags.filter((f) => f.check === 13).map((f) => f.what), ['Subconscious:shared-side', 'knowledge:shared-side']);
   assert.match(flags.find((f) => f.what === 'knowledge:shared-side').message, /couldn't judge knowledge's pairing: Subconscious and knowledge compile requests/);
   assert.deepEqual(Object.fromEntries(judged.filter((j) => j.check === 13).map((j) => [j.name, j.judged])), { 'pairing fixture': 1, 'pairing Subconscious': null, 'pairing knowledge': null }, 'counted as unknown, so no judged-none flag doubles it');
@@ -138,7 +138,7 @@ test('check 13 can\'t judge two agents besides the configuration\'s own, since t
 
 test('judged: every check reports how many items it judged; zero where check 3, 11, 12 or 13 applies is a couldn\'t-judge flag, and the report prints the counts', () => {
   const usage = { input_tokens: 1_000, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 };
-  const r1 = { id: 'r1', step: 'a', kind: 'agent', agent: 'primary', maxTokens: 2_048, usage, messages: [{ role: 'user', digest: 'd1', blocks: [{ type: 'text', canaries: ['[[c:a.in]]'] }] }], answer: { shape: 'reply', toolUseIds: [] } };
+  const r1 = { id: 'r1', step: 'a', kind: 'agent', agent: 'primary', arrived: '11', maxTokens: 2_048, usage, messages: [{ role: 'user', digest: 'd1', blocks: [{ type: 'text', canaries: ['[[c:a.in]]'] }] }], answer: { shape: 'reply', toolUseIds: [] } };
   const script = [{ id: 'a', segment: 's', kind: 'channel' }];
   const none = runChecks({ records: [r1], log: [], script, products: [], store: null, windowTokens: 1_000_000 });
   const what = none.flags.filter((f) => /^judged-none:/.test(f.what ?? '')).map((f) => [f.check, f.what]);
@@ -151,7 +151,7 @@ test('judged: every check reports how many items it judged; zero where check 3, 
   assert.equal(counts['11 compile invariants'], 0);
   const restarted = runChecks({ records: [r1], log: [], script: [...script, { id: 'r', segment: 's', kind: 'restart', reloadCheck: true }], products: [], store: null, windowTokens: 1_000_000 });
   assert.deepEqual(restarted.flags.filter((f) => /^judged-none:/.test(f.what ?? '')).map((f) => f.check), [11, 12, 13]);
-  const line = { kind: 'compiles', step: 'a', lines: [{ seq: 1, agent: 'fixture', kind: 'request', assembly: 1, outcome: 'compiled', messages: [{ sources: ['r:1'], content: 'x1' }] }], blobs: { x1: { role: 'user', content: [{ type: 'text', text: '[[c:a.in]] words' }] } } };
+  const line = { kind: 'compiles', step: 'a', lines: [{ seq: 1, agent: 'fixture', kind: 'request', assembly: 1, outcome: 'compiled', stamp: '10', messages: [{ sources: ['r:1'], content: 'x1' }] }], blobs: { x1: { role: 'user', content: [{ type: 'text', text: '[[c:a.in]] words' }] } } };
   const unused = runChecks({ records: [{ ...r1, usage: undefined }], log: [line], script, products: [], store: null, windowTokens: 1_000_000 });
   assert.ok(unused.flags.some((f) => f.what === 'judged-none:budgets'));
   assert.deepEqual(runChecks({ records: [], log: [], script: [], products: [], store: null }).flags, []);

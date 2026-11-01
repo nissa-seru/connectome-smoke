@@ -16,7 +16,7 @@ const blobs = {
   b7: { participant: 'user', content: [{ type: 'tool_result', toolUseId: 't2', content: 'ref img_zz9yy8_1 then ref img_k7x3q2_1' }] },
 };
 const m = (id, content, marker) => ({ sources: [`r:${id}`], content, ...(marker ? { marker: { message: true } } : {}) });
-const line = (seq, messages, more = {}) => ({ seq, agent: 'fixture', kind: 'request', assembly: seq, outcome: 'compiled', messages, ...more });
+const line = (seq, messages, more = {}) => ({ seq, agent: 'fixture', kind: 'request', assembly: seq, outcome: 'compiled', stamp: String(seq * 10), messages, ...more });
 const log = [
   { kind: 'send', via: 'ipc', step: 'p.name', command: '/session rename fixture' },
   { kind: 'send', via: 'channel', step: 'p.1' },
@@ -180,7 +180,7 @@ test('a receipt that removes a leaf, a failed run, and a batch with no lines eac
 
 test('a sent compile names its head when it changes and its body, and a continuation round gets a line of its own', () => {
   const head = { model: 'm', maxTokens: 100, toolChoice: null, thinking: null, system: [], tools: [], rest: null };
-  const req = (id, canaries, digest) => ({ id, kind: 'agent', agent: 'primary', step: 'q.1', stream: true, head, messages: [{ role: 'user', digest, blocks: canaries.map((c) => ({ type: 'text', canaries: [`[[c:${c}]]`] })) }], answer: { shape: 'reply' } });
+  const req = (id, canaries, digest) => ({ id, arrived: id === 'a1' ? '11' : '21', kind: 'agent', agent: 'primary', step: 'q.1', stream: true, head, messages: [{ role: 'user', digest, blocks: canaries.map((c) => ({ type: 'text', canaries: [`[[c:${c}]]`] })) }], answer: { shape: 'reply' } });
   const recs = [req('a1', ['q.1.in'], 'd1'), req('a2', ['q.1.in', 'q.1.call1'], 'd2')];
   const lg = [
     { kind: 'compiles', step: 'q.1', blobs: { u1: text('[[c:q.1.in]] a') }, lines: [line(1, [m(1, 'u1')])] },
@@ -197,7 +197,7 @@ test('a sent compile names its head when it changes and its body, and a continua
 
 test('a turn\'s compile comes before its rounds, as the stand-in received them, though the module\'s batch reaches the log after the requests', () => {
   const head = { model: 'm', maxTokens: 100, toolChoice: null, thinking: null, system: [], tools: [], rest: null };
-  const req = (id, seq, canaries, digest) => ({ id, seq, kind: 'agent', agent: 'primary', step: 'q.1', stream: true, head, messages: [{ role: 'user', digest, blocks: canaries.map((c) => ({ type: 'text', canaries: [`[[c:${c}]]`] })) }], answer: { shape: 'reply' } });
+  const req = (id, seq, canaries, digest) => ({ id, seq, arrived: String(seq * 10 + 1), kind: 'agent', agent: 'primary', step: 'q.1', stream: true, head, messages: [{ role: 'user', digest, blocks: canaries.map((c) => ({ type: 'text', canaries: [`[[c:${c}]]`] })) }], answer: { shape: 'reply' } });
   const recs = [req('a1', 1, ['q.1.in'], 'd1'), req('a2', 2, ['q.1.in', 'q.1.r1', 'q.1.call1'], 'd2'), req('a3', 3, ['q.1.in', 'q.1.r1', 'q.1.call1', 'q.1.r2', 'q.1.call2'], 'd3')];
   const lg = [
     { kind: 'request', step: 'q.1', request: { id: 'a1', kind: 'agent' } },
@@ -255,7 +255,7 @@ test('the 4,096 is bytes, not characters: 2,048 two-byte characters are written 
 });
 
 test('a heads entry names the request\'s anthropic-beta and anthropic-version headers', () => {
-  const req = { id: 'a1', seq: 1, kind: 'agent', agent: 'primary', step: 'q.1', stream: true, head: { model: 'm', maxTokens: 1, toolChoice: null, thinking: null, system: [], tools: [], rest: null, headers: { beta: ['b-one', 'b-two'], version: '2023-06-01' } }, messages: [{ role: 'user', digest: 'd', blocks: [{ type: 'text', canaries: ['[[c:q.1.in]]'] }] }], answer: { shape: 'reply' } };
+  const req = { id: 'a1', seq: 1, arrived: '11', kind: 'agent', agent: 'primary', step: 'q.1', stream: true, head: { model: 'm', maxTokens: 1, toolChoice: null, thinking: null, system: [], tools: [], rest: null, headers: { beta: ['b-one', 'b-two'], version: '2023-06-01' } }, messages: [{ role: 'user', digest: 'd', blocks: [{ type: 'text', canaries: ['[[c:q.1.in]]'] }] }], answer: { shape: 'reply' } };
   const lg = [{ kind: 'request', step: 'q.1', request: { id: 'a1', kind: 'agent' } }, { kind: 'compiles', step: 'q.1', blobs: { u1: text('[[c:q.1.in]] a') }, lines: [line(1, [m(1, 'u1')])] }];
   const heads = renderRecord({ header, log: lg, records: [req], end: { ok: true } }).split('\n').filter((l) => l.startsWith('H:'));
   assert.equal(heads.length, 1);
@@ -263,7 +263,7 @@ test('a heads entry names the request\'s anthropic-beta and anthropic-version he
 });
 
 test('a cache marker nested in a tool result\'s content moves its compile line\'s body hash', () => {
-  const req = (contentCache) => ({ id: 'a1', seq: 1, kind: 'agent', agent: 'primary', step: 'q.1', stream: true, messages: [{ role: 'user', digest: 'd', blocks: [{ type: 'tool_result', canaries: ['[[c:q.1.in]]'], cache: null, ...(contentCache ? { contentCache } : {}) }] }], answer: { shape: 'reply' } });
+  const req = (contentCache) => ({ id: 'a1', seq: 1, arrived: '11', kind: 'agent', agent: 'primary', step: 'q.1', stream: true, messages: [{ role: 'user', digest: 'd', blocks: [{ type: 'tool_result', canaries: ['[[c:q.1.in]]'], cache: null, ...(contentCache ? { contentCache } : {}) }] }], answer: { shape: 'reply' } });
   const lg = [{ kind: 'request', step: 'q.1', request: { id: 'a1', kind: 'agent' } }, { kind: 'compiles', step: 'q.1', blobs: { u1: text('[[c:q.1.in]] a') }, lines: [line(1, [m(1, 'u1')])] }];
   const compile = (r) => renderRecord({ header, log: lg, records: [r], end: { ok: true } }).split('\n').find((l) => l.startsWith('  compile'));
   assert.notEqual(compile(req(null)), compile(req([null, '5m'])));
@@ -293,7 +293,7 @@ test('the record\'s receipt is the last head the store reported: one it couldn\'
 
 test('a sent compile names each new head where it changes, and its body hash moves with what it sent, cache markers included', () => {
   const head = (maxTokens) => ({ model: 'm', maxTokens, toolChoice: null, thinking: null, system: [], tools: [], rest: null });
-  const req = (id, seq, step, h, digest = `d${seq}`, cache = null) => ({ id, seq, kind: 'agent', agent: 'primary', step, stream: true, head: h, messages: [{ role: 'user', digest, blocks: [{ type: 'text', canaries: [`[[c:${step}.in]]`], cache }] }], answer: { shape: 'reply' } });
+  const req = (id, seq, step, h, digest = `d${seq}`, cache = null) => ({ id, seq, arrived: String(seq * 10 + 1), kind: 'agent', agent: 'primary', step, stream: true, head: h, messages: [{ role: 'user', digest, blocks: [{ type: 'text', canaries: [`[[c:${step}.in]]`], cache }] }], answer: { shape: 'reply' } });
   const lg = ['q.1', 'q.2', 'q.3'].flatMap((step, i) => [
     { kind: 'request', step, request: { id: `a${i + 1}`, kind: 'agent' } },
     { kind: 'compiles', step, blobs: { [`u${i + 1}`]: text(`[[c:${step}.in]] a`) }, lines: [line(i + 1, [m(i + 1, `u${i + 1}`)])] },
@@ -311,7 +311,7 @@ test('a sent compile names each new head where it changes, and its body hash mov
 
 test('the requests a view shows are those whose lines a rendered record moved', () => {
   const head = { model: 'm', maxTokens: 100, toolChoice: null, thinking: null, system: [], tools: [], rest: null };
-  const req = (id, seq, digest) => ({ id, seq, kind: 'agent', agent: 'primary', step: 'q.1', stream: true, head, messages: [{ role: 'user', digest, blocks: [{ type: 'text', canaries: ['[[c:q.1.in]]'] }] }], answer: { shape: 'reply' } });
+  const req = (id, seq, digest) => ({ id, seq, arrived: String(seq * 10 + 1), kind: 'agent', agent: 'primary', step: 'q.1', stream: true, head, messages: [{ role: 'user', digest, blocks: [{ type: 'text', canaries: ['[[c:q.1.in]]'] }] }], answer: { shape: 'reply' } });
   const lg = [
     { kind: 'request', step: 'q.1', request: { id: 'a1', kind: 'agent' } },
     { kind: 'request', step: 'q.1', request: { id: 'a2', kind: 'agent' } },
@@ -325,7 +325,7 @@ test('the requests a view shows are those whose lines a rendered record moved', 
 
 test('a head two requests share, changed for both, names both as changed, though only the first line names it', () => {
   const head = (maxTokens) => ({ model: 'm', maxTokens, toolChoice: null, thinking: null, system: [], tools: [], rest: null });
-  const req = (id, seq, h) => ({ id, seq, kind: 'agent', agent: 'primary', step: 'q.1', stream: true, head: h, messages: [{ role: 'user', digest: 'd', blocks: [{ type: 'text', canaries: ['[[c:q.1.in]]'] }] }], answer: { shape: 'reply' } });
+  const req = (id, seq, h) => ({ id, seq, arrived: String(seq * 10 + 1), kind: 'agent', agent: 'primary', step: 'q.1', stream: true, head: h, messages: [{ role: 'user', digest: 'd', blocks: [{ type: 'text', canaries: ['[[c:q.1.in]]'] }] }], answer: { shape: 'reply' } });
   const lg = [
     { kind: 'request', step: 'q.1', request: { id: 'a1', kind: 'agent' } },
     { kind: 'compiles', step: 'q.1', blobs: { u1: text('[[c:q.1.in]] a') }, lines: [line(1, [m(1, 'u1')])] },
