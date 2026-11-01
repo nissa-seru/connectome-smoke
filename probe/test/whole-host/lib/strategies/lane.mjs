@@ -1,0 +1,456 @@
+import { createHash } from 'node:crypto';
+import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
+import { homedir, loadavg } from 'node:os';
+import { dirname, join, relative, sep } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { performance } from 'node:perf_hooks';
+import { sh } from '../common.mjs';
+import { installSpecs } from '../cache-write.mjs';
+import { hostFacts, recipeHash, runScript } from './driver.mjs';
+import { entryKey, findEntry, trialTurns, writeEntry } from './writer.mjs';
+import { startStandin } from './standin.mjs';
+import { CHANNEL, L3_PRODUCT, configurations, continuation, extend, prefix, products } from './script.mjs';
+import { declaredProducts } from './checks.mjs';
+import { perCheckReport, readExpected } from './report.mjs';
+
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
+
+/** What the lane's version covers: every file that shapes a cached store or its judging. */
+export const LANE_PATHS = ['lib/strategies', 'lib/common.mjs'];
+
+/** The expected failures (report.mjs readExpected): flags of named findings a committed run meets. */
+export const EXPECTED_FAILURES = join(ROOT, 'expected-failures.json');
+
+/** The stack packages a store's key names, as the host's install resolves them. */
+export const KEY_PACKAGES = ['connectome-host', 'agent-framework', 'context-manager', 'membrane', 'chronicle'].map((p) => `@animalabs/${p}`);
+
+/**
+ * The configuration as a run uses it, with what the host resolves for it (hostFacts): the
+ * stand-in's window, the model's as the host knows it (`model-limits.ts`), unless the
+ * configuration names its own; and the stream bound the host gives the agent, which the
+ * checks hold continuations to. A model the host knows no window for needs the
+ * configuration to name one.
+ */
+export function asRun(configuration, facts) {
+  const windowTokens = configuration.windowTokens ?? facts.window;
+  if (typeof windowTokens !== 'number') throw new Error(`the host knows no window for ${configuration.agent?.model}; name the configuration's windowTokens`);
+  return { ...configuration, windowTokens, ...(typeof facts.streamBound === 'number' ? { streamBound: facts.streamBound } : {}) };
+}
+
+/** Where a write's prefix starts, in virtual time. */
+export const EPOCH = Date.UTC(2026, 0, 5, 9, 0, 0);
+
+const DAY = 24 * 60 * 60_000;
+
+/** Beth-2389's judge (judge.mjs) and the length trial's turns (script.mjs, TRIAL), loaded when first needed. */
+const judging = async () => (await import('./judge.mjs')).judge;
+const loadTrial = async () => (await import('./script.mjs')).TRIAL;
+
+/**
+ * The lane's version: the sha256 of every file under LANE_PATHS, each with its path
+ * relative to the repository root, in path order.
+ */
+export function laneVersion(root = ROOT) {
+  const files = [];
+  const walk = (rel) => {
+    const abs = join(root, rel);
+    if (statSync(abs).isDirectory()) for (const name of readdirSync(abs)) walk(join(rel, name));
+    else files.push(rel);
+  };
+  for (const p of LANE_PATHS) walk(p);
+  const h = createHash('sha256');
+  for (const rel of files.sort()) {
+    const bytes = readFileSync(join(root, rel));
+    h.update(`${rel}\0${bytes.length}\0`).update(bytes);
+  }
+  return h.digest('hex');
+}
+
+/**
+ * A checkout's content, for naming a host that isn't an installed package: the sha256 of
+ * `package.json` and every file under `src/`, each with its path relative to `dir`, in path
+ * order, as laneVersion hashes the lane.
+ */
+export function sourceHash(dir) {
+  const files = ['package.json'];
+  const walk = (rel) => {
+    for (const d of readdirSync(join(dir, rel), { withFileTypes: true })) {
+      const r = join(rel, d.name);
+      if (d.isDirectory()) walk(r);
+      else if (d.isFile()) files.push(r);
+    }
+  };
+  walk('src');
+  const h = createHash('sha256');
+  for (const rel of files.sort()) {
+    const bytes = readFileSync(join(dir, rel));
+    h.update(`${rel.split(sep).join('/')}\0${bytes.length}\0`).update(bytes);
+  }
+  return h.digest('hex');
+}
+
+/** The registry npm installs from, as `npm config` gives it in `cwd`. */
+const npmRegistry = (cwd) => {
+  const r = spawnSync('npm', ['config', 'get', 'registry'], { cwd, encoding: 'utf-8' });
+  if (r.status !== 0 || !r.stdout.trim()) throw new Error(`npm config get registry failed in ${cwd}: ${(r.stderr ?? '').trim()}`);
+  return r.stdout.trim();
+};
+
+/**
+ * What a store's key names for each KEY_PACKAGES, as resolved from `hostDir` upward, and
+ * bun's version. A package the install at `installDir` took from `registry` is named by
+ * its version; any other by its version and its content, as the install's lockfile records
+ * it (a pack's integrity, a git spec's commit), so an unbumped tree never takes a release's
+ * name. A host that is the install's own root (a checkout of connectome-host, installed with
+ * `npm ci`) is named by its version and a hash of its `src/` and `package.json` (sourceHash).
+ * One it can't name by content (a linked directory, a package its lockfile doesn't list)
+ * throws, naming it.
+ */
+export function stackVersions(hostDir, { installDir, registry } = {}) {
+  if (!installDir) throw new Error('stackVersions needs the install directory, whose lockfile names what was installed');
+  const lockPath = join(installDir, 'package-lock.json');
+  if (!existsSync(lockPath)) throw new Error(`there's no lockfile at ${lockPath}, so what the install put there can't be named`);
+  const locked = JSON.parse(readFileSync(lockPath, 'utf-8')).packages ?? {};
+  registry ??= npmRegistry(installDir);
+  const out = {};
+  for (const name of KEY_PACKAGES) {
+    let found = null;
+    if (name === '@animalabs/connectome-host') found = join(hostDir, 'package.json');
+    else {
+      for (let dir = hostDir; ; dir = dirname(dir)) {
+        const pj = join(dir, 'node_modules', name, 'package.json');
+        if (existsSync(pj)) { found = pj; break; }
+        if (dirname(dir) === dir) break;
+      }
+    }
+    if (!found) { out[name] = null; continue; }
+    const version = JSON.parse(readFileSync(found, 'utf-8')).version;
+    const at = relative(installDir, dirname(found)).split(sep).join('/');
+    if (at === '' && name === '@animalabs/connectome-host') { out[name] = `${version} (source ${sourceHash(hostDir).slice(0, 12)})`; continue; }
+    const lock = locked[at];
+    if (!lock) throw new Error(`the install's lockfile (${lockPath}) doesn't list ${name} at ${at}, so it can't be named by what was installed`);
+    if (lock.link) throw new Error(`${name} is a directory npm linked (${lock.resolved}), which can't be named by its content: pass the .tgz \`npm pack\` makes of it instead`);
+    const commit = /#([0-9a-f]{40})$/.exec(lock.resolved ?? '')?.[1];
+    if (typeof lock.resolved === 'string' && lock.resolved.startsWith(registry)) out[name] = version;
+    else if (lock.integrity) out[name] = `${version} (${lock.integrity})`;
+    else if (commit) out[name] = `${version} (git ${commit})`;
+    else throw new Error(`${name} at ${at} came from ${lock.resolved ?? 'nowhere the lockfile says'}, with no integrity or commit to name its content by: pass a packed release or a git spec`);
+  }
+  const bun = spawnSync('bun', ['--version'], { encoding: 'utf-8' });
+  out.bun = bun.status === 0 ? bun.stdout.trim() : null;
+  return out;
+}
+
+/** The cache root: the one given, or ~/.cache/connectome-smoke/strategies, made if missing. */
+export function cacheRoot(given) {
+  const root = given ?? join(homedir(), '.cache', 'connectome-smoke', 'strategies');
+  mkdirSync(root, { recursive: true });
+  return root;
+}
+
+/**
+ * After a write: the newest two complete entries for `lane`, `configurationName` and the
+ * trial's numbers (`trialTurns`, as the write's key and a check's lookup take them) stay
+ * and older ones of those go, and so do complete entries of other lanes written more than
+ * a day before `now`. Entries of other configurations or trials, anything without a
+ * complete entry.json, and the locks, stay. Returns the removed entries' directories.
+ */
+export function pruneCache({ cacheRoot: root, lane, configurationName, trialTurns: turns = null, now = Date.now() }) {
+  const trialOf = (t) => JSON.stringify(t ? trialTurns(t) : null);
+  const entries = readdirSync(root, { withFileTypes: true })
+    .filter((d) => d.isDirectory() && !d.name.startsWith('.'))
+    .map((d) => {
+      const dir = join(root, d.name);
+      try { return { dir, entry: JSON.parse(readFileSync(join(dir, 'entry.json'), 'utf-8')) }; } catch { return null; }
+    })
+    .filter((x) => x?.entry?.complete === true);
+  const removed = [];
+  const mine = entries
+    .filter(({ entry }) => entry.lane === lane && entry.configurationName === configurationName && trialOf(entry.trialTurns) === trialOf(turns))
+    .sort((a, b) => b.entry.writtenAt.localeCompare(a.entry.writtenAt));
+  for (const { dir } of mine.slice(2)) removed.push(dir);
+  for (const { dir, entry } of entries) {
+    if (entry.lane !== lane && now - Date.parse(entry.writtenAt) > DAY) removed.push(dir);
+  }
+  for (const dir of removed) rmSync(dir, { recursive: true, force: true });
+  return removed;
+}
+
+/**
+ * Install the host as a consumer would, as cache-write's lane installs one: from `spec`, a
+ * version or dist-tag of connectome-host (`latest` when not given), or a packed release, a
+ * path or anything else npm takes as given (lib/cache-write.mjs, installSpecs), into `dir`.
+ * Returns its host directory, the directory the stack resolves from, and the versions.
+ */
+export function installStack({ spec = 'latest', dir }) {
+  mkdirSync(dir, { recursive: true });
+  writeFileSync(join(dir, 'package.json'), JSON.stringify({ name: 'strategies-stack', private: true, version: '0.0.0', type: 'module' }));
+  const local = installSpecs({ candidate: spec, startedAt: new Date().toISOString() }).candidate.spec;
+  const target = /^[A-Za-z0-9.^~<>=*+-]+$/.test(local) && !/\.(tgz|tar\.gz)$/.test(local) ? `@animalabs/connectome-host@${local}` : local;
+  sh('npm', ['install', '--no-audit', '--no-fund', '--loglevel=error', '--global=false', '--location=project', `--prefix=${dir}`, target], { cwd: dir, timeout: 900_000 });
+  const hostDir = join(dir, 'node_modules', '@animalabs', 'connectome-host');
+  return { hostDir, installDir: dir, versions: stackVersions(hostDir, { installDir: dir }) };
+}
+
+const readLog = (p) => (existsSync(p) ? readFileSync(p, 'utf-8').trim().split('\n').filter(Boolean).map((l) => JSON.parse(l)) : []);
+const slug = (s) => s.replace(/[^A-Za-z0-9._-]+/g, '-');
+const load1 = () => Math.round(loadavg()[0] * 10) / 10;
+
+/** A copy of a run's last store copy, its first session directory, for judging. */
+const sessionOf = (copy) => copy?.sessions?.[0] ?? null;
+
+/**
+ * Write the deep store for `configuration` under the cache root from the host at `hostDir`
+ * (its stack resolving from `installDir`), unless a complete entry for its key is there by
+ * the time this writer holds the key's lock. `judge` is Beth-2389's: it judges a run from
+ * what it recorded, and its flags over the written prefix are the write's hard checks.
+ * `trial` is the length trial's `{ min, step, bound }`, in prefix turns. Left out, `judge` is
+ * judge.mjs's and `trial` script.mjs's TRIAL.
+ * Resolves the writer's `{ dir, entry, written }` with the pruned entries.
+ */
+export async function writeStore({ cacheRoot: root, configuration, hostDir, installDir, work, judge, trial: lengths, lane = laneVersion(), lockWaitMs }) {
+  judge ??= await judging();
+  lengths ??= await loadTrial();
+  mkdirSync(work, { recursive: true });
+  const facts = hostFacts({ hostDir, configuration });
+  configuration = asRun(configuration, facts);
+  const keyParts = {
+    lane,
+    configurationName: configuration.name,
+    recipeHash: recipeHash({ configuration, facts, channels: [CHANNEL] }),
+    versions: stackVersions(hostDir, { installDir }),
+    trialTurns: trialTurns(lengths),
+  };
+  const key = entryKey(keyParts);
+  // One stand-in serves the whole prefix, so its prompt cache and its markers met run on
+  // across the extensions, as one provider's do.
+  const standin = await startStandin({ configuration });
+  const logs = [];
+  const steps = [];
+  let records = null;
+  try {
+    const runSteps = async ({ steps: these, storeDir, epoch, label }) => {
+      const logPath = join(work, `${slug(label)}.log.jsonl`);
+      logs.push(logPath);
+      steps.push(...these);
+      return runScript({ steps: these, configuration, standin, hostDir, facts, work: join(work, slug(label)), storeDir, epoch, logPath });
+    };
+    const trial = async ({ dataDir, epoch }) => {
+      const turns = steps.filter((s) => s.kind === 'channel').length;
+      const side = await runSide({ storeDir: dataDir, epoch, configuration, hostDir, facts, work: join(work, `trial-${turns}`) });
+      if (!side.run.ok) throw new Error(`the trial's continuation at ${turns} turns failed: ${side.run.failure?.reason ?? 'no reason given'}`);
+      return { missing: declaredProducts(side.records, side.steps, products(configuration)) };
+    };
+    const hardChecks = async ({ dataDir }) => {
+      records ??= await standin.close();
+      const copy = join(work, 'hard-checks-store');
+      rmSync(copy, { recursive: true, force: true });
+      cpSync(dataDir, copy, { recursive: true });
+      const sessions = existsSync(join(copy, 'sessions')) ? readdirSync(join(copy, 'sessions')).map((id) => join(copy, 'sessions', id)) : [];
+      const log = logs.flatMap(readLog);
+      return judge({ records, log, script: steps, storeCopy: sessions[0] ?? null, configuration, installDir, run: { ok: true, failure: null } });
+    };
+    const script = { prefix, extend, min: lengths.min, step: lengths.step, bound: lengths.bound };
+    const result = await writeEntry({ cacheRoot: root, key, keyParts, script, runSteps, trial, hardChecks, epoch: EPOCH, work: join(work, 'writer'), lockWaitMs });
+    const pruned = pruneCache({ cacheRoot: root, lane, configurationName: configuration.name, trialTurns: lengths });
+    return { ...result, pruned };
+  } finally {
+    if (!records) await standin.close();
+  }
+}
+
+/**
+ * The names a check's failures go by, each once and the same from run to run, so a
+ * known-red entry keeps matching: a flag as `check N at STEP`, or `check N at STEP: WHAT` for
+ * one that names what it is within them (an operator alert's kind), a missing product as
+ * `check 2 at SEGMENT: PRODUCT`. `counted` is what the per-check report counts against the
+ * candidate (report.mjs, perCheckReport): `invalid`, `flags` and `missing`.
+ */
+export function failureNames(counted) {
+  const names = [
+    ...[...counted.invalid, ...counted.flags].map((f) => `check ${f.check} at ${f.step ?? 'the run'}${f.what ? `: ${f.what}` : ''}`),
+    ...counted.missing.map((m) => `check 2 at ${m.segment}: ${m.name}`),
+  ];
+  return [...new Set(names)];
+}
+
+/**
+ * What the entry's store doesn't exercise at this cut, by the record's L3 fallback: where
+ * the trial's last length lacked only `L3_PRODUCT`, in close-merge, that product, and the
+ * report's line saying so; otherwise none, and no line.
+ */
+export function notExercised(entry) {
+  const missing = entry?.trial?.missing ?? [];
+  const onlyL3 = missing.length === 1 && missing[0].segment === 'close-merge' && missing[0].missing.length === 1 && missing[0].missing[0] === L3_PRODUCT;
+  if (!onlyL3) return { products: [], line: null };
+  const lengths = entry.trial.lengths;
+  return {
+    products: [{ segment: 'close-merge', name: L3_PRODUCT }],
+    line: `- L3 wasn't exercised at this cut: no length the trial tried, from ${lengths[0].turns} to ${lengths.at(-1).turns} turns, produced every declared product, and at ${lengths.at(-1).turns} the continuation lacked only ${L3_PRODUCT}, so neither side is asked for it`,
+  };
+}
+
+/**
+ * The products the entry's trial lacked at its last length that notExercised doesn't excuse,
+ * `{ segment, name }`: a write names each and exits 1 for them.
+ */
+export function lacking(entry) {
+  const { products: excused } = notExercised(entry);
+  return (entry?.trial?.missing ?? [])
+    .flatMap((m) => m.missing.map((name) => ({ segment: m.segment, name })))
+    .filter((p) => !excused.some((e) => e.segment === p.segment && e.name === p.name));
+}
+
+/** A side's judging with `products` (`{ segment, name }`) taken out of what it's missing. */
+export function excusing(judged, products) {
+  if (!products.length) return judged;
+  const excused = (segment, name) => products.some((p) => p.segment === segment && p.name === name);
+  const missing = judged.missing
+    .map((m) => ({ ...m, missing: m.missing.filter((name) => !excused(m.segment, name)) }))
+    .filter((m) => m.missing.length);
+  return { ...judged, missing };
+}
+
+/** One continuation on the store at `storeDir`, from virtual time `epoch`, under the host at `hostDir`. */
+async function runSide({ storeDir, epoch, configuration, hostDir, facts, work, rawDir = null }) {
+  const steps = continuation();
+  const standin = await startStandin({ configuration, rawDir });
+  const logPath = join(work, 'run.log.jsonl');
+  mkdirSync(work, { recursive: true });
+  const t = performance.now();
+  const loadAt = load1();
+  const run = await runScript({ steps, configuration, standin, hostDir, facts, work, storeDir, epoch, logPath });
+  const runMs = Math.round(performance.now() - t);
+  const records = await standin.close();
+  return { run, records, log: readLog(logPath), logPath, steps, timing: { runMs, load: [loadAt, load1()] } };
+}
+
+/**
+ * The per-check run: continue the newest cached store for `configuration` under the host
+ * at `hostDir` (its stack resolving from `installDir`), and judge it. With no entry for
+ * this lane version, write one from the stack's last releases first (`fellBack`). When the
+ * candidate fails something and `base` is given, `base(runBase)` runs the same
+ * continuation under the base: it calls `runBase({ hostDir, installDir })` with its tree
+ * in place and returns what that resolves.
+ *
+ * Resolves `{ outcome, reason, entry, fellBack, candidate, base, report, failures, timing }`,
+ * its outcome `pass`, the report's verdict when it isn't a pass (`flags` or `invalid`, with
+ * `failures` naming each), or `couldnt-run` with `reason`. A base that couldn't be put in
+ * place or run (`base` throwing, or its side resolving `{ couldnt }`) leaves the candidate's
+ * failures standing, and the report says the base couldn't run. A throw on the candidate's
+ * side (loading the judge, the stand-in, the host's facts, the judging, the evidence) is
+ * couldn't-run, naming what threw. What the entry's store doesn't exercise at this cut
+ * (notExercised) counts against neither side, and the report says so. Writes the runs' logs and records, the report and its
+ * lines to `evidence`. With `rawDir`, each side's stand-in also saves every request's body there, under the side's name.
+ */
+export async function check({ cacheRoot: root, configuration, hostDir, installDir, work, evidence, judge, trial, base = null, lane = laneVersion(), fallbackSpec = 'latest', expectedPath = EXPECTED_FAILURES, rawDir = null }) {
+  mkdirSync(work, { recursive: true });
+  mkdirSync(evidence, { recursive: true });
+  const t0 = performance.now();
+  const timing = {};
+  const out = { outcome: null, reason: null, entry: null, fellBack: null, candidate: null, base: null, report: null, failures: [], timing };
+  const save = () => writeFileSync(join(evidence, 'result.json'), JSON.stringify(out, null, 1));
+  const couldnt = (reason) => { out.outcome = 'couldnt-run'; out.reason = reason; timing.wallMs = Math.round(performance.now() - t0); save(); return out; };
+  try {
+    judge ??= await judging();
+    trial ??= await loadTrial();
+  } catch (e) {
+    return couldnt(`the fixture's judge or trial couldn't be loaded: ${String(e?.message || e).slice(0, 2000)}`);
+  }
+  let expected;
+  try {
+    expected = readExpected(expectedPath, Object.keys(configurations()));
+  } catch (e) {
+    return couldnt(`the expected failures couldn't be read: ${String(e?.message || e).slice(0, 2000)}`);
+  }
+
+  let found = findEntry({ cacheRoot: root, lane, configurationName: configuration.name, trialTurns: trial });
+  if (!found) {
+    const t = performance.now();
+    try {
+      const stack = installStack({ spec: fallbackSpec, dir: join(work, 'fallback-stack') });
+      const written = await writeStore({ cacheRoot: root, configuration, hostDir: stack.hostDir, installDir: stack.installDir, work: join(work, 'fallback-write'), judge, trial, lane });
+      out.fellBack = { spec: fallbackSpec, versions: stack.versions, written: written.written, ms: Math.round(performance.now() - t) };
+    } catch (e) {
+      out.fellBack = { spec: fallbackSpec, failed: true, ms: Math.round(performance.now() - t) };
+      return couldnt(`no store for this lane version (${lane.slice(0, 12)}), and writing one from the last releases failed: ${String(e?.message || e).slice(0, 2000)}`);
+    }
+    found = findEntry({ cacheRoot: root, lane, configurationName: configuration.name, trialTurns: trial });
+    if (!found) return couldnt(`no store for this lane version (${lane.slice(0, 12)}) after the fallback write`);
+  }
+  const { dir, entry } = found;
+  out.entry = { key: entry.key, versions: entry.versions, prefixTurns: entry.prefixTurns, writtenAt: entry.writtenAt, clockEnd: entry.clockEnd, trialMissing: entry.trial?.missing ?? null };
+  const cut = notExercised(entry);
+
+  const sideOf = async (name, sideHost, sideInstall) => {
+    const sideWork = join(work, name);
+    rmSync(sideWork, { recursive: true, force: true });
+    const storeDir = join(sideWork, 'store');
+    const t = performance.now();
+    try {
+      cpSync(join(dir, 'store'), storeDir, { recursive: true });
+    } catch (e) {
+      return { couldnt: `the cached store ${entry.key.slice(0, 12)} couldn't be copied: ${e.message}` };
+    }
+    const copyMs = Math.round(performance.now() - t);
+    const facts = hostFacts({ hostDir: sideHost, configuration });
+    const asRunHere = asRun(configuration, facts);
+    const side = await runSide({ storeDir, epoch: entry.clockEnd, configuration: asRunHere, hostDir: sideHost, facts, work: sideWork, rawDir: rawDir ? join(rawDir, name) : null });
+    const tj = performance.now();
+    const judged = excusing(await judge({
+      records: side.records, log: side.log, script: side.steps, storeCopy: sessionOf(side.run.copies.at(-1)), configuration: asRunHere, installDir: sideInstall,
+      run: { ok: side.run.ok, failure: side.run.failure },
+    }), cut.products);
+    const judgeMs = Math.round(performance.now() - tj);
+    cpSync(side.logPath, join(evidence, `${name}.log.jsonl`));
+    writeFileSync(join(evidence, `${name}.records.json`), JSON.stringify(side.records));
+    return {
+      run: { ok: side.run.ok, failure: side.run.failure, clockEnd: side.run.clockEnd },
+      judged,
+      timerLive: !facts.takesMaintenanceInterval,
+      timing: { copyMs, runMs: side.timing.runMs, judgeMs, load: side.timing.load, boots: side.run.timing.boots },
+    };
+  };
+
+  let candidate;
+  try {
+    candidate = await sideOf('candidate', hostDir, installDir);
+  } catch (e) {
+    return couldnt(`the candidate's side couldn't run: ${String(e?.message || e).slice(0, 2000)}`);
+  }
+  if (candidate.couldnt) return couldnt(candidate.couldnt);
+  out.candidate = candidate;
+  const failsSomething = candidate.judged.flags.length > 0 || candidate.judged.missing.length > 0;
+  if (failsSomething && base) {
+    const t = performance.now();
+    try {
+      out.base = await base(({ hostDir: h, installDir: i }) => sideOf('base', h, i));
+    } catch (e) {
+      out.base = { couldnt: String(e?.message || e).slice(0, 2000) };
+    }
+    timing.baseMs = Math.round(performance.now() - t);
+  }
+  timing.wallMs = Math.round(performance.now() - t0);
+  const baseJudged = out.base && !out.base.couldnt ? out.base.judged : null;
+  out.report = perCheckReport({
+    configuration,
+    candidate: candidate.judged,
+    base: baseJudged,
+    expected,
+    timing: { wallMs: timing.wallMs, load: candidate.timing.load[1], timerLive: candidate.timerLive },
+  });
+  if (out.base?.couldnt) out.report.lines.push(`- the base couldn't run, so nothing here is compared with it: ${out.base.couldnt}`);
+  else if (out.base) out.report.lines.push(`- the base took ${(timing.baseMs / 1000).toFixed(1)} s${out.base.prepMs !== undefined ? `, ${(out.base.prepMs / 1000).toFixed(1)} s of it putting the base in place` : ''}; the candidate's continuation ${(candidate.timing.runMs / 1000).toFixed(1)} s`);
+  const by = Object.entries(entry.versions).map(([k, v]) => `${k.replace('@animalabs/', '')} ${v}`).join(', ');
+  out.report.lines.push(`- continued a store of ${entry.prefixTurns} prefix turns that ${by} wrote at ${entry.writtenAt} (${entry.key.slice(0, 12)})`);
+  if (cut.line) out.report.lines.push(cut.line);
+  if (out.fellBack) {
+    out.report.lines.push(`- none was cached for this lane version (${lane.slice(0, 12)}), so this check ${out.fellBack.written ? 'wrote it' : 'waited for another writer\'s'} first: ${(out.fellBack.ms / 1000).toFixed(1)} s`);
+  }
+  out.outcome = out.report.verdict === 'pass' ? 'pass' : out.report.verdict;
+  out.failures = out.outcome === 'pass' ? [] : failureNames(out.report);
+  save();
+  writeFileSync(join(evidence, 'report.txt'), `${out.report.lines.join('\n')}\n`);
+  return out;
+}
