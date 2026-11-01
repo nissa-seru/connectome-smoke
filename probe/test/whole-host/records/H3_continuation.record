@@ -1,39 +1,45 @@
 # whole-host record H3/continuation
-# checkpoint v0.21.0, H3/W1: connectome-host 0.21.0 (source 54321fd3af80), agent-framework 0.32.0, context-manager 0.24.0, membrane 0.8.0, chronicle 0.5.1, bun 1.4.4
+# checkpoint v0.21.0, H3/prefix: connectome-host 0.21.0, agent-framework 0.32.0, context-manager 0.24.0, membrane 0.8.0, chronicle 0.5.1, bun 1.4.4
 # candidate: connectome-host 0.21.0, agent-framework 0.32.0, context-manager 0.24.0, membrane 0.8.0, chronicle 0.5.1, bun 1.4.4
 templates
+T:system-you-are-the = You are the strategy fixture's agent.
 T:user-clock-#-#-utc = Clock: #:# UTC
+T:user-clock-monday-#-#-# = Clock: Monday #-#-#, #:# UTC
 T:user-clock-tuesday-#-#-# = Clock: Tuesday #-#-#, #:# UTC
 T:user-delivered-plain-speech = [delivered] plain speech → chat
+T:user-routing-your-plain = [routing] Your plain speech now lands in chat. Other channels need an explicit send tool.
+T:user-the-local-time = The local time at the start of this session is #-#-#T#:#:#.#+#:# [UTC].
+heads
+H:2d78bf9d = model claude-opus-4-6, max_tokens 16384, stream true, system [T:system-you-are-the]^1h, tools time--now:c75ffd8b toolsets--open:93971848 toolsets--act:31eaf5be toolsets--look:89df00cf toolsets--close:012524d9 mcpl--fixture--result:51a802b9 channel_list:79d10259 channel_open:4cf9e8f9 channel_decline:36d64388 channel_close:064c8388 channel_publish:489a8faa think:90ff8920 journal:3ea69d86 skip_reply:9b9848e9 drafts:c31185e6
 step c.name
   action /session rename fixture
 step c.cm.1
-  compile 442693.42.call2-442693.42.r4 [T:user-delivered-plain-speech] 442693.43.in-442693.43.r3 [T:user-delivered-plain-speech] 442693.44.in-442693.44.r3 [T:user-delivered-plain-speech] 442693.45.in-442693.45.r4 [T:user-delivered-plain-speech] 442693.46.in-442693.46.r4 [T:user-delivered-plain-speech] 442693.47.in-442693.47.r2 [T:user-delivered-plain-speech] 442693.48.in-442693.48.r2 [T:user-delivered-plain-speech] 442693.49.in-442693.49.r1 [T:user-delivered-plain-speech] 442693.50.in-442693.50.r2 [T:user-delivered-plain-speech] 442693.51.in-442693.51.r2 [T:user-delivered-plain-speech] 442693.52.in-442693.52.r4 [T:user-delivered-plain-speech] 442693.53.in-442693.53.r4 [T:user-delivered-plain-speech] 442693.54.in-442693.54.r4 [T:user-delivered-plain-speech] 442693.55.in-442693.55.r1 [T:user-delivered-plain-speech] 442693.56.in-442693.56.r1 [T:user-delivered-plain-speech] 442693.57.in-442693.57.r1 [T:user-delivered-plain-speech] 442693.58.in-442693.58.r4 [T:user-delivered-plain-speech] 442693.59.in-442693.59.r4 [T:user-delivered-plain-speech] 442693.60.in-442693.60.r3 [T:user-delivered-plain-speech] 442693.61.in-442693.61.r3 [T:user-delivered-plain-speech] 442693.62.in-442693.62.r4 [T:user-delivered-plain-speech] 442693.63.in-442693.63.r4 [T:user-delivered-plain-speech] 442693.64.in-442693.64.r2 [T:user-delivered-plain-speech] 442693.65.in-442693.65.r2 [T:user-delivered-plain-speech] 442693.66.in-442693.66.r1 [T:user-delivered-plain-speech] 442693.67.in-442693.67.r2 [T:user-delivered-plain-speech] 442693.68.in-442693.68.r2 [T:user-delivered-plain-speech] 442693.69.in-442693.69.r4 [T:user-delivered-plain-speech] 442693.70.in-442693.70.r4 [T:user-delivered-plain-speech] [T:user-clock-tuesday-#-#-#](2026,01,06,09,00) c.cm.1.in
+  compile [T:user-clock-monday-#-#-#](2026,01,05,09,00) [T:user-the-local-time](2026,01,05,09,00,00,000,00,00) p.1.in [T:user-routing-your-plain] p.1.r1 [T:user-delivered-plain-speech] p.2.in-p.2.r1 [T:user-delivered-plain-speech] [T:user-clock-#-#-utc](09,10) p.3.in-p.3.r1 [T:user-delivered-plain-speech] p.4.in-p.4.r1 [T:user-delivered-plain-speech] [T:user-clock-#-#-utc](09,20) p.5.in-p.5.r1 [T:user-delivered-plain-speech] p.6.in-p.6.r1 [T:user-delivered-plain-speech] p.7.in-p.7.r2 [T:user-delivered-plain-speech] [T:user-clock-#-#-utc](09,30) p.8.in-p.8.r1 [T:user-delivered-plain-speech] p.9.in-p.9.r1 [T:user-delivered-plain-speech] [T:user-clock-#-#-utc](09,40) p.10.in-p.10.r1 [T:user-delivered-plain-speech] p.11.in-p.11.r2 [T:user-delivered-plain-speech] p.12.in-p.12.r1 [T:user-delivered-plain-speech] [T:user-clock-#-#-utc](09,50) p.13.in-p.13.r2 [T:user-delivered-plain-speech] [T:user-clock-tuesday-#-#-#](2026,01,06,09,50) c.cm.1.in, head H:2d78bf9d, body d568a6c6
 step c.cm.2
-  compile -18 + c.cm.1.r1 [T:user-delivered-plain-speech] c.cm.2.in
+  compile + c.cm.1.r1 [T:user-delivered-plain-speech] [T:user-clock-#-#-utc](10,00) c.cm.2.in, body ec584f1a
 step c.cm.3
-  compile -6 + c.cm.2.r1 [T:user-delivered-plain-speech] [T:user-clock-#-#-utc](09,10) c.cm.3.in
+  compile + c.cm.2.r1 [T:user-delivered-plain-speech] c.cm.3.in, body f7ee22f0
 step c.cm.4
-  compile -2 + c.cm.3.r1 [T:user-delivered-plain-speech] c.cm.4.in
+  compile + c.cm.3.r1 [T:user-delivered-plain-speech] c.cm.4.in, body 97c8bd07
 checkpoint close-merge
 step c.tool
-  compile + c.cm.4.r1 [T:user-delivered-plain-speech] [T:user-clock-#-#-utc](09,20) c.tool.in
-  compile -7 + c.tool.r1-c.tool.call1
+  round + c.cm.4.r1 c.tool.in c.tool.r1 c.tool.call1 c.tool.call2, body 963a660a
+  compile + c.cm.4.r1 [T:user-delivered-plain-speech] [T:user-clock-#-#-utc](10,10) c.tool.in, body 6ca26cfd
 checkpoint tool-round
 step c.par
-  compile + c.tool.r2 [T:user-delivered-plain-speech] c.par.in
-  compile -7 + c.par.r1-c.par.call1
+  round + c.tool.r1 c.tool.call1 c.tool.call2 c.tool.r2 c.par.in c.par.r1 c.par.call1 c.par.call2 c.par.call3, body 686aaddf
+  compile + c.tool.r1-c.tool.r2 [T:user-delivered-plain-speech] c.par.in, body 1e7fccaf
 checkpoint parallel
 step c.think
-  compile -5 + c.par.r2 [T:user-delivered-plain-speech] c.think.in
-  compile -11 + c.think.r1-c.think.call1
+  round + c.par.r1 c.par.call1 c.par.call2 c.par.call3 c.par.r2 c.think.in c.think.r1 c.think.call1, body af4369e6
+  compile + c.par.r1-c.par.r2 [T:user-delivered-plain-speech] [T:user-clock-#-#-utc](10,20) c.think.in, body f00f143a
 checkpoint thinking-call
 step c.debt
-  compile -2 + c.think.r2 [T:user-delivered-plain-speech] [T:user-clock-#-#-utc](09,30) c.debt.in
-  compile -7 + c.debt.r1-c.debt.call1
-  compile -3 + c.debt.r2-c.debt.call2
-  compile -6 + c.debt.r3-c.debt.call3
-  compile -7 + c.debt.r4-c.debt.call4
+  round + c.think.r1 c.think.call1 c.think.r2 c.debt.in c.debt.r1 c.debt.call1, body cafdce47
+  round + c.debt.r2 c.debt.call2, body 2e45586e
+  round + c.debt.r3 c.debt.call3, body 7de7fa72
+  round + c.debt.r4 c.debt.call4, body c82b1c53
+  compile + c.think.r1-c.think.r2 [T:user-delivered-plain-speech] c.debt.in, body 88e91623
 checkpoint debt
 end ok
-totals {"actions":1,"calls":0,"compiles":15,"dry":0,"other":0,"refused":0,"written":0}
+totals {"actions":1,"calls":0,"compiles":8,"dry":0,"other":0,"refused":0,"rounds":7,"written":0}

@@ -22,18 +22,18 @@ const LABEL = '[whole-host]';
 const RECORDS = join(HERE, 'records');
 const versionsOnly = (versions) => Object.fromEntries(Object.entries(versions).map(([k, v]) => [k, String(v).replace(/ \((?:source|git) [0-9a-f]+\)$| \(sha512-[^)]*\)$/, '')]));
 
-function sameRequests(withDir, withoutDir) {
+function sameRequests(onDir, offDir) {
   const read = (dir) => (existsSync(dir) ? readdirSync(dir) : [])
     .filter((f) => /^r\d+\.json$/.test(f))
     .sort((a, b) => Number(a.slice(1, -5)) - Number(b.slice(1, -5)))
     .map((f) => maskRunVarying(JSON.parse(readFileSync(join(dir, f), 'utf-8'))));
-  const [a, b] = [read(withDir), read(withoutDir)];
-  if (!a.length) return { outcome: 'differs', at: 0, detail: `no request bodies were saved in ${withDir}` };
+  const [a, b] = [read(onDir), read(offDir)];
+  if (!a.length) return { outcome: 'differs', at: 0, detail: `no request bodies were saved in ${onDir}` };
   const at = a.findIndex((x, i) => JSON.stringify(x) !== JSON.stringify(b[i]));
   if (at === -1 && a.length === b.length) return { outcome: 'same', requests: a.length };
   const i = at === -1 ? Math.min(a.length, b.length) : at;
   const field = a[i] && b[i] ? Object.keys({ ...a[i], ...b[i] }).find((k) => JSON.stringify(a[i][k]) !== JSON.stringify(b[i][k])) : null;
-  return { outcome: 'differs', at: i, detail: `${a.length} requests with the module, ${b.length} without${field ? `; its ${field} differs` : ''}` };
+  return { outcome: 'differs', at: i, detail: `${a.length} requests with recording on, ${b.length} with it off${field ? `; its ${field} differs` : ''}` };
 }
 
 const { opt, flag } = parseArgs(process.argv.slice(2));
@@ -231,11 +231,11 @@ for (const id of names) {
   }
   let selfCheck = null;
   if (flag('self-check') && r.outcome !== 'couldnt-run') {
-    const withoutDir = join(out, `${slug(id)}.without-module`);
-    const without = await driven(id, { recording: false, dir: withoutDir, rawDir: join(withoutDir, 'raw') });
-    const failed = without.couldnt ?? (without.d.run.ok ? null : `the run with recording off failed: ${without.d.run.failure?.reason ?? 'no reason given'}`) ?? (r.end?.ok ? null : `the run with recording on failed: ${r.end?.reason ?? 'no reason given'}`);
-    selfCheck = failed ? { outcome: 'couldnt-run', reason: failed } : sameRequests(join(dir, 'raw'), join(withoutDir, 'raw'));
-    console.log(`${LABEL} ${id}: self-check: ${selfCheck.outcome === 'same' ? `the stand-in received the same ${selfCheck.requests} requests without the test module` : selfCheck.outcome === 'couldnt-run' ? `the run without the test module couldn't run: ${selfCheck.reason}` : `request ${selfCheck.at} differs without the test module: ${selfCheck.detail}`}`);
+    const offDir = join(out, `${slug(id)}.recording-off`);
+    const off = await driven(id, { recording: false, dir: offDir, rawDir: join(offDir, 'raw') });
+    const failed = off.couldnt ?? (off.d.run.ok ? null : `the run with recording off failed: ${off.d.run.failure?.reason ?? 'no reason given'}`) ?? (r.end?.ok ? null : `the run with recording on failed: ${r.end?.reason ?? 'no reason given'}`);
+    selfCheck = failed ? { outcome: 'couldnt-run', reason: failed } : sameRequests(join(dir, 'raw'), join(offDir, 'raw'));
+    console.log(`${LABEL} ${id}: self-check: ${selfCheck.outcome === 'same' ? `the stand-in received the same ${selfCheck.requests} requests with the test module's recording off` : selfCheck.outcome === 'couldnt-run' ? `the run with recording off couldn't run: ${selfCheck.reason}` : `request ${selfCheck.at} differs with recording off: ${selfCheck.detail}`}`);
   }
   results.push({ run: id, outcome: r.outcome, reason: r.reason, failures: r.failures, record, ...(selfCheck ? { selfCheck } : {}) });
 }
