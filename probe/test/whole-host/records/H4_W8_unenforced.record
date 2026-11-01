@@ -134,7 +134,7 @@ step 485515.h3
 step 485515.h4
   compile + 485515.h3.read [T:user-delivered-true] [T:subconscious-skip-reply] [T:user-skipped-true-note-turn-ended-nothing] 485515.h4.in [T:user-tune-out-wake-chat](1) ^ 21,28
 step 485515.h5
-  call 734507.1.in 734507.67.r2 734507.67.call2 734507.67.r3 -> summary
+  call 734507.1.in 734507.67.r2 734507.67.call2 734507.67.r3 [T:call-user-clock-monday](2026,01,05,09,00) [T:call-empty] [T:call-the-local-time](2026,01,05,09,00,00,000,00,00) [T:call-empty] [T:call-empty] [T:call-routing-your-plain] [T:call-context-manager-cm](3,44) L3(734507.1.r1-734507.23.r3) [T:call-context-manager-cm](3,85) L3(734507.24.in-734507.47.r3) [T:call-context-manager-cm](2,101) L2(734507.48.in-734507.49.in) [T:call-context-manager-cm](2,102) L2(734507.49.r1-734507.53.r3) [T:call-context-manager-cm](2,106) L2(734507.54.in-734507.59.in) [T:call-context-manager-cm](2,119) L2(734507.59.r1-734507.61.call1) [T:call-context-manager-cm](2,120) L2(734507.61.r2-734507.65.call1) [T:call-context-manager-cm](1,121) L1(734507.65.r2-734507.67.call1) [T:call-context-manager-system] [T:call-user-delivered-plain] [T:call-context-manager-write](2000) -> summary, body 080119ab
   wrote L1(734507.67.r2-734507.67.r3) [T:summary-l1-05b9cd27]
   compile + 485515.h4.read [T:user-delivered-true] [T:subconscious-skip-reply] [T:user-skipped-true-note-turn-ended-nothing] 485515.h5.in [T:user-tune-out-wake-chat](1) ^ 28,35
 step 485515.h6
@@ -163,6 +163,18 @@ end ok
 receipt fixture #71 changes 734507.48.in/summary/1/71 734507.48.r1/summary/1/71 734507.48.call1/summary/1/71 734507.48.r2/summary/1/71 #1075/summary/1/71 734507.49.in/summary/1/71 #1091/summary/1/71 #1092/summary/1/71 #1094/summary/1/71 #1095/summary/1/71 #1097/summary/1/71 #1099/summary/1/71 #1100/summary/1/71 #1101/summary/1/71 #1103/summary/1/71 #1104/summary/1/71 #1106/summary/1/71 #1108/summary/1/71 #1110/summary/1/71 #1111/summary/1/71 #1113/raw/0/71 #1114/raw/0/71 #1117/raw/0/71 #1118/raw/0/71 734507.61.r2/summary/2/71 734507.61.call2/summary/2/71 734507.61.r3/summary/2/71 #1459/summary/2/71 734507.62.in/summary/2/71 734507.62.r1/summary/2/71 734507.62.call1/summary/2/71 734507.62.r2/summary/2/71 734507.62.call2/summary/2/71 734507.62.r3/summary/2/71 #1481/summary/2/71 734507.63.in/summary/2/71 734507.63.r1/summary/2/71 734507.63.call1/summary/2/71 734507.63.r2/summary/2/71 734507.63.call2/summary/2/71 734507.63.r3/summary/2/71 #1501/summary/2/71 734507.64.in/summary/2/71 734507.64.r1/summary/2/71 734507.64.call1/summary/2/71 734507.64.r2/summary/2/71 #1527/summary/2/71 734507.65.in/summary/2/71 734507.65.r1/summary/2/71 734507.65.call1/summary/2/71 734507.70.r1/raw/0/71 #1692/raw/0/71 #1696/raw/0/71 485515.tune.in/raw/0/71
 totals {"actions":0,"calls":1,"compiles":17,"dry":0,"other":0,"refused":0,"written":123}
 templates
+T:call-context-manager-cm = Context Manager: [CM] Recall memory L#-#.
+T:call-context-manager-system = Context Manager: System: You will soon form a new memory, get ready. The messages that follow are the slice of recent experience you are about to compress. After them, write the memory in your own voice.
+T:call-context-manager-write = Context Manager: Write the memory of events since the most recent memory system notification. Speak in the first person from your own perspective. Preserve concrete details — file paths, exact values, decisions, unresolved questions, the user's active asks. Target ~# tokens. Output only the memory body — no preamble, no section headers unless they help preservation, no meta-commentary about summarizing. Memorize only what actually happened in that slice: if it holds little beyond routine system traffic (heartbeats, empty turns, failure notices), a short memory saying so is correct — do not pad it by re-narrating events you already remember from earlier as if they had just happened again.
+T:call-empty = 
+
+---
+
+
+T:call-routing-your-plain = [routing] Your plain speech now lands in chat. Other channels need an explicit send tool.
+T:call-the-local-time = The local time at the start of this session is #-#-#T#:#:#.#+#:# [UTC].
+T:call-user-clock-monday = user: Clock: Monday #-#-#, #:# UTC
+T:call-user-delivered-plain = user: [delivered] plain speech → chat
 T:subconscious-skip-reply = skip_reply {}
 T:summary-l1-02fd1747 = {"bytes":4400,"head":"[[s:Mdb67fbb2]] Memory db67fbb2, carried 2 canaries to c:734507.29.in: compass l","sha256":"02fd1747f8f61365","tail":"antern winter winter stone orchard stone quiet orchard thread meadow ledger sign"}
 T:summary-l1-038d90ed = {"bytes":4400,"head":"[[s:Ma4b3b89d]] Memory a4b3b89d, carried 5 canaries to c:734507.2.r1: thread mea","sha256":"038d90edaa7c96dc","tail":"edger meadow stone signal meadow compass orchard signal river meadow thread wint"}

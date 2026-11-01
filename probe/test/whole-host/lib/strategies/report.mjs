@@ -51,7 +51,7 @@ export function runChecks({ records, log, script, products, store, agent = FIXTU
   return { flags, missing: declaredProducts(records, script, products, store), headroom: budget.headroom, notes, judged };
 }
 
-// A flag's identity in the base comparison and in its failure name: its check, its step, and
+// A flag's identity in an expected failure's key and in its failure name: its check, its step, and
 // what it names within them, such as an operator alert's kind.
 const key = (f) => `${f.check}|${f.step}|${f.what ?? ''}`;
 
@@ -95,24 +95,18 @@ export function readExpected(path, names) {
 }
 
 /**
- * The per-check report: the candidate's flags and missing products, and, where the
- * candidate failed something and the base ran, whether the base fails it too. A product
- * the base didn't produce either means the segment didn't run, and counts against
- * no one. A calibration at a clamp edge makes the run invalid, and the first line says so.
+ * The per-check report: the candidate's flags and missing products. A calibration at a clamp edge makes the run invalid, and the first line says so.
  * `expected` holds the expected failures (expected-failures.json, readExpected): a flag of a
  * named finding a committed run meets, by its key (`check|step|what`) and its `match`, for its
  * configuration. A flag an entry covers doesn't count, and its line names the finding. An entry
  * no flag meets is a flag of its own, since the finding it names no longer shows: the change
  * that fixed it removes the entry.
  * Returns the verdict and lines with what they count: `invalid` (check 10's flags), `flags`
- * (the rest, entries no flag met among them), `expected` (the flags entries cover), `missing`
- * (`{ segment, name }`, products the candidate lacks and the base, if it ran, produced) and
- * `didntRun` (products neither side produced).
+ * (the rest, entries no flag met among them), `expected` (the flags entries cover) and
+ * `missing` (`{ segment, name }`, products the candidate lacks).
  */
-export function perCheckReport({ configuration, candidate, base = null, timing = {}, expected = [] }) {
+export function perCheckReport({ configuration, candidate, timing = {}, expected = [] }) {
   const invalid = candidate.flags.filter((f) => f.check === 10);
-  const baseFlags = new Set((base?.flags ?? []).map(key));
-  const baseMissing = new Map((base?.missing ?? []).map((m) => [m.segment, new Set(m.missing)]));
   const entries = expected.filter((e) => e.configuration === configuration.name).map((e) => ({ e, re: e.match === undefined ? null : new RegExp(e.match) }));
   const coverOf = (f) => entries.filter(({ e, re }) => key(e) === key(f) && (!re || re.test(f.detail ?? f.message ?? '')));
   const counted = candidate.flags.filter((f) => f.check !== 10);
@@ -129,14 +123,7 @@ export function perCheckReport({ configuration, candidate, base = null, timing =
     const { e } = x;
     if (!met.has(x)) flags.push({ check: e.check, step: e.step, what: e.what, message: `expected-failures.json expects a flag here for ${e.finding}${e.match ? ` matching /${e.match}/` : ''}, and the run raised none: if ${e.finding} is fixed, the change that fixed it removes the entry` });
   }
-  const missing = [];
-  const didntRun = [];
-  for (const m of candidate.missing) {
-    for (const name of m.missing) {
-      if (base && baseMissing.get(m.segment)?.has(name)) didntRun.push({ segment: m.segment, name });
-      else missing.push({ segment: m.segment, name });
-    }
-  }
+  const missing = candidate.missing.flatMap((m) => m.missing.map((name) => ({ segment: m.segment, name })));
   const verdict = invalid.length ? 'invalid' : flags.length || missing.length ? 'flags' : 'pass';
   const when = [
     timing.wallMs !== undefined ? `${(timing.wallMs / 1000).toFixed(1)} s` : null,
@@ -146,13 +133,12 @@ export function perCheckReport({ configuration, candidate, base = null, timing =
   const lines = [];
   if (invalid.length) lines.push(`INVALID: ${invalid[0].message}${invalid.length > 1 ? ` (and ${invalid.length - 1} more)` : ''}. Its folds are clamped folds, not a store's.`);
   const findings = [...new Set(covered.map((c) => c.finding))];
-  lines.push(`${configuration.name}: ${verdict === 'pass' ? 'no flags' : `${flags.length} flag(s), ${missing.length} missing product(s)`}${covered.length ? `, ${covered.length} expected (${findings.join(', ')})` : ''}${base ? ', with the base run beside it' : ''}${when ? ` (${when})` : ''}.`);
-  for (const f of flags) lines.push(`- check ${f.check} at ${f.step}${f.request ? ` (${f.request})` : ''}: ${f.message}${base ? (baseFlags.has(key(f)) ? ' [base too]' : ' [not on base]') : ''}`);
+  lines.push(`${configuration.name}: ${verdict === 'pass' ? 'no flags' : `${flags.length} flag(s), ${missing.length} missing product(s)`}${covered.length ? `, ${covered.length} expected (${findings.join(', ')})` : ''}${when ? ` (${when})` : ''}.`);
+  for (const f of flags) lines.push(`- check ${f.check} at ${f.step}${f.request ? ` (${f.request})` : ''}: ${f.message}`);
   for (const { f, finding } of covered) lines.push(`- check ${f.check} at ${f.step}${f.request ? ` (${f.request})` : ''}: ${f.message} [expected: ${finding}]`);
-  for (const m of missing) lines.push(`- check 2, ${m.segment}: missing ${m.name}${base ? ' [the base produced it]' : ''}`);
-  for (const m of didntRun) lines.push(`- ${m.segment} didn't run: neither side produced ${m.name}`);
+  for (const m of missing) lines.push(`- check 2, ${m.segment}: missing ${m.name}`);
   for (const n of candidate.notes ?? []) lines.push(`- ${n}`);
   if (candidate.judged?.length) lines.push(`- judged: ${candidate.judged.map((j) => `check ${j.check} ${j.name} ${j.judged ?? '?'}`).join(', ')}`);
   if (candidate.headroom?.length) lines.push(`- budget headroom, each segment's least: ${candidate.headroom.map((h) => `${h.segment} ${h.bound - h.tokens} of ${h.bound}${h.kind === 'continuation' ? ' (a stream\'s fresh input through a continuation round, against the stream bound)' : ' (a compiled request\'s whole input, against the model\'s window)'}`).join(', ')}`);
-  return { verdict, lines, invalid, flags, expected: covered.map((c) => c.f), missing, didntRun };
+  return { verdict, lines, invalid, flags, expected: covered.map((c) => c.f), missing };
 }

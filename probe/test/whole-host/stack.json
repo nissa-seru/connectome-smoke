@@ -1,13 +1,7 @@
 {
   "release": "v0.21.0",
-  "prefixTurns": {
-    "default": 49,
-    "passthrough": 13
-  },
   "seconds": {
     "runs": {
-      "default": 3.2,
-      "passthrough": 1.6,
       "H1/W1": 15.8,
       "H4/W1": 27.8,
       "C3h/W2": 8.1,
@@ -30,11 +24,11 @@
       "C6h/W9": 11.1,
       "H1/W9": 12.8,
       "C6h/W11": 7.5,
-      "H1/W11": 16.7
+      "H1/W11": 16.7,
+      "H1/continuation": 3.2,
+      "H3/continuation": 1.6
     },
     "checkpoints": {
-      "default": 8.8,
-      "passthrough": 2.8,
       "H3/W1": 11,
       "C5h/W2": 11.7,
       "C8h/W2": 11.2,

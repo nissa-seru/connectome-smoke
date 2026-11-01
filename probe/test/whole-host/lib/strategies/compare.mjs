@@ -21,5 +21,3 @@ export function maskRunVarying(value) {
   return out;
 }
 
-/** Whether two runs' requests or records are the same once maskRunVarying has masked both. */
-export const sameAcrossRuns = (a, b) => JSON.stringify(maskRunVarying(a)) === JSON.stringify(maskRunVarying(b));

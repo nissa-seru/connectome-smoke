@@ -1,8 +1,8 @@
 import { createHash } from 'node:crypto';
 
 /**
- * The strategy fixture's conversation: the configurations it runs, the deep store's prefix,
- * the per-check continuation, and what each segment exists to produce.
+ * The configurations the runs use, the continuation (workloads.mjs, `continuation`), and what
+ * each of its segments exists to produce.
  *
  * Every step has an `id`, its `segment` and a `kind` the driver executes (lib/strategies/driver.mjs).
  * A turn is a `channel` step: a message on the fixture server's channel `CHANNEL`, from
@@ -22,21 +22,6 @@ export const READER = '[[reader]]';
 const PARTICIPANTS = ['Ash', 'Tavy', 'Wren'];
 const MINUTE = 60_000;
 
-
-/**
- * The model families full runs add to the default's `claude-opus-4-6`: one for each other
- * pairing of the cache-read price kv-unified weighs (connectome-host `call-pricing.ts`,
- * `anthropicBaseRate`) with context-manager's Fable/Mythos branch, which defers a
- * summariser's chunks before the host declares its tools and drops `tools` on its last
- * retry (`autobiographical.ts`, `isToolsLessRefusingSummarizer`). Opus 4.6 reads at the
- * default 0.1x without the branch.
- */
-export const FULL_RUN_MODELS = [
-  'claude-opus-5-5', // 0.05x, no branch
-  'claude-fable-5-1', // 0.025x, with the branch
-  'claude-fable-5', // 0.1x, with the branch
-];
-
 /**
  * The configurations, each with the recipe patch the driver applies to the lane's recipe
  * (`agent`), the stand-in's view of the model (`binds`), and which segments it runs. They
@@ -54,8 +39,6 @@ export function configurations({ model = 'claude-opus-4-6' } = {}) {
   const agent = { model, cacheKeepalive: { enabled: false } };
   const run = (name, more, summarises = true) => ({ name, agent: { ...agent, ...more.agent }, ...(more.modules ? { modules: more.modules } : {}), ...(more.subconscious ? { subconscious: more.subconscious } : {}), ...(more.judges ? { judges: more.judges } : {}), maintenanceIntervalMs: 0, binds: false, summarises });
   return {
-    default: { name: 'default', agent, maintenanceIntervalMs: 0, binds: false, summarises: true },
-    passthrough: { name: 'passthrough', agent: { ...agent, strategy: { type: 'passthrough' } }, maintenanceIntervalMs: 0, binds: false, summarises: false },
     ...configurationsAsResidentsRun(run),
   };
 }
@@ -141,49 +124,11 @@ function turn(id, segment, { chars, replyChars = 2400, calls = [], rounds = null
 const advance = (id, segment, ms) => ({ id, segment, kind: 'advance', ms });
 const checkpoint = (id, segment, more = {}) => ({ id, segment, kind: 'checkpoint', name: segment, ...more });
 
-/**
- * The length trial's search, in prefix turns: the writer tries `min`, then each length `step`
- * on, up to `bound`, and keeps the first whose continuation produces every declared product.
- */
-export const TRIAL = { min: 13, step: 1, bound: 80 };
-
-/** close-merge's L3 product, by name: an entry whose trial missed only this one within the bound is checked for L2 merges only. */
+/** close-merge's L3 product, by name. */
 export const L3_PRODUCT = 'an L3 merge request';
 
 /**
- * The prefix of `turns` turns that builds a configuration's deep store, settled turn by
- * turn by the driver. Mostly chat of varied length, with a tool round, parallel calls, a
- * thinking-led call and a long message at fixed intervals, as residents' stores hold them.
- * The clock advances four virtual minutes before each turn, so a clock row lands every two
- * or three turns, as at a resident's pace.
- */
-export function prefix(turns) {
-  return [{ id: 'p.name', segment: 'prefix', kind: 'command', command: '/session rename fixture' }, ...extend(0, turns), checkpoint('p.end', 'prefix', { copyStore: true })];
-}
-
-/**
- * The prefix's steps for turns `from + 1` to `to`: what a store of `from` prefix turns
- * needs to become one of `to`, without the session's naming or the end checkpoint. Turn
- * `i` is the same in every call.
- */
-export function extend(from, to) {
-  const steps = [];
-  for (let i = from + 1; i <= to; i++) {
-    const id = `p.${i}`;
-    const r = rng(id);
-    steps.push(advance(`${id}.adv`, 'prefix', 4 * MINUTE));
-    if (i === 1) steps.push(turn(id, 'prefix', { chars: 2250, replyChars: 1800 }));
-    else if (i % 17 === 0) steps.push(turn(id, 'prefix', { chars: 90_000 }));
-    else if (i % 13 === 0) steps.push(turn(id, 'prefix', { chars: 4500, calls: [{ kind: 'json', size: 9000 }, { kind: 'prose', size: 13_500 }, { kind: 'code', size: 10_500 }] }));
-    else if (i % 11 === 0) steps.push(turn(id, 'prefix', { chars: 4500, thinking: 6000, calls: [{ kind: 'prose', size: 12_000 }] }));
-    else if (i % 7 === 0) steps.push(turn(id, 'prefix', { chars: 3750, calls: [{ kind: 'prose', size: 18_000 }] }));
-    else steps.push(turn(id, 'prefix', { chars: 1800 + 15 * Math.floor(r() * 900), replyChars: 1200 + 15 * Math.floor(r() * 500) }));
-  }
-  return steps;
-}
-
-/**
- * The per-check continuation, about a dozen turns from a stored store. Each segment ends
+ * The continuation, about a dozen turns from a stored store. Each segment ends
  * at a checkpoint, and `products` says what each exists to produce (declaredProducts).
  */
 export function continuation() {

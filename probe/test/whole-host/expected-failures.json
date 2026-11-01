@@ -1,5 +1,13 @@
 [
   {
+    "configuration": "H3/continuation",
+    "check": 11,
+    "step": "c.cm.1",
+    "what": "fixture:request:shape",
+    "finding": "passthrough-window-cuts-call-from-result",
+    "reason": "A passthrough strategy's window cuts a call from its result, so the first message sent is a result whose call is stored but not carried."
+  },
+  {
     "configuration": "H3/W4",
     "check": 11,
     "step": "375550.1",

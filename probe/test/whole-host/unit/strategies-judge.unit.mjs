@@ -26,7 +26,7 @@ test('K2d: the judge holds a reported window against its configuration\'s stand-
   const report = (window) => ({ kind: 'budget-report', boot: 1, lines: ['--- Stream Token Budgets ---', `  fixture: 150.0k (last: 0, 0%); its stream doesn't break at this budget mid-turn: for its size, only before a request its ${window} window can't hold`] });
   const checkpoint = { kind: 'checkpoint', name: 's', step: 's.cp', health: { data: { contextComposition: { fixture: { planVsActual: { budgetMet: true } } }, runtimeSettings: { fixture: { effectiveContextBudgetTokens: 20_000 } } } } };
   const sent = (id) => ({ kind: 'request', request: { id, kind: 'agent' } });
-  const configuration = asRun(configurations().default, { window: 1_000_000 });
+  const configuration = asRun(configurations().H1, { window: 1_000_000 });
   const run = (window) => judge({ ...side(configuration, { records: [r1, r2], script: [{ id: 'a', segment: 's' }], log: [report(window), sent('r1'), sent('r2'), checkpoint] }), readers: counting().readers });
   assert.equal(configuration.windowTokens, 1_000_000, 'the host\'s window for the model');
   assert.equal((await run('1.0M')).notes.length, 1, 'the stand-in\'s window, as the host writes it');
@@ -35,7 +35,7 @@ test('K2d: the judge holds a reported window against its configuration\'s stand-
 
 test('a run that failed counts against its side, naming its failure, and its store is not read', async () => {
   const { calls, readers } = counting();
-  const judged = await judge({ ...side(configurations().default, { run: { ok: false, failure: { reason: 'the host exited' } } }), readers });
+  const judged = await judge({ ...side(configurations().H1, { run: { ok: false, failure: { reason: 'the host exited' } } }), readers });
   const failed = judged.flags.filter((f) => f.check === 1 && f.step === 'the run');
   assert.equal(failed.length, 1);
   assert.match(failed[0].message, /the host exited/);
@@ -44,44 +44,44 @@ test('a run that failed counts against its side, naming its failure, and its sto
 
 test('the store is read and audited where the configuration keeps summaries, and only there', async () => {
   const kept = counting();
-  await judge({ ...side(configurations().default), readers: kept.readers });
+  await judge({ ...side(configurations().H1), readers: kept.readers });
   assert.deepEqual(kept.calls, { read: 1, audit: 1 });
   const none = counting();
-  await judge({ ...side(configurations().passthrough), readers: none.readers });
+  await judge({ ...side(configurations().H3), readers: none.readers });
   assert.deepEqual(none.calls, { read: 0, audit: 0 });
 });
 
 test('the audit\'s violations are a check 5 flag on the run; an audit that could not run leaves the side unjudged', async () => {
   const violated = counting({ status: 2, output: 'L2 overlaps L2' });
-  const judged = await judge({ ...side(configurations().default), readers: violated.readers });
+  const judged = await judge({ ...side(configurations().H1), readers: violated.readers });
   const audit = judged.flags.filter((f) => f.check === 5 && f.step === 'the run');
   assert.equal(audit.length, 1);
   assert.match(audit[0].message, /L2 overlaps L2/);
   const broken = counting({ status: 1, output: 'no such namespace' });
-  await assert.rejects(judge({ ...side(configurations().default), readers: broken.readers }), /no such namespace/);
+  await assert.rejects(judge({ ...side(configurations().H1), readers: broken.readers }), /no such namespace/);
 });
 
 test('a run that succeeded with no store copy leaves the side unjudged where summaries are kept', async () => {
   const { readers } = counting();
-  await assert.rejects(judge({ ...side(configurations().default, { storeCopy: null }), readers }), /no store copy/);
-  const judged = await judge({ ...side(configurations().passthrough, { storeCopy: null }), readers });
+  await assert.rejects(judge({ ...side(configurations().H1, { storeCopy: null }), readers }), /no store copy/);
+  const judged = await judge({ ...side(configurations().H3, { storeCopy: null }), readers });
   assert.ok(Array.isArray(judged.flags));
 });
 
 test('a store that kept no summaries, where the configuration compresses, is a check 5 flag; another failure to read it leaves the side unjudged', async () => {
   const audit = () => ({ status: 0, output: '' });
   const empty = { readStore: async () => { throw new Error('no summaries in agents/fixture at /tmp/x, from a configuration that compresses'); }, audit };
-  const judged = await judge({ ...side(configurations().default), readers: empty });
+  const judged = await judge({ ...side(configurations().H1), readers: empty });
   const flag = judged.flags.filter((f) => f.check === 5 && f.what === 'no-summaries');
   assert.equal(flag.length, 1, 'one flag, keyed so an expected failure can name it');
   assert.match(flag[0].message, /kept no summaries/);
   const unreadable = { readStore: async () => { throw new Error('getSummary(L1-3) is null, though getSummariesInRange lists it'); }, audit };
-  await assert.rejects(judge({ ...side(configurations().default), readers: unreadable }), /getSummary/);
+  await assert.rejects(judge({ ...side(configurations().H1), readers: unreadable }), /getSummary/);
 });
 
 test('a run is judged by its configuration\'s agent, or, where it judges its subagent, by the first other agent its compile lines name, in that agent\'s own slot', async () => {
   const { judgedAgent } = await import('../lib/strategies/judge.mjs');
-  assert.deepEqual(judgedAgent(configurations().default, []), { agent: 'fixture', namespace: 'agents/fixture', isolate: false });
+  assert.deepEqual(judgedAgent(configurations().H1, []), { agent: 'fixture', namespace: 'agents/fixture', isolate: false });
   const log = [{ kind: 'compiles', lines: [{ kind: 'request', agent: 'fixture' }, { kind: 'dry', agent: 'spawn-x' }] }, { kind: 'compiles', lines: [{ kind: 'request', agent: 'spawn-knowledge-1-2' }] }];
   assert.deepEqual(judgedAgent({ ...configurations().H2 }, log), { agent: 'spawn-knowledge-1-2', namespace: 'subagent/spawn-knowledge-1-2', isolate: true });
   assert.throws(() => judgedAgent(configurations().H2, log.slice(0, 1)), /no compile line names a subagent/);

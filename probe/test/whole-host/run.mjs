@@ -5,28 +5,24 @@
  * against a stand-in for the provider (lib/strategies/).
  *
  *   node test/whole-host/run.mjs [--runs a,b] [--shard i/n] [--overlay <pack.tgz>,...] [--checkpoints <dir>] [--update-records] [--update-seconds] [--self-check] [--workdir <dir>] [--out <dir>]
- *   node test/whole-host/run.mjs --find-lengths [--runs a,b]
  *
- * The runs are each configuration's check (`default`, `passthrough`: the configurations stack.json
- * pins lengths for), then the workloads' runs (lib/strategies/workloads.mjs RUNS,
- * CONFIGURATION/WORKLOAD[/VARIANT]). `--runs` picks some of them.
+ * The runs are the workloads' (lib/strategies/workloads.mjs RUNS, CONFIGURATION/WORKLOAD[/VARIANT]).
+ * `--runs` picks some of them.
  *
  * 1. The checkpoints. The release stack.json names (a tag of this repository, cloned from
  *    package.json's repository) is installed from its own lockfile, so every package under
  *    it is the version it was released with, and it writes each run's starting store from
- *    empty: a configuration's at the prefix length stack.json pins for it, and a workload
- *    run's by running the run it continues (runOf's `from`, such as `H1/W2`). They're written
- *    at the start of every run of this script, and nothing is kept between runs.
+ *    empty by running the run it continues (runOf's `from`, such as `H1/W2`). They're written
+ *    at the start of every run of this script unless `--checkpoints` keeps them.
  * 2. The candidate: this checkout, with the stack its lockfile installs (`npm ci` first). With
  *    `--overlay`, a copy of the checkout is installed from its lockfile under the work
  *    directory, and each pack is installed over it, as a consumer upgrading that package
  *    would: a change to a package under the host runs at the host's lockfile with its head
  *    laid over. Every copy of an overlaid package must be the pack.
- * 3. Each run under the candidate, from a copy of its checkpoint. A configuration's check
- *    runs the lane's continuation (lib/strategies/script.mjs) and declares its products
- *    (check 2); a workload's run runs its workload's steps, and its workload's own property is
- *    check 14. Both are judged by the harness's checks (lib/strategies/judge.mjs), with the
- *    expected failures applied (expected-failures.json, report.mjs readExpected). Each run's
+ * 3. Each run under the candidate, from a copy of its checkpoint: its workload's steps, judged
+ *    by the harness's checks (lib/strategies/judge.mjs), check 2 among them for the products a
+ *    workload declares (the continuation's), and its workload's own property as check 14, with
+ *    the expected failures applied (expected-failures.json, report.mjs readExpected). Each run's
  *    evidence goes under `--out` by its id, `/` as `_`, and `run.json` sums them up.
  * 4. Each run's record (lib/record.mjs) is compared with the one committed in `records/`.
  *    One that differs, or isn't committed, fails the run, and the run's own is in its
@@ -56,13 +52,9 @@
  * checkpoint's seconds, and `--update-seconds` writes this run's into stack.json; refresh them,
  * from a run of all of them on such a runner, when a run is added or the shares drift apart.
  *
- * `--find-lengths` writes each configuration's starting store with the release, searching the
- * length trial (lib/strategies/script.mjs, TRIAL) for the shortest prefix whose continuation
- * produces every product the configuration declares, and prints the lengths for stack.json.
- * Moving to a newer release is a change of its own: its tag and lengths in stack.json.
+ * Moving to a newer release is a change of its own: its tag in stack.json.
  *
- * Exit 0: every run passed and every record matched (or was updated, or the lengths were
- * found) · 1: a run flagged something or lacked a product, a record differs or isn't
+ * Exit 0: every run passed and every record matched (or was updated) · 1: a run flagged something or lacked a product, a record differs or isn't
  * committed, or a self-check found the module changed what the stand-in received · 2: a run
  * couldn't run.
  */
@@ -72,13 +64,13 @@ import { tmpdir } from 'node:os';
 import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs, sh } from './lib/common.mjs';
-import { EPOCH, EXPECTED_FAILURES, KEY_PACKAGES, asRun, check, laneVersion, stackVersions, writeStore } from './lib/strategies/lane.mjs';
+import { EPOCH, EXPECTED_FAILURES, KEY_PACKAGES, asRun, laneVersion, stackVersions } from './lib/strategies/lane.mjs';
 import { hostFacts, runScript } from './lib/strategies/driver.mjs';
 import { startStandin } from './lib/strategies/standin.mjs';
 import { judge } from './lib/strategies/judge.mjs';
 import { perCheckReport, readExpected } from './lib/strategies/report.mjs';
 import { RUNS, runOf } from './lib/strategies/workloads.mjs';
-import { TRIAL, configurations } from './lib/strategies/script.mjs';
+import { configurations } from './lib/strategies/script.mjs';
 import { renderRecord } from './lib/record.mjs';
 import { shares } from './lib/shares.mjs';
 import { maskRunVarying } from './lib/strategies/compare.mjs';
@@ -119,16 +111,14 @@ const { opt, flag } = parseArgs(process.argv.slice(2));
 const fail = (message) => { console.error(`${LABEL} ${message}`); process.exit(2); };
 const stack = JSON.parse(readFileSync(join(HERE, 'stack.json'), 'utf-8'));
 const all = configurations();
-// Every run there is: each configuration's check, then the workloads' runs (workloads.mjs RUNS).
-const everyRun = [...Object.keys(stack.prefixTurns), ...RUNS];
+const everyRun = RUNS;
 const listed = String(opt('runs', everyRun.join(','))).split(',').map((s) => s.trim()).filter(Boolean);
 const unknown = listed.filter((n) => !everyRun.includes(n));
 if (unknown.length) fail(`no run ${unknown.join(', ')}; there are ${everyRun.join(', ')}`);
-const isCheck = (id) => !id.includes('/');
 const shard = /^(\d+)\/(\d+)$/.exec(opt('shard', '1/1'));
 if (!shard || +shard[1] < 1 || +shard[1] > +shard[2]) fail(`--shard takes i/n with 1 <= i <= n, not ${opt('shard')}`);
-/** The checkpoint a run continues: a configuration's check its own, a workload's run its runOf `from` (null from empty). */
-const checkpointKey = (id) => (isCheck(id) ? id : runOf(id, all, {}).from);
+/** The checkpoint a run continues: its runOf `from` (null from empty). */
+const checkpointKey = (id) => runOf(id, all, {}).from;
 const share = shares(listed, +shard[2], stack.seconds, checkpointKey)[+shard[1] - 1];
 const names = share.ids;
 if (!names.length) { console.log(`${LABEL} shard ${shard[0]} holds none of ${listed.join(', ')}`); process.exit(0); }
@@ -139,7 +129,6 @@ const out = resolve(opt('out', join(work, 'out')));
 mkdirSync(out, { recursive: true });
 const lane = laneVersion();
 const checkpointsDir = opt('checkpoints') ? resolve(opt('checkpoints')) : null;
-const cacheRoot = checkpointsDir ? join(checkpointsDir, 'configurations') : join(work, 'checkpoints');
 const npmCi = (cwd) => sh('npm', ['ci', '--ignore-scripts', '--no-audit', '--no-fund', '--loglevel=error'], { cwd, timeout: 900_000 });
 const named = (versions) => Object.entries(versions).map(([k, v]) => `${k.replace('@animalabs/', '')}@${v}`).join(' ');
 
@@ -182,41 +171,10 @@ function installCandidate(packs, dir) {
   return { hostDir: dir, installDir: dir, versions: stackVersions(dir, { installDir: dir }) };
 }
 
-const trialOf = (name) => {
-  const turns = stack.prefixTurns[name];
-  if (!Number.isInteger(turns)) fail(`stack.json pins no prefix length for ${name}; find one with --find-lengths`);
-  return { min: turns, step: 1, bound: turns };
-};
-
 console.log(`${LABEL} lane ${lane.slice(0, 12)} · release ${stack.release} · work ${work}`);
 let release;
 try { release = installRelease(join(work, 'release')); } catch (e) { fail(`installing ${stack.release} failed: ${e.message}`); }
 console.log(`${LABEL} checkpoints from ${named(release.versions)}`);
-
-if (flag('find-lengths')) {
-  // Each length is written from empty in one go, as a run writes its checkpoint. The writer's
-  // own trial grows one store a few turns at a time, booting the host between, and a store
-  // grown to a length isn't the store written at it.
-  const found = {};
-  for (const name of names.filter(isCheck)) {
-    for (let turns = TRIAL.min; turns <= TRIAL.bound; turns += TRIAL.step) {
-      let r;
-      try {
-        r = await writeStore({ cacheRoot, configuration: all[name], hostDir: release.hostDir, installDir: release.installDir, work: join(work, `write-${name}-${turns}`), trial: { min: turns, step: 1, bound: turns }, lane });
-      } catch (e) {
-        // A prefix too short to have compressed yet is refused by the writer's hard checks; a longer one may not be.
-        if (/^no summaries in /.test(e.message) && turns + TRIAL.step <= TRIAL.bound) continue;
-        fail(`${name}: the write at ${turns} turns failed: ${e.message}`);
-      }
-      const missing = r.entry.trial?.missing ?? [];
-      if (!missing.length) { found[name] = turns; break; }
-      if (turns + TRIAL.step > TRIAL.bound) fail(`${name}: no length up to ${TRIAL.bound} turns produces every product; at ${turns} it lacked ${missing.map((p) => `${p.segment}'s ${p.name}`).join(', ')}`);
-    }
-    console.log(`${LABEL} ${name}: ${found[name]} prefix turns`);
-  }
-  console.log(JSON.stringify({ prefixTurns: found }, null, 2));
-  process.exit(0);
-}
 
 const packs = readPacks(String(opt('overlay', '')).split(',').map((s) => s.trim()).filter(Boolean).map((p) => resolve(p)));
 let candidate;
@@ -315,7 +273,7 @@ async function workloadRun(id, { harnessModule = true, rawDir = null, dir }) {
   const sessions = existsSync(join(copy, 'sessions')) ? readdirSync(join(copy, 'sessions')).map((s) => join(copy, 'sessions', s)) : [];
   let judged;
   try {
-    judged = await judge({ records: d.records, log: d.log, script: d.steps, storeCopy: sessions[0] ?? null, configuration: d.configuration, installDir: candidate.installDir, run: d.run, declared: [] });
+    judged = await judge({ records: d.records, log: d.log, script: d.steps, storeCopy: sessions[0] ?? null, configuration: d.configuration, installDir: candidate.installDir, run: d.run, declared: job.products });
   } catch (e) { return { outcome: 'couldnt-run', reason: `the run couldn't be judged: ${String(e?.message ?? e).slice(0, 2000)}` }; }
   const breaches = d.run.ok ? job.check({ log: d.log, records: d.records }) : [];
   // What the workload makes happen by design and its property judges (runOf's `owns`, each
@@ -341,40 +299,13 @@ async function workloadRun(id, { harnessModule = true, rawDir = null, dir }) {
   };
 }
 
-/** A configuration's check: its checkpoint written at its pinned length, then the lane's continuation under the candidate. */
-async function configurationCheck(name, { harnessModule = true, rawDir = null, dir }) {
-  const trial = trialOf(name);
-  const t = performance.now();
-  let wrote;
-  try {
-    wrote = await writeStore({ cacheRoot, configuration: all[name], hostDir: release.hostDir, installDir: release.installDir, work: join(work, `write-${name}`), trial, lane });
-  } catch (e) { return { outcome: 'couldnt-run', reason: `writing its checkpoint failed: ${e.message}` }; }
-  // A checkpoint --checkpoints already held took no writing, so its seconds aren't a write's.
-  if (wrote?.written === false) console.log(`${LABEL} checkpoint ${name}: reused under ${cacheRoot}`);
-  else seconds.checkpoints[name] = since(t);
-  checkpointTime += since(t);
-  const configuration = harnessModule ? all[name] : { ...all[name], harnessModule: false };
-  const r = await check({ cacheRoot, configuration, hostDir: candidate.hostDir, installDir: candidate.installDir, work: join(work, 'runs', basename(dir), 'work'), evidence: dir, trial, lane, rawDir });
-  return {
-    outcome: r.outcome,
-    reason: r.reason,
-    failures: r.failures,
-    lines: r.report?.lines ?? [],
-    log: readJsonLines(join(dir, 'candidate.log.jsonl')),
-    records: existsSync(join(dir, 'candidate.records.json')) ? JSON.parse(readFileSync(join(dir, 'candidate.records.json'), 'utf-8')) : [],
-    end: { ok: r.candidate?.run?.ok ?? false, reason: r.candidate?.run?.failure?.reason },
-    from: `${trial.min} prefix turns`,
-  };
-}
-
-const runOne = (id, opts) => (isCheck(id) ? configurationCheck(id, opts) : workloadRun(id, opts));
 
 const results = [];
 for (const id of names) {
   const dir = join(out, slug(id));
   const t = performance.now();
   const before = checkpointTime;
-  const r = await runOne(id, { dir, rawDir: flag('self-check') ? join(dir, 'raw') : null });
+  const r = await workloadRun(id, { dir, rawDir: flag('self-check') ? join(dir, 'raw') : null });
   seconds.runs[id] = Math.round((since(t) - (checkpointTime - before)) * 10) / 10;
   console.log((r.lines?.length ? r.lines : [`${id}: couldn't run: ${r.reason}`]).join('\n'));
   let record = null;
@@ -398,8 +329,8 @@ for (const id of names) {
   let selfCheck = null;
   if (flag('self-check') && r.outcome !== 'couldnt-run') {
     const withoutDir = join(out, `${slug(id)}.without-module`);
-    const without = await runOne(id, { harnessModule: false, dir: withoutDir, rawDir: join(withoutDir, 'raw') });
-    const raw = (d) => (isCheck(id) ? join(d, 'raw', 'candidate') : join(d, 'raw'));
+    const without = await workloadRun(id, { harnessModule: false, dir: withoutDir, rawDir: join(withoutDir, 'raw') });
+    const raw = (d) => join(d, 'raw');
     selfCheck = without.outcome === 'couldnt-run' ? { outcome: 'couldnt-run', reason: without.reason } : sameRequests(raw(dir), raw(withoutDir));
     console.log(`${LABEL} ${id}: self-check: ${selfCheck.outcome === 'same' ? `the stand-in received the same ${selfCheck.requests} requests without the test module` : selfCheck.outcome === 'couldnt-run' ? `the run without the test module couldn't run: ${selfCheck.reason}` : `request ${selfCheck.at} differs without the test module: ${selfCheck.detail}`}`);
   }

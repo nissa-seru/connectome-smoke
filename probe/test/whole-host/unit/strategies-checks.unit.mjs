@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { assemblies, budgets, compileInvariants, compileKinds, pairing, reloads, requestPairs, requestKinds, declaredProducts, everyTurnAnswers, wellFormed, windowsRaw, calibrationEdge, coverage, bookkeeping } from '../lib/strategies/checks.mjs';
-import { continuation, products, configurations, prefix, extend, L3_PRODUCT } from '../lib/strategies/script.mjs';
+import { continuation, products, configurations, L3_PRODUCT } from '../lib/strategies/script.mjs';
 
 const msg = (role, ...blocks) => ({ role, blocks });
 const text = (canaries) => ({ type: 'text', chars: 10, ...(canaries ? { canaries } : {}) });
@@ -10,7 +10,7 @@ const result = (id, images) => ({ type: 'tool_result', chars: 10, toolUseId: id,
 
 test('check 2 names each segment whose product no record in it shows, and only those', () => {
   const script = continuation();
-  const wanted = products(configurations().default);
+  const wanted = products(configurations().H1);
   const records = [
     { id: 'r1', step: 'c.cm.1', kind: 'summariser', level: 1, answer: { shape: 'summary' } },
     { id: 'r2', step: 'c.tool', kind: 'agent', messages: [msg('user', text()), msg('assistant', call('a'), call('b')), msg('user', result('a'), result('b', 1))] },
@@ -23,7 +23,7 @@ test('check 2 names each segment whose product no record in it shows, and only t
 
 test('check 2: close-merge declares an L3 merge, which a merge at L3 meets with the merge product', () => {
   const script = continuation();
-  const wanted = products(configurations().default);
+  const wanted = products(configurations().H1);
   const l1 = { id: 'r1', step: 'c.cm.1', kind: 'summariser', level: 1, answer: { shape: 'summary' } };
   const atLevel = (level) => ({ id: `m${level}`, step: 'c.cm.2', kind: 'summariser', level, answer: { shape: 'summary' } });
   const closeMerge = (records) => declaredProducts(records, script, wanted).find((m) => m.segment === 'close-merge')?.missing ?? [];
@@ -32,7 +32,7 @@ test('check 2: close-merge declares an L3 merge, which a merge at L3 meets with 
 });
 
 test('check 2: a configuration that doesn\'t summarise declares no summariser products', () => {
-  const missing = declaredProducts([], continuation(), products(configurations().passthrough));
+  const missing = declaredProducts([], continuation(), products(configurations().H3));
   assert.deepEqual(missing.map((m) => m.segment), ['tool-round', 'parallel', 'thinking-call']);
 });
 
@@ -156,13 +156,6 @@ test('check 5: a summary declares only what its request showed, a child by its n
   const l3store = { ...store, summaries: [...store.summaries, { id: 'L3-1', level: 3, sourceLevel: 2, sourceIds: ['L2-1'], number: '[[s:C4]]', covers: ['[[c:a.in]]', '[[c:a.r1]]', '[[c:b.in]]', '[[c:b.r1]]'] }] };
   assert.deepEqual(bookkeeping([shown('[[s:C4]]', [], ['[[s:C1]]', '[[s:C2]]'])], l3store), []);
   assert.equal(bookkeeping([shown('[[s:C4]]', [], ['[[s:C1]]'])], l3store).length, 1);
-});
-
-test('extending a prefix of one length to another gives the longer prefix\'s turns, the same in every call', () => {
-  const whole = prefix(40);
-  assert.deepEqual([whole[0], ...extend(0, 25), ...extend(25, 40), whole.at(-1)], whole);
-  assert.deepEqual(extend(25, 40), extend(25, 40));
-  assert.ok(!extend(25, 40).some((s) => s.id === 'p.name' || s.id === 'p.end'), 'no naming or end checkpoint');
 });
 
 test('K1: check 1 flags every operator alert the host raises, naming its kind and message', () => {
@@ -601,7 +594,7 @@ test('K4: check 6 holds a segment\'s last request to the raw tail the host repor
 
 test('K5: close-merge declares its long message stored in parts, from the store, and parallel the tool round\'s image reaching it as its placeholder', () => {
   const script = continuation();
-  const wanted = products(configurations().default);
+  const wanted = products(configurations().H1);
   const segment = (missing, name) => missing.find((m) => m.segment === name)?.missing ?? [];
   const parts = { messages: [{ id: 'm1', canaries: ['[[c:c.cm.2.in]]'], bodyGroupId: 'g', shardIndex: 0 }, { id: 'm2', canaries: [], bodyGroupId: 'g', shardIndex: 1 }], summaries: [] };
   const whole = { messages: [{ id: 'm1', canaries: ['[[c:c.cm.2.in]]'] }], summaries: [] };

@@ -1,6 +1,6 @@
 import { FIXTURE_AGENT, assemblies, requestPairs, withJudged } from './checks.mjs';
 import { png } from './png.mjs';
-import { CHANNEL, READER, TOOL } from './script.mjs';
+import { CHANNEL, READER, TOOL, continuation, products } from './script.mjs';
 
 /**
  * The context-manager characterization fixture's nine workloads (connectome-smoke `lib/cm-fixture/workloads.mjs` at
@@ -271,6 +271,18 @@ const blocksOf = (record) => (record.messages ?? []).flatMap((m, i) => m.blocks.
 const summarises = (configuration) => configuration.summarises !== false;
 
 export const WORKLOADS = {
+  /**
+   * The continuation (script.mjs, continuation), about a dozen turns from W2's store (W1's for a configuration that
+   * doesn't summarise), in segments that each exist to produce something: a merge, a request carrying an image result,
+   * parallel results, a thinking-led call, compression debt. Check 2 judges that each did (`products`).
+   */
+  continuation: {
+    property: 'each segment produces what it exists to produce (check 2)',
+    steps: () => continuation(),
+    check: () => [],
+    products: (configuration) => products(configuration),
+  },
+
   /**
    * W1 builds a store from empty over 70 turns of the phase plan's tool rounds. Under H4 the resident then tunes the
    * channel out, and the reader reads six held messages, with an `/undo` before the fourth.
@@ -703,6 +715,7 @@ function toolBlocksLost(run) {
  * and W11's store that refuses writes leave for context-manager's suite, since no host route reaches them.
  */
 export const RUNS = [
+  'H1/continuation', 'H3/continuation',
   'H1/W1', 'H4/W1',
   'C3h/W2', 'H1/W2',
   'H3/W4',
@@ -728,12 +741,14 @@ const merge = (a = {}, b = {}) => {
 
 /**
  * One run of the list, given the configurations (script.mjs) and the installed host's facts for its configuration
- * (driver.mjs, hostFacts): `{ id, workload, variant, seed, configuration, standin, from, steps, check, owns }`.
+ * (driver.mjs, hostFacts): `{ id, workload, variant, seed, configuration, standin, from, steps, check, owns, products }`.
  * `from` is the checkpoint it continues, `CONFIGURATION/W2` (W1 for a configuration that doesn't summarise), or null
  * from empty; `configuration` is its configuration with the workload's recipe and what its steps need merged in;
- * `standin` is the stand-in's start; `steps()` its script; `check({ log, records })` its property's breaches, with
- * a non-enumerable `judged` count (checks.mjs withJudged) where the property judges a run itself; `owns` the harness
- * checks' flags, each `{ check, what }`, that the workload makes by design and its property judges.
+ * `standin` is the stand-in's start;
+ * `steps()` its script; `check({ log, records })` its property's breaches, with a non-enumerable `judged` count
+ * (checks.mjs withJudged) where the property judges a run itself; `owns` the harness checks' flags, each
+ * `{ check, what }`, that the workload makes by design and its property judges; `products` what its segments declare
+ * for check 2 (the continuation's; none for the others).
  */
 export function runOf(id, configurations, facts) {
   const [configName, workloadName, variant = null] = id.split('/');
@@ -772,5 +787,6 @@ export function runOf(id, configurations, facts) {
     steps: () => workload.steps(ctx),
     check: (run) => workload.check(run, ctx),
     owns: typeof workload.owns === 'function' ? workload.owns(variant) : workload.owns ?? [],
+    products: workload.products ? workload.products(configuration) : [],
   };
 }

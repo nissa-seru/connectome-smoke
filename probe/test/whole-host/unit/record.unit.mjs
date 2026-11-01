@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { renderRecord } from '../lib/record.mjs';
 
-const header = { configuration: 'default', release: { tag: 'v0.0.1', versions: { '@animalabs/connectome-host': '0.0.1' } }, prefixTurns: 3, candidate: { versions: { '@animalabs/connectome-host': '0.0.2' } } };
+const header = { configuration: 'H1/W1', release: { tag: 'v0.0.1', versions: { '@animalabs/connectome-host': '0.0.1' } }, from: 'empty', candidate: { versions: { '@animalabs/connectome-host': '0.0.2' } } };
 const text = (t) => ({ participant: 'user', content: [{ type: 'text', text: t }] });
 const blobs = {
   b1: text('[[c:p.1.in]] hello'),

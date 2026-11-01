@@ -1,7 +1,7 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { connect } from 'node:net';
 import { lineReader } from './control.mjs';
-import { blobStore, compiledLine, messagesOf, plain, receiptHeadOf, refusedLine, stateOf, storeDelta } from './recorder.mjs';
+import { blobStore, compiledLine, messagesOf, plain, refusedLine, stateOf, storeDelta } from './recorder.mjs';
 
 const CALLER = new AsyncLocalStorage();
 const WRAPPED = Symbol.for('connectome-host.whole-host.wrapped');

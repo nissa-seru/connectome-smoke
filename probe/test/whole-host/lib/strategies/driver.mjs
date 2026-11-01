@@ -1,6 +1,5 @@
 import { appendFileSync, cpSync, existsSync, mkdirSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
-import { createHash } from 'node:crypto';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -118,21 +117,6 @@ export function laneRecipe({ configuration, facts, control, channels, boot }) {
     ...(configuration.subconscious ? { subconscious: configuration.subconscious } : {}),
   };
 }
-
-/**
- * The lane's recipe for `configuration` as the writer's key takes it, and its
- * hash: the recipe without what changes from run to run or with where the lane
- * runs from (the control socket, the boot, the paths of node and the server).
- */
-export function recipeIdentity({ configuration, facts, channels }) {
-  const recipe = laneRecipe({ configuration, facts, control: '', channels, boot: 0 });
-  const { command, args, ...fixture } = recipe.mcpServers.fixture;
-  const { FIXTURE_CONTROL, FIXTURE_BOOT, ...env } = fixture.env;
-  const extensions = recipe.extensions ? Object.fromEntries(Object.entries(recipe.extensions).map(([name, { path, ...rest }]) => [name, rest])) : undefined;
-  return { ...recipe, ...(extensions ? { extensions } : {}), mcpServers: { ...recipe.mcpServers, fixture: { ...fixture, env } } };
-}
-
-export const recipeHash = (opts) => createHash('sha256').update(JSON.stringify(recipeIdentity(opts))).digest('hex');
 
 /**
  * D12: whether `/budget`'s output (connectome-host's report of each agent's stream budget: a

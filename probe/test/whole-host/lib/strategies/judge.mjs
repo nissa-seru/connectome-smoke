@@ -56,7 +56,7 @@ function auditTopology({ installDir, storePath, namespace }) {
  *   be judged.
  * `timing` gives the store read's and the audit's milliseconds. `readers` replaces the store
  * read and the audit, for tests. `declared` is the products the run's segments declare (check 2):
- * the lane continuation's, by default; a workload, which has a property of its own, declares none.
+ * the continuation's (workloads.mjs runOf `products`), by default; other workloads declare none.
  */
 export async function judge({ records, log, script, storeCopy, configuration, installDir, run, readers = {}, declared = products(configuration) }) {
   const read = readers.readStore ?? readStore;

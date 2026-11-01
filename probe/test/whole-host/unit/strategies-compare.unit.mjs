@@ -2,7 +2,10 @@
 // says the requirement it pins.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { maskRunVarying, sameAcrossRuns } from '../lib/strategies/compare.mjs';
+import { maskRunVarying } from '../lib/strategies/compare.mjs';
+
+/** Whether two runs' requests or records are the same once maskRunVarying has masked both. */
+const sameAcrossRuns = (a, b) => JSON.stringify(maskRunVarying(a)) === JSON.stringify(maskRunVarying(b));
 
 // A request body as the host sends one after a tool round with an image, and a thinking reply.
 const body = ({ nonce = '2ie66y', seq = 1, signature = 'fx1.AAAA', text = 'hello [[c:c.chat.in]]', model = 'claude-opus-4-6' } = {}) => ({
