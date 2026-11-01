@@ -34,6 +34,22 @@ s=$(date +%s); xargs -P "$PAR" -L 1 bash -c 'one "$0" "$1"' < "$T/mutants.txt"; 
 mkdir -p "$E/out"
 for d in "$T/out"/*/; do
   c=$(basename "$d"); mkdir -p "$E/out/$c"; cp "$d/run.json" "$E/out/$c/" 2>/dev/null
+  # Beside the record: each run's requests to the stand-in as a multiset of their kinds, agents and message digests
+  # (a W9 fork's own requests at step 7f left out: its synthetic call id carries a fresh UUID), so a mutant that
+  # moves what the stand-in received without moving the record shows as such.
+  node -e '
+const fs = require("fs"), path = require("path"), crypto = require("crypto");
+const dir = process.argv[1], out = {};
+for (const run of fs.readdirSync(dir)) {
+  const f = path.join(dir, run, "records.json"), g = path.join(dir, run, "candidate.records.json");
+  const p = fs.existsSync(f) ? f : fs.existsSync(g) ? g : null;
+  if (!p) continue;
+  const recs = JSON.parse(fs.readFileSync(p, "utf-8"));
+  const items = recs.filter((r) => r.agent !== "sub" || !/\.7f$/.test(String(r.step))).map((r) => JSON.stringify([r.kind, r.agent ?? null, (r.messages ?? []).map((m) => m.digest), r.answer?.shape ?? null])).sort();
+  out[run] = crypto.createHash("sha256").update(JSON.stringify(items)).digest("hex").slice(0, 16);
+}
+fs.writeFileSync(process.argv[2], JSON.stringify(out, null, 1));
+' "$d" "$E/out/$c/requests.json"
   if [ "$c" = plain-1 ]; then for r in "$d"*/; do cp "$r"*.record "$E/out/$c/" 2>/dev/null; done
   else
     node -e '
