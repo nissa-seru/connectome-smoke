@@ -1,0 +1,710 @@
+import { appendFileSync, cpSync, existsSync, mkdirSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
+import { tmpdir } from 'node:os';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { performance } from 'node:perf_hooks';
+import { ipcConnect, send, sleep, spawnHost, stopHost } from '../common.mjs';
+import { lineReader, listenForPeers } from './control.mjs';
+import { openWebUi } from './webui.mjs';
+
+const HERE = dirname(fileURLToPath(import.meta.url));
+const SERVER = join(HERE, 'mcpl-server.mjs');
+const PRELOAD = join(HERE, 'virtual-date.mjs');
+const MODULE = join(HERE, 'module.mjs');
+const BOOT_MS = 120_000;
+const TURN_MS = 120_000;
+const COMMAND_MS = 60_000;
+const MAINTAIN_MS = 120_000;
+const SHUTDOWN_MS = 30_000;
+
+const COMMANDS = {
+  session: (lines) => {
+    if (lines.some((l) => /^Session renamed to /.test(l))) return 'done';
+    if (lines.some((l) => /^(Usage: \/session rename|No active session)/.test(l))) return 'failed';
+    return null;
+  },
+  budget: (lines) => {
+    if (lines.some((l) => /^Stream budget set to /.test(l))) return 'done';
+    if (lines.some((l) => /^(Invalid token count|No agents)/.test(l))) return 'failed';
+    return null;
+  },
+  newtopic: (lines) => {
+    if (lines.some((l) => /^(Topic reset failed:|\/newtopic refused:|No context manager)/.test(l))) return 'failed';
+    const at = lines.indexOf('Topic reset. Transition summary:');
+    return at >= 0 && lines.length > at + 1 ? 'done' : null;
+  },
+  undo: (lines) => {
+    if (lines.some((l) => /^Undone\. Switched to branch "/.test(l))) return 'done';
+    if (lines.some((l) => /^(Nothing to undo|Undo failed|No agent context manager|\/undo refused:)/.test(l))) return 'failed';
+    return null;
+  },
+  redo: (lines) => {
+    if (lines.some((l) => /^Redone\. Switched to branch "/.test(l))) return 'done';
+    if (lines.some((l) => /^(Nothing to redo|Redo failed|No agent context manager|\/redo refused:)/.test(l))) return 'failed';
+    return null;
+  },
+  checkout: (lines) => {
+    if (lines.some((l) => /^Switched to branch /.test(l))) return 'done';
+    if (lines.some((l) => /^(Usage: \/checkout|Branch ".*" not found|Checkout failed|No agent context manager|\/checkout refused:)/.test(l))) return 'failed';
+    return null;
+  },
+  branches: (lines) => {
+    if (lines.some((l) => /^No agent context manager/.test(l))) return 'failed';
+    const at = lines.findIndex((l) => /^--- Branches \(\d+\) ---$/.test(l));
+    if (at < 0) return null;
+    return lines.length > at + Number(/\((\d+)\)/.exec(lines[at])[1]) ? 'done' : null;
+  },
+};
+
+const WEBUI_LISTENING = /\[webui\] listening on (https?:\/\/\S+)/;
+
+/**
+ * What the installed host says of itself that the lane depends on: whether it
+ * takes a top-level `maintenanceIntervalMs`; the window it knows for the
+ * configuration's model (`model-limits.ts`), which the stand-in takes as the
+ * model's window; and the stream bound it gives the agent for the lane's recipe
+ * (`buildFrameworkAgentConfig`), which the checks hold continuations to.
+ * Evaluated with bun from the host's source.
+ */
+export function hostFacts({ hostDir, configuration }) {
+  const recipe = laneRecipe({ configuration, facts: { takesMaintenanceInterval: false }, control: '', channels: [], boot: 0 });
+  const model = recipe.agent.model;
+  const src = (f) => JSON.stringify(join(hostDir, 'src', f));
+  const code = [
+    `const { unknownRecipeKeys } = await import(${src('recipe.ts')});`,
+    `const { getDefaultModelLimits } = await import(${src('model-limits.ts')});`,
+    `const { buildFrameworkAgentConfig } = await import(${src('framework-agent-config.ts')});`,
+    `const agentConfig = buildFrameworkAgentConfig(${JSON.stringify(recipe)}, ${JSON.stringify(recipe.agent.name)}, ${JSON.stringify(model)}, undefined);`,
+    'console.log(JSON.stringify({',
+    '  takesMaintenanceInterval: unknownRecipeKeys({ maintenanceIntervalMs: 0 }).length === 0,',
+    `  window: getDefaultModelLimits(${JSON.stringify(model)})?.maxContextTokens ?? null,`,
+    '  streamBound: agentConfig.maxStreamTokens ?? null,',
+    '  budget: agentConfig.contextBudgetTokens ?? null,',
+    '  maxTokens: agentConfig.maxTokens ?? null,',
+    '}));',
+  ].join('\n');
+  const r = spawnSync('bun', ['-e', code], { cwd: hostDir, encoding: 'utf-8', timeout: 60_000, env: { ...process.env, NO_COLOR: '1' } });
+  const line = (r.stdout || '').trim().split('\n').at(-1);
+  try {
+    return JSON.parse(line);
+  } catch {
+    throw new Error(`couldn't read the installed host's recipe facts (bun exited ${r.status}): ${(r.stderr || r.stdout || '').trim().slice(-2000)}`);
+  }
+}
+
+const BASE_AGENT = { name: 'fixture', provider: 'anthropic', systemPrompt: 'You are the strategy fixture\'s agent.' };
+
+/** The lane's recipe for one boot, from the configuration and the installed host's facts. */
+export function laneRecipe({ configuration, facts, control, channels, boot }) {
+  const agent = { ...BASE_AGENT, ...configuration.agent };
+  return {
+    name: `Strategy fixture (${configuration.name})`,
+    agent,
+    ...(facts.takesMaintenanceInterval && configuration.maintenanceIntervalMs !== undefined ? { maintenanceIntervalMs: configuration.maintenanceIntervalMs } : {}),
+    mcpServers: {
+      fixture: {
+        command: process.execPath,
+        args: [SERVER],
+        env: { FIXTURE_CONTROL: control, FIXTURE_CHANNELS: channels.join(','), FIXTURE_BOOT: String(boot) },
+        enabledFeatureSets: ['fixture'],
+        allowHostCommands: true,
+        ...configuration.fixtureServer,
+      },
+    },
+    modules: { subagents: false, lessons: false, retrieval: false, wake: false, workspace: false, ...configuration.modules },
+    ...(configuration.harnessModule === false ? {} : { extensions: { 'whole-host-harness': { kind: 'module', path: MODULE } } }),
+    ...(configuration.subconscious ? { subconscious: configuration.subconscious } : {}),
+  };
+}
+
+/**
+ * The lane's recipe for `configuration` as the writer's key takes it, and its
+ * hash: the recipe without what changes from run to run or with where the lane
+ * runs from (the control socket, the boot, the paths of node and the server).
+ */
+export function recipeIdentity({ configuration, facts, channels }) {
+  const recipe = laneRecipe({ configuration, facts, control: '', channels, boot: 0 });
+  const { command, args, ...fixture } = recipe.mcpServers.fixture;
+  const { FIXTURE_CONTROL, FIXTURE_BOOT, ...env } = fixture.env;
+  const extensions = recipe.extensions ? Object.fromEntries(Object.entries(recipe.extensions).map(([name, { path, ...rest }]) => [name, rest])) : undefined;
+  return { ...recipe, ...(extensions ? { extensions } : {}), mcpServers: { ...recipe.mcpServers, fixture: { ...fixture, env } } };
+}
+
+export const recipeHash = (opts) => createHash('sha256').update(JSON.stringify(recipeIdentity(opts))).digest('hex');
+
+/**
+ * D12: whether `/budget`'s output (connectome-host's report of each agent's stream budget: a
+ * header, then a line per agent, `  <name>: …`) is whole for `agent`: its own line has come, or a
+ * line that is no part of the report, such as `No agents.` or a host's answer to a command it
+ * doesn't have. Lines come in the order the host wrote them, all from one command.
+ */
+export function budgetReportDone(lines, agent) {
+  return lines.some((l) => l.startsWith(`  ${agent}: `) || !(l === BUDGET_HEADER || /^ {2}\S/.test(l)));
+}
+const BUDGET_HEADER = '--- Stream Token Budgets ---';
+
+/**
+ * How a settle reads one `maintain` answer (agent-framework's host-command reply), given the
+ * `progress` the pass before it read (null for a settle's first pass). Settled: the answer is
+ * ok, every agent is ready, and the host is drained with no write deferred (`hostMode`); an
+ * answer with no deferred-write count is judged on the rest, and `deferredWritesReported` says so.
+ * In flight: an agent's compression or merge is running (`progress.pending`, context-manager's
+ * pendingCompression), a turn is alive, or a wake is parked on admission. Moved: this pass's
+ * progress (each agent's chunks compressed, summary counts, queue lengths and pending text, and
+ * the host's deferred writes) differs from the pass before's; a first pass always has.
+ */
+export function readSettle(answer, previous) {
+  const agents = answer?.maintenance?.agents ?? [];
+  const host = answer?.hostMode ?? {};
+  const progress = JSON.stringify({
+    agents: agents.map((a) => {
+      const p = a.progress ?? {};
+      return [a.agentName, p.chunksCompressed, p.summaryCounts, p.l1QueueLength, p.mergeQueueLength, a.pending];
+    }),
+    deferredWrites: host.deferredWrites,
+  });
+  const deferredWritesReported = typeof host.deferredWrites === 'number';
+  return {
+    settled: answer?.ok === true && agents.every((a) => a.ready === true) && host.drained === true && (!deferredWritesReported || host.deferredWrites === 0),
+    deferredWritesReported,
+    inFlight: agents.some((a) => a.progress?.pending === true) || (host.activeTurnAgents ?? []).length > 0 || (host.parkedAdmissions ?? 0) > 0,
+    moved: progress !== previous,
+    progress,
+  };
+}
+
+class RunFailure extends Error {}
+
+/**
+ * Run `steps` (lib/strategies/script.mjs) through the installed host at
+ * `hostDir`, on the store at `storeDir`, against `standin`.
+ * - The host's `Date` starts at `epoch` (ms) and moves only on `advance` steps.
+ * - Every turn arrives on the fixture server's channel, and ends when the
+ *   agent's turn has ended: its speech, then its stream's
+ *   `inference:published_complete`. The run then settles: `maintain` until
+ *   every agent is ready.
+ * - Each step is set on the stand-in before it begins, and stays set through
+ *   the settle after it. A stand-in can serve several runs in turn; each
+ *   run's log holds only the requests that arrived while it ran.
+ * - `logPath` gets one JSON line per record, its `kind` one of boot, ready,
+ *   send, ipc (each host event, as `event`, with its arrival time), request
+ *   (each stand-in arrival), settle (each pass, then `phase: 'end'` with
+ *   `settled`), advance, checkpoint (with the health panel as `health`), copy,
+ *   undelivered (a turn whose speech the host had nowhere to deliver,
+ *   `mcpl:speech-route-failed`, with its `reason`; the turn ends there),
+ *   notice (a control peer's, unasked), panel (`op` and the host's
+ *   `response`), suppress (the web UI's `result`), read (a test-module read's
+ *   `op` and `answer`), shutdown, exit, failure and end, each with `seq`,
+ *   `wall` (ms since the run began), `clock` (virtual ms) and `step`.
+ * Beside the four kinds a script has (channel, command, advance, restart),
+ * a command step's `expect` is 'done' (the default) or 'failed', a refusal
+ * the host gives, such as a passthrough's for /newtopic:
+ * - `panel`: `{ op, params, expect }` sends the panel's request over IPC, as
+ *   the TUI's panel does, and fails unless the answer is `expect`'s (`'ok'`,
+ *   the default: ok with no warning, such as pin-remove's for an unknown pin;
+ *   or `'refused'`); it then settles. A param `{ pin: name }` is the id of
+ *   the pin with that name, as the panel's `pins` lists it. With `edge`,
+ *   `{ reserve }`, a budget agent-framework's preflight refuses as below the
+ *   folded floor is asked again at that floor plus `reserve` plus 1%, rounded
+ *   up to a thousand, up to four times, since the floor it reports moves with
+ *   the budget asked: as low as the host lets an operator take it.
+ * - `suppress`: `{ messages }` removes those messages through the web UI's
+ *   suppression, as an operator does from the page, and settles. The recipe
+ *   must turn `modules.webui` on.
+ * A message a `panel` param or a `suppress` names as `{ canary }` is the
+ * first stored message carrying that canary, read from the test module's
+ * `messages`. A channel step's `arrival`, `{ after, participant, text }`,
+ * is a second message delivered while the call whose canary is `after`,
+ * held by the fixture server (`hold: true`), runs; the call is then
+ * released. Any step's `reads`, a list of test-module read ops, are made
+ * after it ends, each logged as `read`; a read is an op's name, or
+ * `{ op, ...params }`. A channel step with `mayFail` lets agent-framework
+ * retry a failed inference, and a turn that ends exhausted or aborted is
+ * logged as `turn-failed` and the run goes on. A `restart` step's `agent`
+ * is merged into the recipe's agent, its `strategy` key by key, for every
+ * later boot; a param `{ sequenceOf: canary }` is that stored message's
+ * sequence, and `{ storeAt, withBlock }` the first stored message from that
+ * fraction of the store on that is neither a shard of a larger body nor a
+ * system message (and holds a `withBlock` block, given one). A scripted reply
+ * with `settle` is held until every agent's compression is idle, then sent
+ * (`held` in the log), so a subagent's rounds don't race the compression its
+ * earlier rounds started. A channel step with `tags`
+ * sends them with its message (RFC-001's `chat:addressed`, say); one with
+ * `reader`, an agent's name, waits for that agent's turn to start and then
+ * settles, rather than waiting on the primary's speech: the subconscious
+ * reader's turn on a message the resident's tune-out holds (with `mayFail`, a
+ * turn that ends exhausted or aborted is logged as turn-failed). A
+ * configuration's `subconscious` is the recipe's, and its `fixtureServer` is
+ * merged into the fixture server's recipe entry.
+ * Resolves with `{ ok, failure, clockEnd, copies, timing }` whatever happens:
+ * a failure (an unclassified request, a failed turn, a refused command, an
+ * unsettled checkpoint, the host exiting, a wait past its bound) stops the
+ * run, shuts the host down, and is named in `failure`.
+ */
+export async function runScript({ steps, configuration, standin, hostDir, facts, work, storeDir, epoch, logPath }) {
+  mkdirSync(work, { recursive: true });
+  mkdirSync(storeDir, { recursive: true });
+  const t0 = performance.now();
+  const wall = () => Math.round((performance.now() - t0) * 10) / 10;
+  let seq = 0;
+  let clock = epoch;
+  let current = null;
+  const log = (kind, fields = {}) => appendFileSync(logPath, `${JSON.stringify({ seq: seq++, wall: wall(), clock, step: current?.id ?? null, kind, ...fields })}\n`);
+  const channels = [...new Set(steps.filter((s) => s.kind === 'channel').map((s) => s.channel))];
+  const runName = `fx-${process.pid}-${Math.random().toString(36).slice(2, 8)}`;
+  const agentName = { ...BASE_AGENT, ...configuration.agent }.name;
+  let recipeOf = configuration;
+  const control = join(tmpdir(), `${runName}.ctl`);
+  const ctl = await listenForPeers(control);
+  const watchers = new Set();
+  const poke = () => { for (const w of [...watchers]) w(); };
+  let failure = null;
+  const fail = (f) => { if (!failure) { failure = f; log('failure', f); } poke(); };
+  const until = (check, timeoutMs, label, { pollMs = 0 } = {}) => new Promise((resolve, reject) => {
+    const stop = () => { clearTimeout(timer); clearInterval(poll); watchers.delete(attempt); };
+    const attempt = () => {
+      if (failure) { stop(); reject(new RunFailure(failure.reason)); return; }
+      const v = check();
+      if (v) { stop(); resolve(v); }
+    };
+    const timer = setTimeout(() => { stop(); fail({ step: current?.id ?? null, reason: `${label}: nothing after ${timeoutMs} ms` }); reject(new RunFailure(label)); }, timeoutMs);
+    const poll = pollMs ? setInterval(attempt, pollMs) : undefined;
+    watchers.add(attempt);
+    attempt();
+  });
+  // `p`, unless the run fails first: a wait with its own bound (a peer's connection) still
+  // ends as soon as the host exits.
+  const unlessFailed = (p) => new Promise((resolve, reject) => {
+    const check = () => { if (failure) { watchers.delete(check); reject(new RunFailure(failure.reason)); } };
+    watchers.add(check);
+    check();
+    p.then((v) => { watchers.delete(check); resolve(v); }, (e) => { watchers.delete(check); reject(e); });
+  });
+
+  const notices = [];
+  ctl.onNotice((n) => { notices.push(n); log('notice', n); poke(); });
+  standin.onHeld(async (request) => {
+    try {
+      await compressionIdle(request);
+    } catch (e) {
+      if (!failure) fail({ step: current?.id ?? null, reason: `while ${request.id} was held: ${e instanceof RunFailure ? e.message : String(e?.stack || e).slice(0, 2000)}` });
+    } finally {
+      standin.releaseHeld();
+    }
+  });
+
+  let ended = false;
+  standin.setClock(clock);
+  standin.onRequest((r) => {
+    if (ended) return;
+    log('request', { request: r });
+    if (r.kind === 'unclassified') fail({ step: current?.id ?? null, reason: `the stand-in got a request it couldn't classify (${r.reason ?? r.id})` });
+  });
+
+  let host = null;
+  let boots = 0;
+  const timing = { boots: [], steps: [] };
+  const copies = [];
+
+  async function boot() {
+    const b = { n: ++boots, events: [], stopping: false };
+    const started = performance.now();
+    const recipe = laneRecipe({ configuration: recipeOf, facts, control, channels, boot: b.n });
+    const recipePath = join(work, `recipe-${b.n}.json`);
+    writeFileSync(recipePath, JSON.stringify(recipe, null, 2));
+    const sockPath = join(tmpdir(), `${runName}-${b.n}.sock`);
+    rmSync(sockPath, { force: true });
+    const since = { server: ctl.generation('server'), clock: ctl.generation('clock'), module: ctl.generation('module') };
+    log('boot', { boot: b.n, recipePath, storeDir });
+    const env = { ANTHROPIC_BASE_URL: standin.url, ANTHROPIC_API_KEY: 'sk-ant-fixture', TZ: 'UTC', FIXTURE_CONTROL: control, FIXTURE_EPOCH_MS: String(clock) };
+    const { child, out } = spawnHost({ hostDir, recipePath, dataDir: storeDir, cwd: work, sockPath, env, preload: PRELOAD });
+    Object.assign(b, { child, out, sockPath });
+    host = b;
+    child.once('exit', (code, signal) => {
+      log('exit', { boot: b.n, code, signal, expected: b.stopping });
+      if (!b.stopping) fail({ step: current?.id ?? null, reason: `the host exited (${code ?? signal}) ${tail(out)}` });
+      poke();
+    });
+    await until(() => existsSync(sockPath), BOOT_MS, `boot ${b.n}: the host's IPC socket`, { pollMs: 50 });
+    for (let attempt = 0; !b.sock; attempt++) {
+      try { b.sock = await ipcConnect(sockPath); } catch (e) {
+        if (attempt >= 40 || failure) throw new RunFailure(`boot ${b.n}: couldn't connect to IPC: ${e.message}`);
+        await sleep(50);
+      }
+    }
+    lineReader(b.sock, (e) => {
+      const at = wall();
+      b.events.push({ at, e });
+      log('ipc', { at, event: e });
+      poke();
+    });
+    await until(() => b.events.some(({ e }) => e.type === 'lifecycle' && e.phase === 'ready'), BOOT_MS, `boot ${b.n}: lifecycle ready`);
+    await unlessFailed(ctl.waitConnected('server', { since: since.server, timeoutMs: BOOT_MS }));
+    await unlessFailed(ctl.waitConnected('clock', { since: since.clock, timeoutMs: BOOT_MS }));
+    if (configuration.harnessModule !== false) {
+      await unlessFailed(ctl.waitConnected('module', { since: since.module, timeoutMs: BOOT_MS }));
+      b.module = true;
+    }
+    timing.boots.push(Math.round(performance.now() - started));
+    log('ready', { boot: b.n, ms: timing.boots.at(-1) });
+    await budgetReport(b);
+  }
+
+  // D12: the host's own report of the agent's stream budget, which check 3 reads for the bound a
+  // continuation round is held to (checks.mjs, budgets).
+  async function budgetReport(b) {
+    const started = performance.now();
+    const from = b.events.length;
+    send(b.sock, { type: 'command', command: '/budget' });
+    const lines = () => b.events.slice(from).filter(({ e }) => e.type === 'command-output').map(({ e }) => String(e.text));
+    await until(() => budgetReportDone(lines(), agentName), COMMAND_MS, `boot ${b.n}: /budget`);
+    log('budget-report', { boot: b.n, lines: lines(), ms: Math.round(performance.now() - started) });
+  }
+
+  async function takeCompiles() {
+    if (configuration.harnessModule === false || !host) return;
+    const { lines, store, blobs } = await ctl.moduleRequest('take');
+    if (lines.length || Object.keys(store).length || Object.keys(blobs).length) log('compiles', { boot: host.n, lines, store, blobs });
+  }
+
+  async function shutdown() {
+    const b = host;
+    if (!b) return;
+    if (b.module) await takeCompiles().catch((e) => log('compiles', { boot: b.n, lost: String(e?.message ?? e) }));
+    host = null;
+    b.stopping = true;
+    if (b.child.exitCode === null && b.child.signalCode === null) {
+      if (b.sock) send(b.sock, { type: 'shutdown' });
+      let timer;
+      await new Promise((r) => { b.child.once('exit', r); timer = setTimeout(r, SHUTDOWN_MS); });
+      clearTimeout(timer);
+    }
+    try { b.sock?.destroy(); } catch { /* gone */ }
+    b.webui?.close();
+    stopHost(b.child);
+    writeFileSync(join(work, `host-${b.n}.log`), b.out.join(''));
+    log('shutdown', { boot: b.n, hostLog: join(work, `host-${b.n}.log`) });
+  }
+
+  const eventAfter = (from, test) => host.events.slice(from).find(({ e }) => test(e));
+
+  // A `maintain` pass awaits the work it starts itself, but returns at once while a
+  // compression the host's auto-tick started is in flight, and no event marks that work's end
+  // (readSettle). So the settle passes again while work is in flight; with nothing in flight,
+  // again only after a pass that moved the work on (a pass's ticks can leave queued chunks to
+  // the next); a pass that moved nothing on is stuck (a pause, a hold, a wait on the virtual
+  // clock) and fails at once. TURN_MS bounds the settle between passes: one slow `maintain`
+  // can carry it past by up to MAINTAIN_MS.
+  async function settle() {
+    const started = performance.now();
+    let progress = null;
+    let pass = 0;
+    for (;;) {
+      pass++;
+      const t = performance.now();
+      const answer = await ctl.hostCommand({ command: 'maintain' }, { timeoutMs: MAINTAIN_MS });
+      const read = readSettle(answer, progress);
+      const ticks = configuration.harnessModule === false ? {} : await ctl.moduleRequest('ticks');
+      const ticking = Object.entries(ticks).filter(([, n]) => n !== 0).map(([name, n]) => `${name} ${n}`);
+      if (ticking.length) Object.assign(read, { settled: false, inFlight: true });
+      const first = progress === null;
+      progress = read.progress;
+      const agents = answer?.maintenance?.agents ?? [];
+      const { drained, deferredWrites, activeTurnAgents = [] } = answer?.hostMode ?? {};
+      log('settle', { phase: 'pass', pass, ms: Math.round(performance.now() - t), ok: answer?.ok, ran: answer?.maintenance?.ran, runId: answer?.maintenance?.history?.[0]?.id ?? null, agents, drained, deferredWrites, activeTurnAgents, inFlight: read.inFlight, moved: read.moved, ...(ticking.length ? { ticking } : {}) });
+      if (read.settled) {
+        log('settle', { phase: 'end', settled: true, passes: pass, ms: Math.round(performance.now() - started), deferredWritesReported: read.deferredWritesReported });
+        await takeCompiles();
+        return pass;
+      }
+      if (failure) throw new RunFailure(failure.reason);
+      const why = !answer?.ok ? `maintain answered ${JSON.stringify(answer).slice(0, 300)}`
+        : !read.inFlight && !first && !read.moved ? 'nothing in flight, and the last pass moved nothing on'
+          : performance.now() - started >= TURN_MS ? `still unsettled after ${TURN_MS} ms between passes, the bound a turn's speech has`
+            : null;
+      if (why) {
+        const ms = Math.round(performance.now() - started);
+        log('settle', { phase: 'end', settled: false, passes: pass, ms, why });
+        const notReady = agents.filter((a) => a.ready !== true).map((a) => (a.agentName ? `${a.agentName} (${a.error ?? a.pending ?? 'no pending work named'})` : JSON.stringify(a).slice(0, 200)));
+        const host = [
+          drained === true ? 'the host drained' : drained === false ? `the host not drained (turns alive: ${activeTurnAgents.join(', ') || 'none named'})` : 'no drained state in the host\'s answer',
+          typeof deferredWrites !== 'number' || deferredWrites === 0 ? null : `${deferredWrites} deferred write(s) still to land`,
+        ].filter(Boolean).join(', ');
+        fail({ step: current?.id ?? null, reason: `the run didn't settle (${why}; ${pass} maintenance passes in ${(ms / 1000).toFixed(1)} s): ${notReady.length ? `not ready: ${notReady.join(', ')}` : 'every agent ready'}, ${host}. A wait timed by the host's virtual clock can't end inside a settle, since the clock moves only at an advance step.` });
+        throw new RunFailure('unsettled');
+      }
+    }
+  }
+
+  /**
+   * A held reply's settle: maintenance passes until every agent is ready with no compression
+   * pending and no auto-tick in flight (the module's ticks, as settle() reads them). The turn
+   * whose request is held is alive, so the host isn't drained, and settle() would wait on it.
+   */
+  async function compressionIdle(request) {
+    const started = performance.now();
+    for (let pass = 1; ; pass++) {
+      const answer = await ctl.hostCommand({ command: 'maintain' }, { timeoutMs: MAINTAIN_MS });
+      const agents = answer?.maintenance?.agents ?? [];
+      const ticks = configuration.harnessModule === false ? {} : await ctl.moduleRequest('ticks');
+      const idle = answer?.ok === true && agents.every((a) => a.ready === true && a.progress?.pending !== true)
+        && Object.values(ticks).every((n) => n === 0);
+      if (idle) {
+        log('held', { request: request.id, agent: request.agent, passes: pass, ms: Math.round(performance.now() - started) });
+        return;
+      }
+      if (performance.now() - started >= TURN_MS) throw new RunFailure(`compression didn't go idle within ${TURN_MS} ms (${pass} passes)`);
+    }
+  }
+
+  const channelMessage = (step, { id, participant, text, images, tags }) => ({ channelId: step.channel, messageId: id, author: { id: `u-${String(participant).toLowerCase()}`, name: participant }, topic: step.topic, text, ...(images ? { images } : {}), ...(tags ? { tags } : {}), at: clock });
+  const sendSummary = (message) => ({ ...message, text: `${message.text.length} chars`, ...(message.images ? { images: message.images.length } : {}) });
+
+  async function channelTurn(step) {
+    const from = host.events.length;
+    const message = channelMessage(step, { id: step.id, participant: step.participant, text: step.text, images: step.images, tags: step.tags });
+    log('send', { via: 'channel', message: sendSummary(message) });
+    await ctl.deliver(message, { timeoutMs: TURN_MS });
+    if (step.reader) {
+      await until(() => eventAfter(from, (e) => e.agentName === step.reader && e.type === 'inference:started'), TURN_MS, `turn ${step.id}: ${step.reader}'s turn`);
+      await settle();
+      const failed = eventAfter(from, (e) => e.agentName === step.reader && /^inference:(exhausted|aborted)$/.test(e.type));
+      if (failed && step.mayFail) {
+        log('turn-failed', { agent: step.reader, event: failed.e.type, error: failed.e.error ?? null });
+        return;
+      }
+      if (failed) {
+        fail({ step: step.id, reason: `${step.reader}'s turn ended in ${failed.e.type}: ${JSON.stringify(failed.e).slice(0, 1500)}` });
+        throw new RunFailure(failed.e.type);
+      }
+      return;
+    }
+    if (step.arrival) {
+      const { after } = step.arrival;
+      await until(() => notices.some((n) => n.notice === 'held' && n.canary === after), TURN_MS, `turn ${step.id}: the call held for ${after}`);
+      const arrival = channelMessage(step, { id: `${step.id}.arrival`, ...step.arrival });
+      log('send', { via: 'channel', during: after, message: sendSummary(arrival) });
+      await ctl.deliver(arrival, { timeoutMs: TURN_MS });
+      await ctl.release(after, { timeoutMs: COMMAND_MS });
+      log('send', { via: 'release', canary: after });
+    }
+    const ending = step.mayFail ? /^inference:(exhausted|aborted)$/ : /^inference:(failed|exhausted|aborted)$/;
+    const ended = await until(() => eventAfter(from, (e) => e.type === 'inference:speech' || ending.test(e.type)), TURN_MS, `turn ${step.id}: its speech`);
+    if (ended.e.type !== 'inference:speech' && step.mayFail) {
+      log('turn-failed', { event: ended.e.type, error: ended.e.error ?? null });
+      await settle();
+      return;
+    }
+    if (ended.e.type !== 'inference:speech') {
+      // agent-framework reports inference:failed before it decides whether to retry, and the
+      // event doesn't say which; the fixture stops at the first failure either way.
+      const what = ended.e.type === 'inference:failed'
+        ? 'the turn\'s first inference failure (inference:failed, which agent-framework may still have retried)'
+        : `the turn's end in ${ended.e.type}`;
+      fail({ step: step.id, reason: `${what}: ${JSON.stringify(ended.e).slice(0, 1500)}` });
+      throw new RunFailure(ended.e.type);
+    }
+    const speechAt = host.events.indexOf(ended);
+    const published = await until(() => eventAfter(speechAt, (e) => e.type === 'inference:published_complete' || e.type === 'mcpl:speech-route-failed'), TURN_MS, `turn ${step.id}: its stream's end`);
+    if (published.e.type === 'mcpl:speech-route-failed') log('undelivered', { reason: published.e.reason ?? null });
+    await settle();
+  }
+
+  async function command(step) {
+    const name = /^\/(\S+)/.exec(step.command)?.[1];
+    const ends = COMMANDS[name];
+    if (!ends) {
+      fail({ step: step.id, reason: `the driver doesn't know when ${JSON.stringify(step.command)} ends` });
+      throw new RunFailure('unknown command');
+    }
+    const from = host.events.length;
+    log('send', { via: 'ipc', command: step.command });
+    send(host.sock, { type: 'command', command: step.command });
+    const lines = () => host.events.slice(from).filter(({ e }) => e.type === 'command-output').map(({ e }) => String(e.text));
+    const outcome = await until(() => ends(lines()), COMMAND_MS, `command ${step.command}`);
+    if (outcome !== (step.expect ?? 'done')) {
+      fail({ step: step.id, reason: `${step.command} ${outcome}, where the step expects it ${step.expect ?? 'done'}: ${lines().join(' | ').slice(0, 1500)}` });
+      throw new RunFailure(`command ${outcome}`);
+    }
+  }
+
+  async function advance(step) {
+    await settle();
+    const to = clock + step.ms;
+    await ctl.advance(to);
+    log('advance', { from: clock, to });
+    clock = to;
+    standin.setClock(clock);
+  }
+
+  async function checkpoint(step, last) {
+    await settle();
+    const corrId = `${step.id}:health`;
+    const from = host.events.length;
+    send(host.sock, { type: 'panel-request', op: 'health', corrId });
+    const panel = await until(() => eventAfter(from, (e) => e.type === 'panel-response' && e.corrId === corrId), COMMAND_MS, `checkpoint ${step.id}: the health panel`);
+    log('checkpoint', { name: step.name, health: panel.e });
+    if (!step.copyStore) return;
+    await shutdown();
+    const dest = join(work, 'copies', step.name ?? step.id);
+    rmSync(dest, { recursive: true, force: true });
+    cpSync(storeDir, dest, { recursive: true });
+    const sessions = existsSync(join(dest, 'sessions')) ? readdirSync(join(dest, 'sessions')).map((id) => join(dest, 'sessions', id)) : [];
+    copies.push({ step: step.id, name: step.name, path: dest, sessions, clock });
+    log('copy', { path: dest, sessions });
+    if (!last) await boot();
+  }
+
+  /**
+   * A restart. With `reloadCheck`, the run's agent compiles dry on each side of it, after the
+   * settle before and after the boot, through the harness module; `reload` names the two compile
+   * lines by boot and seq, for the reload check (checks.mjs `reloads`).
+   */
+  async function restart(step) {
+    await settle();
+    const agent = agentName;
+    const dry = async () => ({ boot: host.n, seq: (await ctl.moduleRequest('dry-compile', { agent })).seq });
+    const before = step.reloadCheck ? await dry() : null;
+    const patch = step.agent ? await resolveMessages(step.agent) : null;
+    await shutdown();
+    if (patch) {
+      const { strategy, ...rest } = patch;
+      recipeOf = { ...recipeOf, agent: { ...recipeOf.agent, ...rest, ...(strategy ? { strategy: { ...recipeOf.agent?.strategy, ...strategy } } : {}) } };
+      log('recipe', { agent: patch });
+    }
+    await boot();
+    if (!step.reloadCheck) return;
+    await settle();
+    const after = await dry();
+    await takeCompiles();
+    log('reload', { agent, before, after });
+  }
+
+  async function moduleRead(op, params) {
+    if (typeof ctl.moduleRequest !== 'function') throw new RunFailure(`the test module's ${op} read isn't available on the control socket`);
+    return unlessFailed(ctl.moduleRequest(op, params, { timeoutMs: COMMAND_MS }));
+  }
+
+  async function stored(which) {
+    const messages = await moduleRead('messages', { agent: agentName });
+    const all = messages?.messages ?? messages ?? [];
+    let found;
+    if (which.canary !== undefined) found = all.find((m) => (m.canaries ?? []).includes(which.canary));
+    else {
+      const from = Math.min(all.length - 1, Math.floor(all.length * which.storeAt));
+      const plain = (m) => !m.bodyGroupId && m.metadata?.system !== true;
+      found = all.slice(from).find((m) => plain(m) && (!which.withBlock || m.blocks.some((b) => b.type === which.withBlock)));
+    }
+    if (!found) {
+      fail({ step: current?.id ?? null, reason: `no stored message is ${JSON.stringify(which)}` });
+      throw new RunFailure('no such message');
+    }
+    return found;
+  }
+
+  let panelRequests = 0;
+  async function panelRequest(op, params) {
+    const corrId = `${current?.id ?? 'run'}:panel:${++panelRequests}`;
+    const from = host.events.length;
+    send(host.sock, { type: 'panel-request', op, params, corrId });
+    return (await until(() => eventAfter(from, (e) => e.type === 'panel-response' && e.corrId === corrId), COMMAND_MS, `panel ${op}`)).e;
+  }
+
+  async function pinId(name) {
+    const answer = await panelRequest('pins', {});
+    const pin = (answer.data?.pins ?? []).find((p) => p.name === name);
+    if (!pin) {
+      fail({ step: current?.id ?? null, reason: `the panel lists no pin named ${JSON.stringify(name)}` });
+      throw new RunFailure('no such pin');
+    }
+    return pin.id;
+  }
+
+  async function resolveMessages(value) {
+    if (Array.isArray(value)) return Promise.all(value.map(resolveMessages));
+    if (!value || typeof value !== 'object') return value;
+    const keys = Object.keys(value);
+    if (keys.length === 1 && keys[0] === 'canary') return (await stored(value)).id;
+    if (keys.length === 1 && keys[0] === 'sequenceOf') return (await stored({ canary: value.sequenceOf })).sequence;
+    if (keys.includes('storeAt') && keys.every((k) => k === 'storeAt' || k === 'withBlock')) return (await stored(value)).id;
+    if (keys.length === 1 && keys[0] === 'pin') return pinId(value.pin);
+    return Object.fromEntries(await Promise.all(Object.entries(value).map(async ([k, v]) => [k, await resolveMessages(v)])));
+  }
+
+  async function panel(step) {
+    const params = await resolveMessages(step.params ?? {});
+    log('send', { via: 'panel', op: step.op, params });
+    let answer = await panelRequest(step.op, params);
+    log('panel', { op: step.op, response: answer });
+    for (let attempt = 0; step.edge && answer.ok !== true && attempt < 4; attempt++) {
+      const floor = /folded floor renders (\d+) tokens/.exec(String(answer.error ?? ''));
+      if (!floor) break;
+      const lowest = Math.ceil((Number(floor[1]) + step.edge.reserve) * 1.01 / 1000) * 1000;
+      log('send', { via: 'panel', op: step.op, params: { ...params, contextBudgetTokens: lowest }, edge: Number(floor[1]) });
+      answer = await panelRequest(step.op, { ...params, contextBudgetTokens: lowest });
+      log('panel', { op: step.op, response: answer });
+    }
+    const expected = (step.expect ?? 'ok') === 'ok';
+    const ok = answer.ok === true && answer.data?.warning === undefined;
+    if (ok !== expected) {
+      fail({ step: step.id, reason: `the panel's ${step.op} answered ${ok ? 'ok' : `not ok (${answer.data?.warning ?? answer.error ?? answer.status ?? 'no reason given'})`}, where the step expects ${step.expect ?? 'ok'}` });
+      throw new RunFailure('panel');
+    }
+    await settle();
+  }
+
+  async function webui() {
+    if (host.webui) return host.webui;
+    const line = host.out.join('').match(WEBUI_LISTENING);
+    if (!line) throw new RunFailure(`the host logged no "[webui] listening on" line, so the web UI isn't on in this recipe`);
+    host.webui = await unlessFailed(openWebUi({ url: line[1], basicAuth: configuration.modules?.webui?.basicAuth ?? null, timeoutMs: COMMAND_MS }));
+    return host.webui;
+  }
+
+  let suppressions = 0;
+  async function suppress(step) {
+    const messageIds = await resolveMessages(step.messages);
+    const ui = await webui();
+    const corrId = `${step.id}:suppress:${++suppressions}`;
+    log('send', { via: 'webui', op: 'suppress', messageIds });
+    ui.send({ type: 'suppress', messageIds, sessionId: ui.welcome.session.id, corrId });
+    const result = await unlessFailed(ui.next((m) => m.type === 'surgery-result' && m.corrId === corrId, { label: `the suppress result for ${corrId}` }));
+    log('suppress', { result });
+    if (result.ok !== true) {
+      fail({ step: step.id, reason: `the web UI's suppress failed: ${result.error ?? JSON.stringify(result).slice(0, 500)}` });
+      throw new RunFailure('suppress');
+    }
+    await settle();
+  }
+
+  const KINDS = { channel: channelTurn, command, advance, restart, panel, suppress };
+  try {
+    await boot();
+    for (const [i, step] of steps.entries()) {
+      current = step;
+      standin.setStep(step);
+      const started = performance.now();
+      if (step.kind === 'checkpoint') await checkpoint(step, i === steps.length - 1);
+      else if (KINDS[step.kind]) await KINDS[step.kind](step);
+      else { fail({ step: step.id, reason: `the driver has no step kind ${JSON.stringify(step.kind)}` }); throw new RunFailure('unknown kind'); }
+      for (const read of step.reads ?? []) {
+        const { op, ...params } = typeof read === 'string' ? { op: read } : read;
+        log('read', { op, ...(Object.keys(params).length ? { params } : {}), answer: await moduleRead(op, { agent: agentName, ...params }) });
+      }
+      timing.steps.push({ id: step.id, kind: step.kind, ms: Math.round(performance.now() - started) });
+    }
+  } catch (e) {
+    if (!failure) fail({ step: current?.id ?? null, reason: e instanceof RunFailure ? e.message : String(e?.stack || e).slice(0, 3000) });
+    if (host) log('host-output', { boot: host.n, tail: tail(host.out) });
+  } finally {
+    await shutdown();
+    await ctl.close();
+    ended = true;
+    log('end', { ok: !failure, clockEnd: clock });
+  }
+  return { ok: !failure, failure, clockEnd: clock, copies, timing };
+}
+
+const tail = (out) => out.join('').split('\n').slice(-30).join('\n');

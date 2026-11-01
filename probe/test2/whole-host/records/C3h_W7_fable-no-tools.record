@@ -1,0 +1,74 @@
+# whole-host record C3h/W7/fable-no-tools
+# checkpoint v0.21.0, empty: connectome-host 0.21.0 (source 54321fd3af80), agent-framework 0.32.0, context-manager 0.24.0, membrane 0.8.0, chronicle 0.5.1, bun 1.4.4
+# candidate: connectome-host 0.21.0, agent-framework 0.32.0, context-manager 0.24.0, membrane 0.8.0, chronicle 0.5.1, bun 1.4.4
+step 2057.1
+  compile [T:user-clock-monday-#-#-#](2026,01,05,09,00) [T:user-the-local-time](2026,01,05,09,00,00,000,00,00) 2057.1.in [T:user-routing-your-plain] ^ 4
+step 2057.2
+  compile + 2057.1.r1 [T:user-delivered-plain-speech] 2057.2.in ^ 4
+step 2057.3
+  compile + 2057.2.r1 [T:user-delivered-plain-speech] 2057.3.in ^ 4
+step 2057.4
+  compile + 2057.3.r1 [T:user-delivered-plain-speech] 2057.4.in ^ 4
+step 2057.5
+  compile + 2057.4.r1 [T:user-delivered-plain-speech] 2057.5.in ^ 4
+step 2057.6
+  compile + 2057.5.r1 [T:user-delivered-plain-speech] 2057.6.in ^ 4
+step 2057.7
+  compile + 2057.6.r1 [T:user-delivered-plain-speech] 2057.7.in ^ 4
+step 2057.8
+  compile + 2057.7.r1 [T:user-delivered-plain-speech] 2057.8.in ^ 4
+step 2057.9
+  compile + 2057.8.r1 [T:user-delivered-plain-speech] 2057.9.in ^ 4
+step 2057.10
+  compile + 2057.9.r1 [T:user-delivered-plain-speech] 2057.10.in ^ 4
+step 2057.11
+  compile + 2057.10.r1 [T:user-delivered-plain-speech] 2057.11.in ^ 4
+step 2057.12
+  compile + 2057.11.r1 [T:user-delivered-plain-speech] 2057.12.in ^ 4
+step 2057.13
+  compile + 2057.12.r1 [T:user-delivered-plain-speech] 2057.13.in ^ 4
+step 2057.14
+  compile + 2057.13.r1 [T:user-delivered-plain-speech] 2057.14.in ^ 4
+step 2057.15
+  compile + 2057.14.r1 [T:user-delivered-plain-speech] 2057.15.in ^ 4
+step 2057.16
+  compile + 2057.15.r1 [T:user-delivered-plain-speech] 2057.16.in ^ 4
+step 2057.17
+  compile + 2057.16.r1 [T:user-delivered-plain-speech] 2057.17.in ^ 4
+step 2057.18
+  compile + 2057.17.r1 [T:user-delivered-plain-speech] 2057.18.in ^ 4
+step 2057.19
+  compile + 2057.18.r1 [T:user-delivered-plain-speech] 2057.19.in ^ 4
+step 2057.20
+  compile + 2057.19.r1 [T:user-delivered-plain-speech] 2057.20.in ^ 4
+step 2057.21
+  compile + 2057.20.r1 [T:user-delivered-plain-speech] 2057.21.in ^ 4
+step 2057.22
+  compile + 2057.21.r1 [T:user-delivered-plain-speech] 2057.22.in ^ 4
+step 2057.23
+  compile + 2057.22.r1 [T:user-delivered-plain-speech] 2057.23.in ^ 4
+step 2057.24
+  compile + 2057.23.r1 [T:user-delivered-plain-speech] 2057.24.in ^ 4
+step 2057.25
+  compile + 2057.24.r1 [T:user-delivered-plain-speech] 2057.25.in ^ 4
+step 2057.26
+  compile + 2057.25.r1 [T:user-delivered-plain-speech] 2057.26.in ^ 4
+step 2057.27
+  compile + 2057.26.r1 [T:user-delivered-plain-speech] 2057.27.in ^ 4
+step 2057.28
+  compile + 2057.27.r1 [T:user-delivered-plain-speech] 2057.28.in ^ 4
+step 2057.29
+  compile + 2057.28.r1 [T:user-delivered-plain-speech] 2057.29.in ^ 4
+step 2057.30
+  compile + 2057.29.r1 [T:user-delivered-plain-speech] 2057.30.in ^ 4
+step 2057.31
+  compile + 2057.30.r1 [T:user-delivered-plain-speech] 2057.31.in ^ 4
+step 2057.32
+  compile + 2057.31.r1 [T:user-delivered-plain-speech] 2057.32.in ^ 4
+end ok
+totals {"actions":0,"calls":0,"compiles":32,"dry":0,"other":0,"refused":0,"written":0}
+templates
+T:user-clock-monday-#-#-# = Clock: Monday #-#-#, #:# UTC
+T:user-delivered-plain-speech = [delivered] plain speech → chat
+T:user-routing-your-plain = [routing] Your plain speech now lands in chat. Other channels need an explicit send tool.
+T:user-the-local-time = The local time at the start of this session is #-#-#T#:#:#.#+#:# [UTC].

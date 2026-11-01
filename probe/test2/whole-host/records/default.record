@@ -1,0 +1,164 @@
+# whole-host record default
+# checkpoint v0.21.0, 49 prefix turns: connectome-host 0.21.0 (source 54321fd3af80), agent-framework 0.32.0, context-manager 0.24.0, membrane 0.8.0, chronicle 0.5.1, bun 1.4.4
+# candidate: connectome-host 0.21.0, agent-framework 0.32.0, context-manager 0.24.0, membrane 0.8.0, chronicle 0.5.1, bun 1.4.4
+step c.name
+  action /session rename fixture
+step c.cm.1.adv
+  wrote L1(p.2.in-p.3.in) [T:summary-l1-c1fa5b10]
+  wrote L2(p.2.in-p.10.in) [T:summary-l2-b41ad79d]
+  wrote L1(p.3.r1-p.4.r1) [T:summary-l1-02f99022]
+  wrote L1(p.5.in-p.6.in) [T:summary-l1-ca629a9b]
+  wrote L1(p.6.r1-p.7.call1) [T:summary-l1-426cea1c]
+  wrote L1(p.7.r2-p.8.in) [T:summary-l1-0d77c4fd]
+  wrote L1(p.8.r1-p.10.in) [T:summary-l1-b1e62c4a]
+  wrote L1(p.10.r1-p.11.call1) [T:summary-l1-72f304b7]
+  wrote L2(p.10.r1-p.17.in) [T:summary-l2-9344b088]
+  wrote L1(p.11.r2-p.12.r1) [T:summary-l1-101d1a98]
+  wrote L1(p.13.in-p.13.call1) [T:summary-l1-6db8d288]
+  wrote L1(p.13.r2-p.14.call1) [T:summary-l1-b62b148c]
+  wrote L1(p.14.r2-p.16.in) [T:summary-l1-398ab143]
+  wrote L1(p.16.r1-p.17.in) [T:summary-l1-e02a3fee]
+  wrote L1(-) [T:summary-l1-d6ebb559]
+  wrote L1(p.17.r1) [T:summary-l1-cb77d494]
+  wrote L2(p.17.r1-p.22.call1) [T:summary-l2-6d82df37]
+  wrote L1(p.18.in-p.19.in) [T:summary-l1-eccb0585]
+  wrote L1(p.19.r1-p.20.in) [T:summary-l1-45083597]
+  wrote L1(p.20.r1-p.21.call1) [T:summary-l1-f7b92457]
+  wrote L1(p.21.r2-p.22.call1) [T:summary-l1-b9cc0ab9]
+  wrote L1(p.22.r2-p.23.r1) [T:summary-l1-7ad10778]
+  wrote L2(p.22.r2-p.29.r1) [T:summary-l2-9dd77216]
+  wrote L1(p.24.in-p.25.in) [T:summary-l1-d4ca0868]
+  wrote L1(p.25.r1-p.26.call1) [T:summary-l1-1742019a]
+  wrote L1(p.26.r2-p.27.r1) [T:summary-l1-86f3256f]
+  wrote L1(p.28.in-p.28.call1) [T:summary-l1-5f46ff92]
+  wrote L1(p.28.r2-p.29.r1) [T:summary-l1-01e2a1de]
+  wrote L1(p.30.in-p.30.r1) [T:summary-l1-f54fdc2d]
+  wrote L2(p.30.in-p.34.r1) [T:summary-l2-67aa9f1b]
+  wrote L1(p.31.in-p.32.in) [T:summary-l1-d3d8967a]
+  wrote L1(p.32.r1-p.33.call1) [T:summary-l1-f8070ea7]
+  wrote L1(p.33.r2-p.34.in) [T:summary-l1-b04a7501]
+  wrote L1(-) [T:summary-l1-ddf3693c]
+  wrote L1(p.34.r1) [T:summary-l1-fdd8313a]
+step c.cm.1
+  call p.1.in p.1.r1 p.35.in p.35.r1 p.35.call1 -> summary
+  wrote L1(p.35.in-p.35.call1) [T:summary-l1-7920155b]
+  compile [T:user-clock-monday-#-#-#](2026,01,05,09,00) [T:user-the-local-time](2026,01,05,09,00,00,000,00,00) p.1.in [T:user-routing-your-plain] p.1.r1 [T:user-delivered-plain-speech] L2(p.2.in-p.10.in) L2(p.2.in-p.10.in) p.10.r1 [T:user-delivered-plain-speech] p.11.in-p.11.r2 [T:user-delivered-plain-speech] p.12.in-p.12.r1 L1(p.13.in-p.13.call1) L1(p.13.in-p.13.call1) L1(p.13.r2-p.14.call1) L1(p.13.r2-p.14.call1) L1(p.14.r2-p.16.in) L1(p.14.r2-p.16.in) L1(p.16.r1-p.17.in) L1(p.16.r1-p.17.in) L1(-) L1(-) L1(p.17.r1) L1(p.17.r1) L1(p.18.in-p.19.in) L1(p.18.in-p.19.in) L1(p.19.r1-p.20.in) L1(p.19.r1-p.20.in) L1(p.20.r1-p.21.call1) L1(p.20.r1-p.21.call1) p.21.r2 [T:user-delivered-plain-speech] p.22.in-p.22.r2 [T:user-delivered-plain-speech] [T:user-clock-#-#-utc](10,30) p.23.in-p.23.r1 [T:user-delivered-plain-speech] p.24.in-p.24.r1 [T:user-delivered-plain-speech] [T:user-clock-#-#-utc](10,40) p.25.in L1(p.25.r1-p.26.call1) L1(p.25.r1-p.26.call1) p.26.r2 [T:user-delivered-plain-speech] p.27.in-p.27.r1 L1(p.28.in-p.28.call1) L1(p.28.in-p.28.call1) p.28.r2 [T:user-delivered-plain-speech] p.29.in-p.29.r1 L1(p.30.in-p.30.r1) L1(p.30.in-p.30.r1) L1(p.31.in-p.32.in) L1(p.31.in-p.32.in) L1(p.32.r1-p.33.call1) L1(p.32.r1-p.33.call1) L1(p.33.r2-p.34.in) L1(p.33.r2-p.34.in) [T:user-island-quiet-island] p.34.r1 [T:user-delivered-plain-speech] [T:user-clock-#-#-utc](11,20) p.35.in-p.35.r2 [T:user-delivered-plain-speech] p.36.in-p.36.r1 [T:user-delivered-plain-speech] p.37.in-p.37.r1 [T:user-delivered-plain-speech] [T:user-clock-#-#-utc](11,30) p.38.in-p.38.r1 [T:user-delivered-plain-speech] p.39.in-p.39.r2 [T:user-delivered-plain-speech] [T:user-clock-#-#-utc](11,40) p.40.in-p.40.r1 [T:user-delivered-plain-speech] p.41.in-p.41.r1 [T:user-delivered-plain-speech] p.42.in-p.42.r2 [T:user-delivered-plain-speech] [T:user-clock-#-#-utc](11,50) p.43.in-p.43.r1 [T:user-delivered-plain-speech] p.44.in-p.44.r2 [T:user-delivered-plain-speech] [T:user-clock-#-#-utc](12,00) p.45.in-p.45.r1 [T:user-delivered-plain-speech] p.46.in-p.46.r1 [T:user-delivered-plain-speech] p.47.in-p.47.r1 [T:user-delivered-plain-speech] [T:user-clock-#-#-utc](12,10) p.48.in-p.48.r1 [T:user-delivered-plain-speech] p.49.in-p.49.r2 [T:user-delivered-plain-speech] [T:user-clock-#-#-utc](12,20) c.cm.1.in ^ 38,71,82,137
+step c.cm.2
+  call p.1.in p.1.r1 p.35.r2 p.36.in p.36.r1 -> summary
+  call p.1.in p.1.r1 p.37.in p.37.r1 p.38.in -> summary
+  call p.1.in p.1.r1 p.38.r1 p.39.in p.39.r1 p.39.call1 p.39.call2 p.39.call3 -> summary
+  wrote L1(p.35.r2-p.36.r1) [T:summary-l1-33aa76ef]
+  wrote L1(p.37.in-p.38.in) [T:summary-l1-4fdc470c]
+  wrote L1(p.38.r1-p.39.call1) [T:summary-l1-587e43f3]
+  compile [T:user-clock-monday-#-#-#](2026,01,05,09,00) [T:user-the-local-time](2026,01,05,09,00,00,000,00,00) p.1.in [T:user-routing-your-plain] p.1.r1 [T:user-delivered-plain-speech] L2(p.2.in-p.10.in) L2(p.2.in-p.10.in) p.10.r1 [T:user-delivered-plain-speech] p.11.in-p.11.r2 [T:user-delivered-plain-speech] p.12.in-p.12.r1 L1(p.13.in-p.13.call1) L1(p.13.in-p.13.call1) L1(p.13.r2-p.14.call1) L1(p.13.r2-p.14.call1) L1(p.14.r2-p.16.in) L1(p.14.r2-p.16.in) L1(p.16.r1-p.17.in) L1(p.16.r1-p.17.in) L1(-) L1(-) L1(p.17.r1) L1(p.17.r1) L1(p.18.in-p.19.in) L1(p.18.in-p.19.in) L1(p.19.r1-p.20.in) L1(p.19.r1-p.20.in) L1(p.20.r1-p.21.call1) L1(p.20.r1-p.21.call1) p.21.r2 [T:user-delivered-plain-speech] p.22.in-p.22.r2 [T:user-delivered-plain-speech] [T:user-clock-#-#-utc](10,30) p.23.in-p.23.r1 [T:user-delivered-plain-speech] p.24.in-p.24.r1 [T:user-delivered-plain-speech] [T:user-clock-#-#-utc](10,40) p.25.in L1(p.25.r1-p.26.call1) L1(p.25.r1-p.26.call1) p.26.r2 [T:user-delivered-plain-speech] p.27.in-p.27.r1 L1(p.28.in-p.28.call1) L1(p.28.in-p.28.call1) p.28.r2 [T:user-delivered-plain-speech] p.29.in-p.29.r1 L1(p.30.in-p.30.r1) L1(p.30.in-p.30.r1) L1(p.31.in-p.32.in) L1(p.31.in-p.32.in) L1(p.32.r1-p.33.call1) L1(p.32.r1-p.33.call1) L1(p.33.r2-p.34.in) L1(p.33.r2-p.34.in) L1(-) L1(-) L1(p.34.r1) L1(p.34.r1) L1(p.35.in-p.35.call1) L1(p.35.in-p.35.call1) L1(p.35.r2-p.36.r1) L1(p.35.r2-p.36.r1) [T:user-delivered-plain-speech] p.37.in-p.37.r1 [T:user-delivered-plain-speech] [T:user-clock-#-#-utc](11,30) p.38.in-p.38.r1 [T:user-delivered-plain-speech] p.39.in-p.39.r2 [T:user-delivered-plain-speech] [T:user-clock-#-#-utc](11,40) p.40.in-p.40.r1 [T:user-delivered-plain-speech] p.41.in-p.41.r1 [T:user-delivered-plain-speech] p.42.in-p.42.r2 [T:user-delivered-plain-speech] [T:user-clock-#-#-utc](11,50) p.43.in-p.43.r1 [T:user-delivered-plain-speech] p.44.in-p.44.r2 [T:user-delivered-plain-speech] [T:user-clock-#-#-utc](12,00) p.45.in-p.45.r1 [T:user-delivered-plain-speech] p.46.in-p.46.r1 [T:user-delivered-plain-speech] p.47.in-p.47.r1 [T:user-delivered-plain-speech] [T:user-clock-#-#-utc](12,10) p.48.in-p.48.r1 [T:user-delivered-plain-speech] p.49.in-p.49.r2 [T:user-delivered-plain-speech] [T:user-clock-#-#-utc](12,20) c.cm.1.in-c.cm.1.r1 [T:user-delivered-plain-speech] c.cm.2.in ^ 38,71,97,137
+step c.cm.3
+  call p.1.in p.1.r1 p.39.r2 p.40.in -> summary
+  call p.1.in p.1.r1 p.40.r1 p.41.in p.41.r1 -> summary
+  call p.1.in p.1.r1 p.35.in p.35.r1 p.35.call1 p.35.r2 p.36.in p.36.r1 p.37.in p.37.r1 p.38.in p.38.r1 p.39.in p.39.r1 p.39.call1 p.39.call2 p.39.call3 p.39.r2 p.40.in p.40.r1 p.41.in p.41.r1 -> summary
+  call p.1.in p.1.r1 -> summary
+  wrote L3(p.2.in-p.41.r1) [T:summary-l3-e1b295d2]
+  wrote L2(p.35.in-p.41.r1) [T:summary-l2-83354832]
+  wrote L1(p.39.r2-p.40.in) [T:summary-l1-1a9376ce]
+  wrote L1(p.40.r1-p.41.r1) [T:summary-l1-33738f5f]
+  compile + c.cm.2.r1 [T:user-delivered-plain-speech] c.cm.3.in ^ 39,80,102,140
+step c.cm.4
+  compile [T:user-clock-monday-#-#-#](2026,01,05,09,00) [T:user-the-local-time](2026,01,05,09,00,00,000,00,00) p.1.in [T:user-routing-your-plain] p.1.r1 [T:user-delivered-plain-speech] L2(p.2.in-p.10.in) L2(p.2.in-p.10.in) p.10.r1 [T:user-delivered-plain-speech] p.11.in-p.11.r2 [T:user-delivered-plain-speech] p.12.in-p.12.r1 L1(p.13.in-p.13.call1) L1(p.13.in-p.13.call1) L1(p.13.r2-p.14.call1) L1(p.13.r2-p.14.call1) L1(p.14.r2-p.16.in) L1(p.14.r2-p.16.in) L1(p.16.r1-p.17.in) L1(p.16.r1-p.17.in) L1(-) L1(-) L1(p.17.r1) L1(p.17.r1) L1(p.18.in-p.19.in) L1(p.18.in-p.19.in) L1(p.19.r1-p.20.in) L1(p.19.r1-p.20.in) L1(p.20.r1-p.21.call1) L1(p.20.r1-p.21.call1) p.21.r2 [T:user-delivered-plain-speech] p.22.in-p.22.r2 [T:user-delivered-plain-speech] [T:user-clock-#-#-utc](10,30) p.23.in-p.23.r1 [T:user-delivered-plain-speech] p.24.in-p.24.r1 [T:user-delivered-plain-speech] [T:user-clock-#-#-utc](10,40) p.25.in L1(p.25.r1-p.26.call1) L1(p.25.r1-p.26.call1) p.26.r2 [T:user-delivered-plain-speech] p.27.in-p.27.r1 L1(p.28.in-p.28.call1) L1(p.28.in-p.28.call1) p.28.r2 [T:user-delivered-plain-speech] p.29.in-p.29.r1 L1(p.30.in-p.30.r1) L1(p.30.in-p.30.r1) L1(p.31.in-p.32.in) L1(p.31.in-p.32.in) L1(p.32.r1-p.33.call1) L1(p.32.r1-p.33.call1) L1(p.33.r2-p.34.in) L1(p.33.r2-p.34.in) L1(-) L1(-) L1(p.34.r1) L1(p.34.r1) L1(p.35.in-p.35.call1) L1(p.35.in-p.35.call1) L1(p.35.r2-p.36.r1) L1(p.35.r2-p.36.r1) [T:user-delivered-plain-speech] p.37.in-p.37.r1 [T:user-delivered-plain-speech] [T:user-clock-#-#-utc](11,30) p.38.in L1(p.38.r1-p.39.call1) L1(p.38.r1-p.39.call1) L1(p.39.r2-p.40.in) L1(p.39.r2-p.40.in) L1(p.40.r1-p.41.r1) L1(p.40.r1-p.41.r1) [T:user-delivered-plain-speech] p.42.in-p.42.r2 [T:user-delivered-plain-speech] [T:user-clock-#-#-utc](11,50) p.43.in-p.43.r1 [T:user-delivered-plain-speech] p.44.in-p.44.r2 [T:user-delivered-plain-speech] [T:user-clock-#-#-utc](12,00) p.45.in-p.45.r1 [T:user-delivered-plain-speech] p.46.in-p.46.r1 [T:user-delivered-plain-speech] p.47.in-p.47.r1 [T:user-delivered-plain-speech] [T:user-clock-#-#-utc](12,10) p.48.in-p.48.r1 [T:user-delivered-plain-speech] p.49.in-p.49.r2 [T:user-delivered-plain-speech] [T:user-clock-#-#-utc](12,20) c.cm.1.in-c.cm.1.r1 [T:user-delivered-plain-speech] c.cm.2.in-c.cm.2.r1 [T:user-delivered-plain-speech] c.cm.3.in-c.cm.3.r1 [T:user-delivered-plain-speech] [T:user-clock-#-#-utc](12,30) c.cm.4.in ^ 33,62,95,137
+checkpoint close-merge
+step c.tool
+  call p.1.in p.1.r1 p.42.in p.42.r1 p.42.call1 -> summary
+  call p.1.in p.1.r1 p.42.r2 p.43.in -> summary
+  wrote L1(p.42.in-p.42.call1) [T:summary-l1-13302f5e]
+  wrote L1(p.42.r2-p.43.in) [T:summary-l1-23305db4]
+  compile + c.cm.4.r1 [T:user-delivered-plain-speech] c.tool.in ^ 36,63,99,140
+checkpoint tool-round
+step c.par
+  call p.1.in p.1.r1 p.43.r1 p.44.in p.44.r1 p.44.call1 -> summary
+  wrote L1(p.43.r1-p.44.call1) [T:summary-l1-a581051b]
+  compile + c.tool.r1-c.tool.r2 [T:user-delivered-plain-speech] [T:user-clock-#-#-utc](12,40) c.par.in ^ 39,73,104,146
+checkpoint parallel
+step c.think
+  call p.1.in p.1.r1 p.44.r2 p.45.in p.45.r1 -> summary
+  call p.1.in p.1.r1 p.46.in p.46.r1 -> summary
+  call p.1.in p.1.r1 p.47.in p.47.r1 p.48.in -> summary
+  call p.1.in p.1.r1 p.42.in p.42.r1 p.42.call1 p.42.r2 p.43.in p.43.r1 p.44.in p.44.r1 p.44.call1 p.44.r2 p.45.in p.45.r1 p.46.in p.46.r1 p.47.in p.47.r1 p.48.in -> summary
+  wrote L2(p.42.in-p.48.in) [T:summary-l2-49523dde]
+  wrote L1(p.44.r2-p.45.r1) [T:summary-l1-cd56e42f]
+  wrote L1(p.46.in-p.46.r1) [T:summary-l1-87aea54e]
+  wrote L1(p.47.in-p.48.in) [T:summary-l1-0ece46c7]
+  compile [T:user-clock-monday-#-#-#](2026,01,05,09,00) [T:user-the-local-time](2026,01,05,09,00,00,000,00,00) p.1.in [T:user-routing-your-plain] p.1.r1 [T:user-delivered-plain-speech] L2(p.2.in-p.10.in) L2(p.2.in-p.10.in) L2(p.10.r1-p.17.in) L2(p.10.r1-p.17.in) L1(-) L1(-) L1(p.17.r1) L1(p.17.r1) L1(p.18.in-p.19.in) L1(p.18.in-p.19.in) L1(p.19.r1-p.20.in) L1(p.19.r1-p.20.in) L1(p.20.r1-p.21.call1) L1(p.20.r1-p.21.call1) p.21.r2 [T:user-delivered-plain-speech] p.22.in-p.22.r2 [T:user-delivered-plain-speech] [T:user-clock-#-#-utc](10,30) p.23.in-p.23.r1 [T:user-delivered-plain-speech] p.24.in-p.24.r1 [T:user-delivered-plain-speech] [T:user-clock-#-#-utc](10,40) p.25.in L1(p.25.r1-p.26.call1) L1(p.25.r1-p.26.call1) p.26.r2 [T:user-delivered-plain-speech] p.27.in-p.27.r1 L1(p.28.in-p.28.call1) L1(p.28.in-p.28.call1) p.28.r2 [T:user-delivered-plain-speech] p.29.in-p.29.r1 L1(p.30.in-p.30.r1) L1(p.30.in-p.30.r1) L1(p.31.in-p.32.in) L1(p.31.in-p.32.in) L1(p.32.r1-p.33.call1) L1(p.32.r1-p.33.call1) L1(p.33.r2-p.34.in) L1(p.33.r2-p.34.in) L1(-) L1(-) L1(p.34.r1) L1(p.34.r1) L1(p.35.in-p.35.call1) L1(p.35.in-p.35.call1) L1(p.35.r2-p.36.r1) L1(p.35.r2-p.36.r1) [T:user-delivered-plain-speech] p.37.in-p.37.r1 [T:user-delivered-plain-speech] [T:user-clock-#-#-utc](11,30) p.38.in L1(p.38.r1-p.39.call1) L1(p.38.r1-p.39.call1) L1(p.39.r2-p.40.in) L1(p.39.r2-p.40.in) L1(p.40.r1-p.41.r1) L1(p.40.r1-p.41.r1) [T:user-delivered-plain-speech] p.42.in-p.42.r2 [T:user-delivered-plain-speech] [T:user-clock-#-#-utc](11,50) p.43.in-p.43.r1 [T:user-delivered-plain-speech] p.44.in-p.44.r2 [T:user-delivered-plain-speech] [T:user-clock-#-#-utc](12,00) p.45.in-p.45.r1 [T:user-delivered-plain-speech] p.46.in-p.46.r1 [T:user-delivered-plain-speech] p.47.in-p.47.r1 [T:user-delivered-plain-speech] [T:user-clock-#-#-utc](12,10) p.48.in-p.48.r1 [T:user-delivered-plain-speech] p.49.in-p.49.r2 [T:user-delivered-plain-speech] [T:user-clock-#-#-utc](12,20) c.cm.1.in-c.cm.1.r1 [T:user-delivered-plain-speech] c.cm.2.in-c.cm.2.r1 [T:user-delivered-plain-speech] c.cm.3.in-c.cm.3.r1 [T:user-delivered-plain-speech] [T:user-clock-#-#-utc](12,30) c.cm.4.in-c.cm.4.r1 [T:user-delivered-plain-speech] c.tool.in-c.tool.r2 [T:user-delivered-plain-speech] [T:user-clock-#-#-utc](12,40) c.par.in-c.par.r2 [T:user-delivered-plain-speech] c.think.in ^ 41,79,99,136
+checkpoint thinking-call
+step c.debt
+  call p.1.in p.1.r1 p.48.r1 p.49.in p.49.r1 p.49.call1 -> thinking-only
+  call p.1.in p.1.r1 p.48.r1 p.49.in p.49.r1 p.49.call1 -> summary
+  call p.1.in p.1.r1 p.49.r2 c.cm.1.in -> empty
+  call p.1.in p.1.r1 p.49.r2 c.cm.1.in -> summary
+  call p.1.in p.1.r1 c.cm.1.r1 c.cm.2.in -> max-tokens
+  call p.1.in p.1.r1 c.cm.1.r1 c.cm.2.in -> summary
+  wrote L1(p.48.r1-p.49.call1) [T:summary-l1-57763c0d]
+  wrote L1(p.49.r2-c.cm.1.in) [T:summary-l1-e762b1a6]
+  wrote L1(c.cm.1.r1-c.cm.2.in) [T:summary-l1-6b89e131]
+  compile + c.think.r1-c.think.r2 [T:user-delivered-plain-speech] c.debt.in ^ 44,83,108,141
+checkpoint debt
+end ok
+receipt fixture #57 changes c.think.r1/raw/0/57 c.think.call1/raw/0/57 c.think.r2/raw/0/57 #883/raw/0/57 c.debt.in/raw/0/57
+totals {"actions":1,"calls":21,"compiles":8,"dry":0,"other":0,"refused":0,"written":53}
+templates
+T:summary-l1-01e2a1de = {"bytes":4400,"head":"[[s:Ma765a1bb]] Memory a765a1bb, carried 5 canaries to c:p.29.r1: meadow harbor ","sha256":"01e2a1de0547c2cd","tail":"arden compass copper compass orchard garden quiet garden copper stone copper mea"}
+T:summary-l1-02f99022 = {"bytes":4400,"head":"[[s:M2078d0b7]] Memory 2078d0b7, carried 5 canaries to c:p.4.r1: harbor quiet st","sha256":"02f990226ad3a72d","tail":"indow winter river ledger thread harbor signal window thread signal garden signa"}
+T:summary-l1-0d77c4fd = {"bytes":4400,"head":"[[s:M137b24d5]] Memory 137b24d5, carried 4 canaries to c:p.8.in: window orchard ","sha256":"0d77c4fd044abb9d","tail":"al winter quiet winter compass thread harbor garden lantern signal ledger ledger"}
+T:summary-l1-0ece46c7 = {"bytes":4400,"head":"[[s:M4636b7d4]] Memory 4636b7d4, carried 5 canaries to c:p.48.in: meadow garden ","sha256":"0ece46c7b3ef628d","tail":"stone lantern signal ledger garden window harbor compass compass meadow signal m"}
+T:summary-l1-101d1a98 = {"bytes":4400,"head":"[[s:Md57389f3]] Memory d57389f3, carried 5 canaries to c:p.12.r1: lantern garden","sha256":"101d1a98d0e73cfc","tail":" thread winter lantern ledger river thread harbor meadow garden meadow stone sto"}
+T:summary-l1-13302f5e = {"bytes":4400,"head":"[[s:Ma1c7a735]] Memory a1c7a735, carried 5 canaries to c:p.42.r1: orchard lanter","sha256":"13302f5ea876e5e5","tail":"ignal stone signal meadow orchard meadow window stone stone lantern quiet garden"}
+T:summary-l1-1742019a = {"bytes":4400,"head":"[[s:M715a79d4]] Memory 715a79d4, carried 8 canaries to c:p.26.r1: winter harbor ","sha256":"1742019a35546553","tail":"quiet stone garden stone river orchard meadow meadow compass garden signal lante"}
+T:summary-l1-1a9376ce = {"bytes":4400,"head":"[[s:M1ca2d2e8]] Memory 1ca2d2e8, carried 4 canaries to c:p.40.in: quiet signal s","sha256":"1a9376ce6ca357f4","tail":"ver window compass harbor harbor winter lantern signal harbor ledger signal wind"}
+T:summary-l1-23305db4 = {"bytes":4400,"head":"[[s:M56bd4820]] Memory 56bd4820, carried 4 canaries to c:p.43.in: window ledger ","sha256":"23305db45747067c","tail":"rn compass garden river compass meadow harbor orchard window thread copper compa"}
+T:summary-l1-33738f5f = {"bytes":4400,"head":"[[s:M8d4edb19]] Memory 8d4edb19, carried 5 canaries to c:p.41.r1: meadow garden ","sha256":"33738f5f2c19ce89","tail":"winter winter ledger quiet signal winter meadow window thread meadow signal copp"}
+T:summary-l1-33aa76ef = {"bytes":4400,"head":"[[s:M53e8f510]] Memory 53e8f510, carried 5 canaries to c:p.36.r1: garden window ","sha256":"33aa76ef369008f1","tail":"or harbor orchard copper ledger meadow quiet garden compass signal quiet orchard"}
+T:summary-l1-398ab143 = {"bytes":4399,"head":"[[s:M22ee81f1]] Memory 22ee81f1, carried 6 canaries to c:p.16.in: copper meadow ","sha256":"398ab1434e256fc5","tail":"iet ledger harbor thread quiet signal meadow harbor ledger compass winter signal"}
+T:summary-l1-426cea1c = {"bytes":4400,"head":"[[s:Mcc35436d]] Memory cc35436d, carried 6 canaries to c:p.7.r1: thread thread q","sha256":"426cea1cd9c2f02c","tail":"ter river orchard stone ledger signal winter orchard orchard thread lantern wind"}
+T:summary-l1-45083597 = {"bytes":4400,"head":"[[s:M7aa7647b]] Memory 7aa7647b, carried 4 canaries to c:p.20.in: copper compass","sha256":"45083597763442a4","tail":"tone window thread garden river window winter window garden orchard copper meado"}
+T:summary-l1-4fdc470c = {"bytes":4400,"head":"[[s:M0d9549ab]] Memory 0d9549ab, carried 5 canaries to c:p.38.in: quiet ledger s","sha256":"4fdc470c9cd44f98","tail":"uiet winter river harbor harbor signal compass river ledger ledger copper signal"}
+T:summary-l1-57763c0d = {"bytes":4400,"head":"[[s:M657167a0]] Memory 657167a0, carried 6 canaries to c:p.49.r1: orchard meadow","sha256":"57763c0ddf975fbd","tail":"lantern orchard harbor quiet stone stone compass ledger quiet ledger winter ston"}
+T:summary-l1-587e43f3 = {"bytes":4400,"head":"[[s:Md7c9160f]] Memory d7c9160f, carried 8 canaries to c:p.39.r1: garden ledger ","sha256":"587e43f302f2cc1d","tail":"stone winter quiet river ledger winter orchard ledger signal window winter stone"}
+T:summary-l1-5f46ff92 = {"bytes":4400,"head":"[[s:M56785c4d]] Memory 56785c4d, carried 5 canaries to c:p.28.r1: lantern signal","sha256":"5f46ff920d8e6fb1","tail":"ndow quiet stone winter signal garden compass river meadow garden quiet signal l"}
+T:summary-l1-6b89e131 = {"bytes":4400,"head":"[[s:M3641a017]] Memory 3641a017, carried 4 canaries to c:p.1.r1: copper copper s","sha256":"6b89e131f2590ba9","tail":"r ledger copper signal copper lantern garden stone quiet thread compass river st"}
+T:summary-l1-6db8d288 = {"bytes":4400,"head":"[[s:M7ae69eac]] Memory 7ae69eac, carried 7 canaries to c:p.13.r1: lantern copper","sha256":"6db8d288b1012583","tail":"uiet window compass orchard thread winter window meadow window thread quiet thre"}
+T:summary-l1-72f304b7 = {"bytes":4400,"head":"[[s:Mfe8ac2e8]] Memory fe8ac2e8, carried 6 canaries to c:p.11.r1: copper copper ","sha256":"72f304b722a8b177","tail":"winter orchard winter river signal compass thread compass copper harbor stone ha"}
+T:summary-l1-7920155b = {"bytes":4400,"head":"[[s:M02f4d2e9]] Memory 02f4d2e9, carried 5 canaries to c:p.35.r1: harbor meadow ","sha256":"7920155b098c90c4","tail":" orchard ledger window meadow copper river river harbor thread thread lantern ga"}
+T:summary-l1-7ad10778 = {"bytes":4400,"head":"[[s:M0ecd0545]] Memory 0ecd0545, carried 5 canaries to c:p.23.r1: lantern stone ","sha256":"7ad107788cd7bb42","tail":"uiet winter harbor ledger stone copper copper copper compass window river thread"}
+T:summary-l1-86f3256f = {"bytes":4400,"head":"[[s:M35513dd7]] Memory 35513dd7, carried 5 canaries to c:p.27.r1: orchard quiet ","sha256":"86f3256fdc784953","tail":"rd quiet winter quiet signal thread quiet lantern copper signal stone copper cop"}
+T:summary-l1-87aea54e = {"bytes":4400,"head":"[[s:M086d6507]] Memory 086d6507, carried 4 canaries to c:p.46.r1: river garden q","sha256":"87aea54e45524217","tail":"r window thread ledger winter ledger compass meadow meadow winter quiet stone co"}
+T:summary-l1-a581051b = {"bytes":4400,"head":"[[s:M0dbf2779]] Memory 0dbf2779, carried 6 canaries to c:p.44.r1: compass copper","sha256":"a581051bd53483f7","tail":"window winter orchard compass harbor copper ledger window signal meadow river ri"}
+T:summary-l1-b04a7501 = {"bytes":4400,"head":"[[s:M2139e7f1]] Memory 2139e7f1, carried 4 canaries to c:p.34.in: garden window ","sha256":"b04a75013173bcb6","tail":"ard signal thread orchard lantern copper orchard garden orchard ledger thread or"}
+T:summary-l1-b1e62c4a = {"bytes":4400,"head":"[[s:M847bf713]] Memory 847bf713, carried 6 canaries to c:p.10.in: garden winter ","sha256":"b1e62c4afd5237f9","tail":"s quiet stone stone river window thread winter ledger thread harbor thread threa"}
+T:summary-l1-b62b148c = {"bytes":4400,"head":"[[s:M660ca3ea]] Memory 660ca3ea, carried 6 canaries to c:p.14.r1: signal winter ","sha256":"b62b148cf6faba3e","tail":"pass orchard ledger copper winter signal compass copper window winter ledger sig"}
+T:summary-l1-b9cc0ab9 = {"bytes":4400,"head":"[[s:Mab04889b]] Memory ab04889b, carried 6 canaries to c:p.22.r1: signal meadow ","sha256":"b9cc0ab99f0f75d2","tail":"nal harbor orchard window thread signal stone ledger winter lantern lantern comp"}
+T:summary-l1-c1fa5b10 = {"bytes":4400,"head":"[[s:M807b4051]] Memory 807b4051, carried 5 canaries to c:p.3.in: lantern meadow ","sha256":"c1fa5b1007225e12","tail":" stone thread copper quiet garden window quiet copper winter window signal threa"}
+T:summary-l1-ca629a9b = {"bytes":4400,"head":"[[s:Mb43346fa]] Memory b43346fa, carried 5 canaries to c:p.6.in: garden copper o","sha256":"ca629a9bec554043","tail":"river ledger garden river ledger garden compass quiet winter copper ledger threa"}
+T:summary-l1-cb77d494 = {"bytes":4400,"head":"[[s:Mc6cb6071]] Memory c6cb6071, carried 3 canaries to c:p.17.r1: harbor ledger ","sha256":"cb77d494fd49fac9","tail":"r harbor orchard garden meadow compass harbor river quiet orchard quiet garden s"}
+T:summary-l1-cd56e42f = {"bytes":4400,"head":"[[s:M97a0c65a]] Memory 97a0c65a, carried 5 canaries to c:p.45.r1: stone orchard ","sha256":"cd56e42fde474cca","tail":" garden winter signal winter stone lantern thread orchard signal garden river co"}
+T:summary-l1-d3d8967a = {"bytes":4400,"head":"[[s:M6579ebd5]] Memory 6579ebd5, carried 5 canaries to c:p.32.in: winter meadow ","sha256":"d3d8967a10c2bde7","tail":" meadow copper stone ledger river stone orchard signal winter orchard river ston"}
+T:summary-l1-d4ca0868 = {"bytes":4400,"head":"[[s:M69e33623]] Memory 69e33623, carried 5 canaries to c:p.25.in: window signal ","sha256":"d4ca0868a9f857fa","tail":" lantern signal river garden thread copper thread quiet garden window lantern ga"}
+T:summary-l1-d6ebb559 = {"bytes":4400,"head":"[[s:Mc3bd35f2]] Memory c3bd35f2, carried 2 canaries to c:p.1.r1: copper compass ","sha256":"d6ebb559a09ca1bf","tail":"d meadow thread window stone thread window ledger quiet quiet window harbor quie"}
+T:summary-l1-ddf3693c = {"bytes":4400,"head":"[[s:M112c17be]] Memory 112c17be, carried 2 canaries to c:p.1.r1: stone harbor qu","sha256":"ddf3693c3edbab4a","tail":"hread lantern quiet window winter signal lantern compass quiet quiet compass thr"}
+T:summary-l1-e02a3fee = {"bytes":4400,"head":"[[s:Md320f629]] Memory d320f629, carried 4 canaries to c:p.17.in: harbor thread ","sha256":"e02a3fee0c80956b","tail":"rchard orchard winter river window ledger copper garden stone garden winter mead"}
+T:summary-l1-e762b1a6 = {"bytes":4400,"head":"[[s:Me49e32c2]] Memory e49e32c2, carried 4 canaries to c:p.49.r2: ledger harbor ","sha256":"e762b1a674a360cc","tail":" river window lantern harbor winter compass orchard window stone ledger signal w"}
+T:summary-l1-eccb0585 = {"bytes":4400,"head":"[[s:M2b77afa0]] Memory 2b77afa0, carried 5 canaries to c:p.19.in: lantern winter","sha256":"eccb058546625047","tail":" compass river quiet signal harbor quiet winter copper winter stone orchard rive"}
+T:summary-l1-f54fdc2d = {"bytes":4400,"head":"[[s:M1b0ab6ed]] Memory 1b0ab6ed, carried 4 canaries to c:p.30.r1: copper quiet r","sha256":"f54fdc2d2e95e4ac","tail":"ompass meadow orchard garden lantern meadow orchard ledger garden lantern orchar"}
+T:summary-l1-f7b92457 = {"bytes":4400,"head":"[[s:M06744b25]] Memory 06744b25, carried 6 canaries to c:p.21.r1: signal winter ","sha256":"f7b924577c7bfb97","tail":" orchard lantern river compass river lantern winter stone river signal winter le"}
+T:summary-l1-f8070ea7 = {"bytes":4399,"head":"[[s:M748e3d11]] Memory 748e3d11, carried 6 canaries to c:p.33.r1: stone quiet or","sha256":"f8070ea72e4348d1","tail":"r stone stone stone garden signal window quiet garden window stone copper meadow"}
+T:summary-l1-fdd8313a = {"bytes":4400,"head":"[[s:M8f36617b]] Memory 8f36617b, carried 3 canaries to c:p.34.r1: meadow river h","sha256":"fdd8313ad5fd7233","tail":"al compass harbor orchard river lantern quiet window copper stone orchard winter"}
+T:summary-l2-49523dde = {"bytes":4400,"head":"[[s:M7ae91ec0]] Memory 7ae91ec0, carried 19 canaries to c:p.48.in: river river w","sha256":"49523dde5af1aec0","tail":"r signal ledger quiet winter winter harbor thread window winter compass quiet co"}
+T:summary-l2-67aa9f1b = {"bytes":4400,"head":"[[s:M9c9744fa]] Memory 9c9744fa, carried 14 canaries to c:p.34.r1: orchard quiet","sha256":"67aa9f1b329dcf2a","tail":"window compass orchard stone orchard stone meadow quiet signal lantern ledger ha"}
+T:summary-l2-6d82df37 = {"bytes":4400,"head":"[[s:M18df2004]] Memory 18df2004, carried 16 canaries to c:p.22.r1: harbor river ","sha256":"6d82df37954cc7cf","tail":"ntern window thread thread thread signal thread river winter stone meadow compas"}
+T:summary-l2-83354832 = {"bytes":4399,"head":"[[s:M10fee53d]] Memory 10fee53d, carried 22 canaries to c:p.41.r1: meadow lanter","sha256":"83354832d97b2bb1","tail":" copper garden lantern signal orchard meadow river harbor orchard thread orchard"}
+T:summary-l2-9344b088 = {"bytes":4400,"head":"[[s:M223bfa80]] Memory 223bfa80, carried 24 canaries to c:p.17.in: stone winter ","sha256":"9344b088f38c9339","tail":"window harbor winter garden orchard ledger copper stone copper river lantern win"}
+T:summary-l2-9dd77216 = {"bytes":4400,"head":"[[s:M09f59b72]] Memory 09f59b72, carried 23 canaries to c:p.29.r1: lantern river","sha256":"9dd77216e239d33f","tail":"bor compass lantern stone harbor orchard orchard meadow winter winter copper cop"}
+T:summary-l2-b41ad79d = {"bytes":4399,"head":"[[s:M9c0518b1]] Memory 9c0518b1, carried 21 canaries to c:p.10.in: harbor orchar","sha256":"b41ad79df6122373","tail":"or signal garden harbor meadow harbor winter lantern garden winter winter signal"}
+T:summary-l3-e1b295d2 = {"bytes":4400,"head":"[[s:M024539e2]] Memory 024539e2, carried 2 canaries to c:p.1.r1: lantern harbor ","sha256":"e1b295d260ce4b78","tail":"gnal copper stone ledger garden ledger winter harbor stone garden lantern lanter"}
+T:user-clock-#-#-utc = Clock: #:# UTC
+T:user-clock-monday-#-#-# = Clock: Monday #-#-#, #:# UTC
+T:user-delivered-plain-speech = [delivered] plain speech → chat
+T:user-island-quiet-island = {"bytes":66107,"head":"Island quiet island harbor market letter answer stone morning station. Basket ma","sha256":"8cbcb813948aadcc","tail":" bridge canyon ledger window window compass ledger pencil quiet letter ledger co"}
+T:user-routing-your-plain = [routing] Your plain speech now lands in chat. Other channels need an explicit send tool.
+T:user-the-local-time = The local time at the start of this session is #-#-#T#:#:#.#+#:# [UTC].
