@@ -95,10 +95,23 @@ export function stackVersions(hostDir, { installDir, registry } = {}) {
   return out;
 }
 
+export function contentsOf(dir) {
+  const list = [];
+  const walk = (rel) => {
+    for (const e of readdirSync(join(dir, rel), { withFileTypes: true })) {
+      const r = `${rel}/${e.name}`;
+      if (e.isDirectory()) walk(r);
+      else list.push(`${r}\t${createHash('sha256').update(readFileSync(join(dir, r))).digest('hex')}`);
+    }
+  };
+  for (const part of ['answers', 'store']) walk(part);
+  return createHash('sha256').update(list.sort().join('\n')).digest('hex').slice(0, 16);
+}
+
 export function keptWhole(dir) {
-  for (const part of ['answers', 'store']) if (!existsSync(join(dir, part)) || !readdirSync(join(dir, part)).length) return false;
   try {
-    const { key } = JSON.parse(readFileSync(join(dir, 'checkpoint.json'), 'utf-8'));
-    return typeof key === 'string' && key.length > 0 && dir.replace(/[\\/]+$/, '').endsWith(`-${key}`);
+    for (const part of ['answers', 'store']) if (!existsSync(join(dir, part)) || !readdirSync(join(dir, part)).length) return false;
+    const { from, key, clockEnd, contents } = JSON.parse(readFileSync(join(dir, 'checkpoint.json'), 'utf-8'));
+    return typeof from === 'string' && typeof key === 'string' && key.length > 0 && Number.isFinite(clockEnd) && dir.replace(/[\\/]+$/, '').endsWith(`-${key}`) && contents === contentsOf(dir);
   } catch { return false; }
 }

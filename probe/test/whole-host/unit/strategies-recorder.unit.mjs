@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { blobStore, storeDelta } from '../lib/strategies/recorder.mjs';
+import { blobStore, compiledLine, storeDelta } from '../lib/strategies/recorder.mjs';
 const manager = (messages) => ({
   getAllMessages: () => messages,
   getSummariesInRange: () => [],
@@ -68,4 +68,30 @@ test('storeDelta: a stored message whose canaries change is reported again, its 
   assert.deepEqual(storeDelta(manager([{ id: 9, content: [text('[[c:b.in]] hi')] }]), first.seen, blobs).out.messages, [['9', ['[[c:b.in]]']]]);
   const thought = storeDelta(manager([{ id: 9, content: [thinking, text('[[c:a.in]] hi')] }]), undefined, blobs);
   assert.deepEqual(storeDelta(manager([{ id: 9, content: [thinking, text('[[c:c.in]] hi')] }]), thought.seen, blobs).out.messages, [['9', ['[[c:c.in]]'], { thinking: true }]]);
+});
+
+test('storeDelta: a stored message gone from the store is reported removed and forgotten, so it can be reported again if it returns', () => {
+  const blobs = blobStore();
+  const a = { id: 1, content: [text('[[c:a.in]] one')] }, b = { id: 2, content: [text('[[c:b.in]] two')] };
+  const first = storeDelta(manager([a, b]), undefined, blobs);
+  const undone = storeDelta(manager([a]), first.seen, blobs);
+  assert.deepEqual([undone.out.messages, undone.out.removedMessages], [undefined, ['2']]);
+  assert.equal(storeDelta(manager([a]), undone.seen, blobs).out.removedMessages, undefined, 'reported once');
+  assert.deepEqual(storeDelta(manager([a, b]), undone.seen, blobs).out.messages, [['2', ['[[c:b.in]]']]]);
+});
+
+test('compiledLine: a compile whose strategy gives no render stats carries its unjudged budget on the line; one with its own stats carries them and nothing unjudged', () => {
+  class PassthroughStrategy { config = {}; }
+  class AutobiographicalStrategy { config = {}; getRenderStats() { return { total: { tokens: 99_999 } }; } }
+  const stored = [{ id: '1', sequence: 1, role: 'user', content: [text('one')] }];
+  const line = (strategy, renderStats) => compiledLine(
+    { ...manager(stored), getStrategy: () => strategy, listPins: () => [], getRenderStats: () => strategy.getRenderStats?.() ?? null },
+    { maxTokens: 1_000, reserveForResponse: 0 },
+    { messages: [{ role: 'user', content: [text('one')] }], provenance: { messages: [{ kind: 'raw', bodies: [{ messageId: '1', complete: true }] }], layout: { memberIds: ['1'], units: [{ k: 'r', t: 1 }] } }, ...(renderStats ? { renderStats } : {}) },
+    blobStore(),
+  );
+  const passthrough = line(new PassthroughStrategy());
+  assert.deepEqual([passthrough.unjudged, passthrough.stats, passthrough.violations], [['budget: PassthroughStrategy gives no render stats'], null, []]);
+  const own = line(new AutobiographicalStrategy(), { total: { tokens: 10 } });
+  assert.deepEqual([own.unjudged, own.stats, own.violations], [undefined, { total: { tokens: 10 } }, []]);
 });

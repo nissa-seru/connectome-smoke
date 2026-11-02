@@ -18,17 +18,30 @@ export function declaredProducts(records, script, products, store = null) {
 
 export function compileInvariants(log = []) {
   const flags = [];
-  let judged = 0;
+  let judged = 0, unplaced = 0, unread = 0;
+  const unjudged = new Map();
   for (const e of log) {
     if (e.kind !== 'compiles') continue;
     for (const line of e.lines ?? []) {
       if (line.outcome === 'compiled') judged++;
+      for (const v of line.violations ?? []) {
+        if (v.invariant === 'unplaced') unplaced += v.count ?? 0;
+        if (v.invariant === 'unreadable') unread++;
+      }
+      for (const u of line.unjudged ?? []) unjudged.set(u, (unjudged.get(u) ?? 0) + 1);
       if (line.outcome === 'unrecordable') flags.push({ check: 11, step: e.step, what: `${line.agent}:${line.kind}:unrecordable`, message: `the harness module couldn't record ${line.agent}'s ${line.kind} compile ${line.seq}: ${line.reason}` });
-      for (const v of line.violations ?? []) flags.push({ check: 11, step: e.step, what: `${line.agent}:${line.kind}:${v.invariant}`, detail: v.detail, message: `${line.agent}'s ${line.kind} compile ${line.seq} breaks ${v.invariant}: ${v.detail}` });
+      for (const v of line.violations ?? []) flags.push({ check: 11, step: e.step, what: `${line.agent}:${line.kind}:${v.invariant}`, detail: v.detail, message: COULDNT.has(v.invariant) ? `couldn't judge all of ${line.agent}'s ${line.kind} compile ${line.seq}: ${v.detail}` : `${line.agent}'s ${line.kind} compile ${line.seq} breaks ${v.invariant}: ${v.detail}` });
     }
   }
-  return withJudged(flags, judged);
+  const besides = [
+    ...[...unjudged].map(([what, n]) => { const [part, ...why] = what.split(': '); return `${part} couldn't be judged in ${n}, as ${why.join(': ')}`; }),
+    ...(unplaced ? [`store order couldn't place ${unplaced} of what was sent`] : []),
+    ...(unread ? [`${unread} read${unread === 1 ? '' : 's'} an invariant needed failed`] : []),
+  ];
+  return withJudged(flags, judged, besides.length ? besides.join('; ') : null);
 }
+
+const COULDNT = new Set(['unplaced', 'unreadable']);
 
 const BINDING_BETA = 'thinking-binding-controls-2026-08-01';
 
@@ -85,8 +98,9 @@ export function reloads(log = []) {
   return withJudged(flags, judged);
 }
 
-export function withJudged(flags, judged) {
+export function withJudged(flags, judged, besides = null) {
   Object.defineProperty(flags, 'judged', { value: judged, enumerable: false });
+  if (besides) Object.defineProperty(flags, 'besides', { value: besides, enumerable: false });
   return flags;
 }
 
@@ -156,11 +170,11 @@ export function assemblies(log = [], agent = FIXTURE_AGENT) {
     if (e.kind !== 'compiles') continue;
     for (const l of e.lines ?? []) {
       if (l.agent !== agent || l.kind !== 'request' || !['compiled', 'refused'].includes(l.outcome)) continue;
-      const same = previous && l.seq > previous.seq && l.assembly === previous.assembly;
       const at = { ...l, step: e.step ?? null, boot: e.boot ?? null };
+      const same = previous && at.boot === previous.boot && l.seq > previous.seq && l.assembly === previous.assembly;
       if (same) out[out.length - 1] = at;
       else out.push(at);
-      previous = l;
+      previous = at;
     }
   }
   return out;
@@ -524,15 +538,22 @@ function multipliers(value, out = []) {
   return out;
 }
 
-export function calibrationEdge(log = [], { low = 0.6, high = 1.8 } = {}) {
+export function calibrationEdge(log = [], { low = 0.6, high = 1.8, adaptive = false } = {}) {
   const flags = [];
   let judged = 0;
   for (const e of log) {
-    if (e.kind !== 'checkpoint') continue;
+    if (e.kind !== 'checkpoint' && e.kind !== 'health') continue;
+    if (e.skipped) continue;
+    const where = e.kind === 'health' ? 'the run\'s end' : `checkpoint ${e.name}`;
+    const failed = e.health?.ok === false ? e.health.error || 'the panel read failed' : Object.entries(e.health?.data?.readFailures ?? {}).map(([agent, f]) => (f?.contextComposition ? `${agent}'s context composition: ${f.contextComposition}` : null)).filter(Boolean).join('; ');
+    if (failed) flags.push({ check: 10, step: e.step ?? 'the run', what: 'unread-panel', message: `couldn't judge calibration at ${where}: the health panel's read failed (${failed})` });
     for (const m of multipliers(e.health)) {
       judged++;
-      if (Math.abs(m - low) < 1e-9 || Math.abs(m - high) < 1e-9) flags.push({ check: 10, step: e.step, message: `calibration at the clamp edge (${m}) at checkpoint ${e.name}: the run is invalid` });
+      if (Math.abs(m - low) < 1e-9 || Math.abs(m - high) < 1e-9) flags.push({ check: 10, step: e.step ?? 'the run', what: 'clamp-edge', message: `calibration at the clamp edge (${m}) at ${where}: the run is invalid` });
     }
+  }
+  if (adaptive && log.some((e) => e.kind === 'end' && e.ok) && !log.some((e) => e.kind === 'health' && e.name === 'end')) {
+    flags.push({ check: 10, step: 'the run', what: 'no-end-read', message: 'couldn\'t judge calibration at the run\'s end: the run completed and logged no end-of-run health read, read or skipped' });
   }
   return withJudged(flags, judged);
 }

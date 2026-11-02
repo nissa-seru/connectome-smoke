@@ -1,4 +1,5 @@
 import { FIXTURE_AGENT, assemblies, requestPairs, withJudged } from './checks.mjs';
+import { isUnreadable } from './invariants.mjs';
 import { png } from './png.mjs';
 import { hash32, prose, seeded } from './prose.mjs';
 import { CHANNEL, READER, TOOL, continuation, prefix, products } from './script.mjs';
@@ -277,7 +278,7 @@ export const WORKLOADS = {
   W5: {
     from: 'checkpoint',
     turns: 12,
-    property: 'shards: a body larger than the message cap, stored in parts, never goes out with its tool blocks lost',
+    property: 'shards: a body larger than the message cap, stored in parts, that context-manager sends whole never goes out without its tool blocks',
     steps(ctx) {
       const w = writer(ctx, 'W5');
       const steps = [guardTurn(w, 'g')];
@@ -555,13 +556,15 @@ function restoredWithin(run, agent, stepOf, noun) {
   return withJudged([15, 16].filter((n) => outcome(n) !== 'compiled').map((n) => ({ step: stepOf(n), message: `${noun} ${n}: ${outcome(n)} ${n - 13} turn(s) after the budget was restored` })), 2);
 }
 
-function toolBlocksLost(run) {
-  const messages = readsOf(run, 'messages').at(-1)?.answer ?? [];
+export function toolBlocksLost(run) {
+  const read = readsOf(run, 'messages').at(-1);
+  const messages = read?.answer ?? [];
+  if (!Array.isArray(messages)) return withJudged([{ step: read.step ?? null, message: `couldn't judge: the store's messages couldn't be read${isUnreadable(messages) ? ` (${messages.unreadable})` : ''}` }], 0);
   const toolIds = new Map();
   for (const m of messages) {
+    if (!m.bodyGroupId) continue;
     const ids = m.blocks.filter((b) => b.type === 'tool_use' || b.type === 'tool_result').map((b) => `${b.type}:${b.id ?? b.toolUseId}`);
-    const key = m.bodyGroupId ?? m.id;
-    if (ids.length) toolIds.set(key, [...(toolIds.get(key) ?? []), ...ids]);
+    if (ids.length) toolIds.set(m.bodyGroupId, [...(toolIds.get(m.bodyGroupId) ?? []), ...ids]);
   }
   const groupOf = new Map(messages.map((m) => [m.id, m.bodyGroupId ?? m.id]));
   const paired = requestPairs(run.records, run.log, FIXTURE_AGENT);

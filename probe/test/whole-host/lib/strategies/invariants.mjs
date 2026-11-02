@@ -1,4 +1,6 @@
 import { createHash } from 'node:crypto';
+import { namingCanaries, messageNames, shortCanary, spanName } from './names.mjs';
+import { CANARY } from './standin.mjs';
 
 export function canonicalJSON(value) {
   if (Array.isArray(value)) return `[${value.map((v) => (v === undefined ? 'null' : canonicalJSON(v))).join(',')}]`;
@@ -74,8 +76,16 @@ function readCompile(manager, compiled, messages, elsewhere) {
   const layout = compiled?.provenance?.layout;
   const sentIds = messages.flatMap((m) => m.sources).filter((s) => s.startsWith('r:')).map((s) => s.slice(2).split('!')[0]);
   const members = [...new Set([...(layout?.memberIds ?? []).map(String), ...sentIds])].filter((id) => !ownIds.has(id));
-  const { found = [], unfound = members } = members.length && elsewhere ? elsewhere(members) : {};
+  const { found = [], unfound = members, nameOf: foundName = () => null } = members.length && elsewhere ? elsewhere(members) : {};
   const stored = [...own, ...found];
+  let ownName = null;
+  const nameOf = (id) => {
+    if (!ownName) {
+      const byId = new Map(own.map((m) => [String(m.id), m]));
+      ownName = messageNames([...byId.keys()], (x) => namingCanaries(byId.get(x).content)[0]);
+    }
+    return ownName(id) ?? foundName(String(id)) ?? String(id);
+  };
   const laidOut = Array.isArray(layout?.memberIds) && Array.isArray(layout?.units);
   const failed = [
     ...(laidOut ? [] : ['the compile gave no layout, so its view\'s members beyond its own slot weren\'t read']),
@@ -130,8 +140,9 @@ function readCompile(manager, compiled, messages, elsewhere) {
       if (s.startsWith('r:')) {
         const [id, missing] = s.slice(2).split('!');
         const body = bodyOf.get(id) ?? id;
-        const copy = raw.get(body) ?? { everyShard: false, text: '' };
-        raw.set(body, { everyShard: copy.everyShard || !(missing ?? '').split('+').includes('shards'), text: copy.text + textOf(sent[i]) });
+        const copy = raw.get(body) ?? { everyShard: false, text: '', parts: [] };
+        const part = { i, from: copy.text.length, to: copy.text.length + textOf(sent[i]).length };
+        raw.set(body, { everyShard: copy.everyShard || !(missing ?? '').split('+').includes('shards'), text: copy.text + textOf(sent[i]), parts: [...copy.parts, part] });
       } else if (s.startsWith('s:')) summariesSent.add(s.slice(2).split('@')[0]);
     }
   });
@@ -141,57 +152,109 @@ function readCompile(manager, compiled, messages, elsewhere) {
   // doesn't `!shards`; `!content` alone is every shard, altered), or when it carries that shard's text
   // (a shard with no text, by any raw copy of its body), among the shards context-manager's layout names raw.
   const partlyHeld = new Set();
+  const carriedIn = new Map();
+  const rawStart = new Map();
   for (const [body, copy] of raw) {
-    if (copy.everyShard) continue;
-    let from = 0;
     const shards = [...(membersOf.get(body) ?? [])].sort((x, y) => (x.shardIndex ?? 0) - (y.shardIndex ?? 0));
     const named = shards.filter((m) => layoutRaw.has(String(m.id)));
-    for (const m of named.length ? named : shards) {
-      const text = textOf(m);
-      const at = text.length === 0 ? from : copy.text.indexOf(text, from);
-      if (at < 0) continue;
-      partlyHeld.add(String(m.id));
-      from = at + text.length;
+    const walk = named.length ? named : shards;
+    rawStart.set(body, Math.min(...walk.map((m) => m.sequence)));
+    for (const m of walk) if (textOf(m).length === 0) partlyHeld.add(String(m.id));
+    const taken = [];
+    for (let more = true; more;) {
+      more = false;
+      for (const m of walk) {
+        const text = textOf(m);
+        if (text.length === 0) continue;
+        let at = copy.text.indexOf(text);
+        while (at >= 0 && taken.some(([from, to]) => at < to && at + text.length > from)) at = copy.text.indexOf(text, at + 1);
+        if (at < 0) continue;
+        more = true;
+        taken.push([at, at + text.length]);
+        partlyHeld.add(String(m.id));
+        const part = copy.parts.find((p) => p.from <= at && at < p.to);
+        if (part) carriedIn.set(`${part.i}:${body}`, Math.min(carriedIn.get(`${part.i}:${body}`) ?? Infinity, m.sequence));
+      }
     }
   }
   const held = (body, m) => {
     const copy = raw.get(body);
     return !!copy && (copy.everyShard || partlyHeld.has(String(m.id)));
   };
-  return { stored, inOrder, bodyOf, membersOf, sequenceOf, leaves, blocks, textOf, sent, raw, bySummary, held, failed, layoutRaw };
+  return { stored, inOrder, bodyOf, membersOf, sequenceOf, leaves, blocks, textOf, sent, raw, bySummary, held, failed, carriedIn, rawStart, nameOf };
 }
 
 export function checkCompile(manager, budget, compiled, messages, { compresses = true, elsewhere } = {}) {
   const out = [];
   const read = readCompile(manager, compiled, messages, elsewhere);
   if (isUnreadable(read)) return [{ invariant: 'unreadable', detail: `getAllMessages: ${read.unreadable}; no invariant was judged` }];
-  const { stored, inOrder, bodyOf, membersOf, sequenceOf, leaves, blocks, textOf, sent, raw, bySummary, held, failed, layoutRaw } = read;
+  const { stored, inOrder, bodyOf, membersOf, sequenceOf, leaves, blocks, textOf, sent, raw, bySummary, held, failed, carriedIn, rawStart, nameOf } = read;
+  const bySequence = new Map(stored.map((m) => [m.sequence, String(m.id)]));
+  const summaryNames = new Map();
+  const summaryName = (id) => {
+    if (!summaryNames.has(id)) {
+      const s = readable(() => manager.getSummary(id));
+      const ids = leaves(id).filter((b) => sequenceOf.has(b)).sort((a, b) => sequenceOf.get(a) - sequenceOf.get(b));
+      summaryNames.set(id, isUnreadable(s) || !s || !ids.length ? id : spanName(`L${s.level}`, nameOf(ids[0]), nameOf(ids.at(-1))));
+    }
+    return summaryNames.get(id);
+  };
+  const storedAt = new Map(stored.map((m) => [String(m.id), m]));
+  const blockAt = (key) => {
+    const cut = key.lastIndexOf('#');
+    const m = storedAt.get(key.slice(0, cut));
+    return [m, Number(key.slice(cut + 1))];
+  };
+  const callAt = (key) => {
+    const [m, k] = blockAt(key);
+    const canary = JSON.stringify(blocks(m)[k]?.input ?? '').match(CANARY)?.[0];
+    return canary ? shortCanary(canary) : `${nameOf(m.id)} call ${blocks(m).slice(0, k + 1).filter((b) => b?.type === 'tool_use').length}`;
+  };
+  const callName = (toolUseId) => {
+    for (const m of inOrder) {
+      const at = blocks(m).filter((b) => b?.type === 'tool_use').findIndex((b) => b.id === toolUseId);
+      if (at < 0) continue;
+      const canary = JSON.stringify(blocks(m).filter((b) => b?.type === 'tool_use')[at].input ?? '').match(CANARY)?.[0];
+      return canary ? shortCanary(canary) : `${nameOf(m.id)} call ${at + 1}`;
+    }
+    for (const m of inOrder) {
+      const at = blocks(m).filter((b) => b?.type === 'tool_result').findIndex((b) => b.toolUseId === toolUseId);
+      if (at >= 0) return `${nameOf(m.id)} result ${at + 1}`;
+    }
+    return toolUseId;
+  };
   if (isUnreadable(compresses)) out.push({ invariant: 'unreadable', detail: `getStrategy: ${compresses.unreadable}; coverage wasn't judged` });
   const compressing = compresses === true;
-  // A summary sent whose sources couldn't be read leaves coverage, order and pins unjudged, not judged on no sources.
   const summaryUnread = failed.some((f) => f.startsWith('getSummary('));
   const uncovered = [], twice = [], beside = [];
   for (const [body, members] of summaryUnread ? [] : membersOf) {
     const lost = compressing ? members.filter((m) => !bySummary.has(String(m.id)) && !held(body, m)) : [];
-    if (lost.length === members.length) uncovered.push(body);
-    else if (lost.length) uncovered.push(`${body} (shards ${lost.map((m) => m.id).join(', ')})`);
+    if (lost.length === members.length) uncovered.push(nameOf(body));
+    else if (lost.length) uncovered.push(`${nameOf(body)} (shards ${lost.map((m) => nameOf(m.id)).join(', ')})`);
     for (const m of members) {
       const under = bySummary.get(String(m.id)) ?? [];
-      if (under.length > 1) twice.push(`${m.id} in ${under.join(', ')}`);
+      if (under.length > 1) twice.push(`${nameOf(m.id)} in ${under.map(summaryName).join(', ')}`);
       if (under.length === 0 || !held(body, m)) continue;
-      beside.push(`${m.id} raw beside ${under.join(', ')}`);
+      beside.push(`${nameOf(m.id)} raw beside ${under.map(summaryName).join(', ')}`);
     }
   }
   if (uncovered.length) out.push({ invariant: 'coverage', detail: `${uncovered.length} stored bodies in no message sent: ${uncovered.slice(0, 8).join(', ')}` });
   if (twice.length) out.push({ invariant: 'coverage', detail: `${twice.length} stored messages under two summaries sent: ${twice.slice(0, 4).join('; ')}` });
   if (beside.length) out.push({ invariant: 'beside-sources', detail: `${beside.length} stored messages sent raw beside a summary of them: ${beside.slice(0, 4).join('; ')}` });
 
+  const unplaced = [];
   const firstCarried = (i, head) => {
-    const sentText = textOf(sent[i]);
-    const members = membersOf.get(bodyOf.get(head) ?? head) ?? [];
-    const named = members.filter((x) => layoutRaw.has(String(x.id)));
-    const shards = (named.length ? named : members).filter((x) => textOf(x).length > 0 && sentText.includes(textOf(x)));
-    return shards.length ? Math.min(...shards.map((x) => x.sequence)) : (sequenceOf.get(head) ?? Infinity);
+    const body = bodyOf.get(head) ?? head;
+    const carried = carriedIn.get(`${i}:${body}`);
+    if (carried !== undefined) return carried;
+    const copy = raw.get(body);
+    const spread = new Set(copy.parts.map((p) => p.i)).size;
+    const start = rawStart.get(body);
+    if (start !== Infinity && spread === 1 && copy.everyShard) return start;
+    unplaced.push(start === Infinity
+      ? `message ${i}'s copy of ${head}, which no slot read holds`
+      : `message ${i}'s copy of ${nameOf(body)}, which holds none of its shards' text, where ${spread > 1 ? `the body goes out in ${spread} messages` : 'the copy doesn\'t carry every shard'}`);
+    return Infinity;
   };
   // After a head-window reset context-manager starts the head at the newest topic transition message (a 'Context
   // Manager' message opening "[Topic Transition]") and sends it first, then the history from before it.
@@ -205,25 +268,38 @@ export function checkCompile(manager, budget, compiled, messages, { compresses =
     for (const s of m.sources) {
       if (s.startsWith('r:')) {
         const [head, missing] = s.slice(2).split('!');
-        first = Math.min(first, missing === undefined ? (sequenceOf.get(head) ?? Infinity) : firstCarried(i, head));
+        first = Math.min(first, firstCarried(i, head));
       }
-      else if (s.startsWith('s:')) for (const b of leaves(s.slice(2).split('@')[0])) first = Math.min(first, sequenceOf.get(b) ?? Infinity);
+      else if (s.startsWith('s:')) {
+        const id = s.slice(2).split('@')[0];
+        const at = leaves(id).filter((b) => sequenceOf.has(b)).map((b) => sequenceOf.get(b));
+        if (at.length) first = Math.min(first, ...at);
+        else unplaced.push(`message ${i}'s summary ${id}, none of whose messages a slot read holds`);
+      }
     }
     if (first === Infinity) return;
     if (lastAt === -1 && first === headStart) inHead = true;
     if (inHead && first < headStart) { inHead = false; last = -Infinity; }
-    if (first < last) out.push({ invariant: 'coverage', detail: `message ${i} covers from sequence ${first}, before message ${lastAt}'s ${last}` });
+    if (first < last) out.push({ invariant: 'coverage', detail: `message ${i} covers from ${nameOf(bySequence.get(first))}, before message ${lastAt}'s ${nameOf(bySequence.get(last))}` });
     if (first >= last) { last = first; lastAt = i; }
   });
+  if (unplaced.length) out.push({ invariant: 'unplaced', count: unplaced.length, detail: `store order couldn't place ${unplaced.length} of what was sent, so it judged the order without ${unplaced.length === 1 ? 'it' : 'them'}: ${unplaced.join('; ')}` });
 
   // context-manager's grace is 0.02 when `overBudgetGraceRatio` is unset. The count is the compile's own
-  // `renderStats`, since in a host another compile of the same manager can finish before this line is written.
+  // `renderStats`, a dry compile's included: `getRenderStats()` is the manager's last live compile's, which in a host
+  // another compile of the same manager can replace before this line is written. context-manager gives render stats
+  // only for a strategy with `getRenderStats` (isRenderStatsCapable).
+  const unjudged = [];
   const configured = readable(() => manager.getStrategy().config ?? {});
   if (isUnreadable(configured)) out.push({ invariant: 'unreadable', detail: `getStrategy: ${configured.unreadable}; budget wasn't judged` });
   const config = isUnreadable(configured) ? {} : configured;
-  const rendered = compiled?.renderStats ?? readable(() => manager.getRenderStats());
-  if (isUnreadable(rendered)) out.push({ invariant: 'unreadable', detail: `getRenderStats: ${rendered.unreadable}; budget wasn't judged` });
-  const tokens = !isUnreadable(configured) && !isUnreadable(rendered) && rendered?.total?.tokens;
+  const tokens = !isUnreadable(configured) && compiled?.renderStats?.total?.tokens;
+  if (!isUnreadable(configured) && typeof tokens !== 'number') {
+    const strategy = readable(() => manager.getStrategy());
+    if (isUnreadable(strategy)) out.push({ invariant: 'unreadable', detail: `getStrategy: ${strategy.unreadable}; budget wasn't judged` });
+    else if (typeof strategy?.getRenderStats === 'function') out.push({ invariant: 'unreadable', detail: `the compile gave no render stats, though its strategy ${strategy.constructor?.name || 'unnamed'} reports them; budget wasn't judged` });
+    else unjudged.push(`budget: ${strategy?.constructor?.name || 'an unnamed strategy'} gives no render stats`);
+  }
   const input = budget.maxTokens - (budget.reserveForResponse ?? 0);
   const grace = Math.max(0, config.overBudgetGraceRatio ?? 0.02);
   if (config.enforceBudget !== false && typeof tokens === 'number' && tokens > Math.floor(input * (1 + grace))) {
@@ -266,14 +342,16 @@ export function checkCompile(manager, budget, compiled, messages, { compresses =
           ? keys.some((key) => callOf.has(key))
           : keys.some((key) => callOf.has(key) && (leftOut(callOf.get(key)) || (i === 0 && beforeStart(callOf.get(key)))));
         if (keys.length === 0 || parted) {
-          out.push({ invariant: 'shape', detail: `message ${i}: result ${b.toolUseId} answers no call in the message before it` });
+          const callKey = keys.map((key) => callOf.get(key)).find(Boolean);
+          const named = callKey ? callAt(callKey) : callName(b.toolUseId);
+          out.push({ invariant: 'shape', detail: `message ${i}: result ${named} answers no call in the message before it` });
         }
       }
       if (b?.type === 'tool_use' && i < sent.length - 1 && ![...blocks(m).slice(j + 1), ...blocks(sent[i + 1])].some((c) => c?.type === 'tool_result' && c.toolUseId === b.id)) {
         const keys = storedKeys(i, 'tool_use', b.id);
         const parted = compressing ? keys.some((key) => answered.has(key)) : keys.some((key) => answered.has(key) && leftOut(answered.get(key)));
         if (keys.length === 0 || parted) {
-          out.push({ invariant: 'shape', detail: `message ${i}: call ${b.id} unanswered in the message after it` });
+          out.push({ invariant: 'shape', detail: `message ${i}: call ${keys.length ? callAt(keys[0]) : callName(b.id)} unanswered in the message after it` });
         }
       }
     });
@@ -285,10 +363,10 @@ export function checkCompile(manager, budget, compiled, messages, { compresses =
     for (const s of messages[i]?.sources ?? []) {
       if (!s.startsWith('r:')) continue;
       const body = storedById.get(s.slice(2).split('!')[0]);
-      const callIds = blocks(body).filter((b) => b?.type === 'tool_use').map((b) => b.id);
-      if (!hasThinking || callIds.length === 0) continue;
-      const missing = callIds.filter((id) => !blocks(m).some((b) => b?.type === 'tool_use' && b.id === id));
-      if (missing.length) out.push({ invariant: 'thinking', detail: `message ${i} carries body ${body.id}'s thinking without its calls ${missing.join(', ')}` });
+      const calls = blocks(body).flatMap((b, k) => (b?.type === 'tool_use' ? [[b.id, `${body.id}#${k}`]] : []));
+      if (!hasThinking || calls.length === 0) continue;
+      const missing = calls.filter(([id]) => !blocks(m).some((b) => b?.type === 'tool_use' && b.id === id));
+      if (missing.length) out.push({ invariant: 'thinking', detail: `message ${i} carries body ${nameOf(body.id)}'s thinking without its calls ${missing.map(([, key]) => callAt(key)).join(', ')}` });
     }
   });
 
@@ -304,12 +382,12 @@ export function checkCompile(manager, budget, compiled, messages, { compresses =
         const [id, lvl] = s.slice(2).replace('~', '').split('@');
         if (Number(lvl) <= allowed) continue;
         const inside = leaves(id).find((b) => { const q = sequenceOf.get(b); return q !== undefined && q >= from && q <= to; });
-        if (inside) out.push({ invariant: 'pins', detail: `summary ${id} at L${lvl} covers ${inside}, inside pin ${p.id} allowing L${allowed}` });
+        if (inside) out.push({ invariant: 'pins', detail: `summary ${summaryName(id)} at L${lvl} covers ${nameOf(inside)}, inside pin ${spanName('pin', nameOf(p.firstMessageId), nameOf(p.lastMessageId))} allowing L${allowed}` });
       }
     }
   }
   for (const f of failed) out.push({ invariant: 'unreadable', detail: `${f}; what depends on it wasn't judged` });
-  return dedupe(out);
+  return Object.defineProperty(dedupe(out), 'unjudged', { value: unjudged, enumerable: false });
 }
 
 const dedupe = (violations) => [...new Map(violations.map((v) => [`${v.invariant}|${v.detail}`, v])).values()];

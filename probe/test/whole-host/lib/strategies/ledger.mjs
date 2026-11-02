@@ -1,19 +1,41 @@
 import { assemblies, FIXTURE_AGENT } from './checks.mjs';
+import { byStoreOrder, messageNames, spanName } from './names.mjs';
 
-function canaryNames(log, line) {
-  const stores = new Map();
-  for (const e of log) {
+function namesAt(log, line) {
+  const stores = new Map(), summaries = new Map();
+  const batch = log.findIndex((e) => e.kind === 'compiles' && (e.lines ?? []).includes(line));
+  for (const e of log.slice(0, batch + 1)) {
     if (e.kind !== 'compiles') continue;
     for (const [name, store] of Object.entries(e.store ?? {})) {
-      if (!stores.has(name)) stores.set(name, new Map());
+      if (!stores.has(name)) { stores.set(name, new Map()); summaries.set(name, new Map()); }
       for (const [id, canaries] of Array.isArray(store?.messages) ? store.messages : []) stores.get(name).set(String(id), canaries?.[0] ?? null);
+      for (const id of store?.removedMessages ?? []) stores.get(name).delete(String(id));
+      for (const s of Array.isArray(store?.summaries) ? store.summaries : []) summaries.get(name).set(String(s.id), s);
+      for (const id of store?.removed ?? []) summaries.get(name).delete(String(id));
     }
   }
+  const inOrder = (ids) => [...ids].sort(byStoreOrder);
+  const named = new Map([...stores].map(([name, canaries]) => [name, messageNames(inOrder(canaries.keys()), (id) => canaries.get(id))]));
   const order = [line.agent, ...(line.slots ?? []), ...[...stores.keys()].filter((n) => n !== line.agent && !(line.slots ?? []).includes(n))];
-  return (id) => {
-    for (const name of order) if (stores.get(name)?.has(id)) return stores.get(name).get(id);
+  const messageName = (id) => {
+    for (const name of order) if (stores.get(name)?.has(id)) return name === line.agent ? named.get(name)(id) : `${name}/${named.get(name)(id)}`;
     return null;
   };
+  const summaryName = (id, level) => {
+    const name = order.find((n) => summaries.get(n)?.has(id));
+    if (!name) return `L${level}(-)`;
+    const leaves = (sid, seen = new Set()) => {
+      const s = summaries.get(name).get(sid);
+      if (!s || seen.has(sid)) return [];
+      seen.add(sid);
+      return (s.sources ?? []).flatMap((src) => (s.sourceLevel > 0 ? leaves(String(src), seen) : [String(src)]));
+    };
+    const position = new Map(inOrder(stores.get(name).keys()).map((x, i) => [x, i]));
+    const ids = leaves(id).filter((x) => position.has(x)).sort((a, b) => position.get(a) - position.get(b));
+    const label = ids.length ? spanName(`L${summaries.get(name).get(id).level ?? level}`, named.get(name)(ids[0]), named.get(name)(ids.at(-1))) : `L${level}(-)`;
+    return name === line.agent ? label : `${name}/${label}`;
+  };
+  return { messageName, summaryName };
 }
 
 // context-manager's layout of a compile (buildRenderedLayout): the view's members in order, and one unit per raw
@@ -40,9 +62,9 @@ function fates(layout) {
 export function ledgerOf(log, line) {
   const f = fates(line?.layout);
   if (!f) return [`- no ledger: the compile line carries no layout context-manager gave${line?.layout?.unreadable ? ` (${line.layout.unreadable})` : ''}`];
-  const canaryOf = canaryNames(log, line);
+  const { messageName, summaryName } = namesAt(log, line);
   const position = new Map(f.ids.map((id, i) => [id, i]));
-  const name = (id) => canaryOf(id) ?? `#${id}`;
+  const name = (id) => messageName(id) ?? `#${id}`;
   const spans = (ids) => {
     const runs = [];
     for (const id of ids) {
@@ -54,7 +76,7 @@ export function ledgerOf(log, line) {
   return [
     `- raw (${f.raw.length}): ${spans(f.raw)}`,
     ...(f.incomplete.length ? [`- raw, its body incomplete (${f.incomplete.length}): ${spans(f.incomplete)}`] : []),
-    ...[...f.under].map(([id, s]) => `- in ${id} (L${s.level}) (${s.ids.length}): ${spans(s.ids)}`),
+    ...[...f.under].map(([id, s]) => `- in ${summaryName(id, s.level)} (${s.ids.length}): ${spans(s.ids)}`),
     `- left out (${f.out.length}): ${spans(f.out)}`,
   ];
 }

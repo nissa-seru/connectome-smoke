@@ -82,3 +82,26 @@ test('image nonces are named by their first appearance in what one masker reads,
   assert.equal(sameAcrossRuns(refs('aaaaaa', 'bbbbbb'), refs('cccccc', 'cccccc')), false, 'two ledgers against one');
   assert.match(JSON.stringify(maskRunVarying(refs('aaaaaa', 'bbbbbb', 'aaaaaa'))), /img_N1_1.*img_N2_1.*img_N1_1/);
 });
+
+test('the self-check counts an extra, a missing and an empty arm\'s bodies as differing, naming where', () => {
+  const arm = (bodies) => { const d = mkdtempSync(join(tmpdir(), 'arm-')); bodies.forEach((b, i) => writeFileSync(join(d, `r${i + 1}.json`), JSON.stringify(b))); return d; };
+  const two = arm([body(), body({ text: 'two [[c:c.chat.in]]' })]);
+  const three = arm([body(), body({ text: 'two [[c:c.chat.in]]' }), body({ text: 'three [[c:c.chat.in]]' })]);
+  const none = arm([]);
+  try {
+    const extra = sameBodies(three, two);
+    assert.deepEqual([extra.outcome, extra.at, extra.files[0]], ['differs', 2, 'r3.json'], 'recording on sent one more');
+    assert.match(extra.detail, /3 requests with recording on, 2 with it off/);
+    const missing = sameBodies(two, three);
+    assert.deepEqual([missing.outcome, missing.at], ['differs', 2], 'recording off sent one more');
+    assert.match(sameBodies(none, two).detail, /no request bodies were saved/);
+    assert.deepEqual([sameBodies(two, none).outcome, sameBodies(two, none).at], ['differs', 0], 'an arm with none differs at its first');
+  } finally { for (const d of [two, three, none]) rmSync(d, { recursive: true, force: true }); }
+});
+
+test('the mask keeps a key named __proto__ as the body has it, so a change to it still shows', () => {
+  const a = maskRunVarying(JSON.parse('{"tools":[{"input_schema":{"properties":{"__proto__":{"type":"string"}}}}]}'));
+  const b = maskRunVarying(JSON.parse('{"tools":[{"input_schema":{"properties":{"__proto__":{"type":"number"}}}}]}'));
+  assert.notEqual(JSON.stringify(a), JSON.stringify(b));
+  assert.match(JSON.stringify(a), /"__proto__":\{"type":"string"\}/);
+});

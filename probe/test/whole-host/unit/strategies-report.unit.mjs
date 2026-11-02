@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import { mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { perCheckReport, readExpected, runChecks, workloadReport } from '../lib/strategies/report.mjs';
+import { perCheckReport, readExpected, runChecks, summaryNamer, workloadReport } from '../lib/strategies/report.mjs';
+import { calibrationEdge } from '../lib/strategies/checks.mjs';
 
 const configuration = { name: 'H1/W1' };
 const flag = (check, step, message = 'm') => ({ check, step, message });
@@ -82,12 +83,17 @@ test('an entry\'s match covers the flags whose whole detail it names: D3 and D39
 });
 
 test('a clamp-edge calibration makes the run invalid, and the first line says so', () => {
-  const r = perCheckReport({ configuration, candidate: { flags: [flag(10, 'c.cm.cp', 'calibration at the clamp edge (1.8)'), flag(1, 's')], missing: [] } });
+  const r = perCheckReport({ configuration, candidate: { flags: [{ ...flag(10, 'c.cm.cp', 'calibration at the clamp edge (1.8)'), what: 'clamp-edge' }, flag(1, 's')], missing: [] } });
   assert.equal(r.verdict, 'invalid');
   assert.match(r.lines[0], /^INVALID: calibration at the clamp edge \(1\.8\)/);
   const unjudged = perCheckReport({ configuration, candidate: { flags: [{ check: 10, step: 'the run', what: 'judged-none:calibration edge', message: 'couldn\'t judge: check 10 (calibration edge) judged nothing' }], missing: [] } });
   assert.equal(unjudged.verdict, 'flags', 'a check 10 that judged nothing is a flag, with no claim that folds were clamped');
   assert.ok(!unjudged.lines.some((l) => /clamped/.test(l)));
+  for (const what of ['unread-panel', 'no-end-read']) {
+    const unread = perCheckReport({ configuration, candidate: { flags: [{ check: 10, step: 'the run', what, message: 'couldn\'t judge calibration at the run\'s end' }], missing: [] } });
+    assert.equal(unread.verdict, 'flags', `${what} is a couldn't-judge flag, not an invalid run`);
+    assert.ok(!unread.lines.some((l) => /clamped|INVALID/.test(l)), `${what} makes no claim that folds were clamped`);
+  }
 });
 
 test('K1b: the report names each operator alert by its kind, and prints the checks\' notes', () => {
@@ -168,6 +174,16 @@ test('a workload run that lacks a product its segments declare fails, and says w
   assert.equal(whole.verdict, 'pass');
 });
 
+test('a completed run whose workload property judged nothing is a couldn\'t-judge flag, and one that judged something or didn\'t complete is not', () => {
+  const judged = { flags: [], missing: [], notes: [], judged: [] };
+  const property = (n, flags = []) => Object.defineProperty([...flags], 'judged', { value: n, enumerable: false });
+  const none = workloadReport({ id: 'H1/W1', workload: 'W1', judged, breaches: property(0), completed: true });
+  assert.equal(none.verdict, 'flags');
+  assert.ok(none.flags.some((f) => f.check === 14 && f.what === 'judged-none:property'));
+  assert.equal(workloadReport({ id: 'H1/W1', workload: 'W1', judged, breaches: property(3), completed: true }).verdict, 'pass');
+  assert.ok(!workloadReport({ id: 'H1/W1', workload: 'W1', judged, breaches: property(0), completed: false }).flags.some((f) => f.what === 'judged-none:property'), 'a run that stopped early is failed for that, not for this');
+});
+
 test('check 2 counts the declared products it judged, and judging none of them where some are declared is a flag', () => {
   const wanted = { s: [{ name: 'a reply', test: (r) => r.kind === 'agent' }] };
   const judged = (script) => runChecks({ records: [], log: [], script, products: wanted, store: null });
@@ -197,12 +213,19 @@ test('checks 4, 6 and 10 apply where they can anchor, and judging none there is 
   assert.deepEqual(what(runChecks({ records: [req('r1', 'a', [])], log: [], script, products: [], store: emptyStore, windowTokens: 1_000_000 })), [4]);
   const suppressed = [script[0], { id: 'x', segment: 's', kind: 'suppress', messages: [{ canary: '[[c:a.in]]' }, { canary: '[[c:a.r1]]' }] }, script[1]];
   assert.ok(what(runChecks({ records: [req('r2', 'b', [])], log: [], script: suppressed, products: [], store: null, windowTokens: 1_000_000 })).includes(6));
-  const quiet = runChecks({ records: [], log: [], script, products: [], store: { messages: [], summaries: [{ id: 'L1-9', level: 1, sourceLevel: 0, sourceIds: [], number: null, covers: [] }] } });
-  assert.ok(quiet.notes.some((n) => /doesn't judge 1 stored summary with no stand-in mark.*L1-9/.test(n)));
+  const quiet = runChecks({ records: [], log: [], script, products: [], store: { messages: [{ id: '7', canaries: ['[[c:q.3.in]]'], nameCanary: '[[c:q.3.in]]' }, { id: '8', canaries: [] }], summaries: [{ id: 'L1-9', level: 1, sourceLevel: 0, sourceIds: ['8'], number: null, covers: [] }] } });
+  assert.ok(quiet.notes.some((n) => /doesn't judge 1 stored summary with no stand-in mark.*: L1\(q\.3\.in\+1\)/.test(n)), 'named as check 11 names it, not by its store id');
   assert.ok(!quiet.flags.some((f) => f.check === 5));
-  const checkpoint = { kind: 'checkpoint', name: 's', step: 's.cp', health: { data: {} } };
+  const composition = { contextComposition: { fixture: { head: { messages: 4 } } } };
+  const checkpoint = { kind: 'checkpoint', name: 's', step: 's.cp', health: { data: composition } };
   assert.deepEqual(what(runChecks({ records: [], log: [checkpoint], script, products: [], store: null, adaptive: true })), [10]);
   assert.deepEqual(what(runChecks({ records: [], log: [checkpoint], script, products: [], store: null, adaptive: false })), []);
+  const end = { kind: 'health', name: 'end', step: 's.9', health: { data: composition } };
+  assert.deepEqual(what(runChecks({ records: [], log: [end], script, products: [], store: null, adaptive: true })), [10], 'an end-of-run panel reporting the composition with no multiplier is a couldn\'t-judge flag');
+  assert.deepEqual(what(runChecks({ records: [], log: [{ ...end, health: { data: { contextComposition: {} } } }], script, products: [], store: null, adaptive: true })), [], 'a panel that reports no context composition, as after a tune-out, holds nothing check 10 could judge');
+  const judgedEnd = runChecks({ records: [], log: [{ ...end, health: { data: { contextComposition: { fixture: { calibration: { multiplier: 1.8 } } } } } }], script, products: [], store: null, adaptive: true });
+  assert.equal(judgedEnd.judged.find((j) => j.check === 10).judged, 1);
+  assert.match(judgedEnd.flags.find((f) => f.check === 10).message, /calibration at the clamp edge \(1\.8\) at the run's end/);
 });
 
 test('check 5 applies where the store holds a summary a summariser request wrote, so one whose sources it can\'t judge is a couldn\'t-judge flag', () => {
@@ -211,6 +234,56 @@ test('check 5 applies where the store holds a summary a summariser request wrote
   const { flags, judged } = runChecks({ records: [call], log: [], script: [{ id: 'a', segment: 's' }], products: [], store, windowTokens: 1_000_000 });
   assert.equal(judged.find((j) => j.check === 5).judged, 0);
   assert.deepEqual(flags.filter((f) => f.check === 5).map((f) => f.what), ['judged-none:bookkeeping']);
-  const none = runChecks({ records: [], log: [], script: [{ id: 'a', segment: 's' }], products: [], store: { messages: [], summaries: [] }, windowTokens: 1_000_000 });
-  assert.deepEqual(none.flags.filter((f) => f.check === 5), [], 'with no summary written, check 5 doesn\'t apply');
+  const unstored = runChecks({ records: [call], log: [], script: [{ id: 'a', segment: 's' }], products: [], store: { messages: store.messages, summaries: [] }, windowTokens: 1_000_000 });
+  assert.deepEqual(unstored.flags.filter((f) => f.check === 5), [], 'an answered request whose summary the store doesn\'t hold wrote nothing check 5 could judge, so it doesn\'t apply');
+  assert.equal(unstored.judged.find((j) => j.check === 5).judged, 0);
+});
+
+test('check 5 through runChecks holds a subagent\'s L2 merge to its L1 sources by every canary they cover, and the fixture\'s by its conversational ones only', () => {
+  const store = {
+    messages: [{ id: 'k1', canaries: ['[[c:k.task]]'] }, { id: 'k2', canaries: ['[[c:k.s1]]'] }],
+    summaries: [
+      { id: 'L1-1', level: 1, sourceLevel: 0, sourceIds: ['k1'], number: '[[s:C1]]', covers: ['[[c:k.task]]'] },
+      { id: 'L1-2', level: 1, sourceLevel: 0, sourceIds: ['k2'], number: '[[s:C2]]', covers: ['[[c:k.s1]]'] },
+      { id: 'L2-3', level: 2, sourceLevel: 1, sourceIds: ['L1-1', 'L1-2'], number: '[[s:C3]]', covers: ['[[c:k.task]]', '[[c:k.s1]]'] },
+    ],
+  };
+  const merge = (canaries) => ({ id: 'm1', step: 'k', kind: 'summariser', agent: 'sub', answer: { summary: '[[s:C3]]' }, sent: { canaries, summaries: [] } });
+  const check5 = (r) => ({ judged: r.judged.find((j) => j.check === 5)?.judged, flags: r.flags.filter((f) => f.check === 5).map((f) => f.request ?? f.what) });
+  const args = { log: [], script: [{ id: 'k', segment: 's' }], products: [], store, windowTokens: 1_000_000 };
+  assert.deepEqual(check5(runChecks({ ...args, records: [merge(['[[c:k.task]]', '[[c:k.s1]]'])], agent: 'spawn-k' })), { judged: 1, flags: [] }, 'both L1s shown raw');
+  assert.deepEqual(check5(runChecks({ ...args, records: [merge(['[[c:k.task]]'])], agent: 'spawn-k' })), { judged: 1, flags: ['m1'] }, 'L1-2\'s source not shown');
+  assert.deepEqual(check5(runChecks({ ...args, records: [merge(['[[c:k.task]]'])] })).flags, ['judged-none:bookkeeping'], 'the fixture\'s rule counts no .task or .sN canary, so it judges none and says so');
+});
+
+test('the report\'s note names a summary of a call-only message by the call\'s canary, as check 11 and the record do, not by place', () => {
+  const store = { messages: [{ id: '4', canaries: [], nameCanary: '[[c:q.2.call1]]' }, { id: '5', canaries: [] }], summaries: [{ id: 'L1-3', level: 1, sourceLevel: 0, sourceIds: ['4', '5'], number: null, covers: [] }] };
+  assert.equal(summaryNamer(store)(store.summaries[0]), 'L1(q.2.call1-q.2.call1+1)');
+});
+
+test('a clamp edge check 10 finds makes the report invalid, as found, not as a test spells it', () => {
+  const at = (m) => ({ kind: 'checkpoint', step: 'c.cm.cp', name: 'n', health: { contextComposition: { fixture: { calibration: { multiplier: m } } } } });
+  const flags = calibrationEdge([at(1.8)]);
+  const r = perCheckReport({ configuration, candidate: { flags, missing: [] } });
+  assert.equal(r.verdict, 'invalid');
+  assert.match(r.lines[0], /^INVALID: calibration at the clamp edge \(1\.8\)/);
+});
+
+test('the report prints what a check couldn\'t judge beside its count', () => {
+  const report = perCheckReport({ configuration: { name: 'C' }, candidate: { flags: [], missing: [], judged: [{ check: 11, name: 'compile invariants', judged: 4, besides: 'store order couldn\'t place 3 of what was sent' }, { check: 12, name: 'reloads', judged: 0 }] } });
+  assert.ok(report.lines.includes('- judged: check 11 compile invariants 4 (store order couldn\'t place 3 of what was sent), check 12 reloads 0'));
+});
+
+test('what check 11 couldn\'t place reaches the report as a couldn\'t-judge flag with its count beside check 11\'s judged compiles, never as a breach', () => {
+  const lines = [{ seq: 1, agent: 'fixture', kind: 'request', outcome: 'compiled', violations: [{ invariant: 'unplaced', count: 3, detail: '3 parts: a.in, b.in, c.in' }] }];
+  const candidate = runChecks({ records: [], log: [{ kind: 'compiles', step: 'q.1', lines }], script: [{ id: 'q', segment: 's', kind: 'channel' }], products: [], store: { messages: [], summaries: [] } });
+  const eleven = candidate.judged.find((j) => j.check === 11);
+  assert.equal(eleven.judged, 1);
+  assert.match(eleven.besides, /store order couldn't place 3 of what was sent/);
+  const flag = candidate.flags.find((f) => f.check === 11);
+  assert.match(flag.message, /^couldn't judge all of /);
+  const report = perCheckReport({ configuration: { name: 'C' }, candidate });
+  assert.ok(report.lines.some((l) => /check 11 compile invariants 1 \(store order couldn't place 3 of what was sent\)/.test(l)));
+  assert.ok(!report.lines.some((l) => /breaks/.test(l)));
+  assert.ok(report.lines.some((l) => /^- check 11 at q\.1: couldn't judge all of /.test(l)), 'the couldn\'t-judge flag itself reaches the rendered report');
 });

@@ -1,6 +1,7 @@
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { CANARY, SUMMARY } from './standin.mjs';
+import { namingCanaries } from './names.mjs';
 
 export async function readStore({ installDir, storePath, namespace, isolate = false }) {
   const cmEntry = join(installDir, 'node_modules', '@animalabs', 'context-manager', 'dist', 'src', 'index.js');
@@ -9,16 +10,9 @@ export async function readStore({ installDir, storePath, namespace, isolate = fa
   // context-manager's open takes the store's lock and can write to it, so this reads a copy.
   const cm = await ContextManager.open({ path: storePath, namespace, strategy, ...(isolate ? { isolate: true } : {}) });
   try {
-    const textOf = (content) => (Array.isArray(content) ? content : [content]).map((b) => (typeof b === 'string' ? b : b?.type === 'text' ? b.text : b?.type === 'tool_result' ? JSON.stringify(b.content) : '')).join('');
-    const messages = cm.getAllMessages().map((m) => ({
-      id: m.id,
-      participant: m.participant,
-      canaries: textOf(m.content).match(CANARY) ?? [],
-      ...(m.participant === 'Context Manager' && (Array.isArray(m.content) ? m.content : []).some((b) => b?.type === 'text' && b.text.startsWith('[Topic Transition]')) ? { topicTransition: true } : {}),
-      ...(m.bodyGroupId ? { bodyGroupId: m.bodyGroupId, shardIndex: m.shardIndex } : {}),
-    }));
+    const messages = cm.getAllMessages().map(storedEntry);
     const ids = cm.getSummariesInRange({}).map((s) => s.id);
-    if (ids.length === 0) throw new Error(`no summaries in ${namespace} at ${storePath}, from a configuration that compresses`);
+    if (ids.length === 0) throw new Error(`no summaries in ${namespace} at ${storePath}, from a configuration that compresses; it holds ${messages.length} message(s)${messages.length ? `, first carrying ${messages.find((m) => m.canaries.length)?.canaries[0] ?? 'no canary'}` : ''}`);
     const entries = new Map();
     for (const id of ids) {
       const s = cm.getSummary(id);
@@ -49,4 +43,17 @@ export async function readStore({ installDir, storePath, namespace, isolate = fa
   } finally {
     await cm.close();
   }
+}
+
+const textOf = (content) => (Array.isArray(content) ? content : [content]).map((b) => (typeof b === 'string' ? b : b?.type === 'text' ? b.text : b?.type === 'tool_result' ? JSON.stringify(b.content) : '')).join('');
+
+export function storedEntry(m) {
+  return {
+    id: m.id,
+    participant: m.participant,
+    canaries: textOf(m.content).match(CANARY) ?? [],
+    nameCanary: namingCanaries(m.content)[0],
+    ...(m.participant === 'Context Manager' && (Array.isArray(m.content) ? m.content : []).some((b) => b?.type === 'text' && b.text.startsWith('[Topic Transition]')) ? { topicTransition: true } : {}),
+    ...(m.bodyGroupId ? { bodyGroupId: m.bodyGroupId, shardIndex: m.shardIndex } : {}),
+  };
 }

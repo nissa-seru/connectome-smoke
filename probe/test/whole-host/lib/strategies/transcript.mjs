@@ -128,7 +128,7 @@ export function transcriptOf(body, generated, seen = new Set()) {
       case 'text': return emit(indent, `text${cache(b)}`, rendered(b.text ?? ''));
       case 'thinking': {
         const said = b.thinking ?? '';
-        return emit(indent, `thinking${cache(b)}`, `${typeof b.signature === 'string' && b.signature ? 'signed' : 'unsigned'}, ${count(said.length)} chars: ${headOf(said)}`);
+        return emit(indent, `thinking${cache(b)} ${typeof b.signature === 'string' && b.signature ? 'signed' : 'unsigned'}`, rendered(said));
       }
       case 'redacted_thinking': return emit(indent, `redacted_thinking${cache(b)}`, `${count((b.data ?? '').length)} chars`);
       case 'image': {
@@ -153,7 +153,7 @@ export function transcriptOf(body, generated, seen = new Set()) {
 
   const system = typeof body.system === 'string' ? [{ type: 'text', text: body.system }] : Array.isArray(body.system) ? body.system : [];
   system.forEach(({ type, text, cache_control: _c, ...rest }, i) => {
-    const other = { ...(type !== 'text' ? { type } : {}), ...rest };
+    const other = { ...(type !== 'text' ? { type: type ?? null } : {}), ...rest };
     emit(0, `system[${i}]${cache(system[i])}${Object.keys(other).length ? ` ${JSON.stringify(mask(other))}` : ''}`, stack(`system[${i}]`, text ?? ''));
   });
   for (const tool of body.tools ?? []) {
@@ -162,7 +162,8 @@ export function transcriptOf(body, generated, seen = new Set()) {
     emit(0, `tool ${name}${cache(tool)}`, stack(`tool ${name}`, shown.join('\n'), 0));
   }
   (body.messages ?? []).forEach((m, i) => {
-    emit(0, `#${i} ${m.role}`);
+    const { role, content: _c, cache_control: _m, ...envelope } = m;
+    emit(0, `#${i} ${role}${cache(m)}${Object.keys(envelope).length ? ` ${JSON.stringify(mask(envelope))}` : ''}`);
     for (const b of blocksOf(m.content)) block(b, 1);
   });
   return lines;

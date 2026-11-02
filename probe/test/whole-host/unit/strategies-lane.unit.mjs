@@ -1,10 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync, unlinkSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync, unlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { keptWhole, laneVersion, sourceHash, stackVersions } from '../lib/strategies/lane.mjs';
+import { contentsOf, keptWhole, laneVersion, sourceHash, stackVersions } from '../lib/strategies/lane.mjs';
 
 function tree(files) {
   const root = mkdtempSync(join(tmpdir(), 'fxl-'));
@@ -161,21 +161,57 @@ test('a host that is the checkout itself is named by its version and its source,
 
 test('a kept checkpoint is used only whole, with its record, its store and the answers its transcripts read', () => {
   const root = mkdtempSync(join(tmpdir(), 'kept-'));
-  const make = (name, { record = JSON.stringify({ from: 'H1/W2', key: 'k1', clockEnd: 1 }), store = true, answers = true } = {}) => {
+  const make = (name, { record = sealed(), store = true, answers = true, dirs: made = ['store', 'answers'] } = {}) => {
     const dir = join(root, `H1_W2-${name}`, 'H1_W2-k1');
-    mkdirSync(join(dir, 'store'), { recursive: true });
-    mkdirSync(join(dir, 'answers'), { recursive: true });
-    if (store) writeFileSync(join(dir, 'store', 'x'), '');
-    if (answers) writeFileSync(join(dir, 'answers', 'r1.answer.json'), '[]');
-    if (record !== null) writeFileSync(join(dir, 'checkpoint.json'), record);
+    mkdirSync(dir, { recursive: true });
+    for (const d of made) mkdirSync(join(dir, d), { recursive: true });
+    if (store && made.includes('store')) writeFileSync(join(dir, 'store', 'x'), '');
+    if (answers && made.includes('answers')) writeFileSync(join(dir, 'answers', 'r1.answer.json'), '[]');
+    if (record !== null) writeFileSync(join(dir, 'checkpoint.json'), typeof record === 'function' ? record(dir) : record);
     return dir;
   };
+  const sealed = (more = {}) => (dir) => JSON.stringify({ from: 'H1/W2', key: 'k1', clockEnd: 1, ...(dirs(dir) ? { contents: contentsOf(dir) } : {}), ...more });
+  const dirs = (dir) => ['answers', 'store'].every((d) => { try { return readdirSync(join(dir, d)).length > 0; } catch { return false; } });
   try {
     assert.equal(keptWhole(make('whole')), true);
     assert.equal(keptWhole(make('no-answers', { answers: false })), false, 'one kept before its answers were, or that lost them, is written again');
     assert.equal(keptWhole(make('empty-store', { store: false })), false, 'a store that lost its contents');
     assert.equal(keptWhole(make('no-record', { record: null })), false);
     assert.equal(keptWhole(make('broken-record', { record: '{"from":' })), false, 'a record that doesn\'t parse');
-    assert.equal(keptWhole(make('other-key', { record: JSON.stringify({ from: 'H1/W2', key: 'k2', clockEnd: 1 }) })), false, 'a record whose key isn\'t its directory\'s');
+    assert.equal(keptWhole(make('other-key', { record: sealed({ key: 'k2' }) })), false, 'a record whose key isn\'t its directory\'s');
+    assert.equal(keptWhole(make('no-clock', { record: sealed({ clockEnd: undefined }) })), false, 'a record with no clockEnd, which would start the continuation at NaN');
+    assert.equal(keptWhole(make('no-from', { record: sealed({ from: undefined }) })), false);
+    assert.equal(keptWhole(make('no-answers-dir', { dirs: ['store'] })), false, 'no answers directory at all');
+    assert.equal(keptWhole(make('no-store-dir', { dirs: ['answers'] })), false, 'no store directory at all');
+    const unreadable = make('unreadable-store');
+    rmSync(join(unreadable, 'store'), { recursive: true });
+    writeFileSync(join(unreadable, 'store'), 'a file where the directory was');
+    assert.equal(keptWhole(unreadable), false, 'a store that isn\'t a directory reads as not whole rather than throwing');
+    const lost = make('lost-file');
+    writeFileSync(join(lost, 'store', 'sessions.json'), '{}');
+    assert.equal(keptWhole(lost), false, 'a file the sealed listing doesn\'t name, or a lost one, makes it not whole');
+    const shrunk = make('shrunk');
+    writeFileSync(join(shrunk, 'answers', 'r1.answer.json'), '');
+    assert.equal(keptWhole(shrunk), false, 'nor does a file whose size changed');
+    const sealOf = (dir) => JSON.stringify({ from: 'H1/W2', key: 'k1', clockEnd: 1, contents: contentsOf(dir) });
+    const two = make('two-files', { record: null });
+    writeFileSync(join(two, 'store', 'sessions.json'), '{"a":1}');
+    writeFileSync(join(two, 'checkpoint.json'), sealOf(two));
+    assert.equal(keptWhole(two), true, 'a checkpoint sealed with two store files is whole');
+    rmSync(join(two, 'store', 'sessions.json'));
+    assert.equal(keptWhole(two), false, 'and not once one of them is gone');
+    const swapped = make('swapped', { record: null });
+    writeFileSync(join(swapped, 'answers', 'r1.answer.json'), '["alpha"]');
+    writeFileSync(join(swapped, 'checkpoint.json'), sealOf(swapped));
+    writeFileSync(join(swapped, 'answers', 'r1.answer.json'), '["bravo"]');
+    assert.equal(keptWhole(swapped), false, 'nor once a file changes at the same size');
+    assert.equal(keptWhole(make('unsealed', { record: JSON.stringify({ from: 'H1/W2', key: 'k1', clockEnd: 1 }) })), false, 'a record with no contents, as one kept before this, is rebuilt');
   } finally { rmSync(root, { recursive: true, force: true }); }
+});
+
+test('run.mjs refuses a run name it doesn\'t know, naming it, before it clones or installs anything', () => {
+  const r = spawnSync(process.execPath, [join(import.meta.dirname, '..', 'run.mjs'), '--runs', 'H9/W99', '--workdir', join(tmpdir(), 'never-made-whole-host')], { encoding: 'utf-8', timeout: 30_000 });
+  assert.equal(r.status, 2);
+  assert.match(r.stderr, /no run H9\/W99; there are [^\n]*\bH1\/W1\b/);
+  assert.doesNotMatch(r.stdout + r.stderr, /lane |release /, 'it stopped before naming the lane or cloning the release');
 });

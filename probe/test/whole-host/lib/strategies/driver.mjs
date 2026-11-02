@@ -17,6 +17,7 @@ const TURN_MS = 120_000;
 const COMMAND_MS = 60_000;
 const MAINTAIN_MS = 120_000;
 const SHUTDOWN_MS = 30_000;
+const RESTART_MS = 1_000;
 
 const FENCE = 'settle-fence:';
 
@@ -103,6 +104,7 @@ export function hostEnv({ configuration, standinUrl, control, clock }) {
   return {
     ANTHROPIC_BASE_URL: standinUrl, ANTHROPIC_API_KEY: 'sk-ant-fixture', TZ: 'UTC', AGENT_TIMEZONE: undefined, FIXTURE_CONTROL: control, FIXTURE_EPOCH_MS: String(clock),
     ANTHROPIC_AUTH_TOKEN: undefined, ANTHROPIC_OAUTH_CREDENTIALS_FILE: undefined, ANTHROPIC_OAUTH_AUTO_REFRESH: undefined,
+    MODEL: undefined, COUNT_TOKENS_MODEL: undefined,
     ...(configuration.binds ? { THINKING_BINDING_PROBE: 'off' } : {}),
     ...(configuration.recording === false ? { FIXTURE_RECORD: 'off' } : {}),
   };
@@ -226,6 +228,12 @@ export async function runScript({ steps, configuration, standin, hostDir, facts,
   const copies = [];
 
   async function boot() {
+    if (boots > 0) {
+      const to = clock + RESTART_MS;
+      log('advance', { from: clock, to, restart: true });
+      clock = to;
+      standin.setClock(clock);
+    }
     const b = { n: ++boots, events: [], stopping: false };
     const started = performance.now();
     const recipe = laneRecipe({ configuration: recipeOf, control, channels, boot: b.n });
@@ -279,8 +287,8 @@ export async function runScript({ steps, configuration, standin, hostDir, facts,
 
   async function takeCompiles() {
     if (!host) return;
-    const { lines, store, blobs } = await ctl.moduleRequest('take');
-    if (lines.length || Object.keys(store).length || Object.keys(blobs).length) log('compiles', { boot: host.n, lines, store, blobs });
+    const { lines, store, blobs, submissions } = await ctl.moduleRequest('take');
+    if (lines.length || Object.keys(store).length || Object.keys(blobs).length || submissions?.length) log('compiles', { boot: host.n, lines, store, blobs, ...(submissions?.length ? { submissions } : {}) });
   }
 
   async function shutdown() {
@@ -455,13 +463,16 @@ export async function runScript({ steps, configuration, standin, hostDir, facts,
     standin.setClock(clock);
   }
 
-  async function checkpoint(step, last) {
+  async function health(id, what) {
     await settle();
-    const corrId = `${step.id}:health`;
+    const corrId = `${id}:health`;
     const from = host.events.length;
     send(host.sock, { type: 'panel-request', op: 'health', corrId });
-    const panel = await until(() => eventAfter(from, (e) => e.type === 'panel-response' && e.corrId === corrId), COMMAND_MS, `checkpoint ${step.id}: the health panel`);
-    log('checkpoint', { name: step.name, health: panel.e });
+    return (await until(() => eventAfter(from, (e) => e.type === 'panel-response' && e.corrId === corrId), COMMAND_MS, `${what}: the health panel`)).e;
+  }
+
+  async function checkpoint(step, last) {
+    log('checkpoint', { name: step.name, health: await health(step.id, `checkpoint ${step.id}`) });
     if (!step.copyStore) return;
     await shutdown();
     const dest = join(work, 'copies', step.name ?? step.id);
@@ -605,6 +616,8 @@ export async function runScript({ steps, configuration, standin, hostDir, facts,
       }
       timing.steps.push({ id: step.id, kind: step.kind, ms: Math.round(performance.now() - started) });
     }
+    if (host) log('health', { name: 'end', health: await health('end', 'the run\'s end') });
+    else log('health', { name: 'end', skipped: 'the run\'s last step stopped its host' });
   } catch (e) {
     if (!failure) fail({ step: current?.id ?? null, reason: e instanceof RunFailure ? e.message : String(e?.stack || e).slice(0, 3000) });
     if (host) log('host-output', { boot: host.n, tail: tail(host.out) });

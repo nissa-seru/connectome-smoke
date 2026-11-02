@@ -1,5 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { bindingControl, budgets, compileInvariants, compilingAgents, ofSide, pairing, withJudged, reloads, declaredProducts, everyTurnAnswers, wellFormed, windowsRaw, coverage, bookkeeping, calibrationEdge, FIXTURE_AGENT, STREAM_BOUND } from './checks.mjs';
+import { messageNames, spanName } from './names.mjs';
 
 export function runChecks({ records, log, script, products, store, agent = FIXTURE_AGENT, side = agent === FIXTURE_AGENT ? 'primary' : 'sub', streamBound = STREAM_BOUND, windowTokens, binds = false, adaptive = false }) {
   const own = ofSide(side);
@@ -18,7 +19,7 @@ export function runChecks({ records, log, script, products, store, agent = FIXTU
     ...(store ? [{ check: 4, name: 'coverage', flags: coverage(records, store, script, log, { agent, side }), applies: ownRequests > 0 ? `a store was read and the run's agent made ${ownRequests} request(s)` : null }] : []),
     ...(store ? [(() => { const flags = bookkeeping(records, store, { side }); return { check: 5, name: 'bookkeeping', flags, applies: flags.written > 0 ? `the store holds ${flags.written} summar${flags.written === 1 ? 'y' : 'ies'} a summariser request wrote` : null }; })()] : []),
     { check: 6, name: 'windows raw', flags: windowsRaw(records, script, log, store, { agent, side }), applies: side === 'primary' && turnRequests > 0 ? `the run's agent made ${turnRequests} request(s) at a scripted turn after the first` : null },
-    { check: 10, name: 'calibration edge', flags: calibrationEdge(log), applies: adaptive && log.some((e) => e.kind === 'checkpoint') ? 'an adaptive configuration logged a checkpoint' : null },
+    { check: 10, name: 'calibration edge', flags: calibrationEdge(log, { adaptive }), applies: adaptive && log.some((e) => (e.kind === 'checkpoint' || e.kind === 'health') && Object.keys(e.health?.data?.contextComposition ?? {}).length) ? 'an adaptive configuration\'s health panel reported its context composition' : null },
     { check: 11, name: 'compile invariants', flags: compileInvariants(log), applies: budget.requests > 0 ? 'the run\'s agent made requests' : null },
     { check: 12, name: 'reloads', flags: reloads(log), applies: script.some((s) => s.reloadCheck) ? 'the script restarts with a reload check' : null },
     ...[...new Set([...(budget.requests > 0 ? [agent] : []), ...compilingAgents(log)])].map((a) => ({
@@ -30,13 +31,13 @@ export function runChecks({ records, log, script, products, store, agent = FIXTU
     })),
     ...(binds ? [{ check: 15, name: 'binding control', flags: bindingControl(records), applies: 'the configuration\'s model binds thinking' }] : []),
   ];
-  const judged = parts.map((p) => ({ check: p.check, name: p.name, judged: p.judged ?? p.flags.judged ?? null }));
+  const judged = parts.map((p) => ({ check: p.check, name: p.name, judged: p.judged ?? p.flags.judged ?? null, ...(p.flags.besides ? { besides: p.flags.besides } : {}) }));
   const unjudged = parts.filter((p) => p.applies && (p.judged ?? p.flags.judged) === 0).map((p) => ({
     check: p.check, step: 'the run', what: `judged-none:${p.name}`,
     message: `couldn't judge: check ${p.check} (${p.name}) judged nothing, though it applies (${p.applies})`,
   }));
   const flags = [...parts.flatMap((p) => p.flags), ...unjudged];
-  const unmarked = (store?.summaries ?? []).filter((s) => !s.number).map((s) => s.id);
+  const unmarked = (store?.summaries ?? []).filter((s) => !s.number).map(summaryNamer(store));
   const notes = [...budget.notes, ...(unmarked.length ? [`check 5 doesn't judge ${unmarked.length} stored summar${unmarked.length === 1 ? 'y' : 'ies'} with no stand-in mark, which context-manager wrote without a summariser request: ${unmarked.slice(0, 5).join(', ')}`] : [])];
   return { flags, missing, headroom: budget.headroom, notes, judged };
 }
@@ -77,7 +78,7 @@ export function readExpected(path, names) {
 }
 
 export function perCheckReport({ configuration, candidate, expected = [] }) {
-  const invalid = candidate.flags.filter((f) => f.check === 10 && !String(f.what ?? '').startsWith('judged-none:'));
+  const invalid = candidate.flags.filter((f) => f.check === 10 && f.what === 'clamp-edge');
   const entries = expected.filter((e) => e.configuration === configuration.name).map((e) => ({ e, re: new RegExp(e.match) }));
   const coverOf = (f) => entries.filter(({ e, re }) => key(e) === key(f) && re.test(f.detail ?? f.message ?? ''));
   const counted = candidate.flags.filter((f) => !invalid.includes(f));
@@ -105,7 +106,7 @@ export function perCheckReport({ configuration, candidate, expected = [] }) {
   for (const { f, finding } of covered) lines.push(`- check ${f.check} at ${f.step}${f.request ? ` (${f.request})` : ''}: ${f.message} [expected: ${finding}]`);
   for (const m of missing) lines.push(`- check 2, ${m.segment}: missing ${m.name}`);
   for (const n of candidate.notes ?? []) lines.push(`- ${n}`);
-  if (candidate.judged?.length) lines.push(`- judged: ${candidate.judged.map((j) => `check ${j.check} ${j.name} ${j.judged ?? '?'}`).join(', ')}`);
+  if (candidate.judged?.length) lines.push(`- judged: ${candidate.judged.map((j) => `check ${j.check} ${j.name} ${j.judged ?? '?'}${j.besides ? ` (${j.besides})` : ''}`).join(', ')}`);
   if (candidate.headroom?.length) lines.push(`- budget headroom, each segment's least: ${candidate.headroom.map((h) => `${h.segment} ${h.bound - h.tokens} of ${h.bound}${h.kind === 'continuation' ? ' (a stream\'s fresh input through a continuation round, against the stream bound)' : ' (a compiled request\'s whole input, against the model\'s window)'}`).join(', ')}`);
   return { verdict, lines, invalid, flags, expected: covered.map((c) => c.f), missing };
 }
@@ -119,4 +120,19 @@ export function workloadReport({ id, workload, owns = [], judged, breaches, comp
   if (completed && breaches.judged === 0 && !breaches.length) flags.push({ check: 14, step: 'the run', what: 'judged-none:property', message: `couldn't judge: ${workload}'s property judged nothing, though the run completed` });
   const notes = [...(judged.notes ?? []), ...(owned ? [`${owned} flag(s) are ${workload}'s by design, judged by its property (runOf owns)`] : [])];
   return perCheckReport({ configuration: { name: id }, candidate: { flags, missing: judged.missing ?? [], notes, headroom: judged.headroom, judged: counts }, expected });
+}
+
+export function summaryNamer(store) {
+  const canary = new Map((store?.messages ?? []).map((m) => [String(m.id), m.nameCanary]));
+  const nameOf = messageNames((store?.messages ?? []).map((m) => m.id), (id) => canary.get(String(id)));
+  const sums = new Map((store?.summaries ?? []).map((s) => [s.id, s]));
+  const leaves = (s, seen = new Set()) => {
+    if (!s || seen.has(s.id)) return [];
+    seen.add(s.id);
+    return s.sourceLevel === 0 ? s.sourceIds : s.sourceIds.flatMap((id) => leaves(sums.get(id), seen));
+  };
+  return (s) => {
+    const ids = leaves(s);
+    return ids.length ? spanName(`L${s.level}`, nameOf(ids[0]) ?? `#${ids[0]}`, nameOf(ids.at(-1)) ?? `#${ids.at(-1)}`) : `L${s.level}(-)`;
+  };
 }

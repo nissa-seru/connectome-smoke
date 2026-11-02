@@ -69,6 +69,27 @@ test('X10: a cache marker shows as the record shows it, its TTL when plain and w
   const marked = (cc) => transcriptOf(body([{ role: 'user', content: [{ type: 'text', text: 'hello', cache_control: cc }] }]), generated).at(-1);
   assert.equal(marked({ type: 'ephemeral', ttl: '1h' }), '  text [cache 1h]: hello');
   assert.equal(marked({ type: 'persistent' }), '  text [cache {"type":"persistent"}]: hello');
+  assert.equal(marked(false), '  text [cache false]: hello');
+  const systemLine = (block) => transcriptOf(body([user(said)], { system: [block] }), generated)[0];
+  assert.equal(systemLine({ type: 'document', text: 'You are the fixture agent.' }), 'system[0] {"type":"document"}: You are the fixture agent.');
+  assert.equal(systemLine({ text: 'You are the fixture agent.', citations: { enabled: true } }), 'system[0] {"type":null,"citations":{"enabled":true}}: You are the fixture agent.');
+  assert.equal(systemLine({ type: 'text', text: 'You are the fixture agent.', cache_control: false }), 'system[0] [cache false]: You are the fixture agent.');
+});
+
+test('X11: a message\'s other envelope fields show beside its role, its own cache marker as a block\'s does', () => {
+  const generated = generatedTexts({ steps: [turn] });
+  const header = (extra) => transcriptOf(body([{ ...user('hello'), ...extra }]), generated).at(-2);
+  assert.equal(header({}), '#0 user');
+  assert.equal(header({ name: 'ash' }), '#0 user {"name":"ash"}');
+  assert.equal(header({ cache_control: { type: 'ephemeral', ttl: '1h' } }), '#0 user [cache 1h]');
+});
+
+test('X12: thinking is matched like any text, so the run\'s thinking shows as its mark and the stack\'s words in it verbatim', () => {
+  const thought = prose(200, 'x.4:think');
+  const generated = generatedTexts({ answers: [[{ type: 'thinking', thinking: thought }]] });
+  const line = (said) => transcriptOf(body([{ role: 'assistant', content: [{ type: 'thinking', thinking: said, signature: 'fx1.abc' }] }]), generated).at(-1);
+  assert.equal(line(`${thought} keep this`), `  thinking signed: ⟪(thinking) 200 chars: ${head(thought)}⟫ keep this`);
+  assert.notEqual(line(`${thought} drop this`), line(`${thought} keep this`));
 });
 
 test('X4: a long stack text already shown is named the next time, and a one-word change to it shows it whole again', () => {
@@ -99,21 +120,21 @@ test('X9: a call\'s input is matched as its strings read, so a run text with a n
   assert.equal(line, `  tool_use toolu_1 subagent--spawn: {"note":"line one\\nline \\"two\\"","task":"⟪[[c:x.6.task]] ${task.length} chars: ${head(task, '[[c:x.6.task]] '.length)}⟫","sync":true}`);
 });
 
-test('X5: thinking shows signed or not with its length, a call its input with the run\'s texts marked, a result its blocks, an image its type, size and bytes, and a cache marker on its block', () => {
+test('X5: thinking shows signed or not with the run\'s thinking marked, a call its input with the run\'s texts marked, a result its blocks, an image its type, size and bytes, and a cache marker on its block', () => {
   const image = png(4, 3, () => 1);
   const task = `[[c:x.3.task]] ${prose(400, 'x.3:task')}`;
   const thought = prose(120, 'x.3:think');
   const call = { kind: 'prose', size: 900, canary: '[[c:x.3.call1]]' };
   const resultText = toolResult(call).content[0].text;
-  const generated = generatedTexts({ steps: [{ id: 'x.3', replies: [{ calls: [{ name: TOOL, input: call }, { name: 'subagent--spawn', input: { task } }] }] }] });
+  const generated = generatedTexts({ steps: [{ id: 'x.3', replies: [{ calls: [{ name: TOOL, input: call }, { name: 'subagent--spawn', input: { task } }] }] }], answers: [[{ type: 'thinking', thinking: thought }]] });
   const lines = transcriptOf(body([
     { role: 'assistant', content: [{ type: 'thinking', thinking: thought, signature: 'fx1.abc' }, { type: 'thinking', thinking: thought }, { type: 'tool_use', id: 'toolu_1', name: TOOL, input: call }, { type: 'tool_use', id: 'toolu_2', name: 'subagent--spawn', input: { task } }] },
     { role: 'user', content: [{ type: 'tool_result', tool_use_id: 'toolu_1', content: [{ type: 'text', text: resultText }, { type: 'image', source: { type: 'base64', media_type: 'image/png', data: image } }], cache_control: { type: 'ephemeral', ttl: '1h' } }] },
   ]), generated);
   assert.deepEqual(lines.slice(-9), [
     '#0 assistant',
-    `  thinking: signed, 120 chars: ${head(thought)}`,
-    `  thinking: unsigned, 120 chars: ${head(thought)}`,
+    `  thinking signed: ⟪(thinking) 120 chars: ${head(thought)}⟫`,
+    `  thinking unsigned: ⟪(thinking) 120 chars: ${head(thought)}⟫`,
     `  tool_use toolu_1 ${TOOL}: {"kind":"prose","size":900,"canary":"[[c:x.3.call1]]"}`,
     `  tool_use toolu_2 subagent--spawn: {"task":"⟪[[c:x.3.task]] ${task.length} chars: ${head(task, '[[c:x.3.task]] '.length)}⟫"}`,
     '#1 user',

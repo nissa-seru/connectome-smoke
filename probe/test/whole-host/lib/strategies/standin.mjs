@@ -215,7 +215,7 @@ function normalise(body, headers, mask) {
       toolChoice: body.tool_choice ?? null,
       thinking: body.thinking ?? null,
       system: systemBlocks.map(({ type, text, cache_control: cc, ...rest }) => {
-        const other = { ...(type !== 'text' ? { type } : {}), ...rest };
+        const other = { ...(type !== 'text' ? { type: type ?? null } : {}), ...rest };
         return { text: mask(text ?? ''), cache: cc != null ? markerOf(cc) : null, ...(Object.keys(other).length ? { other: digest(other) } : {}) };
       }),
       tools: (body.tools || []).map((t) => ({ name: t.name, sha: digest(t) })),
@@ -232,7 +232,16 @@ function normalise(body, headers, mask) {
   };
 }
 
-const digestOf = ({ role, content, ...envelope }, mask) => sha(JSON.stringify(mask(unmarked({ role, content: blocksOf(content), ...sorted(envelope) })))).slice(0, 16);
+const withoutKept = (x) => {
+  if (!x || typeof x !== 'object' || Array.isArray(x) || x.cache_control == null) return x;
+  const { cache_control: _c, ...rest } = x;
+  return rest;
+};
+const withoutRecordedMarkers = (blocks) => blocks.map((b) => {
+  const rest = withoutKept(b);
+  return rest?.type === 'tool_result' && Array.isArray(rest.content) ? { ...rest, content: rest.content.map(withoutKept) } : rest;
+});
+const digestOf = ({ role, content, ...envelope }, mask) => sha(JSON.stringify(mask({ role, content: withoutRecordedMarkers(blocksOf(content)), ...sorted(envelope) }))).slice(0, 16);
 
 export function tokensSent(records) {
   const sum = { input: 0, cacheRead: 0, cacheWrite: 0, output: 0 };

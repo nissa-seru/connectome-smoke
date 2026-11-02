@@ -6,7 +6,7 @@ import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs, sh } from './lib/common.mjs';
 import { installCandidate, readPacks } from './lib/install.mjs';
-import { EPOCH, EXPECTED_FAILURES, asRun, keptWhole, laneVersion, stackVersions } from './lib/strategies/lane.mjs';
+import { EPOCH, EXPECTED_FAILURES, asRun, contentsOf, keptWhole, laneVersion, stackVersions } from './lib/strategies/lane.mjs';
 import { hostFacts, runScript } from './lib/strategies/driver.mjs';
 import { startStandin, tokensSent } from './lib/strategies/standin.mjs';
 import { judge, judgedAgent } from './lib/strategies/judge.mjs';
@@ -14,7 +14,7 @@ import { FIXTURE_AGENT } from './lib/strategies/checks.mjs';
 import { readExpected, workloadReport } from './lib/strategies/report.mjs';
 import { RUNS, runOf } from './lib/strategies/workloads.mjs';
 import { configurations } from './lib/strategies/script.mjs';
-import { renderRecordLines, unrecordable } from './lib/record.mjs';
+import { compareVersions, exitCode, refuseUnrecordable, renderRecordLines, versionsText } from './lib/record.mjs';
 import { changedRequests, stepSummary, summaryTable, viewOf } from './lib/view.mjs';
 import { generatedTexts, transcriptOf } from './lib/strategies/transcript.mjs';
 import { ledgerOf, moduleCounts } from './lib/strategies/ledger.mjs';
@@ -124,7 +124,7 @@ async function checkpointOf(from) {
       if (!d.run.ok) checkpoints.set(from, { failed: d.run.failure?.reason ?? 'no reason given' });
       else if (!kept) checkpoints.set(from, { storeDir: join(dir, 'store'), clockEnd: d.run.clockEnd, ...texts(dir) });
       else {
-        writeFileSync(join(dir, 'checkpoint.json'), `${JSON.stringify({ from, key, clockEnd: d.run.clockEnd })}\n`);
+        writeFileSync(join(dir, 'checkpoint.json'), `${JSON.stringify({ from, key, clockEnd: d.run.clockEnd, contents: contentsOf(dir) })}\n`);
         try { renameSync(dir, kept); } catch { rmSync(dir, { recursive: true, force: true }); }
         checkpoints.set(from, { ...JSON.parse(readFileSync(join(kept, 'checkpoint.json'), 'utf-8')), storeDir: join(kept, 'store'), ...texts(kept) });
       }
@@ -189,14 +189,10 @@ for (const id of names) {
   seconds.runs[id] = Math.round((since(t) - (checkpointTime - before)) * 10) / 10;
   console.log((r.lines?.length ? r.lines : [`${id}: couldn't run: ${r.reason}`]).join('\n'));
   let record = null;
-  const cannot = r.outcome === 'couldnt-run' ? null : unrecordable(r.records, r.log);
-  if (cannot) {
-    Object.assign(r, { outcome: 'couldnt-run', reason: cannot });
-    console.log(`${LABEL} ${id}: couldn't run: ${r.reason}`);
-  }
+  if (refuseUnrecordable(r)) console.log(`${LABEL} ${id}: couldn't run: ${r.reason}`);
   if (r.outcome !== 'couldnt-run') {
     const recordLines = renderRecordLines({
-      header: { configuration: id, release: { tag: stack.release, versions: versionsOnly(release.versions) }, from: r.from, candidate: { versions: versionsOnly(candidate.versions) } },
+      header: { configuration: id, from: r.from },
       log: r.log, records: r.records, end: r.end,
     });
     const text = `${recordLines.map((l) => l.text).join('\n')}\n`;
@@ -243,13 +239,17 @@ for (const id of names) {
   }
   results.push({ run: id, outcome: r.outcome, reason: r.reason, failures: r.failures, record, ...(selfCheck ? { selfCheck } : {}) });
 }
-const table = summaryTable(rows);
+const versionsNow = versionsText({ release: { tag: stack.release, versions: versionsOnly(release.versions) }, candidate: { versions: versionsOnly(candidate.versions) } });
+const { state: versions, changes: versionMoves } = compareVersions(RECORDS, versionsNow, { update: flag('update-records') });
+const versionNote = versions === 'differs' ? `Versions differ from the committed records/versions.txt: ${versionMoves.join('; ')}.` : versions === 'missing' ? 'No records/versions.txt is committed.' : null;
+if (versionNote) console.log(`${LABEL} ${versionNote}`);
+const table = `${versionNote ? `${versionNote}\n\n` : ''}${summaryTable(rows)}`;
 writeFileSync(join(out, 'summary.md'), `${table}\n`);
 if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, stepSummary({ table, views }));
-writeFileSync(join(out, 'run.json'), JSON.stringify({ lane, release: { tag: stack.release, versions: release.versions }, candidate: { versions: candidate.versions, overlays: packs }, seconds, results }, null, 1));
+writeFileSync(join(out, 'run.json'), JSON.stringify({ lane, release: { tag: stack.release, versions: release.versions }, candidate: { versions: candidate.versions, overlays: packs }, versions, seconds, results }, null, 1));
 if (flag('update-seconds')) {
   const merged = { runs: { ...stack.seconds?.runs, ...seconds.runs }, checkpoints: { ...stack.seconds?.checkpoints, ...seconds.checkpoints } };
   writeFileSync(join(HERE, 'stack.json'), `${JSON.stringify({ ...stack, seconds: merged }, null, 2)}\n`);
   console.log(`${LABEL} wrote ${Object.keys(seconds.runs).length} runs' and ${Object.keys(seconds.checkpoints).length} checkpoints' seconds into stack.json`);
 }
-process.exit(results.some((r) => r.outcome === 'couldnt-run' || r.selfCheck?.outcome === 'couldnt-run') ? 2 : results.every((r) => r.outcome === 'pass' && (r.record === 'same' || r.record === 'updated') && (!r.selfCheck || r.selfCheck.outcome === 'same')) ? 0 : 1);
+process.exit(exitCode(results, { versions }));

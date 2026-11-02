@@ -1,6 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { renderRecord, renderRecordLines, unrecordable } from '../lib/record.mjs';
+import { createHash } from 'node:crypto';
+import { compareVersions, exitCode, nameTemplates, refuseUnrecordable, renderRecord, renderRecordLines, unrecordable, versionChanges, versionsText } from '../lib/record.mjs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { changedRequests } from '../lib/view.mjs';
 
 const header = { configuration: 'H1/W1', release: { tag: 'v0.0.1', versions: { '@animalabs/connectome-host': '0.0.1' } }, from: 'empty', candidate: { versions: { '@animalabs/connectome-host': '0.0.2' } } };
@@ -46,42 +50,41 @@ test('a record names messages by their canaries, writes each compile as what cha
     'step p.1',
     '  compile p.1.in ^ 1',
     'step p.2',
-    '  compile + p.1.r1 [T:user-clock-#-#-utc](12,10) p.2.in ^ 4',
+    '  compile + p.1.r1 [T:user-clock-#-#-utc-9b6932fc9102](12,10) p.2.in ^ 4',
     '  compile + p.2.call1 ^ 5',
     '  call p.1.in p.1.r1 -> summary, body HASH',
     'step p.3',
-    '  wrote L1(p.1.in-p.1.r1) [T:summary-l1-bda55950]',
-    '  compile -2 + [T:user-clock-#-#-utc](12,20)',
-    '  compile L1(p.1.in-p.1.r1) [T:user-clock-#-#-utc](12,20) [T:user-ref-img-na-#-then](1,1)',
-    '  compile refused BudgetExceeded [T:error-budgetexceeded-over-by-#]',
+    '  wrote L1(p.1.in-p.1.r1) [T:summary-l1-bda55950e5d0]',
+    '  compile -2 + [T:user-clock-#-#-utc-9b6932fc9102](12,20)',
+    '  compile L1(p.1.in-p.1.r1) [T:user-clock-#-#-utc-9b6932fc9102](12,20) [T:user-ref-img-na-#-then-9f1032607484](1,1)',
+    '  compile refused BudgetExceeded [T:error-budgetexceeded-over-by-#-9ed7cf715b80]',
     'checkpoint prefix',
     'end ok',
     'receipt fixture #5 changes L1(p.1.in-p.1.r1)/sum/1/5 #6/raw/0/5',
     'totals {"actions":1,"calls":1,"compiles":5,"dry":0,"other":0,"refused":1,"rounds":0,"written":1}',
   ]);
-  assert.equal(r.indexOf('templates'), 3, 'the texts block comes first, after the header');
+  assert.equal(r.indexOf('templates'), 1, 'the texts block comes first, after the header line');
   const templates = r.slice(r.indexOf('templates') + 1, r.indexOf('step p.name'));
   assert.ok(templates.every((l) => l.startsWith('T:') || l.startsWith('  ')), 'and holds only the texts');
-  assert.ok(templates.includes('T:user-clock-#-#-utc = Clock: #:# UTC'), 'numbers written as #, their values on the line');
-  assert.ok(templates.includes('T:user-ref-img-na-#-then = ref img_na_# then ref img_nb_#'), 'each nonce named by the order it first appears');
-  assert.ok(templates.includes('T:summary-l1-bda55950 = what happened first'));
+  assert.ok(templates.includes('T:user-clock-#-#-utc-9b6932fc9102 = Clock: #:# UTC'), 'numbers written as #, their values on the line');
+  assert.ok(templates.includes('T:user-ref-img-na-#-then-9f1032607484 = ref img_na_# then ref img_nb_#'), 'each nonce named by the order it first appears');
+  assert.ok(templates.includes('T:summary-l1-bda55950e5d0 = what happened first'));
 });
 
-test('texts that share a key are named by their words, whatever order they first appear in', () => {
+test('texts that share their first words are each named from their own text, whatever order they first appear in', () => {
   const recs = (texts) => texts.map((t, i) => ({ id: `r${i}`, kind: 'summariser', step: 'p.2', texts: [t], messages: [{ role: 'user', digest: 'd1', blocks: [{}] }], answer: { shape: 'summary' } }));
   const withCalls = (n) => [...log.slice(0, 5), ...Array.from({ length: n }, (_, i) => ({ kind: 'request', step: 'p.2', request: { id: `r${i}`, kind: 'summariser' } })), ...log.slice(6)];
   const texts = ['You have just reviewed the slices above.', 'You have just been reading a body of text.', 'You have just reviewed the memories above.\nWrite one.'];
   const named = (order) => {
-    const r = renderRecord({ header, log: withCalls(3), records: recs(order.map((i) => texts[i])), end: { ok: true } }).split('\n');
+    const r = renderRecord({ header, log: withCalls(order.length), records: recs(order.map((i) => texts[i])), end: { ok: true } }).split('\n');
     return r.slice(r.indexOf('templates') + 1, r.indexOf('step p.name')).filter((l) => /^T:call-|^  /.test(l));
   };
-  assert.deepEqual(named([0, 1, 2]), [
-    'T:call-you-have-just-been = You have just been reading a body of text.',
-    'T:call-you-have-just-reviewed-the-memories = You have just reviewed the memories above.',
-    '  Write one.',
-    'T:call-you-have-just-reviewed-the-slices = You have just reviewed the slices above.',
-  ], 'each key taken one word past what it shares with the others; a later line indented');
-  assert.deepEqual(named([2, 1, 0]), named([0, 1, 2]), 'the order they first appear in changes no name');
+  const own = (t) => `T:call-you-have-just-${createHash('sha256').update(t).digest('hex').slice(0, 12)}`;
+  const all = named([0, 1, 2]);
+  for (const t of texts) assert.ok(all.includes(`${own(t)} = ${t.split('\n')[0]}`), `${t.split('\n')[0]} is named by its own hash`);
+  assert.ok(all.includes('  Write one.'), 'a later line indented');
+  assert.deepEqual(named([2, 1, 0]), all, 'the order they first appear in changes no name');
+  assert.ok(named([0]).includes(`${own(texts[0])} = ${texts[0]}`), 'and with the others gone, its name is the same');
 });
 
 test('a stored message sent without its thinking, or altered or in part, says so, and never joins a range', () => {
@@ -119,14 +122,14 @@ test('a summariser call shows its own words as templates, and its body hash move
   const recordOf = (recs) => renderRecord({ header, log, records: recs, end: { ok: true } });
   const callOf = (recs) => recordOf(recs).split('\n').find((l) => l.startsWith('  call '));
   const plain = callOf(asked(['Summarise in about 400 tokens, phase: research.']));
-  assert.match(plain, /^  call p\.1\.in p\.1\.r1 \[T:call-summarise-in-about\]\(400\) -> summary, head H:[0-9a-f]{8}, body [0-9a-f]{8}$/);
+  assert.match(plain, /^  call p\.1\.in p\.1\.r1 \[T:call-summarise-in-about-[0-9a-f]{12}\]\(400\) -> summary, head H:[0-9a-f]{8}, body [0-9a-f]{8}$/);
   const reworded = recordOf(asked(['Summarise in about 400 tokens, phase: .']));
   assert.notEqual(reworded, recordOf(asked(['Summarise in about 400 tokens, phase: research.'])), 'a change to its words');
-  assert.ok(reworded.split('\n').includes('T:call-summarise-in-about = Summarise in about # tokens, phase: .'), 'and the words show in its template');
+  assert.ok(reworded.split('\n').some((l) => /^T:call-summarise-in-about-[0-9a-f]{12} = Summarise in about # tokens, phase: \.$/.test(l)), 'and the words show in its template');
   assert.notEqual(callOf(asked(['Summarise in about 400 tokens, phase: research.'], 'd2')), plain, 'a change to a carried message\'s content');
   const limited = recordOf(asked(['Summarise in about 400 tokens, phase: research.'], 'd1', { maxTokens: 8000 })).split('\n');
   assert.notEqual(limited.find((l) => l.startsWith('  call ')), plain, 'a change to its limits names another head');
-  assert.ok(limited.some((l) => /^H:[0-9a-f]{8} = model m, max_tokens 8000, stream false, system \[T:system-you-summarise\], tools t:01234567$/.test(l)), 'and the heads block says what the head is');
+  assert.ok(limited.some((l) => /^H:[0-9a-f]{8} = model m, max_tokens 8000, stream false, system \[T:system-you-summarise-[0-9a-f]{12}\], tools t:01234567$/.test(l)), 'and the heads block says what the head is');
   const retooled = recordOf(asked(['Summarise in about 400 tokens, phase: research.'], 'd1', { toolSha: 'fedcba9876543210' })).split('\n');
   assert.ok(retooled.some((l) => /, tools t:fedcba98$/.test(l)), 'a tool\'s changed definition shows as its hash');
   assert.equal(callOf(asked(['Summarise in about 400 tokens, phase: research.'])), plain, 'the same request, the same line');
@@ -136,11 +139,11 @@ test('a summary a summariser call carries is named as the store names it, not wr
   const recs = [{ id: 'r9', kind: 'summariser', step: 'p.2', texts: ['a: [[s:M0000beef]] Memory beef, what happened first', 'Merge these.'],
     messages: [{ role: 'user', digest: 'd1', blocks: [{}, {}] }], answer: { shape: 'summary' } }];
   const line = renderRecord({ header, log, records: recs, end: { ok: true } }).split('\n').find((l) => l.startsWith('  call '));
-  assert.match(line, /^  call - S\(M0000beef\) \[T:call-merge-these\] -> summary, body [0-9a-f]{8}$/, 'a mark the store didn\'t report is named by the mark');
+  assert.match(line, /^  call - S\(M0000beef\) \[T:call-merge-these-[0-9a-f]{12}\] -> summary, body [0-9a-f]{8}$/, 'a mark the store didn\'t report is named by the mark');
   const marked = JSON.parse(JSON.stringify(log));
   marked.find((e) => e.kind === 'compiles' && e.blobs?.s1).blobs.s1 = { participant: 'summary', content: '[[s:M0000beef]] Memory beef, what happened first' };
   const named = renderRecord({ header, log: marked, records: recs, end: { ok: true } }).split('\n').find((l) => l.startsWith('  call '));
-  assert.match(named, /^  call - L1\(p\.1\.in-p\.1\.r1\) \[T:call-merge-these\] -> summary, body [0-9a-f]{8}$/, 'a mark the store reported is named as the store names its summary');
+  assert.match(named, /^  call - L1\(p\.1\.in-p\.1\.r1\) \[T:call-merge-these-[0-9a-f]{12}\] -> summary, body [0-9a-f]{8}$/, 'a mark the store reported is named as the store names its summary');
 });
 
 test('a stored message no compile sends still holds its place, so its neighbours never join across it', () => {
@@ -151,7 +154,7 @@ test('a stored message no compile sends still holds its place, so its neighbours
   assert.deepEqual(compiles, ['  compile q.1.in-q.1.r1 q.2.r1']);
 });
 
-test('each agent\'s store is its own: lines of another agent than the run\'s first name it, and its summaries are named from its own store', () => {
+test('each agent\'s store is its own: lines of another agent than the fixture\'s name it, and its summaries are named from its own store', () => {
   const b = { u1: text('[[c:q.1.in]] a'), s1: { participant: 'summary', content: 'first' }, t1: text('[[c:t.1.in]] x'), s2: { participant: 'summary', content: 'second' } };
   const store = {
     fixture: { messages: [['1', ['[[c:q.1.in]]']]], summaries: [{ id: 'L1-0', level: 1, sourceLevel: 0, sources: ['1'], parent: null, content: 's1' }] },
@@ -162,7 +165,7 @@ test('each agent\'s store is its own: lines of another agent than the run\'s fir
     { ...line(1, [{ sources: ['s:L1-0@1~'], content: 's2' }]), agent: 'reader' },
   ] }];
   const r = renderRecord({ header, log: lg, records: [], end: { ok: true } }).split('\n');
-  assert.ok(r.some((x) => /^  wrote L1\(q\.1\.in\) /.test(x)), 'the first agent\'s summary is named from its own store');
+  assert.ok(r.some((x) => /^  wrote L1\(q\.1\.in\) /.test(x)), 'the fixture\'s summary is named from its own store');
   assert.ok(r.some((x) => /^  wrote \[reader\] L1\(t\.1\.in\) /.test(x)), 'the reader\'s summary is named from the reader\'s store');
   assert.ok(r.includes('  compile L1(q.1.in)'));
   assert.ok(r.includes('  compile [reader] L1(t.1.in)~'), 'a partial summary keeps its mark');
@@ -241,8 +244,8 @@ test('a stack text up to 4,096 bytes is written whole, and a longer one as its h
     const lg = [{ kind: 'compiles', step: 'q.1', blobs: { u1: text('[[c:q.1.in]] a'), t1: text('x'.repeat(n)) }, lines: [line(1, [m(1, 'u1'), m(2, 't1')])] }];
     return renderRecord({ header, log: lg, records: [], end: { ok: true } }).split('\n').find((l) => l.startsWith('T:user-x'));
   };
-  assert.equal(block(4096), `T:user-${'x'.repeat(40)} = ${'x'.repeat(4096)}`);
-  assert.match(block(4097), /^T:user-x{40} = \{"bytes":4097,"head":"x{80}","sha256":"[0-9a-f]{16}","tail":"x{80}"\}$/);
+  assert.equal(block(4096), `T:user-${'x'.repeat(40)}-${createHash('sha256').update('x'.repeat(4096)).digest('hex').slice(0, 12)} = ${'x'.repeat(4096)}`);
+  assert.match(block(4097), /^T:user-x{40}-[0-9a-f]{12} = \{"bytes":4097,"head":"x{80}","sha256":"[0-9a-f]{16}","tail":"x{80}"\}$/);
 });
 
 test('the 4,096 is bytes, not characters: 2,048 two-byte characters are written whole, and one more is shaped', () => {
@@ -392,4 +395,212 @@ test('the record\'s own agent is the fixture\'s, though another agent compiled f
   ];
   const compiles = renderRecord({ header, log: lg, records: [], end: { ok: true } }).split('\n').filter((l) => l.startsWith('  compile'));
   assert.deepEqual(compiles, ['  compile [spawn-k] q.1.task', '  compile q.1.in']);
+});
+
+test('a run unrecordable() refuses becomes couldn\'t-run with its reason, the outcome run.mjs writes no record for, and makes the whole run exit 2', () => {
+  const r = { outcome: 'pass', records: [{ kind: 'agent', agent: 'primary' }], log: [] };
+  assert.match(refuseUnrecordable(r), /sent primary agent requests/);
+  assert.equal(r.outcome, 'couldnt-run', 'run.mjs writes a record only for a run that isn\'t couldn\'t-run');
+  assert.match(r.reason, /sent primary agent requests/);
+  const ok = { outcome: 'pass', records: [{ kind: 'agent', agent: 'primary' }], log: [{ kind: 'compiles', lines: [{ kind: 'request', agent: 'fixture', outcome: 'compiled', stamp: '7' }] }] };
+  assert.equal(refuseUnrecordable(ok), null);
+  assert.equal(ok.outcome, 'pass');
+  const earlier = { outcome: 'couldnt-run', reason: 'the host didn\'t start', records: [], log: [] };
+  assert.equal(refuseUnrecordable(earlier), null, 'a run that already couldn\'t run keeps its own reason');
+  assert.equal(earlier.reason, 'the host didn\'t start');
+  assert.equal(exitCode([{ outcome: 'pass', record: 'same' }, { outcome: r.outcome, record: null }]), 2);
+  assert.equal(exitCode([{ outcome: 'pass', record: 'same' }, { outcome: 'pass', record: 'differs' }]), 1);
+  assert.equal(exitCode([{ outcome: 'pass', record: 'same', selfCheck: { outcome: 'same' } }]), 0);
+  assert.equal(exitCode([{ outcome: 'pass', record: 'same', selfCheck: { outcome: 'couldnt-run' } }]), 2);
+});
+
+test('a request the stand-in couldn\'t classify gets a line of its own with its body, so a changed one is named and its view can show it', () => {
+  const head = { model: 'm', maxTokens: 100, toolChoice: null, thinking: null, system: [], tools: [], rest: null };
+  const odd = (digest) => ({ id: 'r1', seq: 1, kind: 'unclassified', reason: 'its compression instruction states no target length', step: 'q.1', stream: true, head, messages: [{ role: 'user', digest, blocks: [{ type: 'text', canaries: ['[[c:q.1.in]]'] }] }], answer: { shape: 'refused' } });
+  const lg = [{ kind: 'request', step: 'q.1', request: { id: 'r1', kind: 'unclassified' } }];
+  const at = (digest) => ({ header, log: lg, records: [odd(digest)], end: { ok: false } });
+  const lines = renderRecord(at('d1')).split('\n').filter((l) => l.startsWith('  unclassified'));
+  assert.equal(lines.length, 1);
+  assert.match(lines[0], /^  unclassified q\.1\.in, head H:[0-9a-f]{8}, body [0-9a-f]{8}$/);
+  assert.deepEqual(changedRequests(renderRecord(at('d1')), renderRecordLines(at('d2'))).requests, ['r1'], 'a reworded instruction moves its body, and the view names it');
+});
+
+test('a summary is named by its sources\' canaries as they stood at each compile, so a later edit doesn\'t rename an earlier line', () => {
+  const sum = { participant: 'summary', content: 'what happened' };
+  const sumLine = (seq) => line(seq, [{ sources: ['s:L1-1@1'], content: 's1' }]);
+  const store = (canary) => ({ fixture: { messages: [['9', [canary]]], summaries: [{ id: 'L1-1', level: 1, sourceLevel: 0, sources: ['9'], parent: null, content: 's1' }] } });
+  const lg = [
+    { kind: 'compiles', step: 'q.1', blobs: { s1: sum }, store: store('[[c:a.in]]'), lines: [sumLine(1)] },
+    { kind: 'compiles', step: 'q.2', blobs: {}, store: store('[[c:b.in]]'), lines: [sumLine(2)] },
+  ];
+  const compiles = renderRecord({ header, log: lg, records: [], end: { ok: true } }).split('\n').filter((l) => l.startsWith('  compile'));
+  assert.match(compiles[0], /L1\(a\.in\)/, 'the first compile sent the summary while its source carried a.in');
+  assert.match(compiles[1], /L1\(b\.in\)/);
+});
+
+test('no record names a version: versions go in one file, a change in them is named once, and a differing file fails the run as a record does', () => {
+  const body = renderRecord({ header, log: [], records: [], end: { ok: true } });
+  assert.ok(!/0\.0\.[12]|v0\.0\.1/.test(body), 'the record carries no version');
+  assert.match(body.split('\n')[0], /^# whole-host record H1\/W1, from empty$/);
+  const at = (cm) => versionsText({ release: { tag: 'v0.21.0', versions: { '@animalabs/context-manager': '0.24.0' } }, candidate: { versions: { '@animalabs/connectome-host': '0.21.0', '@animalabs/context-manager': cm } } });
+  assert.equal(at('0.24.0'), '# whole-host versions\ncheckpoint v0.21.0: context-manager 0.24.0\ncandidate: connectome-host 0.21.0, context-manager 0.24.0\n');
+  assert.deepEqual(versionChanges(at('0.24.0'), at('0.24.1')), ['candidate context-manager 0.24.0 → 0.24.1']);
+  assert.deepEqual(versionChanges(at('0.24.0'), at('0.24.0')), []);
+  const pass = [{ outcome: 'pass', record: 'same' }];
+  assert.equal(exitCode(pass, { versions: 'same' }), 0);
+  assert.equal(exitCode(pass, { versions: 'differs' }), 1);
+  assert.equal(exitCode(pass, { versions: 'missing' }), 1);
+  assert.equal(exitCode(pass, { versions: 'updated' }), 0);
+});
+
+test('a template is named from its own text alone, so a text leaving the set renames no other', () => {
+  const sm = (n) => ({ participant: 'user', content: [{ type: 'text', text: `Context Manager: [CM] ${n}` }] });
+  const compileWith = (texts) => [{ kind: 'compiles', step: 'q.1', blobs: Object.fromEntries(texts.map((t, i) => [`b${i}`, sm(t)])), lines: [line(1, texts.map((_, i) => m(i + 1, `b${i}`)))] }];
+  const names = (texts) => renderRecord({ header, log: compileWith(texts), records: [], end: { ok: true } }).split('\n').filter((l) => l.startsWith('T:')).map((l) => l.split(' = ')[0]);
+  const both = names(['Recall memory.', 'The conversation resumes.']);
+  const one = names(['Recall memory.']);
+  assert.equal(both.length, 2);
+  assert.ok(both.includes(one[0]), 'the recall text keeps its name when the other text leaves');
+  assert.match(one[0], /^T:user-context-manager-cm-[0-9a-f]{12}$/);
+});
+
+test('a stored message without a canary is named by the nearest earlier one with a canary and its place after it, in summaries and the receipt alike', () => {
+  const st = { fixture: {
+    messages: [['1', ['[[c:a.in]]']], ['2', []], ['3', []], ['4', ['[[c:a.r1]]']], ['5', []]],
+    summaries: [{ id: 'L1-1', level: 1, sourceLevel: 0, sources: ['2', '3'], parent: null, content: 's1' }],
+    receiptHead: { sequence: 2, receiptHash: 'h', changes: [['5', ['raw:5', 0, 2]], ['L1-1', ['sum:L1-1', 1, 2]]] },
+  } };
+  const lg = [{ kind: 'compiles', step: 'q.1', blobs: { s1: { participant: 'summary', content: 'x' } }, store: st, lines: [line(1, [{ sources: ['s:L1-1@1'], content: 's1' }])] }];
+  const r = renderRecord({ header, log: lg, records: [], end: { ok: true } }).split('\n');
+  assert.ok(r.some((l) => /^  compile L1\(a\.in\+1-a\.in\+2\)/.test(l)), 'the summary of two uncanaried messages names both');
+  assert.ok(r.includes('receipt fixture #2 changes a.r1+1/raw/0/2 L1(a.in+1-a.in+2)/sum/1/2'));
+});
+
+test('a run where two agents besides the fixture make request compiles is refused, since the stand-in pools their requests', () => {
+  const compiles = (agent) => ({ kind: 'compiles', lines: [{ kind: 'request', agent, outcome: 'compiled', stamp: '9' }] });
+  assert.equal(unrecordable([{ kind: 'agent', agent: 'sub' }], [compiles('fixture'), compiles('spawn-a')]), null);
+  assert.match(unrecordable([{ kind: 'agent', agent: 'sub' }], [compiles('fixture'), compiles('spawn-a'), compiles('spawn-b')]), /spawn-a and spawn-b each made request compiles/);
+});
+
+test('versions.txt is compared on disk: missing, the same, differing with the moves named, and written by an update', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'versions-'));
+  try {
+    const at = (cm) => versionsText({ release: { tag: 'v1', versions: {} }, candidate: { versions: { '@animalabs/context-manager': cm } } });
+    assert.deepEqual(compareVersions(dir, at('1.0.0')), { state: 'missing', changes: [] });
+    assert.deepEqual(compareVersions(dir, at('1.0.0'), { update: true }), { state: 'updated', changes: [] });
+    assert.equal(readFileSync(join(dir, 'versions.txt'), 'utf-8'), at('1.0.0'));
+    assert.deepEqual(compareVersions(dir, at('1.0.0')), { state: 'same', changes: [] });
+    assert.deepEqual(compareVersions(dir, at('1.0.1')), { state: 'differs', changes: ['candidate context-manager 1.0.0 → 1.0.1'] });
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+test('two different texts that would take one key make the record refuse to be written, naming both', () => {
+  const t = (shaped) => ({ base: 'call-same-words', words: ['same'], shaped });
+  assert.deepEqual(nameTemplates([t('one'), t('two')]).length, 2);
+  assert.throws(() => nameTemplates([t('one'), t('two')], () => '000000000000'), /two different texts take the template name call-same-words-000000000000: "one" and "two"/);
+});
+
+test('a summary is named by its sources as they stood at each compile, so one whose sources change later keeps its earlier name on earlier lines', () => {
+  const sum = { participant: 'summary', content: 'what happened' };
+  const sumLine = (seq) => line(seq, [{ sources: ['s:L1-1@1'], content: 's1' }]);
+  const store = (sources) => ({ fixture: { messages: [['1', ['[[c:a.in]]']], ['2', ['[[c:b.in]]']], ['3', ['[[c:c.in]]']]], summaries: [{ id: 'L1-1', level: 1, sourceLevel: 0, sources, parent: null, content: 's1' }] } });
+  const lg = [
+    { kind: 'compiles', step: 'q.1', blobs: { s1: sum }, store: store(['1', '2']), lines: [sumLine(1)] },
+    { kind: 'compiles', step: 'q.2', blobs: {}, store: store(['1', '2', '3']), lines: [sumLine(2)] },
+  ];
+  const compiles = renderRecord({ header, log: lg, records: [], end: { ok: true } }).split('\n').filter((l) => l.startsWith('  compile'));
+  assert.match(compiles[0], /L1\(a\.in-b\.in\)/, 'its sources at the first compile');
+  assert.match(compiles[1], /L1\(a\.in-c\.in\)/);
+});
+
+test('an agent\'s names count only the messages its own store reports, not another slot\'s raw members its compile carried', () => {
+  const st = { reader: { messages: [['1', ['[[c:t.in]]']], ['3', []]], summaries: [{ id: 'L1-1', level: 1, sourceLevel: 0, sources: ['3'], parent: null, content: 's1' }] } };
+  const lg = [{ kind: 'compiles', step: 'q.1', blobs: { s1: { participant: 'summary', content: 'x' }, f2: text('[[c:f.in]] fixture words') }, store: st, lines: [
+    { ...line(1, [m(2, 'f2'), { sources: ['s:L1-1@1'], content: 's1' }]), agent: 'reader' },
+  ] }];
+  const r = renderRecord({ header, log: lg, records: [], end: { ok: true } }).split('\n');
+  assert.ok(r.some((l) => /^  compile \[reader\] .*L1\(t\.in\+1\)/.test(l)), 'the fixture\'s message 2, carried raw, doesn\'t shift the reader\'s message 3 to t.in+2');
+});
+
+test('a run where a kv-unified submission id one boot began is begun again in a later boot is refused, naming the id and both boots', () => {
+  const batch = (boot, submissions) => ({ kind: 'compiles', boot, submissions, lines: [{ kind: 'request', agent: 'fixture', outcome: 'compiled', stamp: '9' }] });
+  assert.equal(unrecordable([], [batch(1, ['fixture:0:1767690000000:0', 'fixture:0:1767690000000:1']), batch(2, ['fixture:0:1767690001000:0'])]), null);
+  assert.match(unrecordable([], [batch(1, ['fixture:2:1767690000000:0']), batch(2, ['fixture:2:1767690000000:0'])]), /submission fixture:2:1767690000000:0 was begun in boot 1 and again in boot 2/);
+  assert.equal(unrecordable([], [batch(1, ['a']), batch(1, ['b'])]), null, 'one boot\'s later batches add ids of their own');
+});
+
+test('a message a store reports removed stops anchoring names from that batch on, as check 11 reads the live store', () => {
+  const sum = { participant: 'summary', content: 'what happened' };
+  const sumLine = (seq) => line(seq, [{ sources: ['s:L1-1@1'], content: 's1' }]);
+  const summaries = [{ id: 'L1-1', level: 1, sourceLevel: 0, sources: ['3'], parent: null, content: 's1' }];
+  const lg = [
+    { kind: 'compiles', step: 'q.1', blobs: { s1: sum }, store: { fixture: { messages: [['1', ['[[c:a.in]]']], ['2', ['[[c:b.in]]']], ['3', []]], summaries } }, lines: [sumLine(1)] },
+    { kind: 'compiles', step: 'q.2', blobs: {}, store: { fixture: { messages: [], removedMessages: ['2'], summaries } }, lines: [sumLine(2)] },
+  ];
+  const compiles = renderRecord({ header, log: lg, records: [], end: { ok: true } }).split('\n').filter((l) => l.startsWith('  compile'));
+  assert.match(compiles[0], /L1\(b\.in\+1\)/, 'while message 2 is held');
+  assert.match(compiles[1], /L1\(a\.in\+1\)/, 'once it is removed');
+});
+
+test('a raw message is named by the shared namer through the store that holds it: a repeated canary by its occurrence, another slot\'s member with its owner', () => {
+  const lg = [{ kind: 'compiles', step: 'q.1', blobs: { a1: text('[[c:a.in]] first'), a2: text('[[c:a.in]] again'), f1: text('[[c:f.in]] the fixture\'s') }, store: {
+    fixture: { messages: [['1', ['[[c:a.in]]']], ['2', ['[[c:a.in]]']], ['5', ['[[c:f.in]]']]], summaries: [] },
+    reader: { messages: [['9', ['[[c:r.in]]']]], summaries: [] },
+  }, lines: [
+    line(1, [m(1, 'a1'), m(2, 'a2')]),
+    { ...line(2, [m(5, 'f1')]), agent: 'reader', slots: ['fixture'] },
+  ] }];
+  const r = renderRecord({ header, log: lg, records: [], end: { ok: true } }).split('\n').filter((l) => l.startsWith('  compile'));
+  assert.match(r[0], /^  compile a\.in-a\.in:2\b/, 'two occurrences, told apart');
+  assert.match(r[1], /^  compile \[reader\] fixture\/f\.in\b/, 'the fixture\'s message in the reader\'s compile, with its owner');
+});
+
+test('a summary\'s ends are the messages its store holds at that compile, so a removed source no longer names an end', () => {
+  const sum = { participant: 'summary', content: 'what happened' };
+  const summaries = [{ id: 'L1-1', level: 1, sourceLevel: 0, sources: ['2', '3'], parent: null, content: 's1' }];
+  const lg = [
+    { kind: 'compiles', step: 'q.1', blobs: { s1: sum }, store: { fixture: { messages: [['1', ['[[c:a.in]]']], ['2', ['[[c:b.in]]']], ['3', []]], summaries } }, lines: [line(1, [{ sources: ['s:L1-1@1'], content: 's1' }])] },
+    { kind: 'compiles', step: 'q.2', blobs: {}, store: { fixture: { messages: [], removedMessages: ['2'], summaries } }, lines: [line(2, [{ sources: ['s:L1-1@1'], content: 's1' }])] },
+  ];
+  const r = renderRecord({ header, log: lg, records: [], end: { ok: true } }).split('\n').filter((l) => l.startsWith('  compile'));
+  assert.match(r[0], /L1\(b\.in-b\.in\+1\)/);
+  assert.match(r[1], /L1\(a\.in\+1\)/, 'message 2 is removed, so the summary ends at 3 alone, named after a.in');
+});
+
+test('a message another slot\'s store reports, carried raw in a later compile, doesn\'t move an agent\'s own messages apart in its earlier lines', () => {
+  const b = { a: text('[[c:a.in]] one'), c: text('[[c:c.in]] three'), f: text('[[c:f.in]] the fixture\'s') };
+  const store = { reader: { messages: [['1', ['[[c:a.in]]']], ['3', ['[[c:c.in]]']]], summaries: [] }, fixture: { messages: [['2', ['[[c:f.in]]']]], summaries: [] } };
+  const rl = (seq, ms) => ({ ...line(seq, ms), agent: 'reader', slots: ['fixture'] });
+  const lg = [
+    { kind: 'compiles', step: 'q.1', blobs: b, store, lines: [rl(1, [m(1, 'a'), m(3, 'c')])] },
+    { kind: 'compiles', step: 'q.2', blobs: {}, lines: [rl(2, [m(1, 'a'), m(2, 'f'), m(3, 'c')])] },
+  ];
+  const r = renderRecord({ header, log: lg, records: [], end: { ok: true } }).split('\n').filter((l) => l.startsWith('  compile'));
+  assert.match(r[0], /^  compile \[reader\] a\.in-c\.in\b/, 'the reader\'s 1 and 3 are adjacent in its own store');
+});
+
+test('a message first reported in a later batch anchors an earlier compile\'s names only if it\'s newer than every message reported by then, so a restored older message doesn\'t', () => {
+  const sum = { participant: 'summary', content: 'what happened' };
+  const summaries = [{ id: 'L1-1', level: 1, sourceLevel: 0, sources: ['3'], parent: null, content: 's1' }];
+  const lg = [
+    { kind: 'compiles', step: 'q.1', blobs: { s1: sum }, store: { fixture: { messages: [['1', ['[[c:a.in]]']], ['3', []]], summaries } }, lines: [line(1, [{ sources: ['s:L1-1@1'], content: 's1' }])] },
+    { kind: 'compiles', step: 'q.2', blobs: {}, store: { fixture: { messages: [['2', ['[[c:b.in]]']]], summaries } }, lines: [line(2, [{ sources: ['s:L1-1@1'], content: 's1' }])] },
+  ];
+  const r = renderRecord({ header, log: lg, records: [], end: { ok: true } }).split('\n').filter((l) => l.startsWith('  compile'));
+  assert.match(r[0], /L1\(a\.in\+1\)/, 'message 2, older than 3, isn\'t held until it\'s reported');
+  assert.match(r[1], /L1\(b\.in\+1\)/);
+});
+
+test('a canary the stand-in and names.mjs accept, such as one with an at sign, names the same message in the record', () => {
+  const lg = [{ kind: 'compiles', step: 'q.1', blobs: { a: text('[[c:a.in@x]] one') }, store: { fixture: { messages: [['1', ['[[c:a.in@x]]']]], summaries: [] } }, lines: [line(1, [m(1, 'a')])] }];
+  const r = renderRecord({ header, log: lg, records: [], end: { ok: true } }).split('\n').filter((l) => l.startsWith('  compile'));
+  assert.match(r[0], /^  compile a\.in@x\b/);
+});
+
+test('the record\'s totals count the compiles each part of check 11 couldn\'t judge, and why, by agent', () => {
+  const unjudged = log.map((e) => (e.kind === 'compiles' && e.step === 'p.2' ? { ...e, lines: e.lines.map((l, i) => ({ ...l, unjudged: ['budget: PassthroughStrategy gives no render stats'], ...(i === 1 ? { agent: 'Subconscious' } : {}) })) } : e));
+  const totals = renderRecord({ header, log: unjudged, records, end: { ok: true } }).split('\n').find((l) => l.startsWith('totals '));
+  assert.deepEqual(JSON.parse(totals.slice('totals '.length)).unjudged, { 'budget: PassthroughStrategy gives no render stats': 1, '[Subconscious] budget: PassthroughStrategy gives no render stats': 1 });
+  const plain = renderRecord({ header, log, records, end: { ok: true } }).split('\n').find((l) => l.startsWith('totals '));
+  assert.equal(JSON.parse(plain.slice('totals '.length)).unjudged, undefined, 'a run with every compile judged carries no such count');
 });

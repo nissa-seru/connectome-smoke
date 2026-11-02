@@ -2,6 +2,7 @@ import { AsyncLocalStorage } from 'node:async_hooks';
 import { connect } from 'node:net';
 import { lineReader } from './control.mjs';
 import { isUnreadable, readable } from './invariants.mjs';
+import { namingCanaries, messageNames } from './names.mjs';
 import { blobStore, compiledLine, messagesOf, plain, refusedLine, stateOf, storeDelta } from './recorder.mjs';
 
 const CALLER = new AsyncLocalStorage();
@@ -41,6 +42,8 @@ export class HarnessModule {
     this.assemblies = 0;
     this.blobs = blobStore();
     this.ticks = new WeakMap();
+    this.submitting = new WeakSet();
+    this.submissions = [];
     this.agentOf = new WeakMap();
     this.seen = new Map();
     this.managers = new Map();
@@ -128,6 +131,15 @@ export class HarnessModule {
     };
     wrapped[WRAPPED] = true;
     proto.compile = wrapped;
+    const add = proto.addMessage;
+    if (typeof add === 'function' && !add[WRAPPED]) {
+      const watchedAdd = function (...args) {
+        module.watchTicks(this);
+        return add.apply(this, args);
+      };
+      watchedAdd[WRAPPED] = true;
+      proto.addMessage = watchedAdd;
+    }
   }
 
   record(head, body) {
@@ -142,10 +154,22 @@ export class HarnessModule {
   }
 
 
+  watchSubmissions(strategy) {
+    if (!strategy || this.submitting.has(strategy) || typeof strategy.beginKvUnifiedSubmission !== 'function') return;
+    this.submitting.add(strategy);
+    const begin = strategy.beginKvUnifiedSubmission.bind(strategy);
+    strategy.beginKvUnifiedSubmission = (args, ...rest) => {
+      const result = begin(args, ...rest);
+      this.submissions.push(String(args?.submissionId));
+      return result;
+    };
+  }
+
   watchTicks(manager) {
     let strategy;
     try { strategy = manager.getStrategy(); } catch { return; }
     this.watching.add(manager);
+    if (this.recording) this.watchSubmissions(strategy);
     if (!strategy || this.ticks.has(strategy) || typeof strategy.tick !== 'function') return;
     const counter = { inFlight: 0 };
     this.ticks.set(strategy, counter);
@@ -162,6 +186,7 @@ export class HarnessModule {
     const wanted = new Set(ids);
     const found = [];
     const from = [];
+    const holders = [];
     const others = new Set(this.managers.values());
     for (const record of this.framework?.listAgents() ?? []) {
       const agent = this.framework.getAgent(record.name);
@@ -178,9 +203,22 @@ export class HarnessModule {
       if (isUnreadable(messages)) continue;
       const before = found.length;
       for (const m of messages) if (wanted.delete(String(m.id))) found.push(m);
-      if (found.length > before) from.push(this.agentName(other, null));
+      if (found.length > before) {
+        from.push(this.agentName(other, null));
+        holders.push({ messages, agent: this.agentName(other, null) });
+      }
     }
-    return { found, unfound: [...wanted], from: from.filter(Boolean) };
+    const named = new Map();
+    const nameOf = (id) => {
+      const holder = holders.find(({ messages }) => messages.some((m) => String(m.id) === id));
+      if (!holder) return null;
+      if (!named.has(holder)) {
+        const byId = new Map(holder.messages.map((m) => [String(m.id), m]));
+        named.set(holder, messageNames([...byId.keys()], (x) => namingCanaries(byId.get(x).content)[0]));
+      }
+      return `${holder.agent ?? '?'}/${named.get(holder)(id)}`;
+    };
+    return { found, unfound: [...wanted], from: from.filter(Boolean), nameOf };
   }
 
   ticksInFlight(manager) {
@@ -254,7 +292,8 @@ export class HarnessModule {
           this.seen.delete(name);
         }
         for (const [name, manager] of live) this.takeDelta(store, name, manager);
-        return { lines, store, blobs: this.blobs.take() };
+        const submissions = this.submissions.splice(0);
+        return { lines, store, blobs: this.blobs.take(), ...(submissions.length ? { submissions } : {}) };
       }
       case 'agents':
         return (this.framework.listAgents({ includeEnded: true }) ?? []).map((r) => r.name);

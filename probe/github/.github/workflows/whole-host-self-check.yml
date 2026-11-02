@@ -6,6 +6,7 @@ on:
       - test/whole-host/lib/strategies/module.mjs
       - test/whole-host/lib/strategies/recorder.mjs
       - test/whole-host/lib/strategies/invariants.mjs
+      - test/whole-host/lib/strategies/names.mjs
       - test/whole-host/lib/strategies/control.mjs
       - test/whole-host/lib/strategies/compare.mjs
       - test/whole-host/lib/strategies/standin.mjs

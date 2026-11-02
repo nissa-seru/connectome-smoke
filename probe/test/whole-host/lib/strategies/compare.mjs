@@ -17,9 +17,7 @@ export function runVaryingMasker() {
     }
     if (Array.isArray(value)) return value.map(mask);
     if (!value || typeof value !== 'object') return value;
-    const out = {};
-    for (const [k, v] of Object.entries(value)) out[k] = k === 'signature' && value.type === 'thinking' ? '(masked)' : mask(v);
-    return out;
+    return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, k === 'signature' && value.type === 'thinking' ? '(masked)' : mask(v)]));
   };
   return mask;
 }

@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { maskRunVarying } from './compare.mjs';
-import { CANARY } from './standin.mjs';
+import { canariesOf, namingCanaries } from './names.mjs';
 import { checkCompile, digest, isUnreadable, normalizeMessage, readSummaries, readable, sourceStrings } from './invariants.mjs';
 
 const PASSTHROUGH = ['PassthroughStrategy', 'WindowedPassthroughStrategy'];
@@ -64,8 +64,9 @@ export function compiledLine(manager, budget, compiled, blobs, elsewhere) {
     messages: entries,
     system: blobs.put(compiled?.systemInjections ?? []),
     layout: !compiled?.provenance ? { unreadable: 'no provenance' } : layout ? untimed(plain({ ...layout, members: undefined })) : null,
-    stats: untimed(plain(compiled?.renderStats ?? readable(() => manager.getRenderStats()))),
+    stats: untimed(plain(compiled?.renderStats ?? null)),
     violations,
+    ...(violations.unjudged?.length ? { unjudged: violations.unjudged } : {}),
     ...(slots.length ? { slots } : {}),
   };
 }
@@ -106,11 +107,12 @@ export function storeDelta(manager, seen = { messages: new Map(), summaries: new
   const next = { messages: new Map(seen.messages), summaries: new Map(), head: seen.head, quarantine: seen.quarantine };
   const messages = readable(() => manager.getAllMessages());
   if (!isUnreadable(messages)) {
+    next.messages = new Map();
     const added = [];
     for (const m of messages) {
       const id = String(m.id);
       const thinking = (Array.isArray(m.content) ? m.content : []).some((b) => b?.type === 'thinking' || b?.type === 'redacted_thinking');
-      const canaries = canariesOf(m.content);
+      const canaries = namingCanaries(m.content);
       const before = seen.messages.get(id);
       next.messages.set(id, { thinking, canaries: JSON.stringify(canaries) });
       if (before === undefined) added.push(thinking ? [id, canaries, { thinking }] : [id, canaries]);
@@ -118,6 +120,8 @@ export function storeDelta(manager, seen = { messages: new Map(), summaries: new
       else if (before.canaries !== JSON.stringify(canaries)) added.push(thinking ? [id, canaries, { thinking }] : [id, canaries]);
     }
     if (added.length) out.messages = added;
+    const gone = [...seen.messages.keys()].filter((id) => !next.messages.has(id));
+    if (gone.length) out.removedMessages = gone;
   } else out.messages = messages;
   const summaries = readSummaries(manager);
   if (!isUnreadable(summaries)) {
@@ -168,17 +172,6 @@ export function messagesOf(manager) {
   }))));
 }
 
-function canariesOf(content) {
-  const texts = [];
-  const walk = (b) => {
-    if (typeof b === 'string') { texts.push(b); return; }
-    if (!b || typeof b !== 'object') return;
-    if (typeof b.text === 'string') texts.push(b.text);
-    if (b.type === 'tool_result') { if (Array.isArray(b.content)) b.content.forEach(walk); else texts.push(String(b.content ?? '')); }
-  };
-  (Array.isArray(content) ? content : []).forEach(walk);
-  return texts.flatMap((t) => t.match(CANARY) ?? []);
-}
 
 function blockShape(b) {
   if (!b || typeof b !== 'object') return { type: typeof b };

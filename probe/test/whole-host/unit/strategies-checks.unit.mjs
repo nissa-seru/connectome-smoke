@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { assemblies, bindingControl, budgets, compileInvariants, compileKinds, pairing, reloads, requestPairs, declaredProducts, everyTurnAnswers, wellFormed, windowsRaw, calibrationEdge, coverage, bookkeeping } from '../lib/strategies/checks.mjs';
 import { continuation, products, configurations, L3_PRODUCT } from '../lib/strategies/script.mjs';
-import { RUNS, runOf } from '../lib/strategies/workloads.mjs';
+import { RUNS, runOf, toolBlocksLost } from '../lib/strategies/workloads.mjs';
 
 const msg = (role, ...blocks) => ({ role, blocks });
 const text = (canaries) => ({ type: 'text', chars: 10, ...(canaries ? { canaries } : {}) });
@@ -131,6 +131,20 @@ test('check 10 flags a multiplier at either clamp edge, wherever the health pane
   const at = (m) => ({ kind: 'checkpoint', step: 's', name: 'n', health: { contextComposition: { fixture: { calibration: { multiplier: m } } } } });
   const flags = calibrationEdge([at(1.3), at(0.6), at(1.8), at(1.79), { kind: 'settle' }]);
   assert.deepEqual(flags.map((f) => f.message.match(/\(([\d.]+)\)/)[1]), ['0.6', '1.8']);
+});
+
+test('check 10 says it couldn\'t judge where a health read failed, or where a completed adaptive run logged no end-of-run read at all', () => {
+  const end = { kind: 'end', ok: true };
+  const read = (health, more = {}) => ({ kind: 'health', name: 'end', step: 's.9', health, ...more });
+  const whats = (log, adaptive = true) => calibrationEdge(log, { adaptive }).map((f) => f.what);
+  assert.deepEqual(whats([read({ ok: true, data: { contextComposition: { fixture: { calibration: { multiplier: 1.2 } } } } }), end]), []);
+  assert.deepEqual(whats([read({ ok: false, error: 'healthSnapshot threw' }), end]), ['unread-panel'], 'a panel op that failed');
+  assert.deepEqual(whats([read({ ok: false, error: '' }), end]), ['unread-panel'], 'one that failed with an empty error');
+  assert.deepEqual(whats([read({ ok: true, data: { contextComposition: {}, readFailures: { fixture: { contextComposition: 'getRenderStats threw' } } } }), end]), ['unread-panel'], 'a composition read that threw');
+  assert.deepEqual(whats([read(undefined, { skipped: 'the run\'s last step stopped its host' }), end]), [], 'an end read the driver says it skipped');
+  assert.deepEqual(whats([end]), ['no-end-read'], 'a completed adaptive run with no end read, read or skipped');
+  assert.deepEqual(whats([end], false), [], 'not for a passthrough run');
+  assert.deepEqual(whats([{ kind: 'end', ok: false }]), [], 'nor for a run that failed before its end');
 });
 
 const store = {
@@ -446,6 +460,32 @@ test('K2b: a continuation round with no usage recorded, or with no window given,
   assert.match(windowless[1].message, /couldn't judge this continuation round: the check was given no window/);
 });
 
+test('W5 judges only bodies stored in parts that context-manager sent whole: one without its tool blocks flags and one with them counts; one sent altered or missing a shard, and an ordinary message, count for nothing; a failed read is couldn\'t-judge', () => {
+  const run = (read, sources, ...blocks) => ({
+    log: [
+      { kind: 'read', op: 'messages', answer: read },
+      { kind: 'compiles', step: 'w', lines: [{ seq: 1, agent: 'fixture', kind: 'request', assembly: 1, outcome: 'compiled', stamp: '10', messages: sources.map((id) => ({ sources: [`r:${id}`], content: 'x' })) }], blobs: { x: { role: 'user', content: [{ type: 'text', text: '[[c:w.in]] words' }] } } },
+    ],
+    records: [{ id: 'r1', kind: 'agent', step: 'w', arrived: '11', messages: [msg('user', ...blocks, text(['[[c:w.in]]']))] }],
+  });
+  const plain = [{ id: '1', blocks: [{ type: 'tool_use', id: 't1' }] }, { id: '2', blocks: [{ type: 'tool_result', toolUseId: 't1' }] }];
+  const parts = [{ id: '3', bodyGroupId: 'g', blocks: [{ type: 'tool_result', toolUseId: 't2' }] }, { id: '4', bodyGroupId: 'g', blocks: [{ type: 'text' }] }];
+  const ordinary = toolBlocksLost(run(plain, ['1', '2'], call('t1'), result('t1')));
+  assert.deepEqual([ordinary.length, ordinary.judged], [0, 0], 'an unsharded message isn\'t what W5 judges');
+  const kept = toolBlocksLost(run([...plain, ...parts], ['1', '2', '3', '4'], call('t1'), result('t1'), result('t2')));
+  assert.deepEqual([kept.length, kept.judged], [0, 1]);
+  const lost = toolBlocksLost(run([...plain, ...parts], ['1', '2', '3', '4'], call('t1'), result('t1')));
+  assert.equal(lost.judged, 1);
+  assert.match(lost[0].message, /g went out whole but without its tool blocks tool_result:t2/);
+  const altered = toolBlocksLost(run([...plain, ...parts], ['1', '2', '3!content', '4!content'], call('t1'), result('t1')));
+  assert.deepEqual([altered.length, altered.judged], [0, 0], 'a body context-manager sent altered, as its pairing repair does when a call\'s result isn\'t sent, isn\'t judged: check 3 judges the pairs');
+  const partial = toolBlocksLost(run([...plain, ...parts], ['1', '2', '3!shards'], call('t1'), result('t1')));
+  assert.deepEqual([partial.length, partial.judged], [0, 0], 'a body missing a shard isn\'t judged');
+  const unread = toolBlocksLost({ log: [{ kind: 'read', op: 'messages', step: 'w', answer: { unreadable: 'the store is closed' } }], records: [] });
+  assert.equal(unread.judged, 0);
+  assert.match(unread[0].message, /couldn't judge: the store's messages couldn't be read \(the store is closed\)/);
+});
+
 test('requestPairs: each compiled assembly takes the request that arrives after it, before its agent compiles again; a refusal retried in its assembly counts once; a subagent\'s requests pair only with its own lines', () => {
   const withCanary = (r, canary, agent, arrived) => ({ ...r, ...(agent ? { agent } : {}), arrived: String(arrived), messages: [...r.messages.slice(0, -1), { ...r.messages.at(-1), blocks: [{ type: 'text', canaries: [canary] }] }] });
   const p1 = withCanary(opened('p1', 'a', 1_000, undefined, ['t1']), '[[c:a.in]]', 'primary', 11);
@@ -571,6 +611,19 @@ test('check 11: each breach a compile line carries is a flag, named by agent, ki
   assert.match(flags[0].message, /fixture's request compile 2 breaks budget: 30100 tokens/);
   assert.match(flags[1].message, /couldn't record researcher's dry compile 4: getAllMessages threw/);
   assert.deepEqual(compileInvariants([]), [], 'a log with no compile lines has nothing to flag');
+  assert.equal(flags.besides, undefined, 'nothing unplaced, nothing beside the count');
+  const unplaced = compileInvariants([{ kind: 'compiles', step: 'a', lines: [
+    { seq: 1, agent: 'fixture', kind: 'request', outcome: 'compiled', violations: [{ invariant: 'unplaced', count: 2, detail: 'store order couldn\'t place 2 of what was sent' }] },
+    { seq: 2, agent: 'fixture', kind: 'request', outcome: 'compiled', violations: [{ invariant: 'unplaced', count: 1, detail: 'store order couldn\'t place 1 of what was sent' }] },
+  ] }]);
+  assert.deepEqual([unplaced.length, unplaced.judged, unplaced.besides], [2, 2, 'store order couldn\'t place 3 of what was sent'], 'each a flag, the compiles judged, and the count beside them');
+  assert.match(unplaced[0].message, /^couldn't judge all of fixture's request compile 1: store order couldn't place 2/, 'a couldn\'t-judge, not a breach');
+  const besides = compileInvariants([{ kind: 'compiles', step: 'a', lines: [
+    { seq: 1, agent: 'fixture', kind: 'request', outcome: 'compiled', violations: [], unjudged: ['budget: PassthroughStrategy gives no render stats'] },
+    { seq: 2, agent: 'fixture', kind: 'request', outcome: 'compiled', violations: [{ invariant: 'unreadable', detail: 'listPins: failed; pins weren\'t judged' }], unjudged: ['budget: PassthroughStrategy gives no render stats'] },
+  ] }]);
+  assert.deepEqual(besides.map((f) => [f.what, f.message]), [['fixture:request:unreadable', 'couldn\'t judge all of fixture\'s request compile 2: listPins: failed; pins weren\'t judged']], 'a budget its strategy gives no stats for is counted, not flagged');
+  assert.equal(besides.besides, 'budget couldn\'t be judged in 2, as PassthroughStrategy gives no render stats; 1 read an invariant needed failed');
 });
 
 // K3b and K6b: a store whose head window was reset at a topic transition (context-manager's marker).
@@ -787,4 +840,14 @@ test('requestPairs: a request stamped the same nanosecond as a compile doesn\'t 
   const log = [{ kind: 'compiles', step: 'h', lines: [{ seq: 1, agent: 'fixture', kind: 'request', assembly: 1, outcome: 'compiled', stamp: '10', messages: [{ sources: ['r:1'], content: 'x' }] }], blobs: { x: { role: 'user', content: [{ type: 'text', text: '[[c:h.in]] words' }] } } }];
   const paired = requestPairs([r], log);
   assert.deepEqual([paired.pairs.length, paired.unpaired.map((l) => l.seq)], [0, [1]]);
+});
+
+test('assemblies: a retry is in the same process, so a restarted process reusing an assembly number with a higher seq starts its own', () => {
+  const line = (seq, assembly, outcome = 'compiled') => ({ seq, agent: 'fixture', kind: 'request', assembly, outcome, messages: [] });
+  const log = [
+    { kind: 'compiles', step: 'a', boot: 1, lines: [line(3, 2)] },
+    { kind: 'compiles', step: 'b', boot: 2, lines: [line(5, 2)] },
+    { kind: 'compiles', step: 'b', boot: 2, lines: [line(6, 3, 'refused'), line(7, 3)] },
+  ];
+  assert.deepEqual(assemblies(log).map((l) => [l.boot, l.seq]), [[1, 3], [2, 5], [2, 7]]);
 });
