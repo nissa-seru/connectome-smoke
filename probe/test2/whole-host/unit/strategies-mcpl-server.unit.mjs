@@ -1,6 +1,5 @@
-// The strategy fixture's MCPL server (lib/strategies/mcpl-server.mjs) and the
-// driver's end of its control socket (lib/strategies/control.mjs). Each test names the requirement it pins.
 import { test } from 'node:test';
+import { createHash } from 'node:crypto';
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import { mkdtempSync, rmSync } from 'node:fs';
@@ -13,10 +12,7 @@ import { png, zlibStored } from '../lib/strategies/png.mjs';
 
 const SERVER = fileURLToPath(new URL('../lib/strategies/mcpl-server.mjs', import.meta.url));
 
-// A stand-in for the host's side of the server's stdio, as agent-framework
-// speaks it: initialize, the initialized notification, the policy request,
-// then calls. It answers each request the server sends with `answer(msg)`:
-// an object with `result` or `error`, a promise of one, or null for never.
+// agent-framework opens an MCPL server with initialize, the initialized notification and the policy request.
 async function startHost({ control = '', channels = '', boot = '', answer = () => ({ result: { ok: true } }) } = {}) {
   const child = spawn(process.execPath, [SERVER], { env: { ...process.env, FIXTURE_CONTROL: control, FIXTURE_CHANNELS: channels, FIXTURE_BOOT: boot }, stdio: ['pipe', 'pipe', 'pipe'] });
   const fromServer = [];
@@ -129,6 +125,10 @@ test('S3: arguments the server cannot honour get an error result naming what is 
       [{ kind: 'prose', size: 1e9, canary: 'C' }, /size/],
       [{ kind: 'image', canary: 'C' }, /width/],
       [{ kind: 'image', width: 0, height: 4, canary: 'C' }, /width/],
+      [{ kind: 'image', width: 2049, height: 4, canary: 'C' }, /width/],
+      [{ kind: 'image', width: 4, height: 2049, canary: 'C' }, /height/],
+      [{ kind: 'mixed', width: 2049, height: 4, size: 100, canary: 'C' }, /width/],
+      [{ kind: 'mixed', width: 4, height: 2049, size: 100, canary: 'C' }, /height/],
     ];
     for (const [args, names] of cases) {
       const r = await h.call(args);
@@ -202,6 +202,10 @@ test('S6: after a restart the new server takes the commands, and the old one clo
     fresh = await startHost({ control: sock.path, answer: () => ({ result: { from: 'new' } }) });
     await ctl.waitConnected('server', { since: gen, timeoutMs: 5000 });
     await old.stop();
+    for (const until = Date.now() + 5000; ctl.closed('server') < 1;) {
+      if (Date.now() > until) assert.fail('the control saw no server connection close within 5 s');
+      await new Promise((r) => setTimeout(r, 10));
+    }
     assert.deepEqual(await ctl.hostCommand({ command: 'maintain' }, { timeoutMs: 5000 }), { from: 'new' });
   } finally { await old.stop(); await fresh?.stop(); await ctl.close(); sock.done(); }
 });
@@ -268,11 +272,22 @@ test('S8: a reply published to one of the server\'s channels is delivered, with 
 test('S2b: an image\'s pixels are stored, not compressed, so the same colours give the same bytes from any zlib', () => {
   for (const n of [0, 1, 65_535, 65_536, 200_001]) {
     const raw = Buffer.from(Array.from({ length: n }, (_, i) => (i * 7) % 256));
-    assert.deepEqual(inflateSync(zlibStored(raw)), raw, `${n} bytes round-trip through zlib`);
+    const z = zlibStored(raw);
+    assert.deepEqual(inflateSync(z), raw, `${n} bytes round-trip through zlib`);
+    // Stored blocks: each a 5-byte head (BTYPE 00) then its bytes as they are, between the zlib head and the Adler-32.
+    const blocks = Math.max(1, Math.ceil(n / 0xffff));
+    assert.equal(z.length, 2 + 5 * blocks + n + 4, `${n} bytes stored, not compressed`);
+    for (let k = 0, at = 2; k < blocks; k++) {
+      const len = z.readUInt16LE(at + 1);
+      assert.equal(z[at] & 0b110, 0, `block ${k} of ${n} bytes is stored`);
+      assert.deepEqual(z.subarray(at + 5, at + 5 + len), raw.subarray(k * 0xffff, k * 0xffff + len));
+      at += 5 + len;
+    }
   }
   const picker = () => { let k = 1; return (m) => { k = (k * 1103515245 + 12345) % 2147483648; return k % m; }; };
   const a = Buffer.from(png(400, 300, picker()), 'base64');
   assert.deepEqual(Buffer.from(png(400, 300, picker()), 'base64'), a, 'the same picks, the same bytes');
+  assert.equal(createHash('sha256').update(Buffer.from(png(4, 3, picker()), 'base64')).digest('hex'), 'eead022f35527e799e94602d980ca449c99a8a93dcf6bb55697021884a7c68d3', 'the bytes themselves, as any zlib leaves them');
   const idat = a.indexOf('IDAT', 0, 'latin1');
   const pixels = inflateSync(a.subarray(idat + 4, idat + 4 + a.readUInt32BE(idat - 4)));
   assert.equal(pixels.length, 300 * (1 + 400 * 3), 'one filter byte and three per pixel, for each row');
@@ -302,10 +317,13 @@ test('S10: a call whose arguments say hold is answered only when the driver rele
     await ctl.waitConnected('server', { since: 0, timeoutMs: 5000 });
     let answered = null;
     const held = h.call({ kind: 'prose', size: 200, canary: 'CANARY-H-1', hold: true }).then((r) => { answered = r; return r; });
-    while (!notices.length) await new Promise((r) => setTimeout(r, 10));
+    for (const until = Date.now() + 5000; !notices.length;) {
+      if (Date.now() > until) assert.fail('no held notice came within 5 s');
+      await new Promise((r) => setTimeout(r, 10));
+    }
     assert.deepEqual(notices, [{ peer: 'server', notice: 'held', canary: 'CANARY-H-1' }]);
-    assert.equal(answered, null);
     assert.equal(textOf(await h.call({ kind: 'prose', size: 50, canary: 'CANARY-H-2' })).length, 50, 'other calls are answered meanwhile');
+    assert.equal(answered, null);
     assert.deepEqual(await ctl.release('CANARY-H-1', { timeoutMs: 5000 }), { released: 'CANARY-H-1' });
     const r = await held;
     assert.equal(textOf(r).length, 200);

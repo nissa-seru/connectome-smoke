@@ -1,11 +1,5 @@
-/**
- * An operator's client of the host's web UI, as the page is one: a WebSocket to `/ws` on the URL the host logs
- * (`[webui] listening on <url>`), with `basicAuth` when the recipe sets it. The host's welcome comes first and names
- * the session (`welcome.session.id`), which session-changing messages such as `suppress` must carry.
- *
- * Resolves with `{ welcome, send(message), next(test, { timeoutMs, label }), close() }`: `next` resolves with the first
- * message from the host, since the client opened, that `test` accepts and no earlier `next` took.
- */
+// The host's web UI is a WebSocket to `/ws` on the URL it logs (`[webui] listening on <url>`); its welcome names the
+// session (`welcome.session.id`), which a session-changing message such as `suppress` must carry.
 export async function openWebUi({ url, basicAuth = null, timeoutMs = 30_000 }) {
   const headers = basicAuth ? { authorization: `Basic ${Buffer.from(`${basicAuth.username}:${basicAuth.password}`).toString('base64')}` } : {};
   const ws = new WebSocket(`${url.replace(/^http/, 'ws').replace(/\/$/, '')}/ws`, { headers });
@@ -36,6 +30,6 @@ export async function openWebUi({ url, basicAuth = null, timeoutMs = 30_000 }) {
     welcome,
     send(message) { ws.send(JSON.stringify(message)); },
     next,
-    close() { try { ws.close(); } catch { /* gone */ } },
+    close() { try { ws.close(); } catch {} },
   };
 }

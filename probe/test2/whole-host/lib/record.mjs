@@ -1,55 +1,13 @@
 import { createHash } from 'node:crypto';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { FIXTURE_AGENT, requestPairs } from './strategies/checks.mjs';
+import { messageNames, spanName } from './strategies/names.mjs';
 
-/**
- * A run's committed record: what each request carried, as text a reviewer reads in a pull
- * request's diff, so a change's diff of the records shows what it moved and nothing else.
- *
- * It's made from the run's log: the test module's compile lines (`compiles` entries, each
- * `{ lines, blobs }`, a line per compile with its messages' sources and content digests and
- * `blobs` holding each value once), the driver's steps, and the stand-in's records of the
- * summariser's requests. Nothing in it depends on the machine, the wall clock or the process:
- *
- * - A header names the run, the checkpoint's release and stack and what the run continued,
- *   and the candidate's stack.
- * - Per step that compiled, called the summariser or acted: `step ID`, then
- *   - `compile ITEMS` for each compile the agent sent (`compile dry ITEMS` for a dry one, and
- *     `compile refused CLASS [T:...]` for a refusal). Where a compile sends what the agent's
- *     previous one sent, less some from its front and with more after it, the line is
- *     `compile -N + ITEMS`: N of the previous compile's first items no longer sent, and the
- *     items added. So a change shows on the line of the request it changed rather than on
- *     every later one. A stored message the run sent is named
- *     by the canary its text carries (`p.12.in`, `c.tool.call1`), and a run of them stored
- *     next to each other, among the messages the run's compiles sent, as a range
- *     `p.3.in-p.9.r1`. Any other stored message, such as a clock row or a host notice, is its
- *     template with its numbers after it (`[T:user-clock-#-#-utc](12,10)`); a summary is its
- *     name (below), or, where the store didn't report it, its level and a template named by
- *     its text's hash (`L2[T:summary-l2-0a1b2c3d]`). The line
- *     ends `^ N,M` with the places, in the whole list the compile sent, of the messages
- *     carrying a cache marker.
- *   - `call CARRIED -> SHAPE` for each request to the summariser, with the canaries of the
- *     messages it carried.
- *   - `action COMMAND` for each host command the driver sent.
- *   - `wrote NAME [T:...]` for each summary the batch's store added or changed, and
- *     `removed NAMES` for those it removed. A summary is named by its level and the first
- *     and last named messages it covers (`L1(p.3.in-p.5.r1)`), through any summaries under it.
- * - `checkpoint NAME` where the script took one, and `end ok` or `end failed REASON`, then
- *   `receipt AGENT #SEQ changes LEAF/KIND/LEVEL/LAST ...` for each agent's last receipt head:
- *   its sequence, and each leaf its last request changed, by name, with its representation's
- *   kind, its level and the sequence it last changed at. The head's hashes are left out:
- *   they take in image refs' per-process nonces, so they differ between runs.
- * - `totals`, then `templates`: each text the stack wrote, once, keyed by its role and its
- *   first words with numbers as `#` (a summary by its hash), so a change to its words changes
- *   one line. Two texts with one key take `.2`, `.3` in the order they first appear. A text
- *   over LONG_TEXT_BYTES is written as `{ sha256, bytes, head, tail }`.
- *
- * Image refs carry agent-framework's per-process ledger nonce (`img_<nonce>_<n>`), which
- * differs between runs by design and between the boots of one run. Each nonce is named by
- * the order it first appears in the run's templates (`img_na_<n>`, `img_nb_<n>`), which keeps
- * one boot's refs apart from another's and is the same in every run.
- */
-export const LONG_TEXT_BYTES = 2048;
+export const LONG_TEXT_BYTES = 4096;
 
-const CANARY = /\[\[c:([A-Za-z0-9._-]+)\]\]/;
+const CANARY = /\[\[c:([^\]\s]+)\]\]/;
+const MARK = /\[\[s:M[0-9a-f]{8}\]\]/g;
 const REF = /\bimg_([0-9a-z]+)_(\d+)\b/g;
 const canonical = (v) => JSON.stringify(v, (k, x) => (x && typeof x === 'object' && !Array.isArray(x) ? Object.fromEntries(Object.entries(x).sort(([a], [b]) => (a < b ? -1 : 1))) : x));
 const longText = (s) => {
@@ -72,15 +30,11 @@ const textOf = (content) => {
   return out.join('\n');
 };
 
-/**
- * @param {object} run
- * @param {object} run.header `{ configuration, release: { tag, versions }, from, candidate: { versions } }`, `from` saying
- *   what the run continued (`49 prefix turns`, `H1/W2`, `empty`)
- * @param {object[]} run.log the driver's log entries, in order
- * @param {object[]} run.records the stand-in's records
- * @param {{ ok: boolean, reason?: string }} run.end how the run ended
- */
-export function renderRecord({ header, log, records, end }) {
+export function renderRecord(args) {
+  return `${renderRecordLines(args).map((l) => l.text).join('\n')}\n`;
+}
+
+export function renderRecordLines({ header, log, records, end }) {
   const blobs = new Map();
   const batches = [];
   for (const e of log) {
@@ -89,95 +43,203 @@ export function renderRecord({ header, log, records, end }) {
     batches.push(e);
   }
 
-  // Nonces, in the order they first appear in the run's text.
   const nonces = new Map();
-  // Named in letters (`na`, `nb`, … `nz`, `nba`), so a template's numbers as # leave them be.
   const letters = (i) => (i < 26 ? String.fromCharCode(97 + i) : letters(Math.floor(i / 26)) + String.fromCharCode(97 + (i % 26)));
+  // agent-framework mints an image ref's nonce per process (tool-image-ledger.ts), so each is named by its first appearance.
   const nameNonces = (s) => s.replace(REF, (_, nonce, n) => {
     if (!nonces.has(nonce)) nonces.set(nonce, `n${letters(nonces.size)}`);
     return `img_${nonces.get(nonce)}_${n}`;
   });
 
-  // Templates, by role and first words, numbers as #.
-  const templates = new Map();
-  const byKey = new Map();
+  const templates = [];
+  const slot = new Map();
   const slug = (s) => String(s).toLowerCase().replace(/\d+/g, '#').replace(/[^a-z#]+/g, '-').replace(/^-+|-+$/g, '');
-  const template = (role, text, key = `${slug(role)}-${slug(text.split(/\s+/).slice(0, 3).join(' ')).slice(0, 40) || 'empty'}`) => {
+  const template = (role, text, key = null) => {
     const shaped = longText(nameNonces(text));
-    const texts = byKey.get(key) ?? [];
-    let i = texts.indexOf(shaped);
-    if (i === -1) { texts.push(shaped); byKey.set(key, texts); i = texts.length - 1; }
-    const id = `T:${key}${i === 0 ? '' : `.${i + 1}`}`;
-    templates.set(id, shaped);
-    return id;
+    const words = key ? null : text.split(/\s+/);
+    const base = key ?? `${slug(role)}-${slug(words.slice(0, 3).join(' ')).slice(0, 40) || 'empty'}`;
+    const k = `${base}\u0000${shaped}`;
+    if (!slot.has(k)) { slot.set(k, templates.length); templates.push({ base, role, words, shaped }); }
+    return `\u0001${slot.get(k)}\u0001`;
   };
 
-  // Where each stored message sits among those the run's compiles sent, by its stored id.
-  const storedIds = new Set();
-  for (const b of batches) for (const l of b.lines) for (const m of l.messages ?? []) if (m.sources.length === 1 && m.sources[0].startsWith('r:')) storedIds.add(m.sources[0].slice(2));
-  const order = new Map([...storedIds].sort((a, b) => (Number(a) - Number(b)) || (a < b ? -1 : 1)).map((id, i) => [id, i]));
-  // What each agent's store holds, as the module reports it with each batch (`store`): the
-  // canaries of the messages it added, its summaries with their sources, its receipt head.
-  const canaryOf = new Map();
-  const summaries = new Map();
-  for (const b of batches) for (const st of Object.values(b.store ?? {})) {
-    for (const [id, canaries] of st.messages ?? []) { const c = CANARY.exec(canaries?.[0] ?? '')?.[1]; if (c) canaryOf.set(String(id), c); }
-    for (const sm of st.summaries ?? []) summaries.set(sm.id, sm);
+  const primary = FIXTURE_AGENT;
+  const stores = new Map();
+  const storeOf = (agent) => {
+    if (!stores.has(agent)) stores.set(agent, { ids: new Set(), reported: new Set(), present: new Map(), highest: [], canaries: new Map(), summaries: new Map(), order: null });
+    return stores.get(agent);
+  };
+  const remember = (map, key, at, value) => { if (!map.has(key)) map.set(key, []); map.get(key).push([at, value]); };
+  const batchAt = new Map(batches.map((b, i) => [b, i]));
+  batches.forEach((b, i) => {
+    for (const [agent, st] of Object.entries(b.store ?? {})) {
+      const store = storeOf(agent);
+      for (const [id, canaries] of Array.isArray(st.messages) ? st.messages : []) {
+        store.ids.add(String(id));
+        store.reported.add(String(id));
+        remember(store.present, String(id), i, true);
+        remember(store.canaries, String(id), i, CANARY.exec(canaries?.[0] ?? '')?.[1] ?? null);
+      }
+      for (const id of Array.isArray(st.removedMessages) ? st.removedMessages : []) remember(store.present, String(id), i, false);
+      const top = Math.max(store.highest.at(-1)?.[1] ?? -Infinity, ...(Array.isArray(st.messages) ? st.messages : []).map(([id]) => Number(id)).filter(Number.isFinite));
+      store.highest.push([i, top]);
+      for (const sm of Array.isArray(st.summaries) ? st.summaries : []) remember(store.summaries, sm.id, i, sm);
+    }
+  });
+  const reportedAnywhere = (id) => [...stores.values()].some((st) => st.reported.has(id));
+  for (const b of batches) for (const l of b.lines ?? []) for (const m of l.messages ?? []) {
+    if (m.sources.length !== 1 || !m.sources[0].startsWith('r:')) continue;
+    const id = m.sources[0].slice(2).split('!')[0];
+    if (!reportedAnywhere(id)) storeOf(l.agent).ids.add(id);
   }
-  // A summary's name: its level and the first and last named messages it covers, through any summaries it covers.
-  const leaves = (id, seen = new Set()) => {
-    const sm = summaries.get(id);
+  let now = -1;
+  const asOf = (history) => {
+    if (!history) return undefined;
+    let value = history[0][1];
+    for (const [at, v] of history) { if (at > now) break; value = v; }
+    return value;
+  };
+  const heldNow = (agent, id) => {
+    const store = storeOf(agent);
+    const history = store.present.get(String(id));
+    if (!history) return false;
+    if (history[0][0] <= now) return asOf(history);
+    let top = -Infinity;
+    for (const [at, v] of store.highest) { if (at > now) break; top = v; }
+    return Number(id) > top;
+  };
+  const canaryOf = (agent, id) => asOf(storeOf(agent).canaries.get(String(id))) ?? undefined;
+  const summaryOf = (agent, id) => asOf(storeOf(agent).summaries.get(id));
+  const isSummary = (agent, id) => storeOf(agent).summaries.has(id);
+  const byId = (a, b) => {
+    const x = Number(a), y = Number(b);
+    const nx = Number.isFinite(x), ny = Number.isFinite(y);
+    return nx && ny ? x - y : nx ? -1 : ny ? 1 : a < b ? -1 : a > b ? 1 : 0;
+  };
+  const positionOf = (agent, id) => {
+    const store = storeOf(agent);
+    if (!store.order) store.order = new Map([...store.ids].sort(byId).map((x, i) => [x, i]));
+    return store.order.get(id);
+  };
+  const leaves = (agent, id, seen = new Set()) => {
+    const sm = summaryOf(agent, id);
     if (!sm || seen.has(id)) return [];
     seen.add(id);
-    return sm.sources.flatMap((src) => (summaries.has(src) && sm.sourceLevel > 0 ? leaves(src, seen) : [String(src)]));
+    return sm.sources.flatMap((src) => (isSummary(agent, src) && sm.sourceLevel > 0 ? leaves(agent, src, seen) : [String(src)]));
   };
-  const summaryName = (id, level) => {
-    const named = leaves(id).map((leaf) => canaryOf.get(leaf)).filter(Boolean);
-    return `L${summaries.get(id)?.level ?? level}(${named.length ? (named.length === 1 ? named[0] : `${named[0]}-${named.at(-1)}`) : '-'})`;
+  const namers = new Map();
+  const nameOf = (agent, id) => {
+    const key = `${agent}\u0000${now}`;
+    if (!namers.has(key)) namers.set(key, messageNames([...storeOf(agent).reported].filter((x) => heldNow(agent, x)).sort(byId), (x) => canaryOf(agent, x)));
+    return namers.get(key)(id) ?? `#${id}`;
   };
+  const summaryName = (agent, id, level) => {
+    const named = leaves(agent, id).filter((leaf) => heldNow(agent, leaf)).map((leaf) => nameOf(agent, leaf));
+    return named.length ? spanName(`L${summaryOf(agent, id)?.level ?? level}`, named[0], named.at(-1)) : `L${summaryOf(agent, id)?.level ?? level}(-)`;
+  };
+  const leafName = (agent, leaf) => (isSummary(agent, leaf) ? summaryName(agent, leaf) : nameOf(agent, leaf));
   const summaryTemplate = (sm) => {
     const value = blobs.get(sm.content);
     const text = nameNonces(textOf(value?.content ?? value ?? ''));
-    return template('summary', text, `summary-l${sm.level}-${createHash('sha256').update(text).digest('hex').slice(0, 8)}`);
+    return template('summary', text, `summary-l${sm.level}-${createHash('sha256').update(text).digest('hex').slice(0, 12)}`);
   };
-  // A stored message's name: the canary its text carries, else its template and its numbers.
-  const item = (m) => {
+  let marks = null;
+  let marksAt = null;
+  const markName = () => {
+    if (!marks || marksAt !== now) {
+      marks = new Map();
+      marksAt = now;
+      for (const [agent, store] of stores) for (const sm of [...store.summaries.keys()].map((id) => summaryOf(agent, id))) {
+        const value = blobs.get(sm.content);
+        for (const m of textOf(value?.content ?? value ?? '').match(MARK) ?? []) if (!marks.has(m)) marks.set(m, summaryName(agent, sm.id, sm.level));
+      }
+    }
+    return marks;
+  };
+  const thinking = new Map();
+  const ownerOf = (agent, slots, id) => [agent, ...slots, ...[...stores.keys()].filter((n) => n !== agent && !slots.includes(n))].find((n) => stores.has(n) && heldNow(n, id));
+  const item = (m, agent, slots = []) => {
     const value = blobs.get(m.content);
     const raw = textOf(value?.content ?? value);
     if (m.sources.length === 1 && m.sources[0].startsWith('r:')) {
+      const [id, why] = m.sources[0].slice(2).split('!');
+      const bare = thinking.get(`${agent} ${id}`) === true && !(Array.isArray(value?.content) && value.content.some((b) => b?.type === 'thinking' || b?.type === 'redacted_thinking'));
+      const after = `${why ? `!${why}` : ''}${bare ? ':no-thinking' : ''}`;
       const canary = CANARY.exec(raw)?.[1];
-      if (canary) return { name: canary, pos: order.get(m.sources[0].slice(2)) };
+      const owner = canary ? ownerOf(agent, slots, id) : undefined;
+      const named = owner ? `${owner === agent ? '' : `${owner}/`}${nameOf(owner, id)}` : canary;
+      if (canary && !after) return { name: named, pos: positionOf(owner ?? agent, id), owner: owner ?? agent };
+      if (canary) return { text: `${named}${after}` };
       const text = nameNonces(raw);
       const numbers = text.match(/\d+/g) ?? [];
-      return { text: `[${template(value?.participant ?? 'message', text.replace(/\d+/g, '#'))}]${numbers.length ? `(${numbers.join(',')})` : ''}` };
+      return { text: `[${template(value?.participant ?? 'message', text.replace(/\d+/g, '#'))}]${numbers.length ? `(${numbers.join(',')})` : ''}${after}` };
     }
     const ids = m.sources.map((s) => /^s:([^@]+)@?(.*)$/.exec(s));
-    if (ids.every((x) => x && summaries.has(x[1]))) return { text: ids.map((x) => summaryName(x[1], x[2])).join('+') };
+    if (ids.every((x) => x && isSummary(agent, x[1]))) return { text: ids.map((x) => `${summaryName(agent, x[1], x[2])}${x[2].endsWith('~') ? '~' : ''}`).join('+') };
     const levels = m.sources.map((s) => (s.startsWith('s:') ? `L${s.split('@')[1] ?? '?'}` : s.split(':')[0])).join('+');
     const text = nameNonces(raw);
-    const hash = createHash('sha256').update(text).digest('hex').slice(0, 8);
+    const hash = createHash('sha256').update(text).digest('hex').slice(0, 12);
     return { text: `${levels}[${template('summary', text, `summary-${levels.toLowerCase()}-${hash}`)}]` };
   };
   const items = (list) => {
     const out = [];
     for (const it of list) {
       const last = out.at(-1);
-      if (it.name && last?.from && it.pos !== undefined && it.pos === last.end + 1) { last.to = it.name; last.end = it.pos; continue; }
-      out.push(it.name ? { from: it.name, to: it.name, end: it.pos } : it);
+      if (it.name && last?.from && it.pos !== undefined && it.owner === last.owner && it.pos === last.end + 1) { last.to = it.name; last.end = it.pos; continue; }
+      out.push(it.name ? { from: it.name, to: it.name, end: it.pos, owner: it.owner } : it);
     }
     return out.map((r) => r.text ?? (r.from === r.to ? r.from : `${r.from}-${r.to}`)).join(' ');
   };
-  // Each agent's previous compile of its kind (sent or dry), as its items' keys, for the `+` lines.
   const previous = new Map();
   const keyOf = (it) => it.name ?? it.text;
-  const compileLine = (l) => {
-    const list = (l.messages ?? []).map(item);
+  const sha8 = (v) => createHash('sha256').update(typeof v === 'string' ? v : canonical(v)).digest('hex').slice(0, 8);
+  const sentAs = new Map();
+  const rounds = new Map();
+  for (const agent of new Set(batches.flatMap((b) => (b.lines ?? []).map((l) => l.agent)).filter(Boolean))) {
+    const paired = requestPairs(records ?? [], log, agent, { side: agent === primary ? 'primary' : 'sub' });
+    for (const { line, request } of paired?.pairs ?? []) sentAs.set(`${agent}|${line.boot}|${line.seq}`, request);
+    for (const request of paired?.continuations ?? []) rounds.set(request.id, { agent, request });
+  }
+  const owned = new Set([...sentAs.values()].map((r) => r.id));
+  for (const r of records ?? []) if (r.kind === 'agent' && !owned.has(r.id) && !rounds.has(r.id)) rounds.set(r.id, { agent: (r.agent ?? 'primary') === 'primary' ? primary : 'sub', request: r });
+  const heads = new Map();
+  const lastHead = new Map();
+  const headText = (h) => [
+    `model ${h.model}`,
+    `max_tokens ${h.maxTokens}`,
+    `stream ${h.stream}`,
+    ...(h.toolChoice ? [`tool_choice ${canonical(h.toolChoice)}`] : []),
+    ...(h.thinking ? [`thinking ${canonical(h.thinking)}`] : []),
+    `system ${(h.system ?? []).map((b) => {
+      const text = nameNonces(b.text ?? '');
+      const numbers = text.match(/\d+/g) ?? [];
+      return `[${template('system', text.replace(/\d+/g, '#'))}]${numbers.length ? `(${numbers.join(',')})` : ''}${b.cache ? `^${b.cache}` : ''}${b.other ? `{${String(b.other).slice(0, 8)}}` : ''}`;
+    }).join(' ') || '-'}`,
+    `tools ${(h.tools ?? []).map((t) => `${t.name}:${String(t.sha).slice(0, 8)}`).join(' ') || '-'}`,
+    ...(h.headers ? [`headers beta ${(h.headers.beta ?? []).join('+') || '-'} version ${h.headers.version ?? '-'}`] : []),
+    ...(h.rest ? [`rest ${String(h.rest).slice(0, 8)}`] : []),
+  ].join(', ');
+  const messagesOf = (r) => (r.messages ?? []).map((m) => ({ role: m.role, digest: m.digest, cache: (m.blocks ?? []).map((b) => (b.contentCache ? [b.cache ?? null, b.contentCache] : b.cache ?? null)) }));
+  const sentNote = (who, r) => {
+    const head = r.head ? { ...r.head, stream: r.stream ?? null } : null;
+    let note = '';
+    if (head) {
+      const key = sha8(head);
+      if (!heads.has(key)) heads.set(key, headText(head));
+      if (lastHead.get(who) !== key) { lastHead.set(who, key); note = `, head H:${key}`; }
+    }
+    return `${note}, body ${sha8(messagesOf(r))}`;
+  };
+  const lastCarried = new Map();
+  const lastSent = new Map();
+  const carriedBy = (r) => [...new Set((r.messages ?? []).flatMap((m) => (m.blocks ?? []).flatMap((b) => b.canaries ?? [])).map((c) => CANARY.exec(c)?.[1] ?? c))];
+  const compileLine = (l, boot) => {
+    const list = (l.messages ?? []).map((m) => item(m, l.agent, l.slots ?? []));
     const marks = (l.messages ?? []).flatMap((m, i) => (m.marker ? [i + 1] : []));
     const keys = list.map(keyOf);
     const whose = `${l.agent} ${l.kind}`;
     const before = previous.get(whose);
     previous.set(whose, keys);
-    // The fewest of the previous compile's first items to drop for the rest to start this one.
     let dropped = -1;
     if (before) {
       for (let n = 0; n <= before.length && dropped < 0; n++) {
@@ -187,77 +249,221 @@ export function renderRecord({ header, log, records, end }) {
     }
     const added = dropped < 0 ? null : list.slice(before.length - dropped);
     const shown = dropped < 0 ? items(list) : [dropped ? `-${dropped}` : '', added.length ? `+ ${items(added)}` : ''].filter(Boolean).join(' ') || '= (as before)';
-    return `  compile${l.kind === 'dry' ? ' dry' : ''} ${shown}${marks.length ? ` ^ ${marks.join(',')}` : ''}`;
+    const sent = l.kind === 'request' ? sentAs.get(`${l.agent}|${boot ?? null}|${l.seq}`) : null;
+    const text = `  compile${l.agent === primary ? '' : ` [${l.agent}]`}${l.kind === 'dry' ? ' dry' : ''} ${shown}${marks.length ? ` ^ ${marks.join(',')}` : ''}`;
+    return sent ? { kind: 'compile', base: text, sent, agent: l.agent, compile: l, request: sent.id } : { text };
   };
 
   const lines = [];
-  const versions = (v) => Object.entries(v ?? {}).map(([k, x]) => `${k.replace('@animalabs/', '')} ${x}`).join(', ');
-  lines.push(`# whole-host record ${header.configuration}`);
-  lines.push(`# checkpoint ${header.release.tag}, ${header.from}: ${versions(header.release.versions)}`);
-  lines.push(`# candidate: ${versions(header.candidate.versions)}`);
+  lines.push(`# whole-host record ${header.configuration}, from ${header.from}`);
 
-  const totals = { compiles: 0, dry: 0, refused: 0, other: 0, calls: 0, written: 0, actions: 0 };
+  const totals = { compiles: 0, dry: 0, refused: 0, other: 0, calls: 0, rounds: 0, written: 0, actions: 0 };
   const receipt = new Map();
+  const receiptBoot = new Map();
   const known = new Map();
   const byStep = new Map();
   const at = (step) => { if (!byStep.has(step)) byStep.set(step, []); return byStep.get(step); };
   const steps = [];
   const seen = (step) => { if (!steps.includes(step)) steps.push(step); };
   const summariser = new Map((records ?? []).filter((r) => r.kind === 'summariser').map((r) => [r.id, r]));
+  const unclassified = new Map((records ?? []).filter((r) => r.kind === 'unclassified').map((r) => [r.id, r]));
+  const carriedIn = (r) => [...new Set((r.messages ?? []).flatMap((m) => m.blocks.flatMap((b) => b.canaries ?? [])).map((c) => CANARY.exec(c)?.[1] ?? c))];
   for (const e of log) {
-    if (e.kind === 'send' && e.via === 'ipc' && e.command) { seen(e.step); at(e.step).push(`  action ${e.command}`); totals.actions++; }
+    if (e.kind === 'send' && e.via === 'ipc' && e.command) { seen(e.step); at(e.step).push({ text: `  action ${e.command}` }); totals.actions++; }
+    if (e.kind === 'request' && rounds.has(e.request?.id)) {
+      const { agent, request } = rounds.get(e.request.id);
+      seen(e.step);
+      totals.rounds++;
+      at(e.step).push({ kind: 'round', agent, sent: request, request: request.id, round: true });
+    }
     if (e.kind === 'request' && summariser.has(e.request?.id)) {
       const r = summariser.get(e.request.id);
       totals.calls++;
       seen(e.step);
-      const carried = [...new Set(r.messages.flatMap((m) => m.blocks.flatMap((b) => b.canaries ?? [])).map((c) => CANARY.exec(c)?.[1] ?? c))];
-      at(e.step).push(`  call ${carried.length ? carried.join(' ') : '-'} -> ${r.answer?.shape ?? 'none'}`);
+      const carried = carriedIn(r);
+      const words = (r.texts ?? []).map((t) => {
+        const text = nameNonces(t);
+        const marked = text.match(MARK);
+        if (marked) return marked.map((m) => markName().get(m) ?? `S(${m.slice(4, -2)})`).join('+');
+        const numbers = text.match(/\d+/g) ?? [];
+        return `[${template('call', text.replace(/\d+/g, '#'))}]${numbers.length ? `(${numbers.join(',')})` : ''}`;
+      });
+      at(e.step).push({ kind: 'call', base: `  call ${[carried.length ? carried.join(' ') : '-', ...words].join(' ')} -> ${r.answer?.shape ?? 'none'}`, sent: r, request: r.id });
+    }
+    if (e.kind === 'request' && unclassified.has(e.request?.id)) {
+      const r = unclassified.get(e.request.id);
+      seen(e.step);
+      const carried = carriedIn(r);
+      at(e.step).push({ kind: 'unclassified', base: `  unclassified ${carried.length ? carried.join(' ') : '-'}`, sent: r, request: r.id });
     }
     if (e.kind === 'compiles') {
+      now = batchAt.get(e);
       for (const [agent, st] of Object.entries(e.store ?? {})) {
-        if (st.receiptHead) receipt.set(agent, st.receiptHead);
-        for (const sm of st.summaries ?? []) {
-          // A new process's first batch lists the store whole; a summary it already had isn't written again.
+        const tag = agent === primary ? '' : ` [${agent}]`;
+        if (receiptBoot.has(agent) && receiptBoot.get(agent) !== e.boot && !('receiptHead' in st)) receipt.delete(agent);
+        receiptBoot.set(agent, e.boot);
+        if ('receiptHead' in st) {
+          if (st.receiptHead?.unreadable) { seen(e.step); at(e.step).push({ text: `  unreadable${tag} receipt: ${st.receiptHead.unreadable}` }); receipt.delete(agent); }
+          else if (st.receiptHead) receipt.set(agent, st.receiptHead);
+          else receipt.delete(agent);
+        }
+        for (const part of ['messages', 'summaries']) if (st[part] && !Array.isArray(st[part])) { seen(e.step); at(e.step).push({ text: `  unreadable${tag} ${part}: ${st[part].unreadable ?? 'not a list'}` }); }
+        for (const [id, , more] of Array.isArray(st.messages) ? st.messages : []) thinking.set(`${agent} ${id}`, more?.thinking === true);
+        for (const sm of Array.isArray(st.summaries) ? st.summaries : []) {
           const was = known.get(`${agent} ${sm.id}`);
           const now = canonical({ level: sm.level, sources: sm.sources, content: sm.content, parent: sm.parent ?? null });
           known.set(`${agent} ${sm.id}`, now);
           if (was === now) continue;
-          seen(e.step); at(e.step).push(`  wrote ${summaryName(sm.id, sm.level)} [${summaryTemplate(sm)}]`); totals.written++;
+          seen(e.step); at(e.step).push({ text: `  wrote${agent === primary ? '' : ` [${agent}]`} ${summaryName(agent, sm.id, sm.level)} [${summaryTemplate(sm)}]` }); totals.written++;
         }
         for (const id of st.removed ?? []) known.delete(`${agent} ${id}`);
-        if (st.removed?.length) { seen(e.step); at(e.step).push(`  removed ${st.removed.map((id) => (summaries.has(id) ? summaryName(id) : canaryOf.get(String(id)) ?? `#${id}`)).join(' ')}`); }
+        if (st.removed?.length) { seen(e.step); at(e.step).push({ text: `  removed${agent === primary ? '' : ` [${agent}]`} ${st.removed.map((id) => leafName(agent, id)).join(' ')}` }); }
       }
-      for (const l of e.lines) {
+      for (const l of e.lines ?? []) {
         if (l.kind === 'other') { totals.other++; continue; }
         seen(e.step);
         if (l.outcome === 'refused' || l.error) {
           totals.refused++;
           const text = typeof l.error?.message === 'string' ? (blobs.get(l.error.message) ?? l.error.message) : '';
-          at(e.step).push(`  compile refused ${l.error?.class ?? 'unknown'}${text ? ` [${template(`error-${l.error?.class ?? 'unknown'}`, String(text).replace(/\d+/g, '#'))}]` : ''}`);
+          at(e.step).push({ text: `  compile${l.agent === primary ? '' : ` [${l.agent}]`} refused ${l.error?.class ?? 'unknown'}${text ? ` [${template(`error-${l.error?.class ?? 'unknown'}`, String(text).replace(/\d+/g, '#'))}]` : ''}` });
           continue;
         }
         if (l.kind === 'dry') totals.dry++; else totals.compiles++;
-        at(e.step).push(compileLine(l));
+        at(e.step).push(compileLine(l, e.boot));
       }
     }
-    if (e.kind === 'checkpoint') { seen(e.step); at(e.step).push(`checkpoint ${e.name}`); }
+    if (e.kind === 'checkpoint') { seen(e.step); at(e.step).push({ text: `checkpoint ${e.name}` }); }
+  }
+  const seqOf = new Map((records ?? []).map((r, i) => [r.id, r.seq ?? i]));
+  for (const step of steps) {
+    let key = -Infinity;
+    const keyed = (byStep.get(step) ?? []).map((l, i) => {
+      if (l.request && seqOf.has(l.request)) key = seqOf.get(l.request);
+      return { l, key: l.request && seqOf.has(l.request) ? seqOf.get(l.request) : key, i };
+    });
+    keyed.sort((a, b) => a.key - b.key || a.i - b.i);
+    byStep.set(step, keyed.map(({ l }) => {
+      if (l.kind === 'compile') {
+        lastCarried.set(l.agent, carriedBy(l.sent));
+        lastSent.set(l.agent, l.compile);
+        return { text: `${l.base}${sentNote(l.agent, l.sent)}`, request: l.request, compile: l.compile };
+      }
+      if (l.kind === 'round') {
+        const before = new Set(lastCarried.get(l.agent) ?? []);
+        const carried = carriedBy(l.sent);
+        lastCarried.set(l.agent, carried);
+        const added = carried.filter((c) => !before.has(c));
+        return { text: `  round${l.agent === primary ? '' : ` [${l.agent}]`} ${added.length ? `+ ${added.join(' ')}` : '='}${sentNote(l.agent, l.sent)}`, request: l.request, compile: lastSent.get(l.agent) ?? null, round: true };
+      }
+      if (l.kind === 'call') return { text: `${l.base}${sentNote('summariser', l.sent)}`, request: l.request };
+      if (l.kind === 'unclassified') return { text: `${l.base}${sentNote('unclassified', l.sent)}`, request: l.request };
+      return l;
+    }));
   }
   for (const step of steps) {
     const own = byStep.get(step) ?? [];
-    const body = own.filter((l) => l.startsWith('  '));
+    const body = own.filter((l) => l.text.startsWith('  '));
     if (body.length) lines.push(`step ${step}`, ...body);
-    lines.push(...own.filter((l) => !l.startsWith('  ')));
+    lines.push(...own.filter((l) => !l.text.startsWith('  ')));
   }
-  lines.push(`end ${end?.ok ? 'ok' : `failed ${end?.reason ?? 'with no reason given'}`}`);
-  // The head's hashes take in image refs' nonces, so they differ between runs; its sequence
-  // and the leaves its last request changed don't.
-  const leafName = (leaf) => (summaries.has(leaf) ? summaryName(leaf) : canaryOf.get(String(leaf)) ?? `#${leaf}`);
+  lines.push(`end ${end?.ok ? 'ok' : 'failed'}`);
   for (const [agent, head] of [...receipt.entries()].sort(([a], [b]) => (a < b ? -1 : 1))) {
-    const changes = (head.changes ?? []).map(([leaf, [repr, level, last]]) => `${leafName(leaf)}/${String(repr).split(':')[0]}/${level}/${last}`);
+    const changes = (head.changes ?? []).map(([leaf, change]) => (change ? `${leafName(agent, leaf)}/${String(change[0]).split(':')[0]}/${change[1]}/${change[2]}` : `${leafName(agent, leaf)}/removed`));
     lines.push(`receipt ${agent} #${head.sequence}${changes.length ? ` changes ${changes.join(' ')}` : ''}`);
   }
-  lines.push(`totals ${canonical(totals)}`);
-  lines.push('templates');
-  for (const [id, text] of [...templates.entries()].sort(([a], [b]) => (a < b ? -1 : 1))) lines.push(`${id} = ${text}`);
-  return `${lines.join('\n')}\n`;
+  const unjudged = {};
+  for (const e of log) {
+    if (e.kind !== 'compiles') continue;
+    for (const l of e.lines ?? []) for (const u of l.unjudged ?? []) {
+      const key = `${l.agent === primary ? '' : `[${l.agent}] `}${u}`;
+      unjudged[key] = (unjudged[key] ?? 0) + 1;
+    }
+  }
+  lines.push(`totals ${canonical(Object.keys(unjudged).length ? { ...totals, unjudged } : totals)}`);
+  const names = nameTemplates(templates);
+  const head = lines.findIndex((l) => typeof l === 'string' && !l.startsWith('#'));
+  const block = ['templates', ...templates.map((t, i) => [names[i], t.shaped]).sort(([a], [b]) => (a < b ? -1 : 1))
+    .flatMap(([name, text]) => `T:${name} = ${text.split('\n').join('\n  ')}`.split('\n'))];
+  const headBlock = heads.size ? ['heads', ...[...heads.entries()].sort(([a], [b]) => (a < b ? -1 : 1)).map(([key, text]) => `H:${key} = ${text}`)] : [];
+  lines.splice(head < 0 ? lines.length : head, 0, ...block, ...headBlock);
+  const named = (text) => text.replace(/\u0001(\d+)\u0001/g, (_, i) => `T:${names[i]}`);
+  return lines.map((l) => (typeof l === 'string' ? { text: named(l), request: null } : { ...l, text: named(l.text), request: l.request ?? null }));
+}
+
+const sha12 = (text) => createHash('sha256').update(text).digest('hex').slice(0, 12);
+
+export function nameTemplates(templates, hash = sha12) {
+  const names = templates.map((t) => (t.words ? `${t.base}-${hash(t.shaped)}` : t.base));
+  const holder = new Map();
+  names.forEach((name, i) => {
+    if (holder.has(name)) throw new Error(`two different texts take the template name ${name}: ${JSON.stringify(templates[holder.get(name)].shaped).slice(0, 120)} and ${JSON.stringify(templates[i].shaped).slice(0, 120)}`);
+    holder.set(name, i);
+  });
+  return names;
+}
+
+export function unrecordable(records, log) {
+  const sideOf = (agent) => (agent === FIXTURE_AGENT ? 'primary' : 'sub');
+  const lines = log.filter((e) => e.kind === 'compiles').flatMap((e) => (e.lines ?? []).filter((l) => l.kind === 'request'));
+  const compiled = new Set(lines.map((l) => sideOf(l.agent)));
+  const uncompiled = [...new Set(records.filter((r) => r.kind === 'agent').map((r) => r.agent ?? 'primary'))].filter((side) => !compiled.has(side));
+  const begun = new Map();
+  for (const e of log) {
+    if (e.kind !== 'compiles') continue;
+    for (const id of e.submissions ?? []) {
+      if (begun.has(id) && begun.get(id) !== e.boot) return `kv-unified submission ${id} was begun in boot ${begun.get(id)} and again in boot ${e.boot}, which a restart's later clock never allows, so the context manager would take the second as a duplicate and the record would show a host no resident runs`;
+      if (!begun.has(id)) begun.set(id, e.boot);
+    }
+  }
+  const others = [...new Set(lines.map((l) => l.agent).filter((a) => a !== FIXTURE_AGENT))];
+  if (others.length > 1) return `${others.join(' and ')} each made request compiles, and the stand-in tells only the fixture's requests from the rest, so the record couldn't tell one agent's requests from another's`;
+  if (uncompiled.length) return `the run sent ${uncompiled.join(' and ')} agent requests, and its log holds no request compile line from the test module for ${uncompiled.length > 1 ? 'either' : 'that side'}, so its record couldn't tell their compiles from their rounds`;
+  const unstamped = lines.filter((l) => l.outcome === 'compiled' && !/^\d+$/.test(String(l.stamp ?? ''))).length;
+  if (unstamped) return `${unstamped} request compile(s) carry no stamp from the machine's monotonic clock, which the test module reads on Linux, so the record couldn't tell their requests from rounds`;
+  return null;
+}
+
+export function refuseUnrecordable(r) {
+  const cannot = r.outcome === 'couldnt-run' ? null : unrecordable(r.records, r.log);
+  if (cannot) Object.assign(r, { outcome: 'couldnt-run', reason: cannot });
+  return cannot;
+}
+
+export function exitCode(results, { versions = 'same' } = {}) {
+  if (results.some((r) => r.outcome === 'couldnt-run' || r.selfCheck?.outcome === 'couldnt-run')) return 2;
+  if (versions !== 'same' && versions !== 'updated') return 1;
+  return results.every((r) => r.outcome === 'pass' && (r.record === 'same' || r.record === 'updated') && (!r.selfCheck || r.selfCheck.outcome === 'same')) ? 0 : 1;
+}
+
+const versionList = (v) => Object.entries(v ?? {}).map(([k, x]) => `${k.replace('@animalabs/', '')} ${x}`).join(', ');
+
+export function versionsText({ release, candidate }) {
+  return `# whole-host versions\ncheckpoint ${release.tag}: ${versionList(release.versions)}\ncandidate: ${versionList(candidate.versions)}\n`;
+}
+
+export function versionChanges(committed, now) {
+  const parse = (text) => new Map(text.split('\n').filter((l) => l && !l.startsWith('#')).map((l) => {
+    const [, kind, tag, list] = /^(\w+)(?: (\S+))?: (.*)$/.exec(l) ?? [];
+    return [kind, { tag, packages: new Map((list ?? '').split(', ').filter(Boolean).map((p) => { const at = p.lastIndexOf(' '); return [p.slice(0, at), p.slice(at + 1)]; })) }];
+  }));
+  const a = parse(committed);
+  const b = parse(now);
+  const out = [];
+  for (const kind of new Set([...a.keys(), ...b.keys()])) {
+    const x = a.get(kind) ?? { packages: new Map() };
+    const y = b.get(kind) ?? { packages: new Map() };
+    if (x.tag !== y.tag) out.push(`${kind} ${x.tag ?? 'none'} → ${y.tag ?? 'none'}`);
+    for (const name of new Set([...x.packages.keys(), ...y.packages.keys()])) {
+      if (x.packages.get(name) !== y.packages.get(name)) out.push(`${kind} ${name} ${x.packages.get(name) ?? 'none'} → ${y.packages.get(name) ?? 'none'}`);
+    }
+  }
+  return out;
+}
+
+export function compareVersions(recordsDir, now, { update = false } = {}) {
+  const file = join(recordsDir, 'versions.txt');
+  if (update) { mkdirSync(recordsDir, { recursive: true }); writeFileSync(file, now); return { state: 'updated', changes: [] }; }
+  if (!existsSync(file)) return { state: 'missing', changes: [] };
+  const committed = readFileSync(file, 'utf-8');
+  return committed === now ? { state: 'same', changes: [] } : { state: 'differs', changes: versionChanges(committed, now) };
 }

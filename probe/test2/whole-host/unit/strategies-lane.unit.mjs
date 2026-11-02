@@ -1,19 +1,10 @@
-// The strategy fixture's lane (lib/strategies/lane.mjs): what can be pinned without a host.
-// Each test names the requirement it pins. A check and a write are pinned by runs through
-// the host instead.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync, unlinkSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync, unlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { cacheRoot, check, excusing, failureNames, lacking, laneVersion, notExercised, pruneCache, sourceHash, stackVersions } from '../lib/strategies/lane.mjs';
-import { configurations, L3_PRODUCT, prefix } from '../lib/strategies/script.mjs';
-import { perCheckReport } from '../lib/strategies/report.mjs';
-import { entryKey, findEntry, writeEntry } from '../lib/strategies/writer.mjs';
-
-const LANE = fileURLToPath(new URL('../lib/strategies/lane.mjs', import.meta.url));
+import { contentsOf, keptWhole, laneVersion, sourceHash, stackVersions } from '../lib/strategies/lane.mjs';
 
 function tree(files) {
   const root = mkdtempSync(join(tmpdir(), 'fxl-'));
@@ -24,27 +15,31 @@ function tree(files) {
   return root;
 }
 
-test('N1: the lane version moves with every file under lib/strategies and lib/common.mjs, and with nothing else', { timeout: 30_000 }, () => {
+test('N1: the lane version moves with every file under lib and with run.mjs, and with nothing else', { timeout: 30_000 }, () => {
   const root = tree({
     'lib/strategies/driver.mjs': 'driver',
     'lib/strategies/script.mjs': 'script',
     'lib/common.mjs': 'common',
-    'lib/stores.mjs': 'stores',
-    'lanes/strategies.mjs': 'lane entry',
+    'lib/record.mjs': 'record',
+    'run.mjs': 'run',
+    'expected-failures.json': '[]',
+    'records/x.record': 'record',
     'README.md': 'readme',
-    'test/x.test.mjs': 'test',
+    'unit/x.unit.mjs': 'test',
   });
   try {
     const v = laneVersion(root);
     assert.match(v, /^[0-9a-f]{64}$/);
     assert.equal(laneVersion(root), v, 'the same files give the same version');
-    for (const [rel, text] of [['README.md', 'readme 2'], ['lanes/strategies.mjs', 'entry 2'], ['lib/stores.mjs', 'stores 2'], ['test/x.test.mjs', 'test 2'], ['test/y.test.mjs', 'new']]) {
+    for (const [rel, text] of [['README.md', 'readme 2'], ['expected-failures.json', '[1]'], ['records/x.record', 'record 2'], ['unit/x.unit.mjs', 'test 2'], ['unit/y.unit.mjs', 'new']]) {
       writeFileSync(join(root, rel), text);
       assert.equal(laneVersion(root), v, `${rel} is outside the lane`);
     }
     const moves = [
       ['a byte of a strategies file', () => writeFileSync(join(root, 'lib/strategies/script.mjs'), 'scripT'), () => writeFileSync(join(root, 'lib/strategies/script.mjs'), 'script')],
       ['lib/common.mjs', () => writeFileSync(join(root, 'lib/common.mjs'), 'common 2'), () => writeFileSync(join(root, 'lib/common.mjs'), 'common')],
+      ['lib/record.mjs', () => writeFileSync(join(root, 'lib/record.mjs'), 'record 2'), () => writeFileSync(join(root, 'lib/record.mjs'), 'record')],
+      ['run.mjs', () => writeFileSync(join(root, 'run.mjs'), 'run 2'), () => writeFileSync(join(root, 'run.mjs'), 'run')],
       ['a file added under lib/strategies', () => writeFileSync(join(root, 'lib/strategies/new.mjs'), ''), () => unlinkSync(join(root, 'lib/strategies/new.mjs'))],
       ['a file in a directory under lib/strategies', () => { mkdirSync(join(root, 'lib/strategies/sub')); writeFileSync(join(root, 'lib/strategies/sub/x.mjs'), 'x'); }, () => rmSync(join(root, 'lib/strategies/sub'), { recursive: true })],
       ['a file removed from lib/strategies', () => unlinkSync(join(root, 'lib/strategies/driver.mjs')), () => writeFileSync(join(root, 'lib/strategies/driver.mjs'), 'driver')],
@@ -60,8 +55,6 @@ test('N1: the lane version moves with every file under lib/strategies and lib/co
   } finally { rmSync(root, { recursive: true, force: true }); }
 });
 
-// An install as npm leaves it: each package's package.json under `install/`, and the
-// install's lockfile entry for each (`locked`, by path from `install/`; null leaves it out).
 const REGISTRY = 'https://registry.example.test/';
 const fromRegistry = (name, version) => ({ version, resolved: `${REGISTRY}${name}/-/${name.split('/')[1]}-${version}.tgz`, integrity: `sha512-registry-${version}` });
 function install(packages) {
@@ -120,7 +113,6 @@ test('N2: a package installed from a pack or a git spec is named by its version 
     assert.ok(g.startsWith('0.15.0') && g.includes(sha), g);
     const u = name(url);
     assert.ok(u.startsWith('0.15.0') && u.includes('sha512-from-a-url'), `a tarball from a URL outside the registry is named by its integrity: ${u}`);
-    // The registry's other packages are still named by version alone.
     assert.equal(stackVersions(pack.hostDir, { installDir: pack.installDir, registry: REGISTRY })['@animalabs/agent-framework'], '0.28.0');
   } finally { for (const s of [pack, otherPack, git, url]) rmSync(s.root, { recursive: true, force: true }); }
 });
@@ -138,205 +130,6 @@ test('N2: a package the install can\'t name by its content refuses, naming it an
   } finally { for (const s of [linked, unlisted, unlocked]) rmSync(s.root, { recursive: true, force: true }); }
 });
 
-test('N2: a candidate at the release\'s version with a changed line writes its own entry, beside the release\'s', { timeout: 30_000 }, async () => {
-  const release = install(released());
-  const candidate = install(released({ 'node_modules/@animalabs/connectome-host': { version: '0.15.0', locked: { version: '0.15.0', resolved: 'file:../connectome-host-0.15.0.tgz', integrity: 'sha512-one-changed-line' } } }));
-  const tmp = mkdtempSync(join(tmpdir(), 'fxk-'));
-  const cache = join(tmp, 'cache');
-  let writes = 0;
-  const parts = (s) => ({ lane: 'L', configurationName: 'default', recipeHash: 'r', versions: stackVersions(s.hostDir, { installDir: s.installDir, registry: REGISTRY }), trialTurns: { min: 1, step: 1, bound: 1 } });
-  const script = { min: 1, step: 1, bound: 1, prefix: () => ['p.1'], extend: () => [] };
-  const runSteps = async ({ storeDir, epoch }) => { mkdirSync(storeDir, { recursive: true }); writeFileSync(join(storeDir, 'messages'), 'p.1\n'); return { ok: true, clockEnd: epoch + 60_000 }; };
-  const write = (p) => writeEntry({ cacheRoot: cache, key: entryKey(p), keyParts: p, script, runSteps, trial: async () => ({ missing: [] }), hardChecks: async () => ({ ok: true }), epoch: 0, work: join(tmp, `work-${++writes}`) });
-  try {
-    const first = await write(parts(release));
-    assert.equal(first.written, true);
-    const second = await write(parts(candidate));
-    assert.equal(second.written, true, 'the candidate wrote its own entry, not the release\'s returned as already there');
-    assert.notEqual(second.dir, first.dir);
-    assert.ok(existsSync(join(first.dir, 'entry.json')), 'the release\'s entry stays');
-  } finally { for (const s of [release, candidate]) rmSync(s.root, { recursive: true, force: true }); rmSync(tmp, { recursive: true, force: true }); }
-});
-
-test('N3: the cache root is the one given, or ~/.cache/connectome-smoke/strategies, made if missing', { timeout: 30_000 }, () => {
-  const home = mkdtempSync(join(tmpdir(), 'fxh-'));
-  try {
-    const given = join(home, 'elsewhere', 'cache');
-    assert.equal(cacheRoot(given), given);
-    assert.ok(existsSync(given));
-    const r = spawnSync(process.execPath, ['--input-type=module', '-e', `const { cacheRoot } = await import(${JSON.stringify(LANE)}); console.log(cacheRoot());`], { encoding: 'utf-8', env: { ...process.env, HOME: home } });
-    assert.equal(r.status, 0, r.stderr);
-    const want = join(home, '.cache', 'connectome-smoke', 'strategies');
-    assert.equal(r.stdout.trim(), want);
-    assert.ok(existsSync(want));
-  } finally { rmSync(home, { recursive: true, force: true }); }
-});
-
-test('N4: a write leaves the newest two entries of its lane and configuration, other lanes\' for a day, and anything incomplete', { timeout: 30_000 }, () => {
-  const root = mkdtempSync(join(tmpdir(), 'fxc-'));
-  const now = Date.parse('2026-10-28T12:00:00Z');
-  const at = (hoursAgo) => new Date(now - hoursAgo * 3_600_000).toISOString();
-  const entry = (name, fields) => {
-    mkdirSync(join(root, name, 'store'), { recursive: true });
-    if (fields) writeFileSync(join(root, name, 'entry.json'), JSON.stringify(fields));
-  };
-  try {
-    // Directory names sort against writtenAt, so the order kept is the entries' own.
-    entry('a-newest', { complete: true, lane: 'L', configurationName: 'default', writtenAt: at(1) });
-    entry('z-second', { complete: true, lane: 'L', configurationName: 'default', writtenAt: at(2) });
-    entry('m-third', { complete: true, lane: 'L', configurationName: 'default', writtenAt: at(3) });
-    entry('b-fourth', { complete: true, lane: 'L', configurationName: 'default', writtenAt: at(50) });
-    entry('passthrough', { complete: true, lane: 'L', configurationName: 'passthrough', writtenAt: at(90) });
-    entry('other-old', { complete: true, lane: 'M', configurationName: 'default', writtenAt: at(25) });
-    entry('other-young', { complete: true, lane: 'M', configurationName: 'default', writtenAt: at(23) });
-    entry('incomplete', { complete: false, lane: 'L', configurationName: 'default', writtenAt: at(100) });
-    entry('no-entry-json', null);
-    mkdirSync(join(root, '.k1.tmp', 'store'), { recursive: true });
-    writeFileSync(join(root, '.k1.lock'), '{}');
-
-    const removed = pruneCache({ cacheRoot: root, lane: 'L', configurationName: 'default', now });
-    assert.deepEqual(removed.map((d) => d.slice(root.length + 1)).sort(), ['b-fourth', 'm-third', 'other-old']);
-    for (const kept of ['a-newest', 'z-second', 'passthrough', 'other-young', 'incomplete', 'no-entry-json', '.k1.tmp', '.k1.lock']) {
-      assert.ok(existsSync(join(root, kept)), `${kept} stays`);
-    }
-    for (const gone of removed) assert.ok(!existsSync(gone), `${gone} is gone`);
-  } finally { rmSync(root, { recursive: true, force: true }); }
-});
-
-test('N4: pruning keeps each trial\'s newest two, so a write of another trial never removes the lane\'s own entry', { timeout: 30_000 }, () => {
-  const root = mkdtempSync(join(tmpdir(), 'fxc-'));
-  const now = Date.parse('2026-10-28T12:00:00Z');
-  const at = (hoursAgo) => new Date(now - hoursAgo * 3_600_000).toISOString();
-  const lanes = { min: 13, step: 1, bound: 80 };
-  const probes = { min: 1, step: 1, bound: 42 };
-  const entry = (name, trialTurns, hoursAgo) => {
-    mkdirSync(join(root, name, 'store'), { recursive: true });
-    writeFileSync(join(root, name, 'entry.json'), JSON.stringify({ complete: true, lane: 'L', configurationName: 'default', trialTurns, writtenAt: at(hoursAgo) }));
-  };
-  try {
-    // Greta-2425's P1 (room-203 #251172): the lane's own entry first, then two of another trial.
-    entry('lanes', lanes, 3);
-    entry('probe-1', probes, 2);
-    entry('probe-2', probes, 1);
-    const afterProbe = pruneCache({ cacheRoot: root, lane: 'L', configurationName: 'default', trialTurns: probes, now });
-    assert.deepEqual(afterProbe, []);
-    assert.equal(findEntry({ cacheRoot: root, lane: 'L', configurationName: 'default', trialTurns: lanes })?.dir, join(root, 'lanes'), 'a check still finds the lane\'s own entry');
-    // A third of the probe's trial prunes only the probe's oldest.
-    entry('probe-3', probes, 0.5);
-    const removed = pruneCache({ cacheRoot: root, lane: 'L', configurationName: 'default', trialTurns: probes, now });
-    assert.deepEqual(removed.map((d) => d.slice(root.length + 1)), ['probe-1']);
-    for (const kept of ['lanes', 'probe-2', 'probe-3']) {
-      assert.ok(existsSync(join(root, kept)), `${kept} stays`);
-    }
-    for (const gone of removed) assert.ok(!existsSync(gone), `${gone} is gone`);
-  } finally { rmSync(root, { recursive: true, force: true }); }
-});
-
-test('N10: failures are named by check and step, or check 2 and segment and product, each once, without their messages', { timeout: 30_000 }, () => {
-  const counted = (n) => ({
-    invalid: [{ check: 10, step: 'c.cm.cp', message: `calibration at the clamp edge (1.8) at run ${n}` }],
-    flags: [
-      { check: 5, step: 'c.cm.3', request: `r${n}`, message: `L3 merge spans ${n} messages` },
-      { check: 5, step: 'c.cm.3', request: `r${n + 1}`, message: 'another at the same step' },
-      { check: 1, step: 'c.debt', message: `inference:failed after ${n} ms` },
-      { check: 1, step: null, message: 'the run stopped' },
-    ],
-    missing: [{ segment: 'close-merge', name: 'a merge request' }, { segment: 'close-merge', name: 'an L1 compression request' }, { segment: 'debt', name: 'an empty answer' }],
-    didntRun: [{ segment: 'parallel', name: 'a request carrying the three results' }],
-  });
-  const names = failureNames(counted(7));
-  assert.deepEqual(names, [
-    'check 10 at c.cm.cp',
-    'check 5 at c.cm.3',
-    'check 1 at c.debt',
-    'check 1 at the run',
-    'check 2 at close-merge: a merge request',
-    'check 2 at close-merge: an L1 compression request',
-    'check 2 at debt: an empty answer',
-  ]);
-  assert.deepEqual(failureNames(counted(9123)), names, 'the same failures in another run go by the same names');
-  assert.deepEqual(failureNames({ invalid: [], flags: [], missing: [], didntRun: [] }), []);
-});
-
-test('K1b: an operator alert\'s failure name carries its kind, so a known-red entry for one kind doesn\'t cover another', () => {
-  const alert = (what) => ({ check: 1, step: 'c.debt', what, message: 'm' });
-  assert.deepEqual(failureNames({ invalid: [], flags: [alert('compression-quarantine'), alert('mcpl-down'), { check: 1, step: 'c.debt', message: 'm' }], missing: [], didntRun: [] }), [
-    'check 1 at c.debt: compression-quarantine',
-    'check 1 at c.debt: mcpl-down',
-    'check 1 at c.debt',
-  ]);
-});
-
-test('N8: a throw on the candidate\'s side resolves the check as couldn\'t-run, naming what threw', { timeout: 60_000 }, async () => {
-  const dir = mkdtempSync(join(tmpdir(), 'fxn8-'));
-  try {
-    const root = join(dir, 'cache');
-    mkdirSync(join(root, 'k1', 'store'), { recursive: true });
-    writeFileSync(join(root, 'k1', 'entry.json'), JSON.stringify({
-      complete: true, lane: 'L', configurationName: 'default', key: 'k1', versions: {}, trialTurns: { min: 1, step: 1, bound: 1 }, prefixTurns: 40, clockEnd: 1, writtenAt: new Date().toISOString(),
-    }));
-    let judged = 0;
-    const res = await check({
-      cacheRoot: root, configuration: configurations().default, hostDir: join(dir, 'no-host'), installDir: join(dir, 'no-host'),
-      work: join(dir, 'work'), evidence: join(dir, 'evidence'), judge: async () => { judged++; return { flags: [], missing: [] }; }, trial: { min: 1, step: 1, bound: 1 }, lane: 'L',
-    });
-    assert.equal(res.outcome, 'couldnt-run');
-    assert.match(res.reason, /^the candidate's side couldn't run: .*recipe facts/s);
-    assert.equal(judged, 0, 'nothing was judged');
-    assert.equal(JSON.parse(readFileSync(join(dir, 'evidence', 'result.json'), 'utf-8')).outcome, 'couldnt-run', 'the evidence says so too');
-  } finally { rmSync(dir, { recursive: true, force: true }); }
-});
-
-test('N11: where the trial lacked only the L3 product, neither side counts it, and the report says L3 wasn\'t exercised at this cut', () => {
-  const configuration = configurations().default;
-  const l3 = { segment: 'close-merge', missing: [L3_PRODUCT] };
-  const entryLacking = (missing) => ({ trial: { lengths: [{ turns: 13, missing: [{ segment: 'close-merge', missing: ['a merge request', L3_PRODUCT] }] }, { turns: 14, missing }, { turns: 15, missing }], missing } });
-  const verdictOf = (entry, candidate, base = null) => {
-    const cut = notExercised(entry);
-    const report = perCheckReport({ configuration, candidate: excusing(candidate, cut.products), base: base && excusing(base, cut.products) });
-    return { cut, report, names: report.verdict === 'pass' ? [] : failureNames(report) };
-  };
-
-  // Only L3 lacking at the bound: it counts against neither side.
-  const only = entryLacking([l3]);
-  const alone = verdictOf(only, { flags: [], missing: [l3] });
-  assert.equal(alone.report.verdict, 'pass', 'the candidate lacking only L3 passes');
-  assert.deepEqual(alone.names, []);
-  assert.match(alone.cut.line, /L3 wasn't exercised at this cut/);
-  assert.match(alone.cut.line, /13 to 15 turns/, 'the line names the trial\'s lengths');
-  const withOther = verdictOf(only, { flags: [], missing: [l3, { segment: 'tool-round', missing: ['x'] }] }, { flags: [], missing: [l3] });
-  assert.equal(withOther.report.verdict, 'flags');
-  assert.deepEqual(withOther.names, ['check 2 at tool-round: x'], 'another missing product still counts, and L3 isn\'t named');
-  assert.equal(withOther.report.didntRun.length, 0, 'L3 isn\'t reported as a segment that didn\'t run either');
-  const sameSegment = verdictOf(only, { flags: [], missing: [{ segment: 'close-merge', missing: ['a merge request', L3_PRODUCT] }] });
-  assert.deepEqual(sameSegment.names, ['check 2 at close-merge: a merge request'], 'close-merge\'s other products still count');
-
-  // The trial lacked nothing: L3 counts as any product does.
-  const full = verdictOf({ trial: { lengths: [{ turns: 13, missing: [] }], missing: [] } }, { flags: [], missing: [l3] });
-  assert.equal(full.cut.line, null);
-  assert.deepEqual(full.names, [`check 2 at close-merge: ${L3_PRODUCT}`]);
-
-  // The trial lacked L3 and something else: nothing is excused.
-  for (const missing of [[{ segment: 'close-merge', missing: ['a merge request', L3_PRODUCT] }], [l3, { segment: 'tool-round', missing: ['x'] }]]) {
-    const more = verdictOf(entryLacking(missing), { flags: [], missing: [l3] });
-    assert.equal(more.cut.line, null);
-    assert.deepEqual(more.names, [`check 2 at close-merge: ${L3_PRODUCT}`], JSON.stringify(missing));
-  }
-});
-
-test('N9: a write\'s entry lacks, for its exit, each product its trial lacked at its bound besides the L3 that N11 excuses', () => {
-  const at = (missing) => ({ trial: { lengths: [{ turns: 13, missing }], missing } });
-  assert.deepEqual(lacking(at([])), [], 'a trial that found every product lacks nothing');
-  assert.deepEqual(lacking(at([{ segment: 'close-merge', missing: [L3_PRODUCT] }])), [], 'L3 alone is the fallback, not a lack');
-  assert.deepEqual(lacking(at([{ segment: 'tool-round', missing: ['x'] }])), [{ segment: 'tool-round', name: 'x' }]);
-  assert.deepEqual(
-    lacking(at([{ segment: 'close-merge', missing: ['a merge request', L3_PRODUCT] }, { segment: 'debt', missing: ['y'] }])),
-    [{ segment: 'close-merge', name: 'a merge request' }, { segment: 'close-merge', name: L3_PRODUCT }, { segment: 'debt', name: 'y' }],
-    'beside another lack, L3 is named too, since nothing is excused then',
-  );
-  assert.deepEqual(lacking({}), [], 'an entry with no trial recorded lacks nothing it can name');
-});
-
 test('a host checkout is named by its package.json and src/, wherever it sits, and by nothing else', () => {
   const tree = (files) => {
     const dir = mkdtempSync(join(tmpdir(), 'source-hash-'));
@@ -350,4 +143,75 @@ test('a host checkout is named by its package.json and src/, wherever it sits, a
   assert.notEqual(sourceHash(tree({ ...base, 'src/a.ts': 'a2' })), h, 'a source file changed');
   assert.notEqual(sourceHash(tree({ ...base, 'src/c.ts': 'c' })), h, 'a source file added');
   assert.notEqual(sourceHash(tree({ ...base, 'package.json': '{"version":"1.0.1"}' })), h, 'package.json changed');
+});
+
+test('a host that is the checkout itself is named by its version and its source, so two checkouts of one version name different stacks', { timeout: 30_000 }, () => {
+  const checkout = (source) => {
+    const root = tree({ 'package.json': JSON.stringify({ name: '@animalabs/connectome-host', version: '0.21.0' }), 'src/a.ts': source, 'package-lock.json': JSON.stringify({ lockfileVersion: 3, packages: { '': {} } }) });
+    return { root, host: stackVersions(root, { installDir: root, registry: REGISTRY })['@animalabs/connectome-host'] };
+  };
+  const a = checkout('a');
+  const b = checkout('b');
+  try {
+    assert.match(a.host, /^0\.21\.0 \(source [0-9a-f]{12}\)$/);
+    assert.notEqual(a.host, b.host);
+    assert.equal(checkout('a').host, a.host, 'the same source names the same host');
+  } finally { rmSync(a.root, { recursive: true, force: true }); rmSync(b.root, { recursive: true, force: true }); }
+});
+
+test('a kept checkpoint is used only whole, with its record, its store and the answers its transcripts read', () => {
+  const root = mkdtempSync(join(tmpdir(), 'kept-'));
+  const make = (name, { record = sealed(), store = true, answers = true, dirs: made = ['store', 'answers'] } = {}) => {
+    const dir = join(root, `H1_W2-${name}`, 'H1_W2-k1');
+    mkdirSync(dir, { recursive: true });
+    for (const d of made) mkdirSync(join(dir, d), { recursive: true });
+    if (store && made.includes('store')) writeFileSync(join(dir, 'store', 'x'), '');
+    if (answers && made.includes('answers')) writeFileSync(join(dir, 'answers', 'r1.answer.json'), '[]');
+    if (record !== null) writeFileSync(join(dir, 'checkpoint.json'), typeof record === 'function' ? record(dir) : record);
+    return dir;
+  };
+  const sealed = (more = {}) => (dir) => JSON.stringify({ from: 'H1/W2', key: 'k1', clockEnd: 1, ...(dirs(dir) ? { contents: contentsOf(dir) } : {}), ...more });
+  const dirs = (dir) => ['answers', 'store'].every((d) => { try { return readdirSync(join(dir, d)).length > 0; } catch { return false; } });
+  try {
+    assert.equal(keptWhole(make('whole')), true);
+    assert.equal(keptWhole(make('no-answers', { answers: false })), false, 'one kept before its answers were, or that lost them, is written again');
+    assert.equal(keptWhole(make('empty-store', { store: false })), false, 'a store that lost its contents');
+    assert.equal(keptWhole(make('no-record', { record: null })), false);
+    assert.equal(keptWhole(make('broken-record', { record: '{"from":' })), false, 'a record that doesn\'t parse');
+    assert.equal(keptWhole(make('other-key', { record: sealed({ key: 'k2' }) })), false, 'a record whose key isn\'t its directory\'s');
+    assert.equal(keptWhole(make('no-clock', { record: sealed({ clockEnd: undefined }) })), false, 'a record with no clockEnd, which would start the continuation at NaN');
+    assert.equal(keptWhole(make('no-from', { record: sealed({ from: undefined }) })), false);
+    assert.equal(keptWhole(make('no-answers-dir', { dirs: ['store'] })), false, 'no answers directory at all');
+    assert.equal(keptWhole(make('no-store-dir', { dirs: ['answers'] })), false, 'no store directory at all');
+    const unreadable = make('unreadable-store');
+    rmSync(join(unreadable, 'store'), { recursive: true });
+    writeFileSync(join(unreadable, 'store'), 'a file where the directory was');
+    assert.equal(keptWhole(unreadable), false, 'a store that isn\'t a directory reads as not whole rather than throwing');
+    const lost = make('lost-file');
+    writeFileSync(join(lost, 'store', 'sessions.json'), '{}');
+    assert.equal(keptWhole(lost), false, 'a file the sealed listing doesn\'t name, or a lost one, makes it not whole');
+    const shrunk = make('shrunk');
+    writeFileSync(join(shrunk, 'answers', 'r1.answer.json'), '');
+    assert.equal(keptWhole(shrunk), false, 'nor does a file whose size changed');
+    const sealOf = (dir) => JSON.stringify({ from: 'H1/W2', key: 'k1', clockEnd: 1, contents: contentsOf(dir) });
+    const two = make('two-files', { record: null });
+    writeFileSync(join(two, 'store', 'sessions.json'), '{"a":1}');
+    writeFileSync(join(two, 'checkpoint.json'), sealOf(two));
+    assert.equal(keptWhole(two), true, 'a checkpoint sealed with two store files is whole');
+    rmSync(join(two, 'store', 'sessions.json'));
+    assert.equal(keptWhole(two), false, 'and not once one of them is gone');
+    const swapped = make('swapped', { record: null });
+    writeFileSync(join(swapped, 'answers', 'r1.answer.json'), '["alpha"]');
+    writeFileSync(join(swapped, 'checkpoint.json'), sealOf(swapped));
+    writeFileSync(join(swapped, 'answers', 'r1.answer.json'), '["bravo"]');
+    assert.equal(keptWhole(swapped), false, 'nor once a file changes at the same size');
+    assert.equal(keptWhole(make('unsealed', { record: JSON.stringify({ from: 'H1/W2', key: 'k1', clockEnd: 1 }) })), false, 'a record with no contents, as one kept before this, is rebuilt');
+  } finally { rmSync(root, { recursive: true, force: true }); }
+});
+
+test('run.mjs refuses a run name it doesn\'t know, naming it, before it clones or installs anything', () => {
+  const r = spawnSync(process.execPath, [join(import.meta.dirname, '..', 'run.mjs'), '--runs', 'H9/W99', '--workdir', join(tmpdir(), 'never-made-whole-host')], { encoding: 'utf-8', timeout: 30_000 });
+  assert.equal(r.status, 2);
+  assert.match(r.stderr, /no run H9\/W99; there are [^\n]*\bH1\/W1\b/);
+  assert.doesNotMatch(r.stdout + r.stderr, /lane |release /, 'it stopped before naming the lane or cloning the release');
 });

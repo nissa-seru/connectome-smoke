@@ -1,6 +1,5 @@
 import { appendFileSync, cpSync, existsSync, mkdirSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
-import { createHash } from 'node:crypto';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -18,6 +17,9 @@ const TURN_MS = 120_000;
 const COMMAND_MS = 60_000;
 const MAINTAIN_MS = 120_000;
 const SHUTDOWN_MS = 30_000;
+const RESTART_MS = 1_000;
+
+const FENCE = 'settle-fence:';
 
 const COMMANDS = {
   session: (lines) => {
@@ -60,25 +62,15 @@ const COMMANDS = {
 
 const WEBUI_LISTENING = /\[webui\] listening on (https?:\/\/\S+)/;
 
-/**
- * What the installed host says of itself that the lane depends on: whether it
- * takes a top-level `maintenanceIntervalMs`; the window it knows for the
- * configuration's model (`model-limits.ts`), which the stand-in takes as the
- * model's window; and the stream bound it gives the agent for the lane's recipe
- * (`buildFrameworkAgentConfig`), which the checks hold continuations to.
- * Evaluated with bun from the host's source.
- */
 export function hostFacts({ hostDir, configuration }) {
-  const recipe = laneRecipe({ configuration, facts: { takesMaintenanceInterval: false }, control: '', channels: [], boot: 0 });
+  const recipe = laneRecipe({ configuration, control: '', channels: [], boot: 0 });
   const model = recipe.agent.model;
   const src = (f) => JSON.stringify(join(hostDir, 'src', f));
   const code = [
-    `const { unknownRecipeKeys } = await import(${src('recipe.ts')});`,
     `const { getDefaultModelLimits } = await import(${src('model-limits.ts')});`,
     `const { buildFrameworkAgentConfig } = await import(${src('framework-agent-config.ts')});`,
     `const agentConfig = buildFrameworkAgentConfig(${JSON.stringify(recipe)}, ${JSON.stringify(recipe.agent.name)}, ${JSON.stringify(model)}, undefined);`,
     'console.log(JSON.stringify({',
-    '  takesMaintenanceInterval: unknownRecipeKeys({ maintenanceIntervalMs: 0 }).length === 0,',
     `  window: getDefaultModelLimits(${JSON.stringify(model)})?.maxContextTokens ?? null,`,
     '  streamBound: agentConfig.maxStreamTokens ?? null,',
     '  budget: agentConfig.contextBudgetTokens ?? null,',
@@ -94,15 +86,38 @@ export function hostFacts({ hostDir, configuration }) {
   }
 }
 
+export function shutdownFailure({ boot, timedOut, exited, seconds }) {
+  if (timedOut) return `boot ${boot}: the host didn't exit within ${seconds} s of its shutdown`;
+  if (exited && (exited.code !== 0 || exited.signal)) return `boot ${boot}: the host exited (${exited.code ?? exited.signal}) on its shutdown`;
+  return null;
+}
+
+const exitWithin = (child, ms) => new Promise((resolve) => {
+  if (child.exitCode !== null || child.signalCode !== null) { resolve(true); return; }
+  const timer = setTimeout(() => resolve(false), ms);
+  child.once('exit', () => { clearTimeout(timer); resolve(true); });
+});
+
+// The host shapes requests alike for no binding-probe outcome and for an account that refuses or drops a changed
+// block (logging-adapter.ts tells only `shows` apart), so a binding configuration boots with the probe off.
+export function hostEnv({ configuration, standinUrl, control, clock }) {
+  return {
+    ANTHROPIC_BASE_URL: standinUrl, ANTHROPIC_API_KEY: 'sk-ant-fixture', TZ: 'UTC', AGENT_TIMEZONE: undefined, FIXTURE_CONTROL: control, FIXTURE_EPOCH_MS: String(clock),
+    ANTHROPIC_AUTH_TOKEN: undefined, ANTHROPIC_OAUTH_CREDENTIALS_FILE: undefined, ANTHROPIC_OAUTH_AUTO_REFRESH: undefined,
+    MODEL: undefined, COUNT_TOKENS_MODEL: undefined,
+    ...(configuration.binds ? { THINKING_BINDING_PROBE: 'off' } : {}),
+    ...(configuration.recording === false ? { FIXTURE_RECORD: 'off' } : {}),
+  };
+}
+
 const BASE_AGENT = { name: 'fixture', provider: 'anthropic', systemPrompt: 'You are the strategy fixture\'s agent.' };
 
-/** The lane's recipe for one boot, from the configuration and the installed host's facts. */
-export function laneRecipe({ configuration, facts, control, channels, boot }) {
+export function laneRecipe({ configuration, control, channels, boot }) {
   const agent = { ...BASE_AGENT, ...configuration.agent };
   return {
     name: `Strategy fixture (${configuration.name})`,
     agent,
-    ...(facts.takesMaintenanceInterval && configuration.maintenanceIntervalMs !== undefined ? { maintenanceIntervalMs: configuration.maintenanceIntervalMs } : {}),
+    ...(configuration.maintenanceIntervalMs !== undefined ? { maintenanceIntervalMs: configuration.maintenanceIntervalMs } : {}),
     mcpServers: {
       fixture: {
         command: process.execPath,
@@ -114,48 +129,18 @@ export function laneRecipe({ configuration, facts, control, channels, boot }) {
       },
     },
     modules: { subagents: false, lessons: false, retrieval: false, wake: false, workspace: false, ...configuration.modules },
-    ...(configuration.harnessModule === false ? {} : { extensions: { 'whole-host-harness': { kind: 'module', path: MODULE } } }),
+    extensions: { 'whole-host-harness': { kind: 'module', path: MODULE } },
     ...(configuration.subconscious ? { subconscious: configuration.subconscious } : {}),
   };
 }
 
-/**
- * The lane's recipe for `configuration` as the writer's key takes it, and its
- * hash: the recipe without what changes from run to run or with where the lane
- * runs from (the control socket, the boot, the paths of node and the server).
- */
-export function recipeIdentity({ configuration, facts, channels }) {
-  const recipe = laneRecipe({ configuration, facts, control: '', channels, boot: 0 });
-  const { command, args, ...fixture } = recipe.mcpServers.fixture;
-  const { FIXTURE_CONTROL, FIXTURE_BOOT, ...env } = fixture.env;
-  const extensions = recipe.extensions ? Object.fromEntries(Object.entries(recipe.extensions).map(([name, { path, ...rest }]) => [name, rest])) : undefined;
-  return { ...recipe, ...(extensions ? { extensions } : {}), mcpServers: { ...recipe.mcpServers, fixture: { ...fixture, env } } };
-}
-
-export const recipeHash = (opts) => createHash('sha256').update(JSON.stringify(recipeIdentity(opts))).digest('hex');
-
-/**
- * D12: whether `/budget`'s output (connectome-host's report of each agent's stream budget: a
- * header, then a line per agent, `  <name>: …`) is whole for `agent`: its own line has come, or a
- * line that is no part of the report, such as `No agents.` or a host's answer to a command it
- * doesn't have. Lines come in the order the host wrote them, all from one command.
- */
+// connectome-host's `/budget` writes a header, then a line per agent, `  <name>: …`.
 export function budgetReportDone(lines, agent) {
   return lines.some((l) => l.startsWith(`  ${agent}: `) || !(l === BUDGET_HEADER || /^ {2}\S/.test(l)));
 }
 const BUDGET_HEADER = '--- Stream Token Budgets ---';
 
-/**
- * How a settle reads one `maintain` answer (agent-framework's host-command reply), given the
- * `progress` the pass before it read (null for a settle's first pass). Settled: the answer is
- * ok, every agent is ready, and the host is drained with no write deferred (`hostMode`); an
- * answer with no deferred-write count is judged on the rest, and `deferredWritesReported` says so.
- * In flight: an agent's compression or merge is running (`progress.pending`, context-manager's
- * pendingCompression), a turn is alive, or a wake is parked on admission. Moved: this pass's
- * progress (each agent's chunks compressed, summary counts, queue lengths and pending text, and
- * the host's deferred writes) differs from the pass before's; a first pass always has.
- */
-export function readSettle(answer, previous) {
+export function readSettle(answer, previous, ticks = {}) {
   const agents = answer?.maintenance?.agents ?? [];
   const host = answer?.hostMode ?? {};
   const progress = JSON.stringify({
@@ -165,11 +150,13 @@ export function readSettle(answer, previous) {
     }),
     deferredWrites: host.deferredWrites,
   });
-  const deferredWritesReported = typeof host.deferredWrites === 'number';
+  // A maintain pass returns at once while a compression the host's auto-tick started is in flight, and no event marks
+  // that work's end, so the test module's tick counts hold the settle too.
+  const ticking = Object.entries(ticks).filter(([, n]) => n !== 0).map(([name, n]) => `${name} ${n}`);
   return {
-    settled: answer?.ok === true && agents.every((a) => a.ready === true) && host.drained === true && (!deferredWritesReported || host.deferredWrites === 0),
-    deferredWritesReported,
-    inFlight: agents.some((a) => a.progress?.pending === true) || (host.activeTurnAgents ?? []).length > 0 || (host.parkedAdmissions ?? 0) > 0,
+    ticking,
+    settled: answer?.ok === true && agents.every((a) => a.ready === true) && host.drained === true && host.deferredWrites === 0 && !ticking.length,
+    inFlight: agents.some((a) => a.progress?.pending === true) || (host.activeTurnAgents ?? []).length > 0 || (host.parkedAdmissions ?? 0) > 0 || ticking.length > 0,
     moved: progress !== previous,
     progress,
   };
@@ -177,72 +164,6 @@ export function readSettle(answer, previous) {
 
 class RunFailure extends Error {}
 
-/**
- * Run `steps` (lib/strategies/script.mjs) through the installed host at
- * `hostDir`, on the store at `storeDir`, against `standin`.
- * - The host's `Date` starts at `epoch` (ms) and moves only on `advance` steps.
- * - Every turn arrives on the fixture server's channel, and ends when the
- *   agent's turn has ended: its speech, then its stream's
- *   `inference:published_complete`. The run then settles: `maintain` until
- *   every agent is ready.
- * - Each step is set on the stand-in before it begins, and stays set through
- *   the settle after it. A stand-in can serve several runs in turn; each
- *   run's log holds only the requests that arrived while it ran.
- * - `logPath` gets one JSON line per record, its `kind` one of boot, ready,
- *   send, ipc (each host event, as `event`, with its arrival time), request
- *   (each stand-in arrival), settle (each pass, then `phase: 'end'` with
- *   `settled`), advance, checkpoint (with the health panel as `health`), copy,
- *   undelivered (a turn whose speech the host had nowhere to deliver,
- *   `mcpl:speech-route-failed`, with its `reason`; the turn ends there),
- *   notice (a control peer's, unasked), panel (`op` and the host's
- *   `response`), suppress (the web UI's `result`), read (a test-module read's
- *   `op` and `answer`), shutdown, exit, failure and end, each with `seq`,
- *   `wall` (ms since the run began), `clock` (virtual ms) and `step`.
- * Beside the four kinds a script has (channel, command, advance, restart),
- * a command step's `expect` is 'done' (the default) or 'failed', a refusal
- * the host gives, such as a passthrough's for /newtopic:
- * - `panel`: `{ op, params, expect }` sends the panel's request over IPC, as
- *   the TUI's panel does, and fails unless the answer is `expect`'s (`'ok'`,
- *   the default: ok with no warning, such as pin-remove's for an unknown pin;
- *   or `'refused'`); it then settles. A param `{ pin: name }` is the id of
- *   the pin with that name, as the panel's `pins` lists it. With `edge`,
- *   `{ reserve }`, a budget agent-framework's preflight refuses as below the
- *   folded floor is asked again at that floor plus `reserve` plus 1%, rounded
- *   up to a thousand, up to four times, since the floor it reports moves with
- *   the budget asked: as low as the host lets an operator take it.
- * - `suppress`: `{ messages }` removes those messages through the web UI's
- *   suppression, as an operator does from the page, and settles. The recipe
- *   must turn `modules.webui` on.
- * A message a `panel` param or a `suppress` names as `{ canary }` is the
- * first stored message carrying that canary, read from the test module's
- * `messages`. A channel step's `arrival`, `{ after, participant, text }`,
- * is a second message delivered while the call whose canary is `after`,
- * held by the fixture server (`hold: true`), runs; the call is then
- * released. Any step's `reads`, a list of test-module read ops, are made
- * after it ends, each logged as `read`; a read is an op's name, or
- * `{ op, ...params }`. A channel step with `mayFail` lets agent-framework
- * retry a failed inference, and a turn that ends exhausted or aborted is
- * logged as `turn-failed` and the run goes on. A `restart` step's `agent`
- * is merged into the recipe's agent, its `strategy` key by key, for every
- * later boot; a param `{ sequenceOf: canary }` is that stored message's
- * sequence, and `{ storeAt, withBlock }` the first stored message from that
- * fraction of the store on that is neither a shard of a larger body nor a
- * system message (and holds a `withBlock` block, given one). A scripted reply
- * with `settle` is held until every agent's compression is idle, then sent
- * (`held` in the log), so a subagent's rounds don't race the compression its
- * earlier rounds started. A channel step with `tags`
- * sends them with its message (RFC-001's `chat:addressed`, say); one with
- * `reader`, an agent's name, waits for that agent's turn to start and then
- * settles, rather than waiting on the primary's speech: the subconscious
- * reader's turn on a message the resident's tune-out holds (with `mayFail`, a
- * turn that ends exhausted or aborted is logged as turn-failed). A
- * configuration's `subconscious` is the recipe's, and its `fixtureServer` is
- * merged into the fixture server's recipe entry.
- * Resolves with `{ ok, failure, clockEnd, copies, timing }` whatever happens:
- * a failure (an unclassified request, a failed turn, a refused command, an
- * unsettled checkpoint, the host exiting, a wait past its bound) stops the
- * run, shuts the host down, and is named in `failure`.
- */
 export async function runScript({ steps, configuration, standin, hostDir, facts, work, storeDir, epoch, logPath }) {
   mkdirSync(work, { recursive: true });
   mkdirSync(storeDir, { recursive: true });
@@ -274,8 +195,6 @@ export async function runScript({ steps, configuration, standin, hostDir, facts,
     watchers.add(attempt);
     attempt();
   });
-  // `p`, unless the run fails first: a wait with its own bound (a peer's connection) still
-  // ends as soon as the host exits.
   const unlessFailed = (p) => new Promise((resolve, reject) => {
     const check = () => { if (failure) { watchers.delete(check); reject(new RunFailure(failure.reason)); } };
     watchers.add(check);
@@ -309,20 +228,27 @@ export async function runScript({ steps, configuration, standin, hostDir, facts,
   const copies = [];
 
   async function boot() {
+    if (boots > 0) {
+      const to = clock + RESTART_MS;
+      log('advance', { from: clock, to, restart: true });
+      clock = to;
+      standin.setClock(clock);
+    }
     const b = { n: ++boots, events: [], stopping: false };
     const started = performance.now();
-    const recipe = laneRecipe({ configuration: recipeOf, facts, control, channels, boot: b.n });
+    const recipe = laneRecipe({ configuration: recipeOf, control, channels, boot: b.n });
     const recipePath = join(work, `recipe-${b.n}.json`);
     writeFileSync(recipePath, JSON.stringify(recipe, null, 2));
     const sockPath = join(tmpdir(), `${runName}-${b.n}.sock`);
     rmSync(sockPath, { force: true });
     const since = { server: ctl.generation('server'), clock: ctl.generation('clock'), module: ctl.generation('module') };
     log('boot', { boot: b.n, recipePath, storeDir });
-    const env = { ANTHROPIC_BASE_URL: standin.url, ANTHROPIC_API_KEY: 'sk-ant-fixture', TZ: 'UTC', FIXTURE_CONTROL: control, FIXTURE_EPOCH_MS: String(clock) };
+    const env = hostEnv({ configuration, standinUrl: standin.url, control, clock });
     const { child, out } = spawnHost({ hostDir, recipePath, dataDir: storeDir, cwd: work, sockPath, env, preload: PRELOAD });
     Object.assign(b, { child, out, sockPath });
     host = b;
     child.once('exit', (code, signal) => {
+      b.exited = { code, signal };
       log('exit', { boot: b.n, code, signal, expected: b.stopping });
       if (!b.stopping) fail({ step: current?.id ?? null, reason: `the host exited (${code ?? signal}) ${tail(out)}` });
       poke();
@@ -337,23 +263,19 @@ export async function runScript({ steps, configuration, standin, hostDir, facts,
     lineReader(b.sock, (e) => {
       const at = wall();
       b.events.push({ at, e });
-      log('ipc', { at, event: e });
+      if (!(e.type === 'snapshot' && String(e.corrId).startsWith(FENCE))) log('ipc', { at, event: e });
       poke();
     });
     await until(() => b.events.some(({ e }) => e.type === 'lifecycle' && e.phase === 'ready'), BOOT_MS, `boot ${b.n}: lifecycle ready`);
     await unlessFailed(ctl.waitConnected('server', { since: since.server, timeoutMs: BOOT_MS }));
     await unlessFailed(ctl.waitConnected('clock', { since: since.clock, timeoutMs: BOOT_MS }));
-    if (configuration.harnessModule !== false) {
-      await unlessFailed(ctl.waitConnected('module', { since: since.module, timeoutMs: BOOT_MS }));
-      b.module = true;
-    }
+    await unlessFailed(ctl.waitConnected('module', { since: since.module, timeoutMs: BOOT_MS }));
+    b.module = true;
     timing.boots.push(Math.round(performance.now() - started));
     log('ready', { boot: b.n, ms: timing.boots.at(-1) });
     await budgetReport(b);
   }
 
-  // D12: the host's own report of the agent's stream budget, which check 3 reads for the bound a
-  // continuation round is held to (checks.mjs, budgets).
   async function budgetReport(b) {
     const started = performance.now();
     const from = b.events.length;
@@ -364,9 +286,9 @@ export async function runScript({ steps, configuration, standin, hostDir, facts,
   }
 
   async function takeCompiles() {
-    if (configuration.harnessModule === false || !host) return;
-    const { lines, store, blobs } = await ctl.moduleRequest('take');
-    if (lines.length || Object.keys(store).length || Object.keys(blobs).length) log('compiles', { boot: host.n, lines, store, blobs });
+    if (!host) return;
+    const { lines, store, blobs, submissions } = await ctl.moduleRequest('take');
+    if (lines.length || Object.keys(store).length || Object.keys(blobs).length || submissions?.length) log('compiles', { boot: host.n, lines, store, blobs, ...(submissions?.length ? { submissions } : {}) });
   }
 
   async function shutdown() {
@@ -375,13 +297,17 @@ export async function runScript({ steps, configuration, standin, hostDir, facts,
     if (b.module) await takeCompiles().catch((e) => log('compiles', { boot: b.n, lost: String(e?.message ?? e) }));
     host = null;
     b.stopping = true;
-    if (b.child.exitCode === null && b.child.signalCode === null) {
+    if (!b.exited) {
       if (b.sock) send(b.sock, { type: 'shutdown' });
-      let timer;
-      await new Promise((r) => { b.child.once('exit', r); timer = setTimeout(r, SHUTDOWN_MS); });
-      clearTimeout(timer);
+      const timedOut = !(await exitWithin(b.child, SHUTDOWN_MS));
+      if (timedOut) {
+        stopHost(b.child);
+        await exitWithin(b.child, SHUTDOWN_MS);
+      }
+      const why = shutdownFailure({ boot: b.n, timedOut, exited: b.exited, seconds: SHUTDOWN_MS / 1000 });
+      if (why) fail({ step: current?.id ?? null, reason: `${why} ${tail(b.out)}` });
     }
-    try { b.sock?.destroy(); } catch { /* gone */ }
+    try { b.sock?.destroy(); } catch {}
     b.webui?.close();
     stopHost(b.child);
     writeFileSync(join(work, `host-${b.n}.log`), b.out.join(''));
@@ -390,13 +316,16 @@ export async function runScript({ steps, configuration, standin, hostDir, facts,
 
   const eventAfter = (from, test) => host.events.slice(from).find(({ e }) => test(e));
 
-  // A `maintain` pass awaits the work it starts itself, but returns at once while a
-  // compression the host's auto-tick started is in flight, and no event marks that work's end
-  // (readSettle). So the settle passes again while work is in flight; with nothing in flight,
-  // again only after a pass that moved the work on (a pass's ticks can leave queued chunks to
-  // the next); a pass that moved nothing on is stuck (a pause, a hold, a wait on the virtual
-  // clock) and fails at once. TURN_MS bounds the settle between passes: one slow `maintain`
-  // can carry it past by up to MAINTAIN_MS.
+  let fences = 0;
+  async function ipcFence() {
+    const t = performance.now();
+    const corrId = `${FENCE}${++fences}`;
+    const from = host.events.length;
+    send(host.sock, { type: 'describe', corrId });
+    await until(() => eventAfter(from, (e) => e.type === 'snapshot' && e.corrId === corrId), COMMAND_MS, 'the IPC answer that ends a settle');
+    return Math.round((performance.now() - t) * 10) / 10;
+  }
+
   async function settle() {
     const started = performance.now();
     let progress = null;
@@ -405,17 +334,16 @@ export async function runScript({ steps, configuration, standin, hostDir, facts,
       pass++;
       const t = performance.now();
       const answer = await ctl.hostCommand({ command: 'maintain' }, { timeoutMs: MAINTAIN_MS });
-      const read = readSettle(answer, progress);
-      const ticks = configuration.harnessModule === false ? {} : await ctl.moduleRequest('ticks');
-      const ticking = Object.entries(ticks).filter(([, n]) => n !== 0).map(([name, n]) => `${name} ${n}`);
-      if (ticking.length) Object.assign(read, { settled: false, inFlight: true });
+      const read = readSettle(answer, progress, await ctl.moduleRequest('ticks'));
+      const { ticking } = read;
       const first = progress === null;
       progress = read.progress;
       const agents = answer?.maintenance?.agents ?? [];
       const { drained, deferredWrites, activeTurnAgents = [] } = answer?.hostMode ?? {};
       log('settle', { phase: 'pass', pass, ms: Math.round(performance.now() - t), ok: answer?.ok, ran: answer?.maintenance?.ran, runId: answer?.maintenance?.history?.[0]?.id ?? null, agents, drained, deferredWrites, activeTurnAgents, inFlight: read.inFlight, moved: read.moved, ...(ticking.length ? { ticking } : {}) });
       if (read.settled) {
-        log('settle', { phase: 'end', settled: true, passes: pass, ms: Math.round(performance.now() - started), deferredWritesReported: read.deferredWritesReported });
+        const fence = await ipcFence();
+        log('settle', { phase: 'end', settled: true, passes: pass, ms: Math.round(performance.now() - started), fenceMs: fence });
         await takeCompiles();
         return pass;
       }
@@ -438,19 +366,14 @@ export async function runScript({ steps, configuration, standin, hostDir, facts,
     }
   }
 
-  /**
-   * A held reply's settle: maintenance passes until every agent is ready with no compression
-   * pending and no auto-tick in flight (the module's ticks, as settle() reads them). The turn
-   * whose request is held is alive, so the host isn't drained, and settle() would wait on it.
-   */
+  // The turn whose request is held keeps the host from draining, so settle() would wait on it.
   async function compressionIdle(request) {
     const started = performance.now();
     for (let pass = 1; ; pass++) {
       const answer = await ctl.hostCommand({ command: 'maintain' }, { timeoutMs: MAINTAIN_MS });
       const agents = answer?.maintenance?.agents ?? [];
-      const ticks = configuration.harnessModule === false ? {} : await ctl.moduleRequest('ticks');
-      const idle = answer?.ok === true && agents.every((a) => a.ready === true && a.progress?.pending !== true)
-        && Object.values(ticks).every((n) => n === 0);
+      const ticks = await ctl.moduleRequest('ticks');
+      const idle = answer?.ok === true && agents.every((a) => a.ready === true && a.progress?.pending !== true) && !readSettle(answer, null, ticks).ticking.length;
       if (idle) {
         log('held', { request: request.id, agent: request.agent, passes: pass, ms: Math.round(performance.now() - started) });
         return;
@@ -528,6 +451,7 @@ export async function runScript({ steps, configuration, standin, hostDir, facts,
       fail({ step: step.id, reason: `${step.command} ${outcome}, where the step expects it ${step.expect ?? 'done'}: ${lines().join(' | ').slice(0, 1500)}` });
       throw new RunFailure(`command ${outcome}`);
     }
+    await settle();
   }
 
   async function advance(step) {
@@ -539,13 +463,16 @@ export async function runScript({ steps, configuration, standin, hostDir, facts,
     standin.setClock(clock);
   }
 
-  async function checkpoint(step, last) {
+  async function health(id, what) {
     await settle();
-    const corrId = `${step.id}:health`;
+    const corrId = `${id}:health`;
     const from = host.events.length;
     send(host.sock, { type: 'panel-request', op: 'health', corrId });
-    const panel = await until(() => eventAfter(from, (e) => e.type === 'panel-response' && e.corrId === corrId), COMMAND_MS, `checkpoint ${step.id}: the health panel`);
-    log('checkpoint', { name: step.name, health: panel.e });
+    return (await until(() => eventAfter(from, (e) => e.type === 'panel-response' && e.corrId === corrId), COMMAND_MS, `${what}: the health panel`)).e;
+  }
+
+  async function checkpoint(step, last) {
+    log('checkpoint', { name: step.name, health: await health(step.id, `checkpoint ${step.id}`) });
     if (!step.copyStore) return;
     await shutdown();
     const dest = join(work, 'copies', step.name ?? step.id);
@@ -557,11 +484,6 @@ export async function runScript({ steps, configuration, standin, hostDir, facts,
     if (!last) await boot();
   }
 
-  /**
-   * A restart. With `reloadCheck`, the run's agent compiles dry on each side of it, after the
-   * settle before and after the boot, through the harness module; `reload` names the two compile
-   * lines by boot and seq, for the reload check (checks.mjs `reloads`).
-   */
   async function restart(step) {
     await settle();
     const agent = agentName;
@@ -583,7 +505,6 @@ export async function runScript({ steps, configuration, standin, hostDir, facts,
   }
 
   async function moduleRead(op, params) {
-    if (typeof ctl.moduleRequest !== 'function') throw new RunFailure(`the test module's ${op} read isn't available on the control socket`);
     return unlessFailed(ctl.moduleRequest(op, params, { timeoutMs: COMMAND_MS }));
   }
 
@@ -695,6 +616,8 @@ export async function runScript({ steps, configuration, standin, hostDir, facts,
       }
       timing.steps.push({ id: step.id, kind: step.kind, ms: Math.round(performance.now() - started) });
     }
+    if (host) log('health', { name: 'end', health: await health('end', 'the run\'s end') });
+    else log('health', { name: 'end', skipped: 'the run\'s last step stopped its host' });
   } catch (e) {
     if (!failure) fail({ step: current?.id ?? null, reason: e instanceof RunFailure ? e.message : String(e?.stack || e).slice(0, 3000) });
     if (host) log('host-output', { boot: host.n, tail: tail(host.out) });

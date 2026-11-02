@@ -1,30 +1,7 @@
-// The parts of the strategy fixture's driver (lib/strategies/driver.mjs) that
-// need no host. Its runs through a host are its own evidence (see its commits).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { fileURLToPath } from 'node:url';
-import { budgetReportDone, readSettle, recipeHash, recipeIdentity } from '../lib/strategies/driver.mjs';
-import { configurations } from '../lib/strategies/script.mjs';
+import { budgetReportDone, hostEnv, readSettle, shutdownFailure } from '../lib/strategies/driver.mjs';
 
-const facts = { takesMaintenanceInterval: false, window: 1_000_000 };
-const configuration = configurations().default;
-const SERVER = fileURLToPath(new URL('../lib/strategies/mcpl-server.mjs', import.meta.url));
-
-test('the recipe the writer keys on leaves out where the lane runs from and what changes between runs, and its hash changes with what the recipe says', () => {
-  const identity = JSON.stringify(recipeIdentity({ configuration, facts, channels: ['chat'] }));
-  for (const [what, text] of [['node\'s path', process.execPath], ['the server\'s path', SERVER], ['the control socket', 'FIXTURE_CONTROL'], ['the boot', 'FIXTURE_BOOT']]) {
-    assert.equal(identity.includes(text), false, what);
-  }
-  assert.ok(identity.includes('"FIXTURE_CHANNELS":"chat"'), 'the channels stay');
-  const h = recipeHash({ configuration, facts, channels: ['chat'] });
-  for (const [what, other] of [
-    ['another model', recipeHash({ configuration: { ...configuration, agent: { ...configuration.agent, model: 'claude-opus-5-5' } }, facts, channels: ['chat'] })],
-    ['another channel', recipeHash({ configuration, facts, channels: ['chat', 'other'] })],
-    ['the host taking maintenanceIntervalMs', recipeHash({ configuration, facts: { ...facts, takesMaintenanceInterval: true }, channels: ['chat'] })],
-  ]) assert.notEqual(other, h, what);
-});
-
-// R7: how a settle reads one `maintain` answer (agent-framework 0.28.0's host-command reply).
 const answer = ({ ready = true, pending = false, queue = 0, compressed = 30, drained = true, deferredWrites = 0, activeTurnAgents = [], parkedAdmissions = 0, ok = true } = {}) => ({
   ok,
   maintenance: { ran: true, agents: [{ agentName: 'fixture', ready, ...(ready ? {} : { pending: pending ? 'Compressing chunk 31' : `${queue} chunks pending` }), progress: { totalChunks: 32, chunksCompressed: compressed, l1QueueLength: queue, mergeQueueLength: 0, summaryCounts: { l1: compressed, l2: 1, l3: 0 }, pending } }] },
@@ -39,6 +16,19 @@ test('R7: a settle is settled only when every agent is ready, the host is draine
     ['an agent not ready', answer({ ready: false, pending: true })],
     ['an answer that isn\'t ok', answer({ ok: false })],
   ]) assert.equal(readSettle(a, null).settled, false, what);
+  const two = answer();
+  two.maintenance.agents.push({ ...two.maintenance.agents[0], agentName: 'reader', ready: false, pending: 'Compressing chunk 3', progress: { ...two.maintenance.agents[0].progress, pending: true } });
+  assert.equal(readSettle(two, null).settled, false, 'one agent of two not ready');
+  two.maintenance.agents[1] = { ...two.maintenance.agents[0], agentName: 'reader' };
+  assert.equal(readSettle(two, null).settled, true, 'both ready');
+});
+
+test('R7c: a compression the host\'s auto-tick started holds the settle while the test module counts it, though maintenance looks settled', () => {
+  assert.equal(readSettle(answer(), null, { fixture: 0 }).settled, true);
+  const read = readSettle(answer(), null, { fixture: 1 });
+  assert.equal(read.settled, false);
+  assert.equal(read.inFlight, true);
+  assert.deepEqual(read.ticking, ['fixture 1']);
 });
 
 test('R7: work is in flight while a compression runs, a turn is alive or a wake is parked, and otherwise isn\'t', () => {
@@ -72,14 +62,33 @@ test('D12: `/budget`\'s output is whole once it holds the agent\'s own line, or 
   assert.equal(budgetReportDone(['Unknown command: /budget'], 'fixture'), true, 'a host without the report doesn\'t hold the run');
 });
 
-test('R7b: an answer with no deferred-write count doesn\'t hold the settle, and the reading says the count wasn\'t reported', () => {
+test('R7b: an answer with no deferred-write count isn\'t settled, so a host that stops reporting it fails the settle', () => {
   const unreported = answer();
   delete unreported.hostMode.deferredWrites;
-  const read = readSettle(unreported, null);
-  assert.equal(read.settled, true);
-  assert.equal(read.deferredWritesReported, false);
-  assert.equal(readSettle(answer(), null).deferredWritesReported, true);
-  const notReady = answer({ ready: false, pending: true });
-  delete notReady.hostMode.deferredWrites;
-  assert.equal(readSettle(notReady, null).settled, false, 'the rest of the answer still decides');
+  assert.equal(readSettle(unreported, null).settled, false);
+  assert.equal(readSettle(answer(), null).settled, true);
+});
+
+test('R12: a configuration whose model binds thinking boots its host with the start-up binding probe off; any other, without the setting', () => {
+  const base = { standinUrl: 'http://127.0.0.1:1', control: '/tmp/c', clock: 5 };
+  assert.equal(hostEnv({ ...base, configuration: { binds: true } }).THINKING_BINDING_PROBE, 'off');
+  assert.equal('THINKING_BINDING_PROBE' in hostEnv({ ...base, configuration: { binds: false } }), false);
+  assert.equal(hostEnv({ ...base, configuration: {} }).ANTHROPIC_BASE_URL, 'http://127.0.0.1:1');
+  const env = hostEnv({ ...base, configuration: {} });
+  assert.ok('AGENT_TIMEZONE' in env && env.AGENT_TIMEZONE === undefined, 'an inherited AGENT_TIMEZONE is overridden to nothing, so the host keeps TZ\'s UTC');
+  for (const name of ['ANTHROPIC_AUTH_TOKEN', 'ANTHROPIC_OAUTH_CREDENTIALS_FILE', 'ANTHROPIC_OAUTH_AUTO_REFRESH']) assert.ok(name in env && env[name] === undefined, `an inherited ${name} is overridden to nothing, so the host keeps the fixture's API key`);
+  for (const name of ['MODEL', 'COUNT_TOKENS_MODEL']) assert.ok(name in env && env[name] === undefined, `an inherited ${name} is overridden to nothing, so the recipe's model is the one sent`);
+});
+
+test('R13: a host\'s shutdown fails the run when it doesn\'t exit in time or exits other than cleanly', () => {
+  assert.equal(shutdownFailure({ boot: 2, timedOut: false, exited: { code: 0, signal: null }, seconds: 30 }), null);
+  assert.match(shutdownFailure({ boot: 2, timedOut: false, exited: { code: 1, signal: null }, seconds: 30 }), /boot 2: the host exited \(1\) on its shutdown/);
+  assert.match(shutdownFailure({ boot: 2, timedOut: false, exited: { code: null, signal: 'SIGSEGV' }, seconds: 30 }), /exited \(SIGSEGV\)/);
+  assert.match(shutdownFailure({ boot: 3, timedOut: true, exited: { code: null, signal: 'SIGKILL' }, seconds: 30 }), /boot 3: the host didn't exit within 30 s/);
+});
+
+test('R14: the self-check\'s second arm boots the test module with recording off, and every other run with it on', () => {
+  const base = { standinUrl: 'http://127.0.0.1:1', control: '/tmp/c', clock: 5 };
+  assert.equal(hostEnv({ ...base, configuration: { recording: false } }).FIXTURE_RECORD, 'off');
+  assert.equal('FIXTURE_RECORD' in hostEnv({ ...base, configuration: {} }), false);
 });

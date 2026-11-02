@@ -1,80 +1,20 @@
-import { createHash } from 'node:crypto';
-
-/**
- * The strategy fixture's conversation: the configurations it runs, the deep store's prefix,
- * the per-check continuation, and what each segment exists to produce.
- *
- * Every step has an `id`, its `segment` and a `kind` the driver executes (lib/strategies/driver.mjs).
- * A turn is a `channel` step: a message on the fixture server's channel `CHANNEL`, from
- * `participant`, under `topic`, as residents get their turns, with IPC kept for commands.
- * A step that makes the agent run carries `replies`, one per agent request the turn
- * makes, in order (a tool round is two requests in one stream, which ends in one speech), and
- * `canaries`, the canaries whose appearance in a request's last message makes it this step's
- * agent request.
- * Every message the script writes carries a canary naming its step: the input `[[c:ID.in]]`,
- * the k-th reply `[[c:ID.rK]]`, the k-th call's result `[[c:ID.callK]]`.
- */
+import { prose, seeded } from './prose.mjs';
 
 export const TOOL = 'mcpl--fixture--result';
 export const CHANNEL = 'chat';
-/** The marker in the H4 subconscious reader's system prompt. */
 export const READER = '[[reader]]';
 const PARTICIPANTS = ['Ash', 'Tavy', 'Wren'];
 const MINUTE = 60_000;
 
-
-/**
- * The model families full runs add to the default's `claude-opus-4-6`: one for each other
- * pairing of the cache-read price kv-unified weighs (connectome-host `call-pricing.ts`,
- * `anthropicBaseRate`) with context-manager's Fable/Mythos branch, which defers a
- * summariser's chunks before the host declares its tools and drops `tools` on its last
- * retry (`autobiographical.ts`, `isToolsLessRefusingSummarizer`). Opus 4.6 reads at the
- * default 0.1x without the branch.
- */
-export const FULL_RUN_MODELS = [
-  'claude-opus-5-5', // 0.05x, no branch
-  'claude-fable-5-1', // 0.025x, with the branch
-  'claude-fable-5', // 0.1x, with the branch
-];
-
-/**
- * The configurations, each with the recipe patch the driver applies to the lane's recipe
- * (`agent`), the stand-in's view of the model (`binds`), and which segments it runs. They
- * run at residents' sizes: the budget, the reply's max tokens, the stream bound and every
- * strategy size are left to the host, which resolves them for the model as it does for a
- * recipe that leaves them out (`recipe-fit.ts`, `framework-agent-config.ts`). The stand-in's
- * window is the host's own for the model (`model-limits.ts`), which the lane reads through
- * hostFacts. The model is the host's own default (connectome-host `src/recipe.ts`,
- * `claude-opus-4-6`), which most shipped recipes run.
- * `maintenanceIntervalMs` goes at the recipe's top level only for a host that takes the key
- * (the driver asks the installed host's `unknownRecipeKeys`): connectome-host 0.15.0 refuses a
- * recipe with a key it doesn't know, and passing it through is the host change still to come.
- */
-export function configurations({ model = 'claude-opus-4-6' } = {}) {
-  const agent = { model, cacheKeepalive: { enabled: false } };
+// A recipe that leaves the strategy unset gets autobiographical, adaptive and kv-unified with the standard block
+// (connectome-host framework-strategy.ts), and on claude-opus-5-5 the host passes agent-framework `thinkingBinding`
+// and the drop control (anima-research/connectome-host#500).
+export function configurations() {
+  const agent = { model: 'claude-opus-4-6', cacheKeepalive: { enabled: false } };
   const run = (name, more, summarises = true) => ({ name, agent: { ...agent, ...more.agent }, ...(more.modules ? { modules: more.modules } : {}), ...(more.subconscious ? { subconscious: more.subconscious } : {}), ...(more.judges ? { judges: more.judges } : {}), maintenanceIntervalMs: 0, binds: false, summarises });
   return {
-    default: { name: 'default', agent, maintenanceIntervalMs: 0, binds: false, summarises: true },
-    passthrough: { name: 'passthrough', agent: { ...agent, strategy: { type: 'passthrough' } }, maintenanceIntervalMs: 0, binds: false, summarises: false },
-    ...configurationsAsResidentsRun(run),
-  };
-}
-
-/**
- * The workloads' configurations (workloads.mjs), as a host's recipe makes each (room-203 #315555, #315561):
- * - H1: the strategy left to the host, which makes it autobiographical, adaptive and kv-unified with its standard block
- *   (`framework-strategy.ts:162-187`): the fixture's H1 for this model, and its C7 too;
- * - H2: H1 with the subagent module on, whose knowledge subagent the workloads run inside a spawn, so the judge
- *   judges that subagent (judge.mjs judgedAgent);
- * - H3: a passthrough;
- * - H4: H1 with a persistent subconscious reader, agent-framework's WindowedPassthrough strategy, which reads what
- *   the resident's tune-out holds (`READER` in its system prompt tells its requests apart);
- * - C3h, C5h, C6h, C8h: the fixture's C3, C5, C6 and C8 at the host's defaults: classic autobiographical
- *   (`adaptiveResolution: false`), then adaptive with flat-profile, kv-stable and oldest-first folding.
- */
-function configurationsAsResidentsRun(run) {
-  return {
     H1: run('H1', {}),
+    H1b: { ...run('H1b', { agent: { model: 'claude-opus-5-5' } }), binds: true, thinks: true },
     H2: run('H2', { modules: { subagents: true }, judges: 'subagent' }),
     H3: run('H3', { agent: { strategy: { type: 'passthrough' } } }, false),
     H4: run('H4', { subconscious: { enabled: true, systemPrompt: `${READER} You read what the resident has tuned out, and tell them what matters.` } }),
@@ -85,34 +25,10 @@ function configurationsAsResidentsRun(run) {
   };
 }
 
-// ---------------------------------------------------------------- text
-
-const WORDS = ('river stone lantern harbor quiet orchard ledger signal meadow copper window thread garden compass winter '
-  + 'bridge morning letter answer kettle market island pencil shadow ribbon station velvet canyon basket').split(' ');
-
-/** A deterministic pseudo-random sequence seeded by a string. */
-function rng(seed) {
-  let k = parseInt(createHash('sha256').update(seed).digest('hex').slice(0, 8), 16) || 1;
-  return () => { k = (k * 1103515245 + 12345) % 2147483648; return k / 2147483648; };
-}
-
-function prose(chars, seed) {
-  const r = rng(seed);
-  let s = '';
-  while (s.length < chars) {
-    const n = 6 + Math.floor(r() * 12);
-    const words = Array.from({ length: n }, () => WORDS[Math.floor(r() * WORDS.length)]);
-    s += words[0][0].toUpperCase() + words.join(' ').slice(1) + '. ';
-  }
-  return s.slice(0, chars).trimEnd();
-}
-
 const canary = (id, part) => `[[c:${id}.${part}]]`;
 
-// ---------------------------------------------------------------- steps
-
 function turn(id, segment, { chars, replyChars = 2400, calls = [], rounds = null, thinking = null, more = {} }) {
-  const r = rng(`${id}:sizes`);
+  const r = seeded(`${id}:sizes`);
   const input = `${canary(id, 'in')} ${prose(chars, `${id}:in`)}`;
   const replies = [];
   const canaries = [canary(id, 'in')];
@@ -141,36 +57,13 @@ function turn(id, segment, { chars, replyChars = 2400, calls = [], rounds = null
 const advance = (id, segment, ms) => ({ id, segment, kind: 'advance', ms });
 const checkpoint = (id, segment, more = {}) => ({ id, segment, kind: 'checkpoint', name: segment, ...more });
 
-/**
- * The length trial's search, in prefix turns: the writer tries `min`, then each length `step`
- * on, up to `bound`, and keeps the first whose continuation produces every declared product.
- */
-export const TRIAL = { min: 13, step: 1, bound: 80 };
-
-/** close-merge's L3 product, by name: an entry whose trial missed only this one within the bound is checked for L2 merges only. */
 export const L3_PRODUCT = 'an L3 merge request';
 
-/**
- * The prefix of `turns` turns that builds a configuration's deep store, settled turn by
- * turn by the driver. Mostly chat of varied length, with a tool round, parallel calls, a
- * thinking-led call and a long message at fixed intervals, as residents' stores hold them.
- * The clock advances four virtual minutes before each turn, so a clock row lands every two
- * or three turns, as at a resident's pace.
- */
 export function prefix(turns) {
-  return [{ id: 'p.name', segment: 'prefix', kind: 'command', command: '/session rename fixture' }, ...extend(0, turns), checkpoint('p.end', 'prefix', { copyStore: true })];
-}
-
-/**
- * The prefix's steps for turns `from + 1` to `to`: what a store of `from` prefix turns
- * needs to become one of `to`, without the session's naming or the end checkpoint. Turn
- * `i` is the same in every call.
- */
-export function extend(from, to) {
-  const steps = [];
-  for (let i = from + 1; i <= to; i++) {
+  const steps = [{ id: 'p.name', segment: 'prefix', kind: 'command', command: '/session rename fixture' }];
+  for (let i = 1; i <= turns; i++) {
     const id = `p.${i}`;
-    const r = rng(id);
+    const r = seeded(id);
     steps.push(advance(`${id}.adv`, 'prefix', 4 * MINUTE));
     if (i === 1) steps.push(turn(id, 'prefix', { chars: 2250, replyChars: 1800 }));
     else if (i % 17 === 0) steps.push(turn(id, 'prefix', { chars: 90_000 }));
@@ -179,13 +72,10 @@ export function extend(from, to) {
     else if (i % 7 === 0) steps.push(turn(id, 'prefix', { chars: 3750, calls: [{ kind: 'prose', size: 18_000 }] }));
     else steps.push(turn(id, 'prefix', { chars: 1800 + 15 * Math.floor(r() * 900), replyChars: 1200 + 15 * Math.floor(r() * 500) }));
   }
+  steps.push(checkpoint('p.end', 'prefix', { copyStore: true }));
   return steps;
 }
 
-/**
- * The per-check continuation, about a dozen turns from a stored store. Each segment ends
- * at a checkpoint, and `products` says what each exists to produce (declaredProducts).
- */
 export function continuation() {
   const steps = [{ id: 'c.name', segment: 'name', kind: 'command', command: '/session rename fixture' }];
   const seg = (name, list) => { steps.push(...list, checkpoint(`c.${name}.cp`, name)); };
@@ -207,10 +97,7 @@ export function continuation() {
     advance('c.think.adv', 'thinking-call', 4 * MINUTE),
     turn('c.think', 'thinking-call', { chars: 4500, thinking: 9000, calls: [{ kind: 'prose', size: 12_000 }] }),
   ]);
-  // A tool turn of several rounds, each result closing a chunk, so the compressions those
-  // closes start park at agent-framework's provider gate until the turn ends, as residents'
-  // do through a long turn, and the later rounds' compiles meet that debt. Its compressions
-  // carry the three bad answers.
+  // The compressions a long tool turn's closes start park at agent-framework's provider gate until the turn ends.
   seg('debt', [
     advance('c.debt.adv', 'debt', 4 * MINUTE),
     turn('c.debt', 'debt', {
@@ -223,15 +110,12 @@ export function continuation() {
   return steps;
 }
 
-/**
- * What each continuation segment exists to produce, per configuration. A product is checked
- * from the stand-in's records (check 2); a segment whose product is missing names it.
- */
 export function products(configuration) {
   const summarises = configuration.summarises !== false;
   const steps = continuation();
   const long = canary(steps.filter((s) => s.segment === 'close-merge' && s.kind === 'channel').reduce((a, b) => (b.text.length > a.text.length ? b : a)).id, 'in');
   const imageCall = steps.find((s) => s.segment === 'tool-round' && s.kind === 'channel').replies.flatMap((r) => r.calls ?? []).find((c) => c.input.kind === 'image').input.canary;
+  const thinkingCalls = steps.find((s) => s.segment === 'thinking-call' && s.kind === 'channel').replies.flatMap((r) => r.calls ?? []).map((c) => c.input.canary);
   return {
     'close-merge': summarises
       ? [
@@ -246,10 +130,10 @@ export function products(configuration) {
     ],
     parallel: [
       { name: 'a request carrying the three results', test: (r) => r.kind === 'agent' && resultsIn(r.messages.at(-1)) === 3 },
-      { name: 'the tool round\'s image as its placeholder', test: (r) => r.kind === 'agent' && r.messages.some((m) => m.blocks.some((b) => b.type === 'tool_result' && (b.canaries || []).includes(imageCall) && !b.images)) },
+      { name: 'the tool round\'s image as its placeholder', test: (r) => r.kind === 'agent' && r.messages.some((m) => m.blocks.some((b) => b.type === 'tool_result' && (b.canaries || []).includes(imageCall) && !b.images && b.placeholders > 0)) },
     ],
     'thinking-call': [
-      { name: 'the call\'s request carrying the reply\'s thinking', test: (r) => r.kind === 'agent' && r.messages.some((m) => m.role === 'assistant' && m.blocks.some((b) => b.type === 'thinking' && typeof b.signature === 'string' && b.signature.startsWith('fx1.'))) },
+      { name: 'the call\'s request carrying the reply\'s thinking', test: (r) => r.kind === 'agent' && r.messages.some((m) => m.role === 'assistant' && thinkingLedCalls(m).some((id) => resultFor(r, id, thinkingCalls))) },
     ],
     debt: summarises
       ? [
@@ -264,13 +148,18 @@ export function products(configuration) {
 
 const resultsIn = (message) => (message?.blocks || []).filter((b) => b.type === 'tool_result').length;
 
-/** The store holds the message carrying `input` as two or more messages of one body group. */
+function thinkingLedCalls(message) {
+  const thought = message.blocks.findIndex((b) => b.type === 'thinking' && typeof b.signature === 'string' && b.signature.startsWith('fx1.'));
+  return thought < 0 ? [] : message.blocks.slice(thought + 1).filter((b) => b.type === 'tool_use').map((b) => b.toolUseId);
+}
+
+const resultFor = (record, id, canaries) => record.messages.some((m) => m.role === 'user' && m.blocks.some((b) => b.type === 'tool_result' && b.toolUseId === id && (b.canaries ?? []).some((c) => canaries.includes(c))));
+
 function storedInParts(store, input) {
   const first = store.messages.find((m) => m.canaries.includes(input));
   return Boolean(first?.bodyGroupId) && store.messages.filter((m) => m.bodyGroupId === first.bodyGroupId).length >= 2;
 }
 
-/** No summariser request came between a segment's first and last agent requests. */
 function parkedThrough(records) {
   const agents = records.filter((x) => x.kind === 'agent').map((x) => x.seq);
   if (agents.length < 2) return false;

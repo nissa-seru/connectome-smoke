@@ -1,6 +1,3 @@
-// The strategy fixture's `Date` preload (lib/strategies/virtual-date.mjs),
-// driven through the driver's end of the control socket. Each test names the
-// requirement it pins. Needs bun, as the host does.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawn, spawnSync } from 'node:child_process';
@@ -14,8 +11,6 @@ const PRELOAD = fileURLToPath(new URL('../lib/strategies/virtual-date.mjs', impo
 const noBun = spawnSync('bun', ['--version']).status === 0 ? false : 'bun is not on PATH';
 const EPOCH = Date.UTC(2026, 0, 5, 9, 30, 0);
 
-// A process run with the preload: on each line it reads, it writes one line of
-// what its clock and its dates say.
 const TARGET = `
 import { statSync } from 'node:fs';
 class Sub extends Date { tag() { return 'sub'; } }
@@ -74,7 +69,9 @@ function startTarget(target, env) {
     child.stdin.write('read\n');
   });
   const exited = new Promise((r) => child.once('exit', (code) => r(code)));
-  return { child, read, exited, stderr: () => stderr, stop: async () => { child.kill('SIGKILL'); await exited; } };
+  // `close` comes once the child's output streams have ended too, so what it wrote to stderr is all there.
+  const closed = new Promise((r) => child.once('close', (code) => r(code)));
+  return { child, read, exited, closed, stderr: () => stderr, stop: async () => { child.kill('SIGKILL'); await exited; } };
 }
 
 test('D1, D3: the clock reads the epoch and stands still; dates from arguments, parse and UTC are unchanged; every date is a Date, the runtime\'s and a subclass\'s included', { skip: noBun, timeout: 30_000 }, async () => {
@@ -122,7 +119,7 @@ test('D4: without a usable FIXTURE_EPOCH_MS the process does not start, and says
   try {
     for (const env of [{ FIXTURE_EPOCH_MS: '' }, { FIXTURE_EPOCH_MS: 'tomorrow' }]) {
       const t = startTarget(s.target, env);
-      const code = await Promise.race([t.exited, new Promise((r) => setTimeout(() => r('still running'), 10_000))]);
+      const code = await Promise.race([t.closed, new Promise((r) => setTimeout(() => r('still running'), 10_000))]);
       if (code === 'still running') await t.stop();
       assert.notEqual(code, 'still running', `${JSON.stringify(env)}: it started`);
       assert.notEqual(code, 0, JSON.stringify(env));

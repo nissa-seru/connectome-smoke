@@ -1,45 +1,18 @@
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { writeFileSync } from 'node:fs';
 import { CANARY, SUMMARY } from './standin.mjs';
+import { namingCanaries } from './names.mjs';
 
-/**
- * Read a copy of a store as one side's own release reads it, through context-manager's
- * public API (`ContextManager.open`, `getAllMessages`, `getSummariesInRange`, `getSummary`),
- * so a release that stores summaries differently still reads. Opening a store takes its lock
- * and can write to it, so this runs on a copy, never on a store a host has open.
- *
- * Returns `{ messages, summaries, violations }`: each message's id, participant, the canaries its
- * text carries and its body's group and shard; each summary's id, level, sources, the stand-in's
- * summary number its content starts with, and the canaries of every message it covers, read
- * down through its sources; and the strategy's topology violations as it opened the store, each
- * a line as context-manager's audit-topology prints it (the audit opens a store with the same
- * strategy options). A strategy that compressed (`expectSummaries`) and yields no summary, or a
- * summary whose number or sources can't be read, is an error, never "none".
- * `isolate` opens the namespace's own message slot (`{namespace}/messages`), as agent-framework
- * opens an ephemeral agent's context, a subagent's among them, where the shared slot holds the
- * other agents' messages; audit-topology's CLI has no such option, so `violations` is the audit
- * there.
- */
-export async function readStore({ installDir, storePath, namespace, isolate = false, expectSummaries = true }) {
+export async function readStore({ installDir, storePath, namespace, isolate = false }) {
   const cmEntry = join(installDir, 'node_modules', '@animalabs', 'context-manager', 'dist', 'src', 'index.js');
   const { ContextManager, AutobiographicalStrategy } = await import(pathToFileURL(cmEntry).href);
-  // Opened audit-only, as context-manager's own audit-topology opens a store: no chunking at
-  // the frontier, no merge enqueued, nothing ticked.
   const strategy = new AutobiographicalStrategy({ adaptiveResolution: true, autoTickOnNewMessage: false, topologyPolicy: 'report', auditOnly: true });
+  // context-manager's open takes the store's lock and can write to it, so this reads a copy.
   const cm = await ContextManager.open({ path: storePath, namespace, strategy, ...(isolate ? { isolate: true } : {}) });
   try {
-    const textOf = (content) => (Array.isArray(content) ? content : [content]).map((b) => (typeof b === 'string' ? b : b?.type === 'text' ? b.text : b?.type === 'tool_result' ? JSON.stringify(b.content) : '')).join('');
-    const messages = cm.getAllMessages().map((m) => ({
-      id: m.id,
-      participant: m.participant,
-      canaries: textOf(m.content).match(CANARY) ?? [],
-      // context-manager's head-window reset marker (isTopicTransitionMessage).
-      ...(m.participant === 'Context Manager' && (Array.isArray(m.content) ? m.content : []).some((b) => b?.type === 'text' && b.text.startsWith('[Topic Transition]')) ? { topicTransition: true } : {}),
-      ...(m.bodyGroupId ? { bodyGroupId: m.bodyGroupId, shardIndex: m.shardIndex } : {}),
-    }));
+    const messages = cm.getAllMessages().map(storedEntry);
     const ids = cm.getSummariesInRange({}).map((s) => s.id);
-    if (expectSummaries && ids.length === 0) throw new Error(`no summaries in ${namespace} at ${storePath}, from a configuration that compresses`);
+    if (ids.length === 0) throw new Error(`no summaries in ${namespace} at ${storePath}, from a configuration that compresses; it holds ${messages.length} message(s)${messages.length ? `, first carrying ${messages.find((m) => m.canaries.length)?.canaries[0] ?? 'no canary'}` : ''}`);
     const entries = new Map();
     for (const id of ids) {
       const s = cm.getSummary(id);
@@ -72,8 +45,15 @@ export async function readStore({ installDir, storePath, namespace, isolate = fa
   }
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
-  const arg = (name) => { const i = process.argv.indexOf(`--${name}`); return i > 0 ? process.argv[i + 1] : undefined; };
-  const out = await readStore({ installDir: arg('install'), storePath: arg('store'), namespace: arg('namespace'), isolate: process.argv.includes('--isolate'), expectSummaries: arg('expect-summaries') !== 'false' });
-  writeFileSync(arg('out'), JSON.stringify(out, null, 1));
+const textOf = (content) => (Array.isArray(content) ? content : [content]).map((b) => (typeof b === 'string' ? b : b?.type === 'text' ? b.text : b?.type === 'tool_result' ? JSON.stringify(b.content) : '')).join('');
+
+export function storedEntry(m) {
+  return {
+    id: m.id,
+    participant: m.participant,
+    canaries: textOf(m.content).match(CANARY) ?? [],
+    nameCanary: namingCanaries(m.content)[0],
+    ...(m.participant === 'Context Manager' && (Array.isArray(m.content) ? m.content : []).some((b) => b?.type === 'text' && b.text.startsWith('[Topic Transition]')) ? { topicTransition: true } : {}),
+    ...(m.bodyGroupId ? { bodyGroupId: m.bodyGroupId, shardIndex: m.shardIndex } : {}),
+  };
 }

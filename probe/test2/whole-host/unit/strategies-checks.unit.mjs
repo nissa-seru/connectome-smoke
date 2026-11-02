@@ -1,7 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { assemblies, budgets, compileInvariants, compileKinds, pairing, reloads, requestPairs, requestKinds, declaredProducts, everyTurnAnswers, wellFormed, windowsRaw, calibrationEdge, coverage, bookkeeping } from '../lib/strategies/checks.mjs';
-import { continuation, products, configurations, prefix, extend, L3_PRODUCT } from '../lib/strategies/script.mjs';
+import { assemblies, bindingControl, budgets, compileInvariants, compileKinds, pairing, reloads, requestPairs, declaredProducts, everyTurnAnswers, wellFormed, windowsRaw, calibrationEdge, coverage, bookkeeping } from '../lib/strategies/checks.mjs';
+import { continuation, products, configurations, L3_PRODUCT } from '../lib/strategies/script.mjs';
+import { RUNS, runOf, toolBlocksLost } from '../lib/strategies/workloads.mjs';
 
 const msg = (role, ...blocks) => ({ role, blocks });
 const text = (canaries) => ({ type: 'text', chars: 10, ...(canaries ? { canaries } : {}) });
@@ -10,7 +11,7 @@ const result = (id, images) => ({ type: 'tool_result', chars: 10, toolUseId: id,
 
 test('check 2 names each segment whose product no record in it shows, and only those', () => {
   const script = continuation();
-  const wanted = products(configurations().default);
+  const wanted = products(configurations().H1);
   const records = [
     { id: 'r1', step: 'c.cm.1', kind: 'summariser', level: 1, answer: { shape: 'summary' } },
     { id: 'r2', step: 'c.tool', kind: 'agent', messages: [msg('user', text()), msg('assistant', call('a'), call('b')), msg('user', result('a'), result('b', 1))] },
@@ -23,7 +24,7 @@ test('check 2 names each segment whose product no record in it shows, and only t
 
 test('check 2: close-merge declares an L3 merge, which a merge at L3 meets with the merge product', () => {
   const script = continuation();
-  const wanted = products(configurations().default);
+  const wanted = products(configurations().H1);
   const l1 = { id: 'r1', step: 'c.cm.1', kind: 'summariser', level: 1, answer: { shape: 'summary' } };
   const atLevel = (level) => ({ id: `m${level}`, step: 'c.cm.2', kind: 'summariser', level, answer: { shape: 'summary' } });
   const closeMerge = (records) => declaredProducts(records, script, wanted).find((m) => m.segment === 'close-merge')?.missing ?? [];
@@ -32,7 +33,7 @@ test('check 2: close-merge declares an L3 merge, which a merge at L3 meets with 
 });
 
 test('check 2: a configuration that doesn\'t summarise declares no summariser products', () => {
-  const missing = declaredProducts([], continuation(), products(configurations().passthrough));
+  const missing = declaredProducts([], continuation(), products(configurations().H3));
   assert.deepEqual(missing.map((m) => m.segment), ['tool-round', 'parallel', 'thinking-call']);
 });
 
@@ -59,6 +60,28 @@ test('check 3 flags roles out of turn and calls parted from their results, eithe
 const carrying = (...canaries) => ({ type: 'text', chars: 10, canaries });
 const summaryBlock = (...summaries) => ({ type: 'text', chars: 10, summaries });
 const turnStep = (id, replies = 1) => ({ id, segment: 's', kind: 'channel', canaries: [`[[c:${id}.in]]`], replies: Array.from({ length: replies }, () => ({ text: 'x' })) });
+
+test('check 6 without a store read still holds a request to the two turns before it, less what was suppressed before it', () => {
+  const suppress = { id: 'x', segment: 's', kind: 'suppress', messages: [{ canary: '[[c:a.r1]]' }] };
+  const before = [turnStep('a'), turnStep('b'), suppress, turnStep('c')];
+  const after = [turnStep('a'), turnStep('b'), turnStep('c'), suppress];
+  const req = (canaries) => ({ id: 'r', step: 'c', kind: 'agent', messages: [msg('user', carrying(...canaries))] });
+  const withoutSuppressed = req(['[[c:a.in]]', '[[c:b.in]]', '[[c:b.r1]]', '[[c:c.in]]']);
+  assert.deepEqual(windowsRaw([withoutSuppressed], before, [], null), [], 'a.r1 was suppressed before c, so it isn\'t wanted');
+  assert.deepEqual(windowsRaw([withoutSuppressed], after, [], null).map((f) => f.message), ['the recent window lacks [[c:a.r1]]'], 'a suppression scripted after c excuses nothing at c');
+  const lacking = windowsRaw([req(['[[c:a.in]]', '[[c:b.in]]', '[[c:c.in]]'])], before, [], null);
+  assert.deepEqual(lacking.map((f) => f.message), ['the recent window lacks [[c:b.r1]]']);
+});
+
+test('check 6 with a store read holds a request to a message an operator suppressed only after it, which the final store no longer holds', () => {
+  const after = [turnStep('a'), turnStep('b'), turnStep('c'), { id: 'x', segment: 's', kind: 'suppress', messages: [{ canary: '[[c:a.r1]]' }] }];
+  const store = { messages: ['[[c:a.in]]', '[[c:b.in]]', '[[c:b.r1]]', '[[c:c.in]]', '[[c:c.r1]]'].map((c, i) => ({ id: String(i + 1), canaries: [c] })), summaries: [] };
+  const req = (canaries) => ({ id: 'r', step: 'c', kind: 'agent', messages: [msg('user', carrying(...canaries))] });
+  assert.deepEqual(windowsRaw([req(['[[c:a.in]]', '[[c:b.in]]', '[[c:b.r1]]', '[[c:c.in]]'])], after, [], store).map((f) => f.message), ['the recent window lacks [[c:a.r1]]']);
+  assert.deepEqual(windowsRaw([req(['[[c:a.in]]', '[[c:a.r1]]', '[[c:b.in]]', '[[c:b.r1]]', '[[c:c.in]]'])], after, [], store), []);
+  const failedLater = [{ kind: 'ipc', step: 'a', event: { type: 'inference:failed' } }];
+  assert.deepEqual(windowsRaw([req(['[[c:a.in]]', '[[c:b.in]]', '[[c:b.r1]]', '[[c:c.in]]'])], after, failedLater, store).map((f) => f.message), ['the recent window lacks [[c:a.r1]]'], 'a reply an operator suppressed was stored, even in a step that failed on a later round');
+});
 
 test('check 6 flags a request that loses a raw message of the head the host reported, or lacks the two turns before it raw', () => {
   const script = [turnStep('a'), turnStep('b', 2), turnStep('c'), turnStep('d')];
@@ -110,6 +133,20 @@ test('check 10 flags a multiplier at either clamp edge, wherever the health pane
   assert.deepEqual(flags.map((f) => f.message.match(/\(([\d.]+)\)/)[1]), ['0.6', '1.8']);
 });
 
+test('check 10 says it couldn\'t judge where a health read failed, or where a completed adaptive run logged no end-of-run read at all', () => {
+  const end = { kind: 'end', ok: true };
+  const read = (health, more = {}) => ({ kind: 'health', name: 'end', step: 's.9', health, ...more });
+  const whats = (log, adaptive = true) => calibrationEdge(log, { adaptive }).map((f) => f.what);
+  assert.deepEqual(whats([read({ ok: true, data: { contextComposition: { fixture: { calibration: { multiplier: 1.2 } } } } }), end]), []);
+  assert.deepEqual(whats([read({ ok: false, error: 'healthSnapshot threw' }), end]), ['unread-panel'], 'a panel op that failed');
+  assert.deepEqual(whats([read({ ok: false, error: '' }), end]), ['unread-panel'], 'one that failed with an empty error');
+  assert.deepEqual(whats([read({ ok: true, data: { contextComposition: {}, readFailures: { fixture: { contextComposition: 'getRenderStats threw' } } } }), end]), ['unread-panel'], 'a composition read that threw');
+  assert.deepEqual(whats([read(undefined, { skipped: 'the run\'s last step stopped its host' }), end]), [], 'an end read the driver says it skipped');
+  assert.deepEqual(whats([end]), ['no-end-read'], 'a completed adaptive run with no end read, read or skipped');
+  assert.deepEqual(whats([end], false), [], 'not for a passthrough run');
+  assert.deepEqual(whats([{ kind: 'end', ok: false }]), [], 'nor for a run that failed before its end');
+});
+
 const store = {
   messages: [
     { id: 'm1', canaries: ['[[c:a.in]]'] }, { id: 'm2', canaries: ['[[c:a.r1]]'] },
@@ -156,16 +193,25 @@ test('check 5: a summary declares only what its request showed, a child by its n
   const l3store = { ...store, summaries: [...store.summaries, { id: 'L3-1', level: 3, sourceLevel: 2, sourceIds: ['L2-1'], number: '[[s:C4]]', covers: ['[[c:a.in]]', '[[c:a.r1]]', '[[c:b.in]]', '[[c:b.r1]]'] }] };
   assert.deepEqual(bookkeeping([shown('[[s:C4]]', [], ['[[s:C1]]', '[[s:C2]]'])], l3store), []);
   assert.equal(bookkeeping([shown('[[s:C4]]', [], ['[[s:C1]]'])], l3store).length, 1);
+  const holed = { ...store, messages: store.messages.filter((m) => m.id !== store.summaries.find((x) => x.number === '[[s:C1]]').sourceIds[0]) };
+  const unread = bookkeeping([shown('[[s:C1]]', ['[[c:a.in]]', '[[c:a.r1]]'])], holed);
+  assert.deepEqual(unread.map((f) => f.what), ['unread-source']);
+  assert.equal(unread.judged, 0);
+  const tooled = { ...store, messages: [...store.messages, { id: 't1', canaries: ['[[c:a.call1]]'] }], summaries: [...store.summaries, { id: 'L1-9', level: 1, sourceLevel: 0, sourceIds: ['t1'], number: '[[s:C9]]', covers: ['[[c:a.call1]]'] }] };
+  const nothingHeld = bookkeeping([shown('[[s:C9]]', [])], tooled);
+  assert.deepEqual(nothingHeld, []);
+  assert.equal(nothingHeld.judged, 0, 'a summary of tool results alone holds no source to its request, so it isn\'t counted as judged');
+  const merged = { ...tooled, summaries: [...tooled.summaries, { id: 'L2-9', level: 2, sourceLevel: 1, sourceIds: ['L1-9'], number: '[[s:C10]]', covers: ['[[c:a.call1]]'] }] };
+  const unshownChild = bookkeeping([shown('[[s:C10]]', [])], merged);
+  assert.deepEqual(unshownChild, [], 'a child covering no conversational message, its number not sent, may have gone as its sources raw, which carry nothing to judge by');
+  assert.equal(unshownChild.judged, 0, 'so it isn\'t judged, and nothing passes on it');
+  const shownChild = bookkeeping([shown('[[s:C10]]', [], ['[[s:C9]]'])], merged);
+  assert.deepEqual(shownChild, []);
+  assert.equal(shownChild.judged, 1, 'its number sent shows it');
+  assert.equal(bookkeeping([shown('[[s:C1]]', ['[[c:a.in]]', '[[c:a.r1]]'])], store).judged, 1);
 });
 
-test('extending a prefix of one length to another gives the longer prefix\'s turns, the same in every call', () => {
-  const whole = prefix(40);
-  assert.deepEqual([whole[0], ...extend(0, 25), ...extend(25, 40), whole.at(-1)], whole);
-  assert.deepEqual(extend(25, 40), extend(25, 40));
-  assert.ok(!extend(25, 40).some((s) => s.id === 'p.name' || s.id === 'p.end'), 'no naming or end checkpoint');
-});
-
-test('K1: check 1 flags every operator alert the host raises, naming its kind and message', () => {
+test('K1: check 1 flags the operator alerts the host raises, naming each one\'s kind and message', () => {
   const alert = (step, kind, message) => ({ kind: 'ipc', step, event: { type: 'ops:alert', kind, agentName: 'fixture', message } });
   const flags = everyTurnAnswers([], [
     alert('c.debt', 'compression-quarantine', '1 span(s) in compression quarantine'),
@@ -177,6 +223,14 @@ test('K1: check 1 flags every operator alert the host raises, naming its kind an
   assert.match(flags[0].message, /compression-quarantine.*1 span\(s\) in compression quarantine/);
   assert.match(flags[1].message, /context-maintenance-failed.*the tick threw/);
   assert.deepEqual(flags.map((f) => f.what), ['compression-quarantine', 'context-maintenance-failed', 'mcpl-down'], 'K1b: each carries its kind');
+  const designed = [{ id: 'w.over', segment: 'w', mayFail: true }, { id: 'w.next', segment: 'w' }];
+  const owned = everyTurnAnswers([], [
+    { kind: 'ipc', step: 'w.over', event: { type: 'inference:failed' } },
+    alert('w.over', 'context-refusal', 'the context was refused'),
+    alert('w.over', 'mcpl-down', 'MCPL server unreachable'),
+    alert('w.next', 'context-refusal', 'the context was refused'),
+  ], designed);
+  assert.deepEqual(owned.map((f) => [f.step, f.what]), [['w.over', 'mcpl-down'], ['w.next', 'context-refusal']]);
 });
 
 // A checkpoint's health panel as connectome-host 0.15.0 reports the last live compile.
@@ -188,14 +242,7 @@ const panel = (name, { budget = 20_000, budgetMet = true, exhausted = false, hea
   } },
 });
 
-// An agent request as the stand-in records it (T16, T18): its messages, each with its digest, their
-// tokens, its max tokens, the usage it answered with, and the tool_use ids its answer minted.
-// `opened` opens a turn, or restarts one with messages context-manager rendered afresh;
-// `continued` carries the request before it whole, then the round that request's answer opened.
-// The usage is all fresh input unless `cached` names how much of it the cache read: an opened
-// request's is all fresh unless given, and a continued one reads the request before it from the
-// cache, all of it unless given.
-const asked = (id, step, messageTokens, input, messages, toolUseIds, cached = 0) => ({ id, step, kind: 'agent', messageTokens, maxTokens: 2_048, usage: { input_tokens: input - cached, cache_read_input_tokens: cached, cache_creation_input_tokens: 0 }, messages, answer: { shape: 'reply', stop: toolUseIds.length ? 'tool_use' : 'end_turn', toolUseIds } });
+const asked = (id, step, messageTokens, input, messages, toolUseIds, cached = 0) => ({ id, step, kind: 'agent', maxTokens: 2_048, usage: { input_tokens: input - cached, cache_read_input_tokens: cached, cache_creation_input_tokens: 0 }, messages, answer: { shape: 'reply', stop: toolUseIds.length ? 'tool_use' : 'end_turn', toolUseIds } });
 const wholeInput = (r) => r.usage.input_tokens + r.usage.cache_read_input_tokens + r.usage.cache_creation_input_tokens;
 const opened = (id, step, messageTokens, input = messageTokens + 8_000, calls = [], cached = 0) => asked(id, step, messageTokens, input, [{ role: 'user', digest: `in.${id}`, blocks: [text()] }], calls, cached);
 const continued = (before, id, messageTokens, input = messageTokens + 8_000, calls = [], cached = wholeInput(before)) => asked(id, before.step, messageTokens, input, [
@@ -203,100 +250,60 @@ const continued = (before, id, messageTokens, input = messageTokens + 8_000, cal
   { role: 'assistant', digest: `reply.${before.id}`, blocks: [text(), ...before.answer.toolUseIds.map(call)] },
   { role: 'user', digest: `results.${before.id}`, blocks: before.answer.toolUseIds.map((id) => result(id)) },
 ], calls, cached);
-// A run's log as the driver writes it: the host's stream events and the stand-in's arrivals.
 const started = { kind: 'ipc', event: { type: 'inference:started', agentName: 'fixture' } };
 const resumed = { kind: 'ipc', event: { type: 'inference:stream_resumed', agentName: 'fixture' } };
 const sent = (id) => ({ kind: 'request', request: { id, kind: 'agent' } });
-// The driver's log of connectome-host's `/budget` after a boot (D12): its header, then the agent's line.
 const budgetReport = (...lines) => ({ kind: 'budget-report', boot: 1, lines: ['--- Stream Token Budgets ---', ...lines], ms: 5 });
 const WINDOW_CLAUSE = '; its stream doesn\'t break at this budget mid-turn: for its size, only before a request its 1.0M window can\'t hold';
-// A turn of three rounds under a stream bound of 30,000: r2's input passes it, so r3 follows a round over it.
-const crossing = () => {
+const compiledAs = (records, compiled, agent = 'fixture') => {
+  const turn = new Map();
+  const canaryOf = (r) => `[[c:${r.step}.${r.id}]]`;
+  const marked = records.map((r) => {
+    const key = `${r.agent ?? 'primary'}|${r.step}`;
+    if (compiled.includes(r.id)) turn.set(key, canaryOf(r));
+    const canary = turn.get(key);
+    const arrived = { arrived: String((records.indexOf(r) + 1) * 10) };
+    return canary ? { ...r, ...arrived, messages: [...r.messages.slice(0, -1), { ...r.messages.at(-1), blocks: [...r.messages.at(-1).blocks, text([canary])] }] } : { ...r, ...arrived };
+  });
+  const sentFrom = records.filter((r) => compiled.includes(r.id));
+  const steps = [...new Set(sentFrom.map((r) => r.step))];
+  const entries = steps.map((step) => ({
+    kind: 'compiles', step,
+    lines: sentFrom.map((r, i) => [r, i]).filter(([r]) => r.step === step).map(([r, i]) => ({ seq: i + 1, agent, kind: 'request', assembly: i + 1, outcome: 'compiled', stamp: String((records.indexOf(r) + 1) * 10 - 5), messages: [{ sources: ['r:1'], content: `x.${r.id}` }] })),
+    blobs: Object.fromEntries(sentFrom.filter((r) => r.step === step).map((r) => [`x.${r.id}`, { role: 'user', content: [{ type: 'text', text: `${canaryOf(r)} words` }] }])),
+  }));
+  return [marked, entries];
+};
+const crossingAs = () => {
   const r1 = opened('r1', 'a', 15_000, 29_000, ['t1']);
   const r2 = continued(r1, 'r2', 16_000, 31_000, ['t2']);
-  return [r1, r2, continued(r2, 'r3', 17_000, 32_000)];
+  return compiledAs([r1, r2, continued(r2, 'r3', 17_000, 32_000)], ['r1']);
 };
-const under = (report) => [...(report ? [report] : []), sent('r1'), sent('r2'), sent('r3'), panel('s')];
+const crossing = () => crossingAs()[0];
+const R1_COMPILED = crossingAs()[1];
+const under = (report) => [...(report ? [report] : []), ...R1_COMPILED, sent('r1'), sent('r2'), sent('r3'), panel('s')];
 
-test('K2c: a step\'s first request is compiled, and a later one is a continuation only when it carries the request before it whole, then that request\'s own tool round', () => {
-  const a1 = opened('a1', 'a', 1_000, undefined, ['t1']);
-  const a2 = continued(a1, 'a2', 1_100, undefined, ['t2', 't3']);
-  const a3 = continued(a2, 'a3', 1_200);
-  // A restart: context-manager renders afresh, so the messages before the round differ.
-  const b1 = opened('b1', 'b', 1_000, undefined, ['u1']);
-  const b2 = continued(b1, 'b2', 1_100);
-  b2.messages[0] = { ...b2.messages[0], digest: 'rendered afresh' };
-  // The assistant's message carries ids the stand-in didn't answer the request before with.
-  const c1 = opened('c1', 'c', 1_000, undefined, ['v1']);
-  const c2 = continued(c1, 'c2', 1_100);
-  c2.messages[1] = { ...c2.messages[1], blocks: [text(), call('v9')] };
-  // Something other than the user's follows the round.
-  const d1 = opened('d1', 'd', 1_000, undefined, ['w1']);
-  const d2 = continued(d1, 'd2', 1_100);
-  d2.messages.push({ role: 'assistant', digest: 'more', blocks: [text()] }, { role: 'user', digest: 'again', blocks: [text()] });
-  // An answer with no tool call, and a refusal, open no round to continue.
-  const e1 = opened('e1', 'e', 1_000);
-  const e2 = continued(e1, 'e2', 1_100);
-  const f1 = { ...opened('f1', 'f', 1_000), answer: { shape: 'refused' } };
-  const f2 = continued({ ...f1, answer: { toolUseIds: ['z1'] } }, 'f2', 1_100);
-  // A step's first request, though it arrives just after step a's a2 and carries a2 and its round.
-  const g1 = { ...continued(a2, 'g1', 1_300), step: 'g' };
-  const kinds = requestKinds([a1, a2, g1, a3, b1, b2, c1, c2, d1, d2, e1, e2, f1, f2]);
-  assert.deepEqual(Object.fromEntries(kinds), {
-    a1: 'compiled', a2: 'continuation', a3: 'continuation',
-    b1: 'compiled', b2: 'compiled', c1: 'compiled', c2: 'compiled', d1: 'compiled', d2: 'compiled',
-    e1: 'compiled', e2: 'compiled', f1: 'compiled', f2: 'compiled', g1: 'compiled',
-  });
-  // A record without digests, its own or the request before it's, can't be classified.
-  const bare = (r) => ({ ...r, messages: r.messages.map(({ digest, ...m }) => m) });
-  const h1 = opened('h1', 'h', 1_000, undefined, ['x1']);
-  const h2 = continued(h1, 'h2', 1_100);
-  assert.deepEqual(Object.fromEntries(requestKinds([bare(h1), h2])), { h1: null, h2: null });
-  assert.deepEqual(Object.fromEntries(requestKinds([h1, bare(h2)])), { h1: 'compiled', h2: null });
-});
-
-test('K2e: with the module\'s compile lines, a request is compiled when the next sent compile\'s last canary is its own, so a restart that sends what a continuation would is compiled', () => {
-  const withCanary = (r, canary) => ({ ...r, messages: [...r.messages.slice(0, -1), { ...r.messages.at(-1), blocks: [{ type: 'text', canaries: [canary] }] }] });
-  const r1 = withCanary(opened('r1', 'a', 15_000, 23_000, ['t1']), '[[c:a.in]]');
-  // r2 carries r1 and its round whole: by the records alone a continuation. r3 is a true continuation.
-  const r2 = withCanary(continued(r1, 'r2', 19_000, 25_000, ['t2']), '[[c:a.call1]]');
-  const r3 = withCanary(continued(r2, 'r3', 20_000, 26_000), '[[c:a.call2]]');
+test('K2e: with the module\'s compile lines, a request is compiled when it arrives after its agent\'s latest compile stamped before it, so a restart that sends what a continuation would is compiled', () => {
+  const withCanary = (r, canary, arrived) => ({ ...r, arrived: String(arrived), messages: [...r.messages.slice(0, -1), { ...r.messages.at(-1), blocks: [{ type: 'text', canaries: [canary] }] }] });
+  const r1 = withCanary(opened('r1', 'a', 15_000, 23_000, ['t1']), '[[c:a.in]]', 11);
+  const r2 = withCanary(continued(r1, 'r2', 19_000, 25_000, ['t2']), '[[c:a.call1]]', 31);
+  const r3 = withCanary(continued(r2, 'r3', 20_000, 26_000), '[[c:a.call2]]', 41);
   const b = (id, canary) => ({ [id]: { role: 'user', content: [{ type: 'text', text: `${canary} words` }] } });
-  const line = (seq, assembly, content, outcome = 'compiled') => ({ seq, agent: 'fixture', kind: 'request', assembly, outcome, messages: [{ sources: ['r:1'], content }] });
+  const line = (seq, assembly, content, stamp, outcome = 'compiled') => ({ seq, agent: 'fixture', kind: 'request', assembly, outcome, ...(stamp ? { stamp: String(stamp) } : {}), messages: [{ sources: ['r:1'], content }] });
   const log = [
-    { kind: 'compiles', lines: [line(1, 1, 'x1'), line(2, 2, 'x2', 'refused'), line(3, 2, 'x2'), { ...line(4, 3, 'x9'), kind: 'dry' }, line(5, 4, 'x5')], blobs: { ...b('x1', '[[c:a.in]]'), ...b('x2', '[[c:a.call1]]'), ...b('x9', '[[c:a.call2]]'), ...b('x5', '[[c:z.in]]') } },
+    { kind: 'compiles', step: 'a', lines: [line(1, 1, 'x1', 10), line(2, 2, 'x2', null, 'refused'), line(3, 2, 'x2', 30), { ...line(4, 3, 'x9', 35), kind: 'dry' }, line(5, 4, 'x5', 50)], blobs: { ...b('x1', '[[c:a.in]]'), ...b('x2', '[[c:a.call1]]'), ...b('x9', '[[c:a.call2]]'), ...b('x5', '[[c:z.in]]') } },
   ];
-  assert.deepEqual(Object.fromEntries(requestKinds([r1, r2, r3])), { r1: 'compiled', r2: 'continuation', r3: 'continuation' }, 'the records alone read the restart as a continuation');
   const paired = compileKinds([r1, r2, r3], log);
   assert.deepEqual(Object.fromEntries(paired.kinds), { r1: 'compiled', r2: 'compiled', r3: 'continuation' }, 'a refused compile, retried in its assembly, and a dry compile take no request');
   assert.deepEqual(paired.unpaired.map((l) => l.seq), [5], 'a compile no request was sent from');
-  assert.equal(compileKinds([r1], [{ kind: 'compiles', lines: [{ ...line(1, 1, 'x1'), agent: 'other' }], blobs: b('x1', '[[c:a.in]]') }]), null, 'no line for the agent: the records decide');
-  // A new host process numbers its compiles and assemblies from 1 again, and two runs of the driver
-  // (the writer's extensions) each call their first boot 1: lines are taken in log order.
+  assert.equal(compileKinds([r1], [{ kind: 'compiles', lines: [{ ...line(1, 1, 'x1', 10), agent: 'other' }], blobs: b('x1', '[[c:a.in]]') }]), null, 'no line for the agent: nothing to pair by');
   for (const boot of [2, 1]) {
     const twoProcesses = [
-      { kind: 'compiles', boot: 1, lines: [line(1, 1, 'x1')], blobs: b('x1', '[[c:a.in]]') },
-      { kind: 'compiles', boot, lines: [line(1, 1, 'x2')], blobs: b('x2', '[[c:a.call1]]') },
+      { kind: 'compiles', step: 'a', boot: 1, lines: [line(1, 1, 'x1', 10)], blobs: b('x1', '[[c:a.in]]') },
+      { kind: 'compiles', step: 'a', boot, lines: [line(1, 1, 'x2', 30)], blobs: b('x2', '[[c:a.call1]]') },
     ];
     assert.deepEqual(Object.fromEntries(compileKinds([r1, r2], twoProcesses).kinds), { r1: 'compiled', r2: 'compiled' }, `each process's assembly 1 is its own (second boot numbered ${boot})`);
   }
-});
-
-test('K2c: the same records give the same kinds and verdicts whether each stream event is logged before its request, after it, or not at all', () => {
-  const script = [turnStep('a')];
-  // r2 and r3 are under the stream bound, and judged as continuations against it.
-  const r1 = opened('r1', 'a', 15_000, 23_000, ['t1']);
-  const r2 = continued(r1, 'r2', 19_000, 25_000, ['t2']);
-  const r3 = continued(r2, 'r3', 20_000, 26_000);
-  const records = [r1, r2, r3];
-  const first = [started, sent('r1'), resumed, sent('r2'), resumed, sent('r3'), panel('s')];
-  const late = [sent('r1'), started, sent('r2'), resumed, sent('r3'), resumed, panel('s')];
-  const none = [sent('r1'), sent('r2'), sent('r3'), panel('s')];
-  const [a, b, c] = [first, late, none].map((log) => budgets(records, script, log, { windowTokens: 1_000_000 }));
-  assert.deepEqual(a.flags, []);
-  assert.deepEqual(b, a, 'each event after its request');
-  assert.deepEqual(c, a, 'no stream event at all');
-  assert.deepEqual(a.headroom.map((h) => [h.kind, h.request]), [['compiled', 'r1'], ['continuation', 'r3']]);
 });
 
 test('K2d: a continuation under a report that the window governs the agent\'s stream, at the stand-in\'s window, isn\'t held to the stream bound, and a note says so', () => {
@@ -327,14 +334,12 @@ test('K2d: a continuation under a report without that clause is held to the stre
 });
 
 test('K2d: with no report for the agent, only a continuation after a round over the stream bound is couldn\'t-judge', () => {
-  // None at all, the header alone, and a line for another agent only.
   for (const log of [under(null), under(budgetReport()), under(budgetReport('  other: 30.0k (last: 0, 0%)'))]) {
     const { flags } = budgets(crossing(), [turnStep('a')], log, { streamBound: 30_000, windowTokens: 1_000_000 });
     assert.deepEqual(flags.map((f) => f.request), ['r3'], JSON.stringify(log.map((e) => e.kind)));
     assert.match(flags[0].message, /couldn't judge/);
   }
-  // A report logged after the request doesn't govern it.
-  const late = budgets(crossing(), [turnStep('a')], [sent('r1'), sent('r2'), sent('r3'), budgetReport(`  fixture: 30.0k (last: 0, 0%)${WINDOW_CLAUSE}`), panel('s')], { streamBound: 30_000, windowTokens: 1_000_000 }).flags;
+  const late = budgets(crossing(), [turnStep('a')], [...R1_COMPILED, sent('r1'), sent('r2'), sent('r3'), budgetReport(`  fixture: 30.0k (last: 0, 0%)${WINDOW_CLAUSE}`), panel('s')], { streamBound: 30_000, windowTokens: 1_000_000 }).flags;
   assert.deepEqual(late.map((f) => f.request), ['r3']);
   assert.match(late[0].message, /couldn't judge/);
 });
@@ -350,48 +355,40 @@ test('K2d: a report whose figure isn\'t the stream bound as the host formats it 
 
 test('K2b: a compiled request is held to the model\'s window by the stand-in\'s count of its whole input, every one of them, and context-manager\'s budgetMet flags nothing', () => {
   const script = [turnStep('a'), { ...turnStep('b'), segment: 't' }];
-  // A 30,000-token window: r1's whole input fits it exactly, r2's (a restart's compile) passes it,
-  // and r3's plan sits in context-manager's slack band, which budgetMet: false reports.
-  const records = [opened('r1', 'a', 17_952, 30_000), opened('r2', 'a', 18_000, 31_000), opened('r3', 'b', 10_000, 18_000)];
-  const log = [panel('s'), panel('t', { budgetMet: false, exhausted: true })];
+  const [records, lines] = compiledAs([opened('r1', 'a', 17_952, 30_000), opened('r2', 'a', 18_000, 31_000), opened('r3', 'b', 10_000, 18_000)], ['r1', 'r2', 'r3']);
+  const log = [...lines, panel('s'), panel('t', { budgetMet: false, exhausted: true })];
   const { flags, headroom } = budgets(records, script, log, { windowTokens: 30_000 });
   assert.deepEqual(flags.map((f) => [f.check, f.step, f.request]), [[3, 'a', 'r2']]);
   assert.match(flags[0].message, /31000.*30000-token window/);
   assert.deepEqual(headroom.map((h) => [h.segment, h.kind, h.request, h.tokens, h.bound]), [['s', 'compiled', 'r2', 31_000, 30_000], ['t', 'compiled', 'r3', 18_000, 30_000]], 'the least headroom of each segment, against the window');
 });
 
-test('K2b: a continuation round is held to the stream bound, flagged only when the round before it was already over it', () => {
+test('K2b: a continuation round is held to the stream bound by its stream\'s fresh input before it, flagged only once that sum is over it', () => {
   const script = [turnStep('a')];
-  // The stream bound 30,000 for the test; agent-framework restarts once a round's input passes it.
   const r1 = opened('r1', 'a', 15_000, 29_000, ['t1']);
   const r2 = continued(r1, 'r2', 22_000, 31_000, ['t2']);
-  const records = [r1, r2, continued(r2, 'r3', 23_000, 32_000)];
-  const log = [budgetReport('  fixture: 30.0k (last: 0, 0%)'), sent('r1'), sent('r2'), sent('r3'), panel('s')];
+  const [records, lines] = compiledAs([r1, r2, continued(r2, 'r3', 23_000, 32_000)], ['r1']);
+  const log = [...lines, budgetReport('  fixture: 30.0k (last: 0, 0%)'), sent('r1'), sent('r2'), sent('r3'), panel('s')];
   const { flags, headroom } = budgets(records, script, log, { streamBound: 30_000, windowTokens: 1_000_000 });
-  assert.deepEqual(flags.map((f) => f.request), ['r3'], 'r2 may cross the bound, since r1 was under it; r3 follows a round over it');
+  assert.deepEqual(flags.map((f) => f.request), ['r3'], 'r2 may cross the bound, since r1\'s fresh 29,000 was under it; r3 follows r1\'s and r2\'s fresh 31,000');
   assert.match(flags[0].message, /31000.*30000/);
   assert.deepEqual(headroom.filter((h) => h.kind === 'continuation').map((h) => [h.request, h.tokens, h.bound]), [['r3', 32_000, 30_000]]);
-  assert.equal(budgets(records, script, [panel('s')], { windowTokens: 1_000_000 }).flags.length, 0, 'under agent-framework 0.28.0\'s default bound, 150,000, none is over');
-  assert.deepEqual(budgets(records, script, [panel('s', { budgetMet: false })], { windowTokens: 1_000_000 }).flags, [], 'context-manager\'s budgetMet is no flag');
+  assert.equal(budgets(records, script, [...lines, panel('s')], { windowTokens: 1_000_000 }).flags.length, 0, 'under agent-framework 0.28.0\'s default bound, 150,000, none is over');
+  assert.deepEqual(budgets(records, script, [...lines, panel('s', { budgetMet: false })], { windowTokens: 1_000_000 }).flags, [], 'context-manager\'s budgetMet is no flag');
 });
 
 test('K2b: a continuation is held to its stream\'s fresh input so far, as membrane sums it, not to the whole input of the request before it', () => {
   const script = [turnStep('a')];
-  // A warm restart's compile: 31,000 tokens whole, 2,000 of them read from the cache. Its fresh
-  // 29,000 is under the 30,000 bound, so agent-framework continues, and rightly.
   const w1 = opened('w1', 'a', 20_000, 31_000, ['t1'], 2_000);
-  const warm = [w1, continued(w1, 'w2', 21_000, 32_000)];
-  assert.deepEqual(budgets(warm, script, [budgetReport('  fixture: 30.0k (last: 0, 0%)'), panel('s')], { streamBound: 30_000, windowTokens: 1_000_000 }).flags, []);
-  // Cache misses mid-stream: no request's whole input passes 30,000, but the fresh input summed over
-  // the stream does before x3 (20,000 + 15,000), so agent-framework should have restarted there.
+  const [warm, warmLines] = compiledAs([w1, continued(w1, 'w2', 21_000, 32_000)], ['w1']);
+  assert.deepEqual(budgets(warm, script, [...warmLines, budgetReport('  fixture: 30.0k (last: 0, 0%)'), panel('s')], { streamBound: 30_000, windowTokens: 1_000_000 }).flags, []);
   const x1 = opened('x1', 'a', 12_000, 20_000, ['t1']);
   const x2 = continued(x1, 'x2', 14_000, 25_000, ['t2'], 10_000);
-  const missed = [x1, x2, continued(x2, 'x3', 15_000, 27_000)];
-  const { flags } = budgets(missed, script, [budgetReport('  fixture: 30.0k (last: 0, 0%)'), sent('x1'), sent('x2'), sent('x3'), panel('s')], { streamBound: 30_000, windowTokens: 1_000_000 });
+  const [missed, missedLines] = compiledAs([x1, x2, continued(x2, 'x3', 15_000, 27_000)], ['x1']);
+  const { flags } = budgets(missed, script, [...missedLines, budgetReport('  fixture: 30.0k (last: 0, 0%)'), sent('x1'), sent('x2'), sent('x3'), panel('s')], { streamBound: 30_000, windowTokens: 1_000_000 });
   assert.deepEqual(flags.map((f) => f.request), ['x3']);
   assert.match(flags[0].message, /fresh input reached 35000 tokens, over the stream bound 30000/);
-  // A continuation's whole input is held to the window too.
-  const wide = budgets(warm, script, [budgetReport('  fixture: 300.0k (last: 0, 0%)'), panel('s')], { streamBound: 300_000, windowTokens: 31_500 }).flags;
+  const wide = budgets(warm, script, [...warmLines, budgetReport('  fixture: 300.0k (last: 0, 0%)'), panel('s')], { streamBound: 300_000, windowTokens: 31_500 }).flags;
   assert.deepEqual(wide.map((f) => f.request), ['w2']);
   assert.match(wide[0].message, /continuation round's whole input at 32000 tokens, over the model's 31500-token window/);
 });
@@ -403,13 +400,15 @@ test('K2b: for a second agent, check 3 judges its own requests (the stand-in\'s 
   const s3 = sub(continued(s2, 's3', 2_200, 12_000));
   const p1 = { ...opened('p1', 'b', 1_000, 9_000), agent: 'primary' };
   const script = [turnStep('a'), turnStep('b')];
-  const log = [sent('s1'), sent('s2'), sent('s3'), sent('p1')];
-  const forSub = budgets([s1, s2, s3, p1], script, log, { agent: 'knowledge-1', streamBound: 100_000, windowTokens: 1_000_000 });
+  const [subMarked, subLines] = compiledAs([s1, s2, s3, p1], ['s1'], 'knowledge-1');
+  const [records, primaryLines] = compiledAs(subMarked, ['p1']);
+  const log = [...subLines, ...primaryLines, sent('s1'), sent('s2'), sent('s3'), sent('p1')];
+  const forSub = budgets(records, script, log, { agent: 'knowledge-1', streamBound: 100_000, windowTokens: 1_000_000 });
   assert.deepEqual(forSub.flags, []);
   assert.equal(forSub.requests, 3);
   assert.equal(forSub.judged, 3, 'the subagent\'s compiled request and its two continuation rounds');
   assert.deepEqual(forSub.headroom.map((h) => [h.kind, h.request]), [['compiled', 's1'], ['continuation', 's3']]);
-  const forPrimary = budgets([s1, s2, s3, p1], script, log, { streamBound: 100_000, windowTokens: 1_000_000 });
+  const forPrimary = budgets(records, script, log, { streamBound: 100_000, windowTokens: 1_000_000 });
   assert.equal(forPrimary.requests, 1);
   assert.equal(forPrimary.judged, 1);
 });
@@ -419,61 +418,148 @@ test('K2b: a request the stand-in answered with a provider error isn\'t judged, 
   const failed = { ...opened('r1', 'a', 20_000, 31_000, ['t1']), usage: undefined, answer: { shape: 'error', status: 529 } };
   const retry = opened('r2', 'a', 20_000, 29_000, ['t1']);
   const next = continued(retry, 'r3', 21_000, 30_000);
-  const { flags, judged } = budgets([failed, retry, next], script, [budgetReport('  fixture: 30.0k (last: 0, 0%)'), sent('r1'), sent('r2'), sent('r3'), panel('s')], { streamBound: 30_000, windowTokens: 1_000_000 });
+  const [records, lines] = compiledAs([failed, retry, next], ['r1']);
+  const { flags, judged } = budgets(records, script, [...lines, budgetReport('  fixture: 30.0k (last: 0, 0%)'), sent('r1'), sent('r2'), sent('r3'), panel('s')], { streamBound: 30_000, windowTokens: 1_000_000 });
   assert.deepEqual(flags, [], 'the error\'s missing usage is no couldn\'t-judge');
   assert.equal(judged, 2, 'the retry and its continuation');
 });
 
-test('K2b: a request its records don\'t classify, a compiled request with no usage, a check given no window, and a segment with no agent request each say the check couldn\'t judge', () => {
+test('K2b: a run with no compile line of the agent\'s, a compiled request with no usage, a check given no window, and a segment with no agent request each say the check couldn\'t judge', () => {
   const script = [turnStep('a'), { ...turnStep('b'), segment: 't' }];
-  const undigested = { ...opened('r1', 'a', 1_000), messages: [{ role: 'user', blocks: [text()] }] };
-  const unclassified = budgets([undigested], [turnStep('a')], [panel('s')], { windowTokens: 1_000_000 }).flags;
-  assert.deepEqual(unclassified.map((f) => f.request), ['r1']);
-  assert.match(unclassified[0].message, /couldn't judge/);
-  const unused = budgets([{ ...opened('r1', 'a', 1_000), usage: undefined }], [turnStep('a')], [panel('s')], { windowTokens: 1_000_000 }).flags;
+  const lineless = budgets([opened('r1', 'a', 1_000)], [turnStep('a')], [panel('s')], { windowTokens: 1_000_000 });
+  assert.deepEqual(lineless.flags.map((f) => [f.check, f.step, f.what]), [[3, 'the run', 'no-compile-lines']]);
+  assert.match(lineless.flags[0].message, /couldn't judge fixture's 1 request\(s\): the log holds no request compile line of fixture's/);
+  assert.equal(lineless.judged, null, 'judged none, and counted as unknown rather than as nothing judged');
+  const primaryLine = compiledAs([opened('p1', 'a', 1_000)], ['p1'])[1];
+  const subLineless = budgets([{ ...opened('s1', 'a', 1_000), agent: 'sub' }], [turnStep('a')], [...primaryLine, panel('s')], { agent: 'knowledge-1', windowTokens: 1_000_000 }).flags;
+  assert.match(subLineless[0].message, /couldn't judge knowledge-1's 1 request\(s\)/, 'the primary\'s lines don\'t stand for a second agent\'s');
+  const [unusedRecords, unusedLines] = compiledAs([{ ...opened('r1', 'a', 1_000), usage: undefined }], ['r1']);
+  const unused = budgets(unusedRecords, [turnStep('a')], [...unusedLines, panel('s')], { windowTokens: 1_000_000 }).flags;
   assert.deepEqual(unused.map((f) => f.request), ['r1']);
   assert.match(unused[0].message, /couldn't judge.*no usage/);
-  const windowless = budgets([opened('r1', 'a', 1_000)], [turnStep('a')], [panel('s')]).flags;
+  const [one, oneLine] = compiledAs([opened('r1', 'a', 1_000)], ['r1']);
+  const windowless = budgets(one, [turnStep('a')], [...oneLine, panel('s')]).flags;
   assert.deepEqual(windowless.map((f) => f.request), ['r1']);
   assert.match(windowless[0].message, /couldn't judge.*no window/);
-  assert.deepEqual(budgets([opened('r1', 'a', 1_000), opened('r2', 'b', 1_000)], script, [panel('s'), panel('t', { budget: 30_000 })], { windowTokens: 1_000_000 }).flags, [], 'a budget that moved between checkpoints bounds nothing the check reads');
+  const [two, twoLines] = compiledAs([opened('r1', 'a', 1_000), opened('r2', 'b', 1_000)], ['r1', 'r2']);
+  assert.deepEqual(budgets(two, script, [...twoLines, panel('s'), panel('t', { budget: 30_000 })], { windowTokens: 1_000_000 }).flags, [], 'a budget that moved between checkpoints bounds nothing the check reads');
   assert.equal(budgets([], [turnStep('a')], [panel('s')], { windowTokens: 1_000_000 }).flags.length, 1, 'a checkpoint whose segment made no agent request is a flag');
 });
 
-test('requestPairs: each compiled assembly takes the next request carrying its last canary; a refusal retried in its assembly counts once; a subagent\'s requests pair only with its own lines', () => {
-  const withCanary = (r, canary, agent) => ({ ...r, ...(agent ? { agent } : {}), messages: [...r.messages.slice(0, -1), { ...r.messages.at(-1), blocks: [{ type: 'text', canaries: [canary] }] }] });
-  const p1 = withCanary(opened('p1', 'a', 1_000, undefined, ['t1']), '[[c:a.in]]', 'primary');
-  const p2 = withCanary(continued(p1, 'p2', 1_100), '[[c:a.call1]]', 'primary');
-  const s1 = withCanary(opened('s1', 'a', 900), '[[c:a.task]]', 'sub');
-  const p3 = withCanary(opened('p3', 'b', 1_000), '[[c:b.in]]', 'primary');
+test('K2b: a continuation round with no usage recorded, or with no window given, is couldn\'t-judge, as a compiled request is', () => {
+  const script = [turnStep('a')];
+  const r1 = opened('r1', 'a', 10_000, 12_000, ['t1']);
+  const [records, lines] = compiledAs([r1, { ...continued(r1, 'r2', 11_000, 13_000), usage: undefined }], ['r1']);
+  const { flags, judged } = budgets(records, script, [...lines, sent('r1'), sent('r2'), panel('s')], { windowTokens: 1_000_000 });
+  assert.deepEqual(flags.map((f) => f.request), ['r2']);
+  assert.match(flags[0].message, /couldn't judge this continuation round: the stand-in recorded no usage for it/);
+  assert.equal(judged, 1, 'the compiled request alone');
+  const [whole, wholeLines] = compiledAs([r1, continued(r1, 'r2', 11_000, 13_000)], ['r1']);
+  const windowless = budgets(whole, script, [...wholeLines, sent('r1'), sent('r2'), panel('s')]).flags;
+  assert.deepEqual(windowless.map((f) => f.request), ['r1', 'r2']);
+  assert.match(windowless[1].message, /couldn't judge this continuation round: the check was given no window/);
+});
+
+test('W5 judges only bodies stored in parts that context-manager sent whole: one without its tool blocks flags and one with them counts; one sent altered or missing a shard, and an ordinary message, count for nothing; a failed read is couldn\'t-judge', () => {
+  const run = (read, sources, ...blocks) => ({
+    log: [
+      { kind: 'read', op: 'messages', answer: read },
+      { kind: 'compiles', step: 'w', lines: [{ seq: 1, agent: 'fixture', kind: 'request', assembly: 1, outcome: 'compiled', stamp: '10', messages: sources.map((id) => ({ sources: [`r:${id}`], content: 'x' })) }], blobs: { x: { role: 'user', content: [{ type: 'text', text: '[[c:w.in]] words' }] } } },
+    ],
+    records: [{ id: 'r1', kind: 'agent', step: 'w', arrived: '11', messages: [msg('user', ...blocks, text(['[[c:w.in]]']))] }],
+  });
+  const plain = [{ id: '1', blocks: [{ type: 'tool_use', id: 't1' }] }, { id: '2', blocks: [{ type: 'tool_result', toolUseId: 't1' }] }];
+  const parts = [{ id: '3', bodyGroupId: 'g', blocks: [{ type: 'tool_result', toolUseId: 't2' }] }, { id: '4', bodyGroupId: 'g', blocks: [{ type: 'text' }] }];
+  const ordinary = toolBlocksLost(run(plain, ['1', '2'], call('t1'), result('t1')));
+  assert.deepEqual([ordinary.length, ordinary.judged], [0, 0], 'an unsharded message isn\'t what W5 judges');
+  const kept = toolBlocksLost(run([...plain, ...parts], ['1', '2', '3', '4'], call('t1'), result('t1'), result('t2')));
+  assert.deepEqual([kept.length, kept.judged], [0, 1]);
+  const lost = toolBlocksLost(run([...plain, ...parts], ['1', '2', '3', '4'], call('t1'), result('t1')));
+  assert.equal(lost.judged, 1);
+  assert.match(lost[0].message, /g went out whole but without its tool blocks tool_result:t2/);
+  const altered = toolBlocksLost(run([...plain, ...parts], ['1', '2', '3!content', '4!content'], call('t1'), result('t1')));
+  assert.deepEqual([altered.length, altered.judged], [0, 0], 'a body context-manager sent altered, as its pairing repair does when a call\'s result isn\'t sent, isn\'t judged: check 3 judges the pairs');
+  const partial = toolBlocksLost(run([...plain, ...parts], ['1', '2', '3!shards'], call('t1'), result('t1')));
+  assert.deepEqual([partial.length, partial.judged], [0, 0], 'a body missing a shard isn\'t judged');
+  const unread = toolBlocksLost({ log: [{ kind: 'read', op: 'messages', step: 'w', answer: { unreadable: 'the store is closed' } }], records: [] });
+  assert.equal(unread.judged, 0);
+  assert.match(unread[0].message, /couldn't judge: the store's messages couldn't be read \(the store is closed\)/);
+});
+
+test('requestPairs: each compiled assembly takes the request that arrives after it, before its agent compiles again; a refusal retried in its assembly counts once; a subagent\'s requests pair only with its own lines', () => {
+  const withCanary = (r, canary, agent, arrived) => ({ ...r, ...(agent ? { agent } : {}), arrived: String(arrived), messages: [...r.messages.slice(0, -1), { ...r.messages.at(-1), blocks: [{ type: 'text', canaries: [canary] }] }] });
+  const p1 = withCanary(opened('p1', 'a', 1_000, undefined, ['t1']), '[[c:a.in]]', 'primary', 11);
+  const s1 = withCanary(opened('s1', 'a', 900), '[[c:a.task]]', 'sub', 21);
+  const p2 = withCanary(continued(p1, 'p2', 1_100), '[[c:a.in]]', 'primary', 31);
+  const p3 = withCanary(opened('p3', 'a', 1_000), '[[c:b.in]]', 'primary', 41);
   const b = (id, canary) => ({ [id]: { role: 'user', content: [{ type: 'text', text: `${canary} words` }] } });
-  const line = (seq, agent, assembly, content, outcome = 'compiled') => ({ seq, agent, kind: 'request', assembly, outcome, messages: [{ sources: ['r:1'], content }] });
+  const line = (seq, agent, assembly, content, stamp, outcome = 'compiled') => ({ seq, agent, kind: 'request', assembly, outcome, ...(stamp ? { stamp: String(stamp) } : {}), messages: [{ sources: ['r:1'], content }] });
   const log = [
-    { kind: 'compiles', step: 'a', boot: 1, lines: [line(1, 'fixture', 1, 'x1'), line(2, 'knowledge', 1, 'xs'), line(3, 'fixture', 2, 'x3', 'refused'), line(4, 'fixture', 2, 'x3')], blobs: { ...b('x1', '[[c:a.in]]'), ...b('xs', '[[c:a.task]]'), ...b('x3', '[[c:b.in]]') } },
-    { kind: 'compiles', step: 'b', boot: 1, lines: [line(5, 'fixture', 3, 'x5', 'refused')], blobs: b('x5', '[[c:b.again]]') },
+    { kind: 'compiles', step: 'a', boot: 1, lines: [line(1, 'fixture', 1, 'x1', 10), line(2, 'knowledge', 1, 'xs', 20), line(3, 'fixture', 2, 'x3', null, 'refused'), line(4, 'fixture', 2, 'x3', 40)], blobs: { ...b('x1', '[[c:a.in]]'), ...b('xs', '[[c:a.task]]'), ...b('x3', '[[c:b.in]]') } },
+    { kind: 'compiles', step: 'b', boot: 1, lines: [line(5, 'fixture', 3, 'x5', null, 'refused')], blobs: b('x5', '[[c:b.again]]') },
   ];
   assert.deepEqual(assemblies(log).map((l) => [l.seq, l.outcome, l.step]), [[1, 'compiled', 'a'], [4, 'compiled', 'a'], [5, 'refused', 'b']], 'a retried refusal counts once, by its last line; a refusal not retried stays');
   const primary = requestPairs([p1, s1, p2, p3], log);
   assert.deepEqual(primary.pairs.map(({ line: l, request }) => [l.seq, request.id]), [[1, 'p1'], [4, 'p3']]);
   assert.deepEqual(primary.continuations.map((r) => r.id), ['p2']);
-  assert.deepEqual(primary.unpaired, []);
+  assert.deepEqual([primary.unpaired, primary.disagree], [[], []]);
   const sub = requestPairs([p1, s1, p2, p3], log, 'knowledge');
   assert.deepEqual(sub.pairs.map(({ line: l, request }) => [l.seq, request.id]), [[2, 's1']], 'the second agent\'s lines pair with the stand-in\'s sub requests alone');
   assert.equal(requestPairs([p1], []), null);
 });
 
+test('requestPairs by the clock: a round between two compiles carrying one canary stays a round', () => {
+  const at = (id, canary, arrived) => {
+    const r = opened(id, 'h', 1_000);
+    return { ...r, arrived: String(arrived), messages: [{ ...r.messages[0], blocks: [text(canary ? [canary] : undefined)] }] };
+  };
+  const b = (id, canary) => ({ [id]: { role: 'user', content: [{ type: 'text', text: canary ? `${canary} words` : '[Tune-out wake: chat \u2014 1 addressed message]' }] } });
+  const line = (seq, content, stamp) => ({ seq, agent: 'fixture', kind: 'request', assembly: seq, outcome: 'compiled', stamp: String(stamp), messages: [{ sources: ['r:1'], content }] });
+  const restart = [{ kind: 'compiles', step: 'h', lines: [line(1, 'x', 10), line(2, 'x', 40)], blobs: b('x', '[[c:h.in]]') }];
+  const rounds = requestPairs([at('r1', '[[c:h.in]]', 11), at('ra', '[[c:h.in]]', 21), at('rb', '[[c:h.in]]', 41)], restart);
+  assert.deepEqual(rounds.pairs.map(({ line: l, request }) => [l.seq, request.id]), [[1, 'r1'], [2, 'rb']], 'the round sent before the second compile doesn\'t take it');
+  assert.deepEqual(rounds.continuations.map((r) => r.id), ['ra']);
+});
+
+test('requestPairs by the clock: a compile never sent leaves the next compile\'s request to it, though the request carries its canary', () => {
+  const at = (id, canary, arrived) => {
+    const r = opened(id, 'h', 1_000);
+    return { ...r, arrived: String(arrived), messages: [{ ...r.messages[0], blocks: [text(canary ? [canary] : undefined)] }] };
+  };
+  const b = (id, canary) => ({ [id]: { role: 'user', content: [{ type: 'text', text: canary ? `${canary} words` : '[Tune-out wake: chat \u2014 1 addressed message]' }] } });
+  const line = (seq, content, stamp) => ({ seq, agent: 'fixture', kind: 'request', assembly: seq, outcome: 'compiled', stamp: String(stamp), messages: [{ sources: ['r:1'], content }] });
+  const unsent = [{ kind: 'compiles', step: 'h', lines: [line(1, 'x', 10), line(2, 'x', 20), line(3, 'x', 30)], blobs: b('x', '[[c:h.in]]') }];
+  const retried = requestPairs([at('r1', '[[c:h.in]]', 11), at('r3', '[[c:h.in]]', 31)], unsent);
+  assert.deepEqual(retried.pairs.map(({ line: l, request }) => [l.seq, request.id]), [[1, 'r1'], [3, 'r3']]);
+  assert.deepEqual(retried.unpaired.map((l) => l.seq), [2], 'named unsent, though the next request carries its canary');
+  const wake = [{ kind: 'compiles', step: 'h', lines: [line(1, 'w', 10)], blobs: b('w', null) }];
+  assert.deepEqual(requestPairs([at('r1', null, 11)], wake).pairs.map(({ request }) => request.id), ['r1'], 'a compile and request with no canary at all');
+});
+
+test('requestPairs: a compile or request with no stamp, or a pair whose request doesn\'t end on its compile\'s last canary, leaves check 13 unable to judge the agent, never pairing silently', () => {
+  const r1 = { ...opened('r1', 'h', 1_000), messages: [{ role: 'user', digest: 'd', blocks: [text(['[[c:h.in]]'])] }] };
+  const b = { x: { role: 'user', content: [{ type: 'text', text: '[[c:h.in]] words' }] }, y: { role: 'user', content: [{ type: 'text', text: '[[c:h.other]] words' }] } };
+  const line = (content, stamp) => ({ seq: 1, agent: 'fixture', kind: 'request', assembly: 1, outcome: 'compiled', ...(stamp ? { stamp } : {}), messages: [{ sources: ['r:1'], content }] });
+  const log = (l) => [{ kind: 'compiles', step: 'h', lines: [l], blobs: b }];
+  assert.deepEqual(pairing([{ ...r1, arrived: '11' }], log(line('x'))).map((f) => f.what), ['fixture:unstamped'], 'a compile with no stamp');
+  assert.deepEqual(pairing([r1], log(line('x', '10'))).map((f) => f.what), ['fixture:unstamped'], 'a request with no arrival stamp');
+  assert.deepEqual(pairing([{ ...r1, arrived: '11' }], log(line('y', '10'))).map((f) => f.what), ['fixture:disagree']);
+  assert.equal(pairing([{ ...r1, arrived: '11' }], log(line('y', '10'))).judged, null);
+  assert.deepEqual(pairing([{ ...r1, arrived: '11' }], log(line('x', '10'))), []);
+});
+
 test('check 13: a request compile no stand-in request took is a flag at its batch\'s step; a run whose compiles all paired, or with no compile lines, has none', () => {
-  const r1 = opened('r1', 'a', 1_000, undefined, ['t1']);
+  const r1 = { ...opened('r1', 'a', 1_000, undefined, ['t1']), arrived: '11' };
   r1.messages[0] = { ...r1.messages[0], blocks: [{ type: 'text', canaries: ['[[c:a.in]]'] }] };
   const b = (id, canary) => ({ [id]: { role: 'user', content: [{ type: 'text', text: `${canary} words` }] } });
-  const line = (seq, assembly, content) => ({ seq, agent: 'fixture', kind: 'request', assembly, outcome: 'compiled', messages: [{ sources: ['r:1'], content }] });
+  const line = (seq, assembly, content, stamp) => ({ seq, agent: 'fixture', kind: 'request', assembly, outcome: 'compiled', stamp: String(stamp), messages: [{ sources: ['r:1'], content }] });
   const log = [
-    { kind: 'compiles', step: 'a', lines: [line(1, 1, 'x1')], blobs: b('x1', '[[c:a.in]]') },
-    { kind: 'compiles', step: 'b', lines: [line(2, 2, 'x2')], blobs: b('x2', '[[c:b.in]]') },
+    { kind: 'compiles', step: 'a', lines: [line(1, 1, 'x1', 10)], blobs: b('x1', '[[c:a.in]]') },
+    { kind: 'compiles', step: 'b', lines: [line(2, 2, 'x2', 20)], blobs: b('x2', '[[c:b.in]]') },
   ];
   const flags = pairing([r1], log);
   assert.deepEqual(flags.map((f) => [f.check, f.step, f.what]), [[13, 'b', 'fixture:unpaired']]);
-  assert.match(flags[0].message, /compile 2 \(assembly 2\) went out in no request the stand-in received/);
+  assert.match(flags[0].message, /compile 2 \(assembly 2\) went out in no request: none arrived at the stand-in after it/);
   assert.deepEqual(pairing([r1], log.slice(0, 1)), []);
   assert.deepEqual(pairing([r1], []), [], 'no compile lines: nothing to pair');
 });
@@ -491,6 +577,13 @@ test('check 12: the dry compile after a restart matches the one before, with ima
   assert.deepEqual(changed.map((f) => [f.check, f.step]), [[12, 'r.restart']]);
   assert.match(changed[0].message, /differs from the one before at message 1 of 2 before and 2 after/);
   assert.match(reloads(run(dry(7, ['a']), dry(1, [], 'sys', 'refused')))[0].message, /refused \(OverBudgetError\), where before it compiled/);
+  const moved = dry(1, ['a', 'b']);
+  moved.messages[1] = { ...moved.messages[1], sources: ['r:m9'] };
+  const resourced = reloads(run(dry(7, ['a', 'b']), moved));
+  assert.equal(resourced.length, 1);
+  assert.match(resourced[0].message, /differs from the one before at message 1 of 2 before and 2 after \(sources \["r:m1"\] before, \["r:m9"\] after\)/, 'the same content from another stored message');
+  const resystemed = reloads(run(dry(7, ['a', 'b']), dry(1, ['a', 'b'], 'c')));
+  assert.deepEqual(resystemed.map((f) => f.message), ['after the restart the dry compile\'s system injections differ from the ones before']);
   const missing = reloads([{ kind: 'compiles', boot: 1, lines: [dry(7, ['a'])], blobs }, { kind: 'reload', step: 'r.restart', before: { boot: 1, seq: 7 }, after: { boot: 2, seq: null } }]);
   assert.match(missing[0].message, /couldn't judge the reload: the log holds no dry compile line after it/);
 });
@@ -518,6 +611,19 @@ test('check 11: each breach a compile line carries is a flag, named by agent, ki
   assert.match(flags[0].message, /fixture's request compile 2 breaks budget: 30100 tokens/);
   assert.match(flags[1].message, /couldn't record researcher's dry compile 4: getAllMessages threw/);
   assert.deepEqual(compileInvariants([]), [], 'a log with no compile lines has nothing to flag');
+  assert.equal(flags.besides, undefined, 'nothing unplaced, nothing beside the count');
+  const unplaced = compileInvariants([{ kind: 'compiles', step: 'a', lines: [
+    { seq: 1, agent: 'fixture', kind: 'request', outcome: 'compiled', violations: [{ invariant: 'unplaced', count: 2, detail: 'store order couldn\'t place 2 of what was sent' }] },
+    { seq: 2, agent: 'fixture', kind: 'request', outcome: 'compiled', violations: [{ invariant: 'unplaced', count: 1, detail: 'store order couldn\'t place 1 of what was sent' }] },
+  ] }]);
+  assert.deepEqual([unplaced.length, unplaced.judged, unplaced.besides], [2, 2, 'store order couldn\'t place 3 of what was sent'], 'each a flag, the compiles judged, and the count beside them');
+  assert.match(unplaced[0].message, /^couldn't judge all of fixture's request compile 1: store order couldn't place 2/, 'a couldn\'t-judge, not a breach');
+  const besides = compileInvariants([{ kind: 'compiles', step: 'a', lines: [
+    { seq: 1, agent: 'fixture', kind: 'request', outcome: 'compiled', violations: [], unjudged: ['budget: PassthroughStrategy gives no render stats'] },
+    { seq: 2, agent: 'fixture', kind: 'request', outcome: 'compiled', violations: [{ invariant: 'unreadable', detail: 'listPins: failed; pins weren\'t judged' }], unjudged: ['budget: PassthroughStrategy gives no render stats'] },
+  ] }]);
+  assert.deepEqual(besides.map((f) => [f.what, f.message]), [['fixture:request:unreadable', 'couldn\'t judge all of fixture\'s request compile 2: listPins: failed; pins weren\'t judged']], 'a budget its strategy gives no stats for is counted, not flagged');
+  assert.equal(besides.besides, 'budget couldn\'t be judged in 2, as PassthroughStrategy gives no render stats; 1 read an invariant needed failed');
 });
 
 // K3b and K6b: a store whose head window was reset at a topic transition (context-manager's marker).
@@ -595,13 +701,15 @@ test('K4: check 6 holds a segment\'s last request to the raw tail the host repor
   const folded = windowsRaw([req('folded', 'c', without('[[c:p.r1]]'))], script, log, store);
   assert.deepEqual(folded.map((f) => [f.check, f.request]), [[6, 'folded']], 'p.r1 is past the two turns before c, inside the reported tail');
   assert.match(folded[0].message, /tail.*p\.r1/);
+  const errored = { ...req('err', 'c', all), answer: { shape: 'error', status: 529 } };
+  assert.deepEqual(windowsRaw([errored, req('retry', 'c', all)], script, log, store), [], 'an error gave c no reply, so its retry is held to the tail before c.r1');
   const noTail = windowsRaw([req('ok', 'c', all)], script, [panel('s', { head: 1 })], store);
   assert.deepEqual(noTail.map((f) => f.message), ["no tail size was reported at segment s's checkpoint"]);
 });
 
 test('K5: close-merge declares its long message stored in parts, from the store, and parallel the tool round\'s image reaching it as its placeholder', () => {
   const script = continuation();
-  const wanted = products(configurations().default);
+  const wanted = products(configurations().H1);
   const segment = (missing, name) => missing.find((m) => m.segment === name)?.missing ?? [];
   const parts = { messages: [{ id: 'm1', canaries: ['[[c:c.cm.2.in]]'], bodyGroupId: 'g', shardIndex: 0 }, { id: 'm2', canaries: [], bodyGroupId: 'g', shardIndex: 1 }], summaries: [] };
   const whole = { messages: [{ id: 'm1', canaries: ['[[c:c.cm.2.in]]'] }], summaries: [] };
@@ -611,12 +719,13 @@ test('K5: close-merge declares its long message stored in parts, from the store,
   assert.ok(!segment(declaredProducts([], script, wanted, null), 'close-merge').includes(LONG), 'with no store read, the store\'s product waits on none');
   const PLACEHOLDER = 'the tool round\'s image as its placeholder';
   const imageCall = script.find((s) => s.id === 'c.tool').replies[0].calls.find((c) => c.input.kind === 'image').input.canary;
-  const carryingResult = (images) => ({ id: 'r', step: 'c.par', kind: 'agent', messages: [msg('user', { type: 'tool_result', chars: 61, toolUseId: 't', canaries: [imageCall], ...(images ? { images } : {}) })] });
-  assert.ok(!segment(declaredProducts([carryingResult(0)], script, wanted, null), 'parallel').includes(PLACEHOLDER));
-  assert.ok(segment(declaredProducts([carryingResult(1)], script, wanted, null), 'parallel').includes(PLACEHOLDER), 'an image still in it isn\'t its placeholder');
+  const carryingResult = (images, placeholders) => ({ id: 'r', step: 'c.par', kind: 'agent', messages: [msg('user', { type: 'tool_result', chars: 61, toolUseId: 't', canaries: [imageCall], ...(images ? { images } : {}), ...(placeholders ? { placeholders } : {}) })] });
+  assert.ok(!segment(declaredProducts([carryingResult(0, 1)], script, wanted, null), 'parallel').includes(PLACEHOLDER));
+  assert.ok(segment(declaredProducts([carryingResult(1, 0)], script, wanted, null), 'parallel').includes(PLACEHOLDER), 'an image still in it isn\'t its placeholder');
+  assert.ok(segment(declaredProducts([carryingResult(0, 0)], script, wanted, null), 'parallel').includes(PLACEHOLDER), 'a result that lost its image and holds no placeholder isn\'t one either');
 });
 
-test('checks 4 and 6: a request the stand-in answered with an error gives its step no reply, so its retry needs none', () => {
+test('check 4: a request the stand-in answered with an error gives its step no reply, so its retry needs none', () => {
   const failed = { id: 'r3', step: 'c', kind: 'agent', answer: { shape: 'error', status: 529 }, messages: [msg('user', summaryBlock('[[s:C3]]')), msg('assistant', carrying('[[c:c.in]]'))] };
   const retry = { id: 'r4', step: 'c', kind: 'agent', answer: { shape: 'reply' }, messages: [msg('user', summaryBlock('[[s:C3]]')), msg('assistant', carrying('[[c:c.in]]'))] };
   assert.deepEqual(coverage([failed, retry], store).map((f) => f.request), [], 'the retry is held to what the step had stored, not to a reply the error never gave');
@@ -643,4 +752,102 @@ test('check 6 counts a request as judged only where it held it to some message',
   const r = { id: 'r', step: 'c', kind: 'agent', messages: [msg('user', carrying('[[c:c.in]]'))] };
   assert.equal(windowsRaw([r], script, [], empty).judged, 0, 'nothing stored, so nothing to hold it to');
   assert.equal(windowsRaw([r], script, [], null).judged, 1, 'without a store read, the script\'s turns hold it');
+});
+
+test('the continuation runs from its configuration\'s prefix, which is written from empty at the length stack.json pins', () => {
+  const facts = { budget: 100_000, maxTokens: 16_000 };
+  const lengths = { prefixTurns: { H1: 49, H3: 13 } };
+  for (const [config, turns] of [['H1', 49], ['H3', 13]]) {
+    const cont = runOf(`${config}/continuation`, configurations(), facts, lengths);
+    assert.equal(cont.from, `${config}/prefix`);
+    assert.ok(Object.keys(cont.products).length > 0, 'and declares its segments\' products');
+    const pre = runOf(`${config}/prefix`, configurations(), facts, lengths);
+    assert.equal(pre.from, null);
+    assert.equal(pre.steps().filter((st) => st.kind === 'channel').length, turns);
+  }
+  for (const id of RUNS) {
+    const from = runOf(id, configurations(), facts, lengths).from;
+    if (from) assert.doesNotThrow(() => runOf(from, configurations(), facts, lengths), `${id} starts from ${from}, a run that exists`);
+  }
+  assert.equal(runOf('H3/W4', configurations(), facts, lengths).from, 'H3/W1', 'a workload that starts from its configuration\'s checkpoint still does');
+});
+
+test('C15: on a binding model every agent request carries the drop control and asks for the beta it needs; a request without either is flagged, and only agent requests are judged', () => {
+  const control = { type: 'adaptive', block_binding: { prefix_mismatch_behavior: 'drop_block' } };
+  const asks = (...beta) => ({ headers: { beta, version: '2023-06-01' } });
+  const records = [
+    { id: 'r1', step: 'a', kind: 'agent', thinking: control, head: asks('other-beta', 'thinking-binding-controls-2026-08-01') },
+    { id: 'r2', step: 'b', kind: 'agent', thinking: { type: 'adaptive' }, head: asks('thinking-binding-controls-2026-08-01') },
+    { id: 'r3', step: 'b', kind: 'agent', thinking: null, head: asks('thinking-binding-controls-2026-08-01') },
+    { id: 'r4', step: 'c', kind: 'agent', thinking: control, head: asks('other-beta') },
+    { id: 'r5', step: 'b', kind: 'summariser', thinking: null, head: asks() },
+  ];
+  const flags = bindingControl(records);
+  assert.equal(flags.judged, 4);
+  assert.deepEqual(flags.map((f) => [f.check, f.step, f.what, f.message.split(' ')[1]]), [[15, 'b', 'no-drop-control', 'r2'], [15, 'b', 'no-drop-control', 'r3'], [15, 'c', 'no-binding-beta', 'r4']]);
+  assert.deepEqual([...bindingControl([records[0]])], []);
+});
+
+test('check 2: thinking-call and debt each pass when their segment produced what it declares, and debt fails a compression between the turn\'s rounds', () => {
+  const script = [{ id: 't.1', segment: 'thinking-call', kind: 'channel' }, { id: 'd.1', segment: 'debt', kind: 'channel' }];
+  const wanted = products(configurations().H1);
+  const thinkingWanted = { 'thinking-call': wanted['thinking-call'] };
+  const missing = [{ segment: 'thinking-call', missing: [wanted['thinking-call'][0].name] }];
+  const call = { type: 'tool_use', toolUseId: 'toolu_t1' };
+  const answering = (canary) => ({ role: 'user', blocks: [{ type: 'tool_result', toolUseId: 'toolu_t1', canaries: [canary] }] });
+  const result = answering('[[c:c.think.call1]]');
+  const request = (assistantBlocks, rest = [result]) => ({ id: 'a1', seq: 1, step: 't.1', kind: 'agent', messages: [msg('user', carrying('[[c:t.1.in]]')), { role: 'assistant', blocks: assistantBlocks }, ...rest] });
+  assert.deepEqual(declaredProducts([request([{ type: 'thinking', signature: 'fx1.abc' }, call])], script, thinkingWanted), [], 'signed thinking leading a call, with the call\'s result');
+  assert.deepEqual(declaredProducts([request([{ type: 'thinking', signature: 'fx1.abc' }], [])], script, thinkingWanted), missing, 'signed thinking with no call isn\'t a thinking-led call');
+  assert.deepEqual(declaredProducts([request([call, { type: 'thinking', signature: 'fx1.abc' }])], script, thinkingWanted), missing, 'thinking after the call doesn\'t lead it');
+  assert.deepEqual(declaredProducts([request([{ type: 'thinking', signature: 'fx1.abc' }, call], [])], script, thinkingWanted), missing, 'a call with no result in the request');
+  assert.deepEqual(declaredProducts([request([{ type: 'thinking', signature: 'fx1.abc' }, call], [answering('[[c:p.11.call1]]')])], script, thinkingWanted), missing, 'a thinking-led call the prefix made isn\'t the segment\'s');
+  const debtWanted = { debt: wanted.debt };
+  const agent = (seq) => ({ id: `d${seq}`, seq, step: 'd.1', kind: 'agent', messages: [], answer: { shape: 'reply' } });
+  const answered = (seq, shape) => ({ id: `s${seq}`, seq, step: 'd.1', kind: 'summariser', messages: [], answer: { shape } });
+  const parked = [agent(1), agent(2), answered(3, 'summary'), answered(4, 'thinking-only'), answered(5, 'empty'), answered(6, 'max-tokens')];
+  assert.deepEqual(declaredProducts(parked, script, debtWanted), []);
+  const between = [agent(1), answered(2, 'summary'), agent(3), answered(4, 'thinking-only'), answered(5, 'empty'), answered(6, 'max-tokens')];
+  assert.deepEqual(declaredProducts(between, script, debtWanted), [{ segment: 'debt', missing: [wanted.debt[0].name] }]);
+});
+
+test('check 12: a fork call\'s UUID and its result\'s are masked together across a dry compile\'s messages, so a result that names another call is a difference', () => {
+  const dry = (seq, contents) => ({ seq, agent: 'fixture', kind: 'dry', outcome: 'compiled', messages: contents.map((content, i) => ({ sources: [`r:m${i}`], content })), system: 'sys' });
+  const uuid = (c) => `${c.repeat(8)}-${c.repeat(4)}-${c.repeat(4)}-${c.repeat(4)}-${c.repeat(12)}`;
+  const blobs = { callA: `call fork-w9-${uuid('a')}`, resA: `result fork-w9-${uuid('a')}`, callB: `call fork-w9-${uuid('b')}`, resB: `result fork-w9-${uuid('b')}`, resC: `result fork-w9-${uuid('c')}`, sys: [] };
+  const run = (before, after) => [
+    { kind: 'compiles', boot: 1, lines: [before], blobs },
+    { kind: 'compiles', boot: 2, lines: [after], blobs: {} },
+    { kind: 'reload', step: 'r.restart', agent: 'fixture', before: { boot: 1, seq: before.seq }, after: { boot: 2, seq: after.seq } },
+  ];
+  assert.deepEqual(reloads(run(dry(7, ['callA', 'resA']), dry(1, ['callB', 'resB']))), [], 'a fresh UUID for the same call and result');
+  assert.match(reloads(run(dry(7, ['callA', 'resA']), dry(1, ['callB', 'resC'])))[0].message, /differs from the one before at message 1/);
+});
+
+test('check 5 holds a subagent\'s summary to every source it covers, as check 4 does, since a subagent\'s inputs and replies carry their own canaries', () => {
+  const store = { messages: [{ id: 'k1', canaries: ['[[c:k.task]]'] }, { id: 'k2', canaries: ['[[c:k.s1]]'] }], summaries: [{ id: 'L1-1', level: 1, sourceLevel: 0, sourceIds: ['k1', 'k2'], number: '[[s:C1]]', covers: ['[[c:k.task]]', '[[c:k.s1]]'] }] };
+  const call = (canaries) => ({ id: 'c1', step: 'k', kind: 'summariser', answer: { summary: '[[s:C1]]' }, sent: { canaries, summaries: [] } });
+  const primary = bookkeeping([call([])], store);
+  assert.equal(primary.judged, 0, 'by the primary\'s rule these are no turn\'s input or reply');
+  const sub = bookkeeping([call(['[[c:k.task]]', '[[c:k.s1]]'])], store, { side: 'sub' });
+  assert.deepEqual(sub, []);
+  assert.equal(sub.judged, 1);
+  assert.deepEqual(bookkeeping([call(['[[c:k.task]]'])], store, { side: 'sub' }).map((f) => f.request), ['c1'], 'a source its request didn\'t show');
+});
+
+test('requestPairs: a request stamped the same nanosecond as a compile doesn\'t pair with it', () => {
+  const r = { ...opened('r1', 'h', 1_000), arrived: '10', messages: [{ role: 'user', digest: 'd', blocks: [text(['[[c:h.in]]'])] }] };
+  const log = [{ kind: 'compiles', step: 'h', lines: [{ seq: 1, agent: 'fixture', kind: 'request', assembly: 1, outcome: 'compiled', stamp: '10', messages: [{ sources: ['r:1'], content: 'x' }] }], blobs: { x: { role: 'user', content: [{ type: 'text', text: '[[c:h.in]] words' }] } } }];
+  const paired = requestPairs([r], log);
+  assert.deepEqual([paired.pairs.length, paired.unpaired.map((l) => l.seq)], [0, [1]]);
+});
+
+test('assemblies: a retry is in the same process, so a restarted process reusing an assembly number with a higher seq starts its own', () => {
+  const line = (seq, assembly, outcome = 'compiled') => ({ seq, agent: 'fixture', kind: 'request', assembly, outcome, messages: [] });
+  const log = [
+    { kind: 'compiles', step: 'a', boot: 1, lines: [line(3, 2)] },
+    { kind: 'compiles', step: 'b', boot: 2, lines: [line(5, 2)] },
+    { kind: 'compiles', step: 'b', boot: 2, lines: [line(6, 3, 'refused'), line(7, 3)] },
+  ];
+  assert.deepEqual(assemblies(log).map((l) => [l.boot, l.seq]), [[1, 3], [2, 5], [2, 7]]);
 });
