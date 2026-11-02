@@ -16,6 +16,7 @@ T=${RUNNER_TEMP:-${TMPDIR:-/tmp}}
 PAR=${PAR:-3}
 lap() { echo "$1 $2 $(( $(date +%s) - $3 )) s" | tee -a "$E/times.txt"; }
 nproc | sed 's/^/cpus /' | tee -a "$E/times.txt"
+df -h / "$T" > "$E/disk.txt" 2>&1
 rm -rf "$HOST/test/whole-host" && cp -r probe/test2/whole-host "$HOST/test/whole-host"
 s=$(date +%s); (cd "$HOST" && npm ci --ignore-scripts --no-audit --no-fund --loglevel=error) > "$E/ci.log" 2>&1; lap ci $? $s
 s=$(date +%s); node probe/build-packs.mjs "$CM" lib/cm-fixture/mutants.json "${MUTANTS:?}" "$T/packs" > "$E/packs.log" 2>&1; lap packs $? $s
@@ -23,7 +24,7 @@ cp "$T/packs/packs.json" "$E/" 2>/dev/null
 one() { # LABEL PACK [--update-records]
   local s; s=$(date +%s)
   (cd "$HOST" && node test/whole-host/run.mjs ${RUNS:+--runs "$RUNS"} --overlay "$2" --checkpoints "$T/cp" --workdir "$T/wh-$1" --out "$T/out/$1" ${3:-}) > "$E/run-$1.log" 2>&1
-  local rc=$?; rm -rf "$T/wh-$1"; lap "candidate-$1" $rc $s
+  local rc=$?; echo "candidate-$1 workdir $(du -sh "$T/wh-$1" 2>/dev/null | cut -f1), out $(du -sh "$T/out/$1" 2>/dev/null | cut -f1), free $(df -h --output=avail "$T" | tail -1)" >> "$E/disk.txt"; rm -rf "$T/wh-$1"; lap "candidate-$1" $rc $s
 }
 export -f one lap; export HOST T E RUNS
 PLAIN=$T/packs/plain.tgz
