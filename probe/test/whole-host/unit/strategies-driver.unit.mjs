@@ -1,6 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { budgetReportDone, hostEnv, lastTake, readSettle, shutdownFailure } from '../lib/strategies/driver.mjs';
+import { chmodSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { budgetReportDone, hostEnv, hostFacts, lastTake, readSettle, shutdownFailure } from '../lib/strategies/driver.mjs';
+import { configurations } from '../lib/strategies/script.mjs';
 
 const answer = ({ ready = true, pending = false, queue = 0, compressed = 30, drained = true, deferredWrites = 0, activeTurnAgents = [], parkedAdmissions = 0, ok = true } = {}) => ({
   ok,
@@ -98,10 +102,34 @@ test('R14: the self-check\'s second arm boots the test module with recording off
 test('a last take the module refuses at a host\'s shutdown fails the run, since the compiles since the last settle are lost, and logs the loss', async () => {
   const logged = [];
   const failed = [];
-  const at = { boot: 2, log: (kind, fields) => logged.push({ kind, ...fields }), fail: (reason) => failed.push(reason) };
+  const at = { boot: 2, step: '5.3', log: (kind, fields) => logged.push({ kind, ...fields }), fail: (f) => failed.push(f) };
   await lastTake({ ...at, take: async () => { throw new Error('the module stopped before flushing'); } });
   assert.deepEqual(logged, [{ kind: 'compiles', boot: 2, lost: 'the module stopped before flushing' }]);
-  assert.deepEqual(failed, ['boot 2\'s last take of the module\'s compiles failed: the module stopped before flushing']);
+  assert.deepEqual(failed, [{ step: '5.3', reason: 'boot 2\'s last take of the module\'s compiles failed: the module stopped before flushing' }], 'the run\'s own failure, as the shutdown passes the run\'s fail straight through');
   await lastTake({ ...at, take: async () => {} });
   assert.equal(failed.length, 1, 'a take that answers fails nothing');
+});
+
+test('a lost last take whose error is too long to show whole fails the run with its first 500 characters, and its whole message beside them', async () => {
+  const failed = [];
+  const message = `${'y'.repeat(600)}END`;
+  await lastTake({ boot: 3, step: '5.3', log: () => {}, fail: (f) => failed.push(f), take: async () => { throw new Error(message); } });
+  assert.deepEqual(failed, [{
+    step: '5.3',
+    reason: `boot 3's last take of the module's compiles failed: ${message.slice(0, 500)}`,
+    full: `boot 3's last take of the module's compiles failed: ${message}`,
+  }]);
+});
+
+test('when bun can\'t read the installed host\'s recipe facts, the error shows the end of its output and keeps the whole beside it', () => {
+  const bin = mkdtempSync(join(tmpdir(), 'fake-bun-'));
+  writeFileSync(join(bin, 'bun'), '#!/bin/sh\nprintf START >&2; head -c 5000 /dev/zero | tr "\\0" x >&2; printf END >&2; exit 1\n');
+  chmodSync(join(bin, 'bun'), 0o755);
+  const path = process.env.PATH;
+  process.env.PATH = `${bin}:${path}`;
+  let error = null;
+  try { hostFacts({ hostDir: bin, configuration: configurations().H1 }); } catch (e) { error = e; } finally { process.env.PATH = path; rmSync(bin, { recursive: true, force: true }); }
+  assert.ok(error, 'reading the facts fails');
+  assert.ok(error.message.endsWith('END') && !error.message.includes('START'), 'the shown output is its end');
+  assert.match(error.full, /\(bun exited 1\): STARTx{5000}END$/);
 });

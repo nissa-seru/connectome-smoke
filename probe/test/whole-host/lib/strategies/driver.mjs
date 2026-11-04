@@ -7,6 +7,7 @@ import { performance } from 'node:perf_hooks';
 import { ipcConnect, send, sleep, spawnHost, stopHost } from '../common.mjs';
 import { lineReader, listenForPeers } from './control.mjs';
 import { openWebUi } from './webui.mjs';
+import { cutError, cutText, cutThrow } from './cut.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const SERVER = join(HERE, 'mcpl-server.mjs');
@@ -82,14 +83,16 @@ export function hostFacts({ hostDir, configuration }) {
   try {
     return JSON.parse(line);
   } catch {
-    throw new Error(`couldn't read the installed host's recipe facts (bun exited ${r.status}): ${(r.stderr || r.stdout || '').trim().slice(-2000)}`);
+    throw cutThrow((cut) => `couldn't read the installed host's recipe facts (bun exited ${r.status}): ${cut((r.stderr || r.stdout || '').trim(), -2000)}`);
   }
 }
 
-export async function lastTake({ boot, take, log, fail }) {
+export async function lastTake({ boot, take, log, fail, step = null }) {
   await take().catch((e) => {
     log('compiles', { boot, lost: String(e?.message ?? e) });
-    fail(`boot ${boot}'s last take of the module's compiles failed: ${String(e?.message ?? e).slice(0, 500)}`);
+    const { shown, full } = cutError(e, 500);
+    const said = `boot ${boot}'s last take of the module's compiles failed: `;
+    fail({ step, reason: `${said}${shown}`, ...(full ? { full: `${said}${full}` } : {}) });
   });
 }
 
@@ -171,8 +174,11 @@ export function readSettle(answer, previous, ticks = {}) {
 
 class RunFailure extends Error {}
 
-export async function runScript({ steps, configuration, standin, hostDir, facts, work, storeDir, epoch, logPath }) {
+export async function runScript({ steps, configuration, standin, hostDir, facts, work, storeDir, epoch, logPath, hostLogs }) {
   mkdirSync(work, { recursive: true });
+  mkdirSync(hostLogs.dir, { recursive: true });
+  const hostLogOf = (b) => `${hostLogs.at}/host-${b.n}.log`;
+  const ending = (b, out) => `its whole output is ${hostLogOf(b)} in the evidence, and its last lines are:\n${tail(out)}`;
   mkdirSync(storeDir, { recursive: true });
   const t0 = performance.now();
   const wall = () => Math.round((performance.now() - t0) * 10) / 10;
@@ -215,7 +221,8 @@ export async function runScript({ steps, configuration, standin, hostDir, facts,
     try {
       await compressionIdle(request);
     } catch (e) {
-      if (!failure) fail({ step: current?.id ?? null, reason: `while ${request.id} was held: ${e instanceof RunFailure ? e.message : String(e?.stack || e).slice(0, 2000)}` });
+      const c = e instanceof RunFailure ? { shown: e.message } : cutText((cut) => cut(String(e?.stack || e), 2000));
+      if (!failure) fail({ step: current?.id ?? null, reason: `while ${request.id} was held: ${c.shown}`, ...(c.full ? { full: `while ${request.id} was held: ${c.full}` } : {}) });
     } finally {
       standin.releaseHeld();
     }
@@ -257,7 +264,7 @@ export async function runScript({ steps, configuration, standin, hostDir, facts,
     child.once('exit', (code, signal) => {
       b.exited = { code, signal };
       log('exit', { boot: b.n, code, signal, expected: b.stopping });
-      if (!b.stopping) fail({ step: current?.id ?? null, reason: `the host exited (${code ?? signal}) ${tail(out)}` });
+      if (!b.stopping) fail({ step: current?.id ?? null, reason: `the host exited (${code ?? signal}); ${ending(b, out)}` });
       poke();
     });
     await until(() => existsSync(sockPath), BOOT_MS, `boot ${b.n}: the host's IPC socket`, { pollMs: 50 });
@@ -302,7 +309,7 @@ export async function runScript({ steps, configuration, standin, hostDir, facts,
   async function shutdown() {
     const b = host;
     if (!b) return;
-    if (b.module) await lastTake({ boot: b.n, take: takeCompiles, log, fail: (reason) => fail({ step: current?.id ?? null, reason }) });
+    if (b.module) await lastTake({ boot: b.n, take: takeCompiles, log, fail, step: current?.id ?? null });
     host = null;
     b.stopping = true;
     if (!b.exited) {
@@ -313,13 +320,13 @@ export async function runScript({ steps, configuration, standin, hostDir, facts,
         await exitWithin(b.child, SHUTDOWN_MS);
       }
       const why = shutdownFailure({ boot: b.n, timedOut, exited: b.exited, seconds: SHUTDOWN_MS / 1000 });
-      if (why) fail({ step: current?.id ?? null, reason: `${why} ${tail(b.out)}` });
+      if (why) fail({ step: current?.id ?? null, reason: `${why}; ${ending(b, b.out)}` });
     }
     try { b.sock?.destroy(); } catch {}
     b.webui?.close();
     stopHost(b.child);
-    writeFileSync(join(work, `host-${b.n}.log`), b.out.join(''));
-    log('shutdown', { boot: b.n, hostLog: join(work, `host-${b.n}.log`) });
+    writeFileSync(join(hostLogs.dir, `host-${b.n}.log`), b.out.join(''));
+    log('shutdown', { boot: b.n, hostLog: hostLogOf(b) });
   }
 
   const eventAfter = (from, test) => host.events.slice(from).find(({ e }) => test(e));
@@ -356,19 +363,23 @@ export async function runScript({ steps, configuration, standin, hostDir, facts,
         return pass;
       }
       if (failure) throw new RunFailure(failure.reason);
-      const why = !answer?.ok ? `maintain answered ${JSON.stringify(answer).slice(0, 300)}`
+      const whyOf = (cut) => (!answer?.ok ? `maintain answered ${cut(JSON.stringify(answer), 300)}`
         : !read.inFlight && !first && !read.moved ? 'nothing in flight, and the last pass moved nothing on'
           : performance.now() - started >= TURN_MS ? `still unsettled after ${TURN_MS} ms between passes, the bound a turn's speech has`
-            : null;
+            : null);
+      const why = whyOf((v, n) => String(v).slice(0, n));
       if (why) {
         const ms = Math.round(performance.now() - started);
         log('settle', { phase: 'end', settled: false, passes: pass, ms, why });
-        const notReady = agents.filter((a) => a.ready !== true).map((a) => (a.agentName ? `${a.agentName} (${a.error ?? a.pending ?? 'no pending work named'})` : JSON.stringify(a).slice(0, 200)));
         const host = [
           drained === true ? 'the host drained' : drained === false ? `the host not drained (turns alive: ${activeTurnAgents.join(', ') || 'none named'})` : 'no drained state in the host\'s answer',
           typeof deferredWrites !== 'number' || deferredWrites === 0 ? null : `${deferredWrites} deferred write(s) still to land`,
         ].filter(Boolean).join(', ');
-        fail({ step: current?.id ?? null, reason: `the run didn't settle (${why}; ${pass} maintenance passes in ${(ms / 1000).toFixed(1)} s): ${notReady.length ? `not ready: ${notReady.join(', ')}` : 'every agent ready'}, ${host}. A wait timed by the host's virtual clock can't end inside a settle, since the clock moves only at an advance step.` });
+        const said = cutText((cut) => {
+          const notReady = agents.filter((a) => a.ready !== true).map((a) => (a.agentName ? `${a.agentName} (${a.error ?? a.pending ?? 'no pending work named'})` : cut(JSON.stringify(a), 200)));
+          return `the run didn't settle (${whyOf(cut)}; ${pass} maintenance passes in ${(ms / 1000).toFixed(1)} s): ${notReady.length ? `not ready: ${notReady.join(', ')}` : 'every agent ready'}, ${host}. A wait timed by the host's virtual clock can't end inside a settle, since the clock moves only at an advance step.`;
+        });
+        fail({ step: current?.id ?? null, reason: said.shown, ...(said.full ? { full: said.full } : {}) });
         throw new RunFailure('unsettled');
       }
     }
@@ -407,7 +418,8 @@ export async function runScript({ steps, configuration, standin, hostDir, facts,
         return;
       }
       if (failed) {
-        fail({ step: step.id, reason: `${step.reader}'s turn ended in ${failed.e.type}: ${JSON.stringify(failed.e).slice(0, 1500)}` });
+        const said = cutText((cut) => `${step.reader}'s turn ended in ${failed.e.type}: ${cut(JSON.stringify(failed.e), 1500)}`);
+        fail({ step: step.id, reason: said.shown, ...(said.full ? { full: said.full } : {}) });
         throw new RunFailure(failed.e.type);
       }
       return;
@@ -434,7 +446,8 @@ export async function runScript({ steps, configuration, standin, hostDir, facts,
       const what = ended.e.type === 'inference:failed'
         ? 'the turn\'s first inference failure (inference:failed, which agent-framework may still have retried)'
         : `the turn's end in ${ended.e.type}`;
-      fail({ step: step.id, reason: `${what}: ${JSON.stringify(ended.e).slice(0, 1500)}` });
+      const said = cutText((cut) => `${what}: ${cut(JSON.stringify(ended.e), 1500)}`);
+      fail({ step: step.id, reason: said.shown, ...(said.full ? { full: said.full } : {}) });
       throw new RunFailure(ended.e.type);
     }
     const speechAt = host.events.indexOf(ended);
@@ -456,7 +469,8 @@ export async function runScript({ steps, configuration, standin, hostDir, facts,
     const lines = () => host.events.slice(from).filter(({ e }) => e.type === 'command-output').map(({ e }) => String(e.text));
     const outcome = await until(() => ends(lines()), COMMAND_MS, `command ${step.command}`);
     if (outcome !== (step.expect ?? 'done')) {
-      fail({ step: step.id, reason: `${step.command} ${outcome}, where the step expects it ${step.expect ?? 'done'}: ${lines().join(' | ').slice(0, 1500)}` });
+      const said = cutText((cut) => `${step.command} ${outcome}, where the step expects it ${step.expect ?? 'done'}: ${cut(lines().join(' | '), 1500)}`);
+      fail({ step: step.id, reason: said.shown, ...(said.full ? { full: said.full } : {}) });
       throw new RunFailure(`command ${outcome}`);
     }
     await settle();
@@ -602,7 +616,8 @@ export async function runScript({ steps, configuration, standin, hostDir, facts,
     const result = await unlessFailed(ui.next((m) => m.type === 'surgery-result' && m.corrId === corrId, { label: `the suppress result for ${corrId}` }));
     log('suppress', { result });
     if (result.ok !== true) {
-      fail({ step: step.id, reason: `the web UI's suppress failed: ${result.error ?? JSON.stringify(result).slice(0, 500)}` });
+      const said = cutText((cut) => `the web UI's suppress failed: ${result.error ?? cut(JSON.stringify(result), 500)}`);
+      fail({ step: step.id, reason: said.shown, ...(said.full ? { full: said.full } : {}) });
       throw new RunFailure('suppress');
     }
     await settle();
@@ -627,8 +642,9 @@ export async function runScript({ steps, configuration, standin, hostDir, facts,
     if (host) log('health', { name: 'end', health: await health('end', 'the run\'s end') });
     else log('health', { name: 'end', skipped: 'the run\'s last step stopped its host' });
   } catch (e) {
-    if (!failure) fail({ step: current?.id ?? null, reason: e instanceof RunFailure ? e.message : String(e?.stack || e).slice(0, 3000) });
-    if (host) log('host-output', { boot: host.n, tail: tail(host.out) });
+    const c = e instanceof RunFailure ? { shown: e.message } : cutText((cut) => cut(String(e?.stack || e), 3000));
+    if (!failure) fail({ step: current?.id ?? null, reason: c.shown, ...(c.full ? { full: c.full } : {}) });
+    if (host) log('host-output', { boot: host.n, hostLog: hostLogOf(host), tail: tail(host.out) });
   } finally {
     await shutdown();
     await ctl.close();

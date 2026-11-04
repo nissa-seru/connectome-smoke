@@ -2,6 +2,7 @@ import { AsyncLocalStorage } from 'node:async_hooks';
 import { connect } from 'node:net';
 import { lineReader } from './control.mjs';
 import { isUnreadable, readable } from './invariants.mjs';
+import { cutError } from './cut.mjs';
 import { namingCanaries, messageNames } from './names.mjs';
 import { blobStore, compiledLine, messagesOf, plain, refusedLine, stateOf, storeDelta } from './recorder.mjs';
 
@@ -89,8 +90,6 @@ export class HarnessModule {
     for (const method of AGENT_COMPILES) {
       const original = proto[method];
       if (typeof original !== 'function' || original[WRAPPED]) continue;
-      // The context marks the request's compile only while the call is open: work it started that compiles after
-      // it settles isn't the request's.
       const wrapped = function (...args) {
         const caller = { agent: this.name, manager: this.getContextManager(), assembly: ++module.assemblies, open: true };
         const close = () => { caller.open = false; };
@@ -153,7 +152,8 @@ export class HarnessModule {
     try {
       line = { ...head, ...body() };
     } catch (error) {
-      line = { ...head, outcome: 'unrecordable', reason: String(error?.message ?? error).slice(0, 300) };
+      const { shown, full } = cutError(error, 300);
+      line = { ...head, outcome: 'unrecordable', reason: shown, ...(full ? { full } : {}) };
     }
     this.lines.push(line);
     return line;
@@ -203,7 +203,7 @@ export class HarnessModule {
     const branchOf = (m) => { const d = readable(() => m.getDerivation?.() ?? null); return isUnreadable(d) ? undefined : d?.branch ?? null; };
     const branch = branchOf(manager);
     for (const other of others) {
-      if (branchOf(other) !== branch) continue;
+      if (branch === undefined || branchOf(other) !== branch) continue;
       if (!wanted.size) break;
       const messages = readable(() => other.getAllMessages());
       if (isUnreadable(messages)) continue;
@@ -269,12 +269,11 @@ export class HarnessModule {
     this.sock = sock;
   }
 
-  // Whether any part of the take was unreadable, so a later take is still owed what this one couldn't read.
   takeDelta(store, name, manager) {
     const delta = storeDelta(manager, this.seen.get(name), this.blobs);
     this.seen.set(name, delta.seen);
     if (delta.changed) store[name] = delta.out;
-    return Object.values(delta.out).some(isUnreadable);
+    return delta.unread;
   }
 
   async answer(msg) {
@@ -333,7 +332,7 @@ export class HarnessModule {
         const budget = msg.budget ?? (typeof agent.compileBudget === 'function' ? agent.compileBudget() : undefined);
         const before = this.seq;
         await agent.getContextManager().compile(budget, undefined, { dryRun: true }).catch(() => null);
-        return { seq: this.lines.find((l) => l.seq > before && l.kind === 'dry')?.seq ?? null };
+        return { seq: this.lines.find((l) => l.seq === before + 1 && l.kind === 'dry')?.seq ?? null };
       }
       default:
         throw Object.assign(new Error(`the harness module has no op ${JSON.stringify(msg.op)}`), { code: -32601 });

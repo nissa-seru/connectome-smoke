@@ -34,7 +34,7 @@ export function renderRecord(args) {
   return `${renderRecordLines(args).map((l) => l.text).join('\n')}\n`;
 }
 
-export function renderRecordLines({ header, log, records, end }) {
+export function renderRecordLines({ header, log, records, end, judged = null }) {
   const blobs = new Map();
   const batches = [];
   for (const e of log) {
@@ -225,7 +225,8 @@ export function renderRecordLines({ header, log, records, end }) {
     }).join(' ') || '-'}`,
     `tools ${(h.tools ?? []).map((t) => `${t.name}:${String(t.sha).slice(0, 8)}`).join(' ') || '-'}`,
     ...(h.headers ? [`headers beta ${(h.headers.beta ?? []).join('+') || '-'} version ${h.headers.version ?? '-'}`] : []),
-    ...(h.query ? [`query ${h.query}`] : []),
+    ...(h.path ? [`path ${h.path}`] : []),
+    ...(h.query != null ? [`query ${h.query || '(empty)'}`] : []),
     ...(h.rest ? [`rest ${String(h.rest).slice(0, 8)}`] : []),
   ].join(', ');
   const messagesOf = (r) => (r.messages ?? []).map((m) => ({ role: m.role, digest: m.digest, cache: (m.blocks ?? []).map((b) => (b.contentCache ? [b.cache ?? null, b.contentCache] : b.cache ?? null)) }));
@@ -404,6 +405,7 @@ export function renderRecordLines({ header, log, records, end }) {
     }
   }
   lines.push(`totals ${canonical(Object.keys(unjudged).length ? { ...totals, unjudged } : totals)}`);
+  if (judged) lines.push(`judged ${judged.map((j) => `${j.check} ${j.name} ${j.judged ?? '?'}`).join(', ')}`);
   const names = nameTemplates(templates);
   const head = lines.findIndex((l) => typeof l === 'string' && !l.startsWith('#'));
   const block = ['templates', ...templates.map((t, i) => [names[i], t.shaped]).sort(([a], [b]) => (a < b ? -1 : 1))
@@ -420,7 +422,7 @@ export function nameTemplates(templates, hash = sha12) {
   const names = templates.map((t) => (t.words ? `${t.base}-${hash(t.shaped)}` : t.base));
   const holder = new Map();
   names.forEach((name, i) => {
-    if (holder.has(name)) throw new Error(`two different texts take the template name ${name}: ${JSON.stringify(templates[holder.get(name)].shaped).slice(0, 120)} and ${JSON.stringify(templates[i].shaped).slice(0, 120)}`);
+    if (holder.has(name)) throw new Error(`two different texts take the template name ${name}: ${JSON.stringify(templates[holder.get(name)].shaped)} and ${JSON.stringify(templates[i].shaped)}`);
     holder.set(name, i);
   });
   return names;
@@ -452,6 +454,8 @@ export function refuseUnrecordable(r) {
   if (cannot) Object.assign(r, { outcome: 'couldnt-run', reason: cannot });
   return cannot;
 }
+
+export const everyRunUpdated = (everyRun, results) => everyRun.every((n) => results.some((x) => x.run === n && x.record === 'updated'));
 
 export function exitCode(results, { versions = 'same' } = {}) {
   if (results.some((r) => r.outcome === 'couldnt-run' || r.selfCheck?.outcome === 'couldnt-run')) return 2;

@@ -8,6 +8,8 @@ function namesAt(log, line) {
     if (e.kind !== 'compiles') continue;
     for (const [name, store] of Object.entries(e.store ?? {})) {
       if (!stores.has(name)) { stores.set(name, new Map()); summaries.set(name, new Map()); }
+      if (store?.whole && Array.isArray(store.messages)) stores.get(name).clear();
+      if (store?.whole && Array.isArray(store.summaries)) summaries.get(name).clear();
       for (const [id, canaries] of Array.isArray(store?.messages) ? store.messages : []) stores.get(name).set(String(id), canaries?.[0] ?? null);
       for (const id of store?.removedMessages ?? []) stores.get(name).delete(String(id));
       for (const s of Array.isArray(store?.summaries) ? store.summaries : []) summaries.get(name).set(String(s.id), s);
@@ -82,7 +84,6 @@ export function ledgerOf(log, line) {
 }
 
 export function moduleCounts(log, records, agent = FIXTURE_AGENT) {
-  // Each request compile call counts, so a refusal whose retry in the same assembly compiled counts as one of each.
   const calls = log.filter((e) => e.kind === 'compiles').flatMap((e) => (e.lines ?? []).filter((l) => l.kind === 'request'));
   const summariser = records.filter((r) => r.kind === 'summariser');
   const quarantine = new Map();

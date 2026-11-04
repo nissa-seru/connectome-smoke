@@ -102,9 +102,6 @@ export function receiptHeadOf(manager) {
   }));
 }
 
-// A take with no earlier one for the manager in this process (`seen` undefined) lists the whole store and says so
-// (`whole`): the run's first take of it, or the first after a host restart, which the record compares with what it
-// already knows of the agent.
 export function storeDelta(manager, seen, blobs) {
   const out = {};
   if (seen === undefined) {
@@ -126,7 +123,7 @@ export function storeDelta(manager, seen, blobs) {
       else if (before.thinking !== thinking) added.push([id, canaries, { thinking }]);
       else if (before.canaries !== JSON.stringify(canaries)) added.push(thinking ? [id, canaries, { thinking }] : [id, canaries]);
     }
-    if (added.length) out.messages = added;
+    if (added.length || out.whole) out.messages = added;
     const gone = [...seen.messages.keys()].filter((id) => !next.messages.has(id));
     if (gone.length) out.removedMessages = gone;
   } else out.messages = messages;
@@ -140,7 +137,7 @@ export function storeDelta(manager, seen, blobs) {
       if (seen.summaries.get(s.id) !== key) added.push(entry);
     }
     const removed = [...seen.summaries.keys()].filter((id) => !summaries.has(id));
-    if (added.length) out.summaries = added;
+    if (added.length || out.whole) out.summaries = added;
     if (removed.length) out.removed = removed;
   } else {
     out.summaries = summaries;
@@ -152,7 +149,8 @@ export function storeDelta(manager, seen, blobs) {
   const quarantine = quarantineOf(manager);
   const quarantineKey = JSON.stringify(quarantine);
   if (quarantineKey !== seen.quarantine) { out.quarantine = quarantine; next.quarantine = quarantineKey; }
-  return { out, seen: next, changed: Object.keys(out).length > 0 };
+  const unread = [messages, summaries, head, quarantine].some(isUnreadable);
+  return { out, seen: next, changed: Object.keys(out).length > 0, unread };
 }
 
 // context-manager's AutobiographicalStrategy reports its quarantines publicly: compression's as the spans it holds out,

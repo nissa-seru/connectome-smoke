@@ -1,9 +1,18 @@
-import { test } from 'node:test';
+import { after, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { repairMarks, startStandin, tokensSent } from '../lib/strategies/standin.mjs';
+import { countTokens, repairMarks, startStandin as startServer, tokensSent } from '../lib/strategies/standin.mjs';
+
+const ANSWER_BOUND_MS = 10_000;
+const started = new Set();
+after(async () => { for (const s of started) await s.close(); });
+async function startStandin(options) {
+  const s = await startServer(options);
+  started.add(s);
+  return s;
+}
 
 const TOOLS = [{ name: 'time--now', description: 'now', input_schema: { type: 'object', properties: {} } }];
 const NOTE = '[host note: this message arrived over IPC and carries no channel locus.]';
@@ -26,7 +35,7 @@ const prose = (n, seed = 1) => {
   return s.slice(0, n);
 };
 
-function agentBody({ canary, history = [], model = 'claude-sonnet-4-5', stream = true, max_tokens = 2048, tail = [], extra = {} }) {
+function agentBody({ canary, history = [], model = 'claude-opus-5-5', stream = true, max_tokens = 2048, tail = [], extra = {} }) {
   return {
     model, max_tokens, stream, system: 'You are the fixture agent.', tools: TOOLS,
     messages: [...history, { role: 'user', content: [{ type: 'text', text: `user: ${canary} ${prose(300)}` }, { type: 'text', text: NOTE }, ...tail] }],
@@ -34,7 +43,7 @@ function agentBody({ canary, history = [], model = 'claude-sonnet-4-5', stream =
   };
 }
 
-function summariserBody({ canaries = ['[[c:x.1]]'], summaries = [], instruction = CHAT, model = 'claude-sonnet-4-5', max_tokens = 16000, textChars = 400 }) {
+function summariserBody({ canaries = ['[[c:x.1]]'], summaries = [], instruction = CHAT, model = 'claude-opus-5-5', max_tokens = 16000, textChars = 400 }) {
   const messages = [];
   for (const s of summaries) {
     messages.push({ role: 'user', content: [{ type: 'text', text: 'Context Manager: [CM] Recall memory L2-6.' }] });
@@ -48,7 +57,15 @@ function summariserBody({ canaries = ['[[c:x.1]]'], summaries = [], instruction 
 }
 
 async function post(url, body, path = '/v1/messages', headers = {}) {
-  const res = await fetch(url + path, { method: 'POST', headers: { 'content-type': 'application/json', 'anthropic-version': '2023-06-01', ...headers }, body: JSON.stringify(body) });
+  try {
+    return await read(await fetch(url + path, { method: 'POST', headers: { 'content-type': 'application/json', 'anthropic-version': '2023-06-01', ...headers }, body: JSON.stringify(body), signal: AbortSignal.timeout(ANSWER_BOUND_MS) }));
+  } catch (error) {
+    if (error?.name === 'TimeoutError') throw new Error(`the stand-in sent no whole answer to POST ${path} within ${ANSWER_BOUND_MS} ms`);
+    throw error;
+  }
+}
+
+async function read(res) {
   const type = res.headers.get('content-type') || '';
   if (!type.includes('event-stream')) return { status: res.status, json: await res.json() };
   const raw = await res.text();
@@ -76,7 +93,11 @@ function arrivals(standin) {
   const seen = [];
   let waiters = [];
   standin.onRequest((r) => { seen.push(r); waiters = waiters.filter((w) => (seen.length >= w.n ? (w.resolve(), false) : true)); });
-  return { seen, until: (n) => (seen.length >= n ? Promise.resolve() : new Promise((resolve) => waiters.push({ n, resolve }))) };
+  const until = (n) => (seen.length >= n ? Promise.resolve() : new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(`${seen.length} of ${n} requests reached onRequest within ${ANSWER_BOUND_MS} ms`)), ANSWER_BOUND_MS);
+    waiters.push({ n, resolve: () => { clearTimeout(timer); resolve(); } });
+  }));
+  return { seen, until };
 }
 
 const step = (id, replies = [{ text: `[[c:${id}.r1]] noted.` }], more = {}) => ({ id, segment: 'test', kind: 'text', canaries: [`[[c:${id}.in]]`], replies, ...more });
@@ -118,7 +139,7 @@ test('T1/T3: a tool round\'s second request is the step\'s when its last message
   const first = await post(s.url, agentBody({ canary: '[[c:t.in]]' }));
   const call = first.json.content.find((b) => b.type === 'tool_use');
   const second = {
-    model: 'claude-sonnet-4-5', max_tokens: 2048, stream: true, system: 'You are the fixture agent.', tools: TOOLS,
+    model: 'claude-opus-5-5', max_tokens: 2048, stream: true, system: 'You are the fixture agent.', tools: TOOLS,
     messages: [
       { role: 'user', content: [{ type: 'text', text: 'user: [[c:t.in]] go' }] },
       { role: 'assistant', content: first.json.content },
@@ -301,18 +322,18 @@ test('T10: the same request always counts the same, at about 1.3 times context-m
   const total = (u) => u.input_tokens + (u.cache_read_input_tokens || 0) + (u.cache_creation_input_tokens || 0);
   assert.equal(total(one), total(two));
   const big = 29_000;
-  const counted = (await post(s.url, { model: 'm', messages: [{ role: 'user', content: [{ type: 'text', text: prose(big, 9) }] }] }, '/v1/messages/count_tokens')).json.input_tokens;
+  const counted = s.countTokens({ model: 'm', messages: [{ role: 'user', content: [{ type: 'text', text: prose(big, 9) }] }] });
   const cmEstimate = Math.ceil(big / 2.9);
   assert.ok(counted > cmEstimate * 1.2 && counted < cmEstimate * 1.4, `${counted} vs ${cmEstimate}`);
   const png = (w, h) => { const b = Buffer.alloc(33); Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]).copy(b); b.writeUInt32BE(13, 8); b.write('IHDR', 12); b.writeUInt32BE(w, 16); b.writeUInt32BE(h, 20); return b.toString('base64'); };
   const withImage = (w, h) => ({ model: 'm', messages: [{ role: 'user', content: [{ type: 'image', source: { type: 'base64', media_type: 'image/png', data: png(w, h) } }] }] });
-  const small = (await post(s.url, withImage(100, 100), '/v1/messages/count_tokens')).json.input_tokens;
-  const large = (await post(s.url, withImage(750, 1000), '/v1/messages/count_tokens')).json.input_tokens;
+  const small = s.countTokens(withImage(100, 100));
+  const large = s.countTokens(withImage(750, 1000));
   assert.ok(large - small > 900, `${small} → ${large}`);
 }));
 
 test('T10b: denser text counts more tokens a character (prose, then code, JSON and base64), and a prose opening doesn\'t price a dense body as prose', () => withStandin({}, async (s) => {
-  const count = async (text) => (await post(s.url, { model: 'm', messages: [{ role: 'user', content: [{ type: 'text', text }] }] }, '/v1/messages/count_tokens')).json.input_tokens;
+  const count = async (text) => s.countTokens({ model: 'm', messages: [{ role: 'user', content: [{ type: 'text', text }] }] });
   const empty = await count('');
   const rate = async (text) => (await count(text) - empty) / text.length;
   const code = (n) => 'const value_1 = read(index, total);\n'.repeat(Math.ceil(n / 36)).slice(0, n);
@@ -367,9 +388,105 @@ test('T12: a cache entry is the model\'s own', () => withStandin({}, async (s) =
   s.setStep(step('cm', [{ text: 'a' }, { text: 'b' }]));
   const h = [{ role: 'user', content: [{ type: 'text', text: prose(4000, 5), cache_control: { type: 'ephemeral' } }] }, { role: 'assistant', content: [{ type: 'text', text: 'x' }] }];
   await post(s.url, agentBody({ canary: '[[c:cm.in]]', history: h }));
-  const other = await post(s.url, agentBody({ canary: '[[c:cm.in]]', history: h, model: 'claude-opus-4-5' }));
+  const other = await post(s.url, agentBody({ canary: '[[c:cm.in]]', history: h, model: 'claude-opus-4-6' }));
   assert.equal(other.json.usage.cache_read_input_tokens, 0);
 }));
+
+test('T12: the lookback counts 20 positions back from a marker, its own included, with a run of tool_use blocks, or of tool_result blocks, as one', () => withStandin({}, async (s) => {
+  s.setStep({ ...step('lb', [{ text: 'a' }, { text: 'b' }, { text: 'c' }]), canaries: ['[[c:lb.in]]'] });
+  const marked = { type: 'ephemeral' };
+  const opening = { role: 'user', content: [{ type: 'text', text: prose(2000, 5), cache_control: marked }] };
+  const unmarkedOpening = { role: 'user', content: [{ type: 'text', text: prose(2000, 5) }] };
+  const ask = (n, k) => ({ role: 'user', content: [{ type: 'text', text: `user: [[c:lb.in]] ${n}`, cache_control: marked }, ...k] });
+  const first = await post(s.url, { model: 'claude-opus-5-5', max_tokens: 64, stream: false, messages: [opening, { role: 'assistant', content: [{ type: 'text', text: 'ok' }] }, ask(1, [])] });
+  assert.ok(first.json.usage.cache_creation_input_tokens > 0, 'premise: the opening is written');
+  const calls = (n) => Array.from({ length: n }, (_, i) => ({ type: 'tool_use', id: `lb${i}`, name: 'time--now', input: {} }));
+  const results = (n) => Array.from({ length: n }, (_, i) => ({ type: 'tool_result', tool_use_id: `lb${i}`, content: `out ${i}` }));
+  const turn = (n) => [{ role: 'assistant', content: [{ type: 'text', text: 'checking' }, ...calls(n)] }, { role: 'user', content: results(n) }];
+  // 25 parallel calls: 52 blocks after the opening, but 4 positions.
+  const wide = await post(s.url, { model: 'claude-opus-5-5', max_tokens: 64, stream: false, messages: [unmarkedOpening, ...turn(25), ask(2, [])] });
+  assert.equal(wide.json.usage.cache_read_input_tokens > 0, true, `a run of calls and a run of results are one position each: ${JSON.stringify(wide.json.usage)}`);
+  // 21 turns of one call each: 21 positions of text, 21 of calls and 21 of results after the opening.
+  const long = await post(s.url, { model: 'claude-opus-5-5', max_tokens: 64, stream: false, messages: [unmarkedOpening, ...Array.from({ length: 21 }, () => turn(1)).flat(), ask(3, [])] });
+  assert.equal(long.json.usage.cache_read_input_tokens, 0, `past 20 positions, nothing is read back: ${JSON.stringify(long.json.usage)}`);
+}));
+
+test('T12: the messages cache keys on the thinking configuration\'s mode and budget, and the tools and system caches don\'t', () => withStandin({}, async (s) => {
+  s.setStep(step('tk', Array.from({ length: 6 }, (_, i) => ({ text: `r${i}` }))));
+  const ask = async (thinking) => {
+    const body = agentBody({ canary: '[[c:tk.in]]', history: [
+      { role: 'user', content: [{ type: 'text', text: `user: ${prose(4000, 5)}` }] },
+      { role: 'assistant', content: [{ type: 'text', text: 'stored reply', cache_control: { type: 'ephemeral' } }] },
+    ], extra: thinking ? { thinking } : {} });
+    body.system = [{ type: 'text', text: `You are the fixture agent. ${prose(3000, 9)}`, cache_control: { type: 'ephemeral' } }];
+    const r = await post(s.url, body);
+    assert.equal(r.status, 200);
+    return r.json.usage;
+  };
+  const first = await ask(null);
+  assert.ok(first.cache_creation_input_tokens > 0 && first.cache_read_input_tokens === 0, 'premise: the system and the messages are written');
+  const whole = (await ask(null)).cache_read_input_tokens;
+  assert.equal(whole, first.cache_creation_input_tokens, 'premise: the same request reads both');
+  const adaptive = await ask({ type: 'adaptive' });
+  assert.ok(adaptive.cache_read_input_tokens > 0 && adaptive.cache_read_input_tokens < whole, `a new mode reads the system's prefix only (${adaptive.cache_read_input_tokens} of ${whole})`);
+  assert.equal((await ask({ type: 'adaptive', display: 'summarized' })).cache_read_input_tokens, whole, 'the same mode with another display reads what it wrote');
+  assert.equal((await ask({ type: 'enabled', budget_tokens: 1024 })).cache_read_input_tokens, adaptive.cache_read_input_tokens, 'another mode reads the system\'s prefix only');
+  assert.equal((await ask({ type: 'enabled', budget_tokens: 2048 })).cache_read_input_tokens, adaptive.cache_read_input_tokens, 'and so does another budget');
+}));
+
+test('T12: the messages cache keys on whether any image is sent, in a message or a tool result, and the tools and system caches don\'t', () => withStandin({}, async (s) => {
+  s.setStep(step('im', Array.from({ length: 6 }, (_, i) => ({ text: `r${i}` }))));
+  const IMAGE = { type: 'image', source: { type: 'base64', media_type: 'image/png', data: 'iVBORw0KGgo=' } };
+  const ask = async (tail) => {
+    const body = agentBody({ canary: '[[c:im.in]]', tail, history: [
+      { role: 'user', content: [{ type: 'text', text: `user: ${prose(4000, 5)}` }] },
+      { role: 'assistant', content: [{ type: 'text', text: 'stored reply', cache_control: { type: 'ephemeral' } }] },
+    ] });
+    body.system = [{ type: 'text', text: `You are the fixture agent. ${prose(3000, 9)}`, cache_control: { type: 'ephemeral' } }];
+    const r = await post(s.url, body);
+    assert.equal(r.status, 200);
+    return r.json.usage;
+  };
+  const first = await ask([]);
+  const whole = (await ask([])).cache_read_input_tokens;
+  assert.ok(whole > 0 && whole === first.cache_creation_input_tokens, 'premise: the same request reads what the first wrote');
+  const inResult = await ask([{ type: 'tool_result', tool_use_id: 'x', content: [IMAGE] }]);
+  assert.ok(inResult.cache_read_input_tokens > 0 && inResult.cache_read_input_tokens < whole, `an image in a tool result after the marker reads the system's prefix only (${inResult.cache_read_input_tokens} of ${whole})`);
+  assert.equal((await ask([IMAGE])).cache_read_input_tokens, whole, 'an image in a message reads what that request wrote');
+  assert.equal((await ask([])).cache_read_input_tokens, whole, 'and the request without one still reads its own');
+}));
+
+test('T12: a marked prefix shorter than its model\'s minimum isn\'t written: 4,096 tokens for Claude Opus 4.6, 512 for Claude Opus 5.5', () => withStandin({}, async (s) => {
+  s.setStep(step('mn', Array.from({ length: 8 }, (_, i) => ({ text: `r${i}` }))));
+  const marked = (model, chars) => agentBody({ canary: '[[c:mn.in]]', model, history: [{ role: 'user', content: [{ type: 'text', text: `user: ${prose(chars, 4)}` }] }, { role: 'assistant', content: [{ type: 'text', text: 'ok' }] }], tail: [{ type: 'text', text: 'end', cache_control: { type: 'ephemeral' } }] });
+  for (const [model, minimum, under, over] of [['claude-opus-4-6', 4096, 7000, 10_000], ['claude-opus-5-5', 512, 200, 1600]]) {
+    const short = marked(model, under);
+    const long = marked(model, over);
+    assert.ok(countTokens(short) < minimum && countTokens(long) >= minimum, `premise: ${countTokens(short)} under ${minimum}, ${countTokens(long)} not`);
+    const shortUsage = (await post(s.url, short)).json.usage;
+    assert.equal(shortUsage.cache_creation_input_tokens, 0, `${model}: a ${countTokens(short)}-token prefix isn't written`);
+    assert.equal(shortUsage.input_tokens, countTokens(short), 'and goes as input');
+    assert.equal((await post(s.url, short)).json.usage.cache_read_input_tokens, 0, 'so nothing reads it');
+    assert.equal((await post(s.url, long)).json.usage.cache_creation_input_tokens, countTokens(long), `${model}: a ${countTokens(long)}-token prefix is written`);
+  }
+}));
+
+test('T1/T12: a request carrying a field the stand-in\'s cache doesn\'t model, or naming a model it knows no minimum for, is refused as unclassified, naming it; its record keeps its head', async () => {
+  const s = await startStandin({ configuration: { windowTokens: 50_000 } });
+  let records = null;
+  try {
+    s.setStep(step('uf'));
+    for (const [extra, named] of [[{ tool_choice: { type: 'auto' } }, '`tool_choice`'], [{ speed: 'fast' }, '`speed`'], [{ output_config: { effort: 'high' } }, '`output_config`'], [{ model: 'claude-sonnet-4-5' }, 'claude-sonnet-4-5']]) {
+      const r = await post(s.url, agentBody({ canary: '[[c:uf.in]]', extra }));
+      assert.equal(r.status, 400);
+      assert.ok(r.json.error.message.includes(named), `${r.json.error.message} names ${named}`);
+    }
+    records = await s.close();
+  } finally { if (!records) await s.close(); }
+  assert.deepEqual(records.map((r) => r.kind), ['unclassified', 'unclassified', 'unclassified', 'unclassified']);
+  assert.deepEqual(records[0].head.toolChoice, { type: 'auto' });
+  assert.match(records[1].head.rest, /^[0-9a-f]{16}$/);
+});
 
 test('T13: when the model binds thinking, a block whose request changed is refused, or set aside uncounted under the drop control; otherwise it\'s taken', async () => {
   const DROP = { type: 'adaptive', block_binding: { prefix_mismatch_behavior: 'drop_block' } };
@@ -387,7 +504,7 @@ test('T13: when the model binds thinking, a block whose request changed is refus
         ],
       });
       assert.equal((await post(s.url, next(opening.messages[0], first.content))).status, 200, 'the block sent after the prefix it was minted under is taken');
-      const count = async (body) => (await post(s.url, body, '/v1/messages/count_tokens')).json.input_tokens;
+      const count = async (body) => s.countTokens(body);
       assert.ok(await count(next(opening.messages[0], first.content)) > await count(next(opening.messages[0], first.content.filter((b) => b.type !== 'thinking'))), 'and it counts, under the drop control too');
       const changedPrefix = { role: 'user', content: [{ type: 'text', text: 'user: [[c:g.in]] something else entirely' }] };
       const changed = next(changedPrefix, first.content);
@@ -415,7 +532,7 @@ test('T13: when the model binds thinking, a block whose request changed is refus
   }
 });
 
-test('T25: each request\'s record carries its head, everything it sends but its messages, field by field, so a change in any of them shows', async () => {
+test('T25: each request\'s record carries its head, everything it sends but its messages: the fields it names by value, and the rest in one digest, so a change in any of them shows', async () => {
   const s = await startStandin({ configuration: { windowTokens: 50_000 } });
   let records = null;
   try {
@@ -427,10 +544,10 @@ test('T25: each request\'s record carries its head, everything it sends but its 
       { ...base, tools: base.tools.map((t, i) => (i === 0 ? { ...t, description: `${t.description} (changed)` } : t)) },
       { ...base, system: [{ type: 'text', text: base.system, cache_control: { type: 'ephemeral', ttl: '1h' } }] },
       { ...base, thinking: { type: 'adaptive', block_binding: { prefix_mismatch_behavior: 'drop_block' } } },
-      { ...base, tool_choice: { type: 'auto' }, metadata: { user_id: 'u' } },
+      { ...base, metadata: { user_id: 'u' } },
     ];
     for (const v of variants) assert.equal((await post(s.url, v)).status, 200);
-    assert.equal((await post(s.url, { ...base, tool_choice: { type: 'auto' }, metadata: { user_id: 'v' } })).status, 200);
+    assert.equal((await post(s.url, { ...base, metadata: { user_id: 'v' } })).status, 200);
     assert.equal((await post(s.url, base, '/v1/messages', { 'anthropic-beta': 'b2-2026, b1-2026,b2-2026' })).status, 200);
     assert.equal((await post(s.url, { ...base, system: [{ type: 'text', text: base.system, citations: { enabled: true } }] })).status, 200);
     assert.equal((await post(s.url, { ...base, system: [{ type: 'text', text: base.system, citations: { enabled: false } }] })).status, 200);
@@ -444,7 +561,6 @@ test('T25: each request\'s record carries its head, everything it sends but its 
   assert.notEqual(tool.head.tools[0].sha, same.head.tools[0].sha, 'a tool\'s description moves its definition\'s digest');
   assert.deepEqual(system.head.system, [{ text: same.head.system[0].text, cache: '1h' }], 'a system block keeps its text and its marker');
   assert.deepEqual(thinking.head.thinking, { type: 'adaptive', block_binding: { prefix_mismatch_behavior: 'drop_block' } });
-  assert.deepEqual(more.head.toolChoice, { type: 'auto' });
   assert.equal(same.head.rest, null, 'nothing else on the body');
   assert.match(more.head.rest, /^[0-9a-f]{16}$/, 'a field no part names is still digested');
   assert.notEqual(otherUser.head.rest, more.head.rest, 'by its value');
@@ -457,6 +573,50 @@ test('T25: each request\'s record carries its head, everything it sends but its 
   assert.notEqual(typelessCited.head.system[0].other, cited.head.system[0].other, 'and so does one that lost it beside another field');
 });
 
+test('T13d: on a configuration that doesn\'t bind, thinking altered in the latest assistant message is refused with the page\'s 400, and the same thinking after a changed request ahead of it, or altered in an earlier message, is taken', () => withStandin({}, async (s) => {
+  s.setStep({ ...step('th', [{ text: 'first', thinking: 'a thought' }, { text: 'b' }, { text: 'c' }, { text: 'd' }]), canaries: ['[[c:th.in]]'] });
+  const opening = agentBody({ canary: '[[c:th.in]]', stream: false });
+  const first = await post(s.url, opening);
+  const thought = first.json.content.find((b) => b.type === 'thinking');
+  assert.ok(thought?.signature, 'premise: the reply carries signed thinking');
+  const next = (reply, system = opening.system, earlier = []) => ({ ...opening, system, messages: [...earlier, ...opening.messages, { role: 'assistant', content: reply }, { role: 'user', content: [{ type: 'text', text: 'user: [[c:th.in]] and then' }] }] });
+  const altered = await post(s.url, next([{ ...thought, thinking: `${thought.thinking} (changed)` }, { type: 'text', text: 'first' }]));
+  assert.equal(altered.status, 400);
+  assert.match(altered.json.error.message, /^messages\.1\.content\.0: `thinking` or `redacted_thinking` blocks in the latest assistant message cannot be modified$/);
+  assert.equal((await post(s.url, next([thought, { type: 'text', text: 'first' }], 'You are the fixture agent, with another prompt.'))).status, 200, 'the request ahead changed, the thinking didn\'t');
+  const older = [{ role: 'user', content: [{ type: 'text', text: 'user: before' }] }, { role: 'assistant', content: [{ ...thought, thinking: 'not what was signed' }, { type: 'text', text: 'old' }] }];
+  assert.equal((await post(s.url, next([thought, { type: 'text', text: 'first' }], opening.system, older))).status, 200, 'the page says nothing of an earlier message');
+}));
+
+test('T1: a request to count_tokens, or to any route but /v1/messages, is recorded as unclassified, naming its route, and refused', async () => {
+  const s = await startStandin({ configuration: { windowTokens: 50_000 } });
+  s.setStep(step('ct'));
+  const body = { model: 'claude-opus-5-5', messages: [{ role: 'user', content: [{ type: 'text', text: 'user: [[c:ct.in]] count me' }] }] };
+  const counted = await post(s.url, body, '/v1/messages/count_tokens');
+  const elsewhere = await post(s.url, body, '/v1/models');
+  assert.deepEqual([counted.status, elsewhere.status], [404, 404]);
+  const records = await s.close();
+  assert.deepEqual(records.map((r) => [r.kind, r.reason]), [
+    ['unclassified', 'it goes to POST /v1/messages/count_tokens, which no run sends and the stand-in doesn\'t model'],
+    ['unclassified', 'it goes to POST /v1/models, which no run sends and the stand-in doesn\'t model'],
+  ]);
+});
+
+test('T25b: a request to another path ending in /v1/messages, one with an empty query, and a system block whose cache_control is null each record a head of their own', async () => {
+  const s = await startStandin({ configuration: { windowTokens: 50_000 } });
+  s.setStep({ ...step('u', [{ text: 'a' }, { text: 'b' }, { text: 'c' }, { text: 'd' }, { text: 'e' }]), canaries: ['[[c:u.in]]'] });
+  const base = agentBody({ canary: '[[c:u.in]]', stream: false });
+  for (const [body, path] of [[base, '/v1/messages'], [base, '/proxy/v1/messages'], [base, '/v1/messages?'], [{ ...base, system: [{ type: 'text', text: base.system }] }, '/v1/messages'], [{ ...base, system: [{ type: 'text', text: base.system, cache_control: null }] }, '/v1/messages']]) {
+    assert.equal((await post(s.url, body, path)).status, 200, path);
+  }
+  const [plain, prefixed, emptyQuery, absent, nulled] = await s.close();
+  assert.equal('path' in plain.head || 'query' in plain.head, false, 'the path every host sends, with no query, adds nothing');
+  assert.equal(prefixed.head.path, '/proxy/v1/messages');
+  assert.equal(emptyQuery.head.query, '');
+  assert.deepEqual([absent.head.system[0].cache, nulled.head.system[0].cache], [null, 'null']);
+  assert.notDeepEqual(absent.head, nulled.head);
+});
+
 test('T26: a reply marked settle waits until releaseHeld, after onHeld names its request; an ordinary reply is answered at once', async () => {
   const s = await startStandin({ configuration: { windowTokens: 50_000 } });
   try {
@@ -465,8 +625,8 @@ test('T26: a reply marked settle waits until releaseHeld, after onHeld names its
     s.setStep({ ...step('q', [{ text: '[[c:q.r1]] held', settle: true }, { text: '[[c:q.r2]] plain' }]), canaries: ['[[c:q.in]]'] });
     let answered = null;
     const first = post(s.url, agentBody({ canary: '[[c:q.in]]', stream: false })).then((r) => { answered = r; return r; });
-    for (const until = Date.now() + 5000; !heldSeen.length;) {
-      if (Date.now() > until) assert.fail('onHeld named no request within 5 s');
+    for (const until = performance.now() + 5000; !heldSeen.length;) {
+      if (performance.now() > until) assert.fail('onHeld named no request within 5 s');
       await new Promise((r) => setTimeout(r, 10));
     }
     assert.deepEqual(Object.keys(heldSeen[0]).sort(), ['agent', 'id', 'step']);
@@ -534,7 +694,7 @@ test('T7/T14/T15: summariser requests are answered at once, every arrival is rep
   const records = await s.close();
   const [summ, agent] = records;
   assert.equal(agent.kind, 'agent');
-  assert.equal(agent.model, 'claude-sonnet-4-5');
+  assert.equal(agent.model, 'claude-opus-5-5');
   assert.equal(agent.maxTokens, 2048);
   assert.equal(agent.stream, true);
   assert.equal(agent.system.chars, 'You are the fixture agent.'.length);
@@ -553,8 +713,9 @@ test('T28: with a raw directory, each answer\'s content goes beside its request 
     const s = await startStandin({ configuration: { windowTokens: 50_000 }, rawDir });
     s.setStep(step('w', [{ text: '[[c:w.r1]] noted', thinking: 'a thought' }, { text: '[[c:w.r2]] again' }]));
     const summBody = summariserBody({ canaries: ['[[c:w.in]]'] });
-    const marked = agentBody({ canary: '[[c:w.in]]' });
+    const marked = agentBody({ canary: '[[c:w.in]]', history: [{ role: 'user', content: [{ type: 'text', text: `user: ${prose(2000, 4)}` }] }, { role: 'assistant', content: [{ type: 'text', text: 'ok' }] }] });
     marked.messages.at(-1).content.at(-1).cache_control = { type: 'ephemeral' };
+    assert.ok(countTokens(marked) >= 512, 'premise: the marked prefix is over the model\'s minimum');
     const refusedBody = agentBody({ canary: '[[c:other.in]]' });
     const summ = await post(s.url, summBody);
     const agent = await post(s.url, marked);
@@ -694,7 +855,7 @@ test('T18: each message in a record has a digest that a cache marker on any of i
   let records = null;
   try {
     standin.setStep({ ...step('d', [{ text: '[[c:d.r1]] calling', calls: [{ name: 'fixture--result', input: { size: 300, kind: 'prose', canary: '[[c:d.call1]]' } }, { name: 'fixture--result', input: { size: 300, kind: 'prose', canary: '[[c:d.call2]]' } }] }, { text: '[[c:d.r2]] done' }, { text: '[[c:d.r3]] again' }]), canaries: ['[[c:d.in]]', '[[c:d.call1]]'] });
-    const head = { model: 'claude-sonnet-4-5', max_tokens: 2048, stream: true, system: 'You are the fixture agent.', tools: TOOLS };
+    const head = { model: 'claude-opus-5-5', max_tokens: 2048, stream: true, system: 'You are the fixture agent.', tools: TOOLS };
     const opening = (ref, marked) => ({ role: 'user', content: [{ type: 'text', text: `user: [[c:d.in]] look at ${ref}`, ...(marked ? { cache_control: { type: 'ephemeral' } } : {}) }] });
     const first = await post(standin.url, { ...head, messages: [opening('img_abc123_4', false)] });
     const ids = first.json.content.filter((b) => b.type === 'tool_use').map((b) => b.id);
@@ -716,24 +877,37 @@ test('T18: each message in a record has a digest that a cache marker on any of i
 });
 
 
-test('a thinking block\'s signature covers its own text too, so a block whose thinking a host changed is refused where the model binds', () => withStandin({ binds: true }, async (s) => {
-  s.setStep({ ...step('g', [{ thinking: 'plan', calls: [{ name: 'fixture--result', input: { size: 300, kind: 'prose', canary: '[[c:g.call1]]' } }] }, { text: 'ok' }, { text: 'ok' }]), canaries: ['[[c:g.in]]', '[[c:g.call1]]'] });
-  const opening = agentBody({ canary: '[[c:g.in]]' });
-  const first = (await post(s.url, opening)).json;
-  const call = first.content.find((b) => b.type === 'tool_use');
-  const next = (reply) => ({
-    ...opening, messages: [
-      opening.messages[0],
-      { role: 'assistant', content: reply },
-      { role: 'user', content: [{ type: 'tool_result', tool_use_id: call.id, content: [{ type: 'text', text: `[[c:g.call1]] ${prose(280)}` }] }] },
-    ],
-  });
-  assert.equal((await post(s.url, next(first.content))).status, 200, 'the block as it was minted is taken');
-  const altered = first.content.map((b) => (b.type === 'thinking' ? { ...b, thinking: `${b.thinking} (trimmed)` } : b));
-  const r = await post(s.url, next(altered));
-  assert.equal(r.status, 400);
-  assert.match(r.json.error.message, /Invalid `signature` in `thinking` block/);
-}));
+test('T13e: where the model binds, thinking a host edited is refused with the page\'s 400 in any assistant message, under the drop control too, and a block whose text verifies but whose request changed is still refused, or set aside under the drop control', async () => {
+  const DROP = { type: 'adaptive', block_binding: { prefix_mismatch_behavior: 'drop_block' } };
+  const modified = (i) => `messages.${i}.content.0: \`thinking\` or \`redacted_thinking\` blocks in the latest assistant message cannot be modified`;
+  for (const control of [false, true]) {
+    await withStandin({ binds: true }, async (s) => {
+      s.setStep({ ...step('g', [{ thinking: 'plan', calls: [{ name: 'fixture--result', input: { size: 300, kind: 'prose', canary: '[[c:g.call1]]' } }] }, ...Array.from({ length: 6 }, () => ({ text: 'ok' }))]), canaries: ['[[c:g.in]]', '[[c:g.call1]]'] });
+      const opening = { ...agentBody({ canary: '[[c:g.in]]' }), ...(control ? { thinking: DROP } : {}) };
+      const first = (await post(s.url, opening)).json;
+      const call = first.content.find((b) => b.type === 'tool_use');
+      const next = (reply, prefix = opening.messages[0], more = []) => ({
+        ...opening, messages: [
+          prefix,
+          { role: 'assistant', content: reply },
+          { role: 'user', content: [{ type: 'tool_result', tool_use_id: call.id, content: [{ type: 'text', text: `[[c:g.call1]] ${prose(280)}` }] }] },
+          ...more,
+        ],
+      });
+      const later = [{ role: 'assistant', content: [{ type: 'text', text: 'ok' }] }, { role: 'user', content: [{ type: 'text', text: 'user: [[c:g.in]] and then' }] }];
+      assert.equal((await post(s.url, next(first.content))).status, 200, 'the block as it was minted is taken');
+      const altered = first.content.map((b) => (b.type === 'thinking' ? { ...b, thinking: `${b.thinking} (trimmed)` } : b));
+      const latest = await post(s.url, next(altered));
+      assert.deepEqual([latest.status, latest.json.error?.message], [400, modified(1)], 'edited in the latest assistant message');
+      const earlier = await post(s.url, next(altered, opening.messages[0], later));
+      assert.deepEqual([earlier.status, earlier.json.error?.message], [400, modified(1)], 'edited in an earlier one');
+      const changedPrefix = { role: 'user', content: [{ type: 'text', text: 'user: [[c:g.in]] something else entirely' }] };
+      const moved = await post(s.url, next(first.content, changedPrefix, later));
+      if (control) assert.equal(moved.status, 200, 'its text verifies, so only its request changed, and the drop control sets it aside');
+      else assert.deepEqual([moved.status, moved.json.error?.message], [400, 'messages.1.content.0: Invalid `signature` in `thinking` block. The block is bound to a different conversation.']);
+    });
+  }
+});
 
 test('a request\'s head keeps its URL\'s query, so a move to an endpoint that adds one moves the record', async () => {
   const s = await startStandin({ configuration: { windowTokens: 50_000 } });

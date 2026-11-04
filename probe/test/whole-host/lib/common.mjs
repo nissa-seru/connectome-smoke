@@ -1,6 +1,7 @@
 import { spawn, spawnSync } from 'node:child_process';
 import { join } from 'node:path';
 import { connect as netConnect } from 'node:net';
+import { cutThrow } from './strategies/cut.mjs';
 
 export const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -8,7 +9,7 @@ export function sh(cmd, cmdArgs, { cwd, env = {}, timeout = 600_000, allowFail =
   const r = spawnSync(cmd, cmdArgs, { cwd, env: { ...process.env, ...env }, encoding: 'utf-8', timeout, maxBuffer: 1024 * 1024 });
   if (r.error) throw r.error;
   if (r.status !== 0 && !allowFail) {
-    throw new Error(`${cmd} ${cmdArgs.join(' ')} (cwd ${cwd}) exited ${r.status}${r.signal ? ' signal ' + r.signal : ''}\n${(r.stdout + '\n' + r.stderr).trim().slice(-3000)}`);
+    throw cutThrow((cut) => `${cmd} ${cmdArgs.join(' ')} (cwd ${cwd}) exited ${r.status}${r.signal ? ' signal ' + r.signal : ''}\n${cut((r.stdout + '\n' + r.stderr).trim(), -3000)}`);
   }
   return r;
 }
@@ -75,7 +76,6 @@ export function spawnHost({ hostDir, recipePath, dataDir, cwd, sockPath, env = {
 
 export function parseArgs(argv) {
   const opt = (name, def) => { const i = argv.indexOf(`--${name}`); return i >= 0 ? argv[i + 1] : def; };
-  const opts = (name) => argv.flatMap((a, i) => (a === `--${name}` && i + 1 < argv.length ? [argv[i + 1]] : []));
   const flag = (name) => argv.includes(`--${name}`);
-  return { opt, opts, flag };
+  return { opt, flag };
 }
