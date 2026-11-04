@@ -87,8 +87,9 @@ export function reloads(log = []) {
     const [before, after] = [e.before, e.after].map((at) => (at?.seq == null ? null : lines.get(`${at.boot}:${at.seq}`) ?? null));
     const step = e.step;
     if (!before || !after) { flags.push({ check: 12, step, message: `couldn't judge the reload: the log holds no dry compile line ${!before ? 'before the restart' : 'after it'}` }); continue; }
-    judged++;
     const [a, b] = [shape(before), shape(after)];
+    if (a.outcome === 'refused' && b.outcome === 'refused' && a.error === b.error) { flags.push({ check: 12, step, message: `couldn't judge the reload: the dry compile refused (${a.error}) both before the restart and after it` }); continue; }
+    judged++;
     if (a.outcome !== b.outcome || a.error !== b.error) { flags.push({ check: 12, step, message: `after the restart the dry compile ${b.outcome === 'refused' ? `refused (${b.error})` : 'compiled'}, where before it ${a.outcome === 'refused' ? `refused (${a.error})` : 'compiled'}` }); continue; }
     const n = Math.max(a.messages.length, b.messages.length);
     const at = [...Array(n).keys()].find((i) => JSON.stringify(a.messages[i]) !== JSON.stringify(b.messages[i]));
@@ -104,9 +105,16 @@ export function withJudged(flags, judged, besides = null) {
   return flags;
 }
 
+export function judgedBy(flags, check) {
+  Object.defineProperty(flags, 'judgedBy', { value: check, enumerable: false });
+  return flags;
+}
+
 export function everyTurnAnswers(records, log = [], script = []) {
   const mayFail = new Set(script.filter((s) => s.mayFail).map((s) => s.id));
-  const owned = (e) => mayFail.has(e.step) && (/^inference:(failed|exhausted)$/.test(e.event?.type ?? '') || (e.event?.type === 'ops:alert' && e.event.kind === 'context-refusal'));
+  const retries = new Set(script.filter((s) => s.retries).map((s) => s.id));
+  const owned = (e) => (mayFail.has(e.step) && (/^inference:(failed|exhausted)$/.test(e.event?.type ?? '') || (e.event?.type === 'ops:alert' && e.event.kind === 'context-refusal')))
+    || (retries.has(e.step) && e.event?.type === 'inference:failed');
   const flags = [];
   withJudged(flags, records.length);
   for (const r of records) {
@@ -118,6 +126,7 @@ export function everyTurnAnswers(records, log = [], script = []) {
     if (e.kind === 'ipc' && /^inference:(failed|exhausted)$/.test(e.event?.type ?? '')) flags.push({ check: 1, step: e.step, message: `${e.event.type}: ${e.event.error ?? e.event.reason ?? ''}`.trim() });
     if (e.kind === 'ipc' && e.event?.type === 'ops:alert') flags.push({ check: 1, step: e.step, what: e.event.kind, message: `the host raised an operator alert, ${e.event.kind}: ${e.event.message ?? ''}`.trim() });
     if (e.kind === 'settle' && e.phase === 'end' && e.settled === false) flags.push({ check: 1, step: e.step, message: 'the checkpoint did not settle' });
+    if (e.kind === 'undelivered') flags.push({ check: 1, step: e.step, message: `the turn's answer never reached its channel: the host reported mcpl:speech-route-failed${e.reason ? ` (${e.reason})` : ''}` });
   }
   return flags;
 }
@@ -364,6 +373,7 @@ export function windowsRaw(records, script, log, store, { agent = FIXTURE_AGENT,
   const failed = new Set(log.filter((e) => e.kind === 'ipc' && /^inference:(failed|exhausted)$/.test(e.event?.type ?? '')).map((e) => e.step));
   const failedReply = (c, stepId) => failed.has(stepId) && /\.r\d+\]\]$/.test(c);
   const held = (c, stepId, at_ = stepId) => (store ? at.has(c) || (suppressedAt.has(c) && !suppressed(c, at_)) : !suppressed(c, at_) && !failedReply(c, stepId));
+  const gone = new Set();
   const asked = new Map();
   for (const r of records) {
     if (!own(r)) continue;
@@ -386,7 +396,9 @@ export function windowsRaw(records, script, log, store, { agent = FIXTURE_AGENT,
       }
     }
     for (const t of before.get(r.step)) {
-      const wanted = [`[[c:${t.id}.in]]`, ...t.replies.map((_, k) => `[[c:${t.id}.r${k + 1}]]`)].filter((c) => held(c, t.id, r.step));
+      const each = [`[[c:${t.id}.in]]`, ...t.replies.map((_, k) => `[[c:${t.id}.r${k + 1}]]`)];
+      const wanted = each.filter((c) => held(c, t.id, r.step));
+      if (store) for (const c of each) if (!wanted.includes(c) && !suppressedAt.has(c)) gone.add(c);
       heldTo += wanted.length;
       const missing = wanted.filter((c) => !carried.has(c));
       if (missing.length) flags.push({ check: 6, step: r.step, request: r.id, message: `the recent window lacks ${missing.join(' ')}` });
@@ -394,6 +406,7 @@ export function windowsRaw(records, script, log, store, { agent = FIXTURE_AGENT,
     if (heldTo) judged++;
   }
   if (!store) return withJudged(flags, judged);
+  const besides = gone.size ? `${gone.size} recent message${gone.size === 1 ? '' : 's'} not asked for, as the final store doesn't hold ${gone.size === 1 ? 'it' : 'them'}` : null;
   const stepOf = new Map(script.map((s) => [s.id, s]));
   for (const { segment, request, n, composition } of lastRequests(records, script, log, agent)) {
     if (!request) continue;
@@ -410,7 +423,7 @@ export function windowsRaw(records, script, log, store, { agent = FIXTURE_AGENT,
     const lost = tail.filter((c) => !carried.has(c));
     if (lost.length) flags.push({ check: 6, step: request.step, request: request.id, message: `the reported tail's ${lost.join(' ')} isn't raw` });
   }
-  return withJudged(flags, judged);
+  return withJudged(flags, judged, besides);
 }
 
 // context-manager prunes older tool results by design, so only inputs and replies must stay.
@@ -422,6 +435,7 @@ export function coverage(records, store, script = [], log = [], { agent = FIXTUR
   const counted = sub ? () => true : conversational;
   const flags = [];
   let judged = 0;
+  let inputGone = 0;
   const segmentOf = new Map(script.map((s) => [s.id, s.segment]));
   const heads = headCounts(log, agent);
   const lasts = segmentLasts(records, script);
@@ -445,7 +459,7 @@ export function coverage(records, store, script = [], log = [], { agent = FIXTUR
       }
     }
     const ownInput = sub ? Math.max(-1, ...shown.map((x) => at.get(x) ?? -1)) : at.get(`[[c:${r.step}.in]]`);
-    if (ownInput === undefined || ownInput < 0) continue;
+    if (ownInput === undefined || ownInput < 0) { inputGone++; continue; }
     judged++;
     for (const s of new Set(unknown)) flags.push({ check: 4, step: r.step, request: r.id, what: 'unmapped-summary', message: `summary ${s} is in the request, and no store read maps it` });
     const size = lasts.has(r) ? heads.get(segmentOf.get(r.step)) : undefined;
@@ -479,7 +493,7 @@ export function coverage(records, store, script = [], log = [], { agent = FIXTUR
     if (missing.length) flags.push({ check: 4, step: r.step, request: r.id, what: 'not-reached', message: `${missing.length} stored message(s) reach the request neither raw nor in a summary: ${missing.slice(0, 5).join(' ')}${missing.length > 5 ? ' …' : ''}` });
     if (twice.length) flags.push({ check: 4, step: r.step, request: r.id, what: 'more-than-once', message: `${twice.length} message(s) reach the request more than once: ${twice.slice(0, 5).join(' ')}${twice.length > 5 ? ' …' : ''}` });
   }
-  return withJudged(flags, judged);
+  return withJudged(flags, judged, inputGone ? `${inputGone} request${inputGone === 1 ? '' : 's'} not judged, as the final store doesn't hold ${inputGone === 1 ? 'its' : 'their'} own input` : null);
 }
 
 export function bookkeeping(records, store, { side = 'primary' } = {}) {

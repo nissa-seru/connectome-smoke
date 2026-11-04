@@ -71,16 +71,24 @@ export function renderRecordLines({ header, log, records, end }) {
   };
   const remember = (map, key, at, value) => { if (!map.has(key)) map.set(key, []); map.get(key).push([at, value]); };
   const batchAt = new Map(batches.map((b, i) => [b, i]));
+  const live = new Map();
   batches.forEach((b, i) => {
     for (const [agent, st] of Object.entries(b.store ?? {})) {
       const store = storeOf(agent);
+      if (!live.has(agent)) live.set(agent, new Set());
+      const here = live.get(agent);
+      if (st.whole && Array.isArray(st.messages)) {
+        const listed = new Set(st.messages.map(([id]) => String(id)));
+        for (const id of [...here]) if (!listed.has(id)) { remember(store.present, id, i, false); here.delete(id); }
+      }
       for (const [id, canaries] of Array.isArray(st.messages) ? st.messages : []) {
         store.ids.add(String(id));
         store.reported.add(String(id));
         remember(store.present, String(id), i, true);
         remember(store.canaries, String(id), i, CANARY.exec(canaries?.[0] ?? '')?.[1] ?? null);
+        here.add(String(id));
       }
-      for (const id of Array.isArray(st.removedMessages) ? st.removedMessages : []) remember(store.present, String(id), i, false);
+      for (const id of Array.isArray(st.removedMessages) ? st.removedMessages : []) { remember(store.present, String(id), i, false); here.delete(String(id)); }
       const top = Math.max(store.highest.at(-1)?.[1] ?? -Infinity, ...(Array.isArray(st.messages) ? st.messages : []).map(([id]) => Number(id)).filter(Number.isFinite));
       store.highest.push([i, top]);
       for (const sm of Array.isArray(st.summaries) ? st.summaries : []) remember(store.summaries, sm.id, i, sm);
@@ -217,6 +225,7 @@ export function renderRecordLines({ header, log, records, end }) {
     }).join(' ') || '-'}`,
     `tools ${(h.tools ?? []).map((t) => `${t.name}:${String(t.sha).slice(0, 8)}`).join(' ') || '-'}`,
     ...(h.headers ? [`headers beta ${(h.headers.beta ?? []).join('+') || '-'} version ${h.headers.version ?? '-'}`] : []),
+    ...(h.query ? [`query ${h.query}`] : []),
     ...(h.rest ? [`rest ${String(h.rest).slice(0, 8)}`] : []),
   ].join(', ');
   const messagesOf = (r) => (r.messages ?? []).map((m) => ({ role: m.role, digest: m.digest, cache: (m.blocks ?? []).map((b) => (b.contentCache ? [b.cache ?? null, b.contentCache] : b.cache ?? null)) }));
@@ -259,6 +268,8 @@ export function renderRecordLines({ header, log, records, end }) {
 
   const totals = { compiles: 0, dry: 0, refused: 0, other: 0, calls: 0, rounds: 0, written: 0, actions: 0 };
   const receipt = new Map();
+  const firstBoot = log.find((e) => e.kind === 'compiles' && e.at === 'boot');
+  const taken = new Set();
   const receiptBoot = new Map();
   const known = new Map();
   const byStep = new Map();
@@ -309,28 +320,40 @@ export function renderRecordLines({ header, log, records, end }) {
         }
         for (const part of ['messages', 'summaries']) if (st[part] && !Array.isArray(st[part])) { seen(e.step); at(e.step).push({ text: `  unreadable${tag} ${part}: ${st[part].unreadable ?? 'not a list'}` }); }
         for (const [id, , more] of Array.isArray(st.messages) ? st.messages : []) thinking.set(`${agent} ${id}`, more?.thinking === true);
+        const listed = Array.isArray(st.summaries) ? new Set(st.summaries.map((sm) => sm.id)) : null;
+        const gone = st.whole && listed && taken.has(agent) ? [...known.keys()].filter((k) => k.startsWith(`${agent} `)).map((k) => k.slice(agent.length + 1)).filter((id) => !listed.has(id)) : [];
+        const baseline = st.whole && e === firstBoot;
+        taken.add(agent);
         for (const sm of Array.isArray(st.summaries) ? st.summaries : []) {
           const was = known.get(`${agent} ${sm.id}`);
           const now = canonical({ level: sm.level, sources: sm.sources, content: sm.content, parent: sm.parent ?? null });
           known.set(`${agent} ${sm.id}`, now);
-          if (was === now) continue;
+          if (was === now || baseline) continue;
           seen(e.step); at(e.step).push({ text: `  wrote${agent === primary ? '' : ` [${agent}]`} ${summaryName(agent, sm.id, sm.level)} [${summaryTemplate(sm)}]` }); totals.written++;
         }
-        for (const id of st.removed ?? []) known.delete(`${agent} ${id}`);
-        if (st.removed?.length) { seen(e.step); at(e.step).push({ text: `  removed${agent === primary ? '' : ` [${agent}]`} ${st.removed.map((id) => leafName(agent, id)).join(' ')}` }); }
+        const removed = [...(st.removed ?? []), ...gone];
+        for (const id of removed) known.delete(`${agent} ${id}`);
+        if (removed.length) { seen(e.step); at(e.step).push({ text: `  removed${agent === primary ? '' : ` [${agent}]`} ${removed.map((id) => leafName(agent, id)).join(' ')}` }); }
       }
+      const batch = [];
       for (const l of e.lines ?? []) {
         if (l.kind === 'other') { totals.other++; continue; }
         seen(e.step);
         if (l.outcome === 'refused' || l.error) {
           totals.refused++;
           const text = typeof l.error?.message === 'string' ? (blobs.get(l.error.message) ?? l.error.message) : '';
-          at(e.step).push({ text: `  compile${l.agent === primary ? '' : ` [${l.agent}]`} refused ${l.error?.class ?? 'unknown'}${text ? ` [${template(`error-${l.error?.class ?? 'unknown'}`, String(text).replace(/\d+/g, '#'))}]` : ''}` });
+          batch.push({ text: `  compile${l.agent === primary ? '' : ` [${l.agent}]`} refused ${l.error?.class ?? 'unknown'}${text ? ` [${template(`error-${l.error?.class ?? 'unknown'}`, String(text).replace(/\d+/g, '#'))}]` : ''}` });
           continue;
         }
         if (l.kind === 'dry') totals.dry++; else totals.compiles++;
-        at(e.step).push(compileLine(l, e.boot));
+        batch.push(compileLine(l, e.boot));
       }
+      let next = null;
+      for (let k = batch.length - 1; k >= 0; k--) {
+        if (batch[k].request) next = batch[k].request;
+        else if (next) batch[k].before = next;
+      }
+      at(e.step).push(...batch);
     }
     if (e.kind === 'checkpoint') { seen(e.step); at(e.step).push({ text: `checkpoint ${e.name}` }); }
   }
@@ -339,7 +362,7 @@ export function renderRecordLines({ header, log, records, end }) {
     let key = -Infinity;
     const keyed = (byStep.get(step) ?? []).map((l, i) => {
       if (l.request && seqOf.has(l.request)) key = seqOf.get(l.request);
-      return { l, key: l.request && seqOf.has(l.request) ? seqOf.get(l.request) : key, i };
+      return { l, key: l.request && seqOf.has(l.request) ? seqOf.get(l.request) : l.before && seqOf.has(l.before) ? seqOf.get(l.before) : key, i };
     });
     keyed.sort((a, b) => a.key - b.key || a.i - b.i);
     byStep.set(step, keyed.map(({ l }) => {
@@ -357,7 +380,8 @@ export function renderRecordLines({ header, log, records, end }) {
       }
       if (l.kind === 'call') return { text: `${l.base}${sentNote('summariser', l.sent)}`, request: l.request };
       if (l.kind === 'unclassified') return { text: `${l.base}${sentNote('unclassified', l.sent)}`, request: l.request };
-      return l;
+      const { before, ...line } = l;
+      return line;
     }));
   }
   for (const step of steps) {
@@ -404,7 +428,7 @@ export function nameTemplates(templates, hash = sha12) {
 
 export function unrecordable(records, log) {
   const sideOf = (agent) => (agent === FIXTURE_AGENT ? 'primary' : 'sub');
-  const lines = log.filter((e) => e.kind === 'compiles').flatMap((e) => (e.lines ?? []).filter((l) => l.kind === 'request'));
+  const lines = log.filter((e) => e.kind === 'compiles').flatMap((e) => (e.lines ?? []).filter((l) => l.kind === 'request' && l.outcome === 'compiled'));
   const compiled = new Set(lines.map((l) => sideOf(l.agent)));
   const uncompiled = [...new Set(records.filter((r) => r.kind === 'agent').map((r) => r.agent ?? 'primary'))].filter((side) => !compiled.has(side));
   const begun = new Map();
@@ -417,7 +441,7 @@ export function unrecordable(records, log) {
   }
   const others = [...new Set(lines.map((l) => l.agent).filter((a) => a !== FIXTURE_AGENT))];
   if (others.length > 1) return `${others.join(' and ')} each made request compiles, and the stand-in tells only the fixture's requests from the rest, so the record couldn't tell one agent's requests from another's`;
-  if (uncompiled.length) return `the run sent ${uncompiled.join(' and ')} agent requests, and its log holds no request compile line from the test module for ${uncompiled.length > 1 ? 'either' : 'that side'}, so its record couldn't tell their compiles from their rounds`;
+  if (uncompiled.length) return `the run sent ${uncompiled.join(' and ')} agent requests, and its log holds no compiled request line from the test module for ${uncompiled.length > 1 ? 'either' : 'that side'}, so its record couldn't tell their compiles from their rounds`;
   const unstamped = lines.filter((l) => l.outcome === 'compiled' && !/^\d+$/.test(String(l.stamp ?? ''))).length;
   if (unstamped) return `${unstamped} request compile(s) carry no stamp from the machine's monotonic clock, which the test module reads on Linux, so the record couldn't tell their requests from rounds`;
   return null;
@@ -438,7 +462,8 @@ export function exitCode(results, { versions = 'same' } = {}) {
 const versionList = (v) => Object.entries(v ?? {}).map(([k, x]) => `${k.replace('@animalabs/', '')} ${x}`).join(', ');
 
 export function versionsText({ release, candidate }) {
-  return `# whole-host versions\ncheckpoint ${release.tag}: ${versionList(release.versions)}\ncandidate: ${versionList(candidate.versions)}\n`;
+  const without = (v, names) => Object.fromEntries(Object.entries(v ?? {}).filter(([k]) => !names.includes(k)));
+  return `# whole-host versions\ncheckpoint ${release.tag}: ${versionList(without(release.versions, ['bun']))}\ncandidate: ${versionList(without(candidate.versions, ['bun', '@animalabs/connectome-host']))}\n`;
 }
 
 export function versionChanges(committed, now) {

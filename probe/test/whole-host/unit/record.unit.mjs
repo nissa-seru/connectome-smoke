@@ -308,8 +308,12 @@ test('a sent compile names each new head where it changes, and its body hash mov
   assert.match(c2, /, head H:[0-9a-f]{8}, body [0-9a-f]{8}$/);
   assert.notEqual(c1.match(/H:[0-9a-f]{8}/)[0], c2.match(/H:[0-9a-f]{8}/)[0], 'the second request\'s head differs, and is named');
   assert.doesNotMatch(c3, /head H:/, 'the third request\'s head is the second\'s, so it isn\'t named again');
-  assert.notEqual(compiles([recs[0], req('a2', 2, 'q.2', head(200), 'dX'), recs[2]])[1], c2, 'a change to a compiled request\'s message moves its line');
-  assert.notEqual(compiles([recs[0], req('a2', 2, 'q.2', head(200), 'd2', '1h'), recs[2]])[1], c2, 'and so does a cache marker on it');
+  const message = compiles([recs[0], req('a2', 2, 'q.2', head(200), 'dX'), recs[2]]);
+  assert.notEqual(message[1], c2, 'a change to a compiled request\'s message moves its line');
+  assert.deepEqual([message[0], message[2]], [c1, c3], 'and no other request\'s');
+  const marker = compiles([recs[0], req('a2', 2, 'q.2', head(200), 'd2', '1h'), recs[2]]);
+  assert.notEqual(marker[1], c2, 'and so does a cache marker on it');
+  assert.deepEqual([marker[0], marker[2]], [c1, c3], 'again moving no other request\'s line');
 });
 
 test('the requests a view shows are those whose lines a rendered record moved', () => {
@@ -373,10 +377,12 @@ test('a run is unrecordable where a side sent agent requests with no request com
   const compiles = (agent, stamp) => ({ kind: 'compiles', lines: [{ kind: 'request', agent, outcome: 'compiled', ...(stamp === undefined ? {} : { stamp }) }] });
   const agentReq = (agent) => ({ kind: 'agent', agent });
   assert.equal(unrecordable([agentReq('primary')], [compiles('fixture', '12')]), null);
-  assert.match(unrecordable([agentReq('primary'), agentReq('sub')], [compiles('fixture', '12')]), /sent sub agent requests, and its log holds no request compile line/);
+  assert.match(unrecordable([agentReq('primary'), agentReq('sub')], [compiles('fixture', '12')]), /sent sub agent requests, and its log holds no compiled request line/);
   assert.match(unrecordable([agentReq('primary')], []), /sent primary agent requests/);
   assert.match(unrecordable([agentReq('primary')], [compiles('fixture')]), /1 request compile\(s\) carry no stamp/);
   assert.equal(unrecordable([], []), null, 'a run with no agent request has nothing to tell apart');
+  const refused = { kind: 'compiles', lines: [{ kind: 'request', agent: 'fixture', outcome: 'refused' }] };
+  assert.match(unrecordable([agentReq('primary')], [refused]), /sent primary agent requests, and its log holds no compiled request line/, 'a refused compile sent nothing, so no request pairs with it');
 });
 
 test('a new boot whose store reports no receipt head names none, where the boot before had one', () => {
@@ -442,10 +448,12 @@ test('no record names a version: versions go in one file, a change in them is na
   const body = renderRecord({ header, log: [], records: [], end: { ok: true } });
   assert.ok(!/0\.0\.[12]|v0\.0\.1/.test(body), 'the record carries no version');
   assert.match(body.split('\n')[0], /^# whole-host record H1\/W1, from empty$/);
-  const at = (cm) => versionsText({ release: { tag: 'v0.21.0', versions: { '@animalabs/context-manager': '0.24.0' } }, candidate: { versions: { '@animalabs/connectome-host': '0.21.0', '@animalabs/context-manager': cm } } });
-  assert.equal(at('0.24.0'), '# whole-host versions\ncheckpoint v0.21.0: context-manager 0.24.0\ncandidate: connectome-host 0.21.0, context-manager 0.24.0\n');
+  const at = (cm, { host = '0.21.0', bun = '1.4.4' } = {}) => versionsText({ release: { tag: 'v0.21.0', versions: { '@animalabs/connectome-host': '0.21.0', '@animalabs/context-manager': '0.24.0', bun } }, candidate: { versions: { '@animalabs/connectome-host': host, '@animalabs/context-manager': cm, bun } } });
+  assert.equal(at('0.24.0'), '# whole-host versions\ncheckpoint v0.21.0: connectome-host 0.21.0, context-manager 0.24.0\ncandidate: context-manager 0.24.0\n', 'it names the checkpoint release and its stack, and the candidate\'s stack, but not the candidate itself or the Bun that ran');
   assert.deepEqual(versionChanges(at('0.24.0'), at('0.24.1')), ['candidate context-manager 0.24.0 → 0.24.1']);
   assert.deepEqual(versionChanges(at('0.24.0'), at('0.24.0')), []);
+  assert.equal(at('0.24.0', { host: '0.22.0' }), at('0.24.0'), 'a release\'s version bump of the checkout changes nothing it compares');
+  assert.equal(at('0.24.0', { bun: '1.4.9' }), at('0.24.0'), 'another Bun inside the engines range changes nothing it compares');
   const pass = [{ outcome: 'pass', record: 'same' }];
   assert.equal(exitCode(pass, { versions: 'same' }), 0);
   assert.equal(exitCode(pass, { versions: 'differs' }), 1);
@@ -603,4 +611,56 @@ test('the record\'s totals count the compiles each part of check 11 couldn\'t ju
   assert.deepEqual(JSON.parse(totals.slice('totals '.length)).unjudged, { 'budget: PassthroughStrategy gives no render stats': 1, '[Subconscious] budget: PassthroughStrategy gives no render stats': 1 });
   const plain = renderRecord({ header, log, records, end: { ok: true } }).split('\n').find((l) => l.startsWith('totals '));
   assert.equal(JSON.parse(plain.slice('totals '.length)).unjudged, undefined, 'a run with every compile judged carries no such count');
+});
+
+test('a compile that sent no request keeps its place before the request its own batch compiled next, though a request logged before the batch sorts after both', () => {
+  const lg = [
+    { kind: 'request', step: 'q', request: { id: 'r9', kind: 'summariser' } },
+    { kind: 'compiles', step: 'q', blobs, lines: [
+      { seq: 1, agent: 'fixture', kind: 'dry', outcome: 'compiled', messages: [m(1, 'b1')] },
+      line(1, [m(1, 'b1'), m(4, 'b4', true)]),
+    ] },
+  ];
+  const recs = [
+    { id: 'a1', seq: 3, kind: 'agent', agent: 'primary', step: 'q', arrived: '15', messages: [] },
+    { id: 'r9', seq: 5, kind: 'summariser', step: 'q', messages: [{ blocks: [{ canaries: ['[[c:p.1.in]]'] }] }], answer: { shape: 'summary' } },
+  ];
+  const r = renderRecord({ header, log: lg, records: recs, end: { ok: true } }).split('\n');
+  const step = r.slice(r.indexOf('step q') + 1, r.indexOf('end ok'));
+  const dry = step.findIndex((l) => l.startsWith('  compile dry'));
+  const sent = step.findIndex((l) => l.startsWith('  compile ') && !l.startsWith('  compile dry'));
+  const call = step.findIndex((l) => l.startsWith('  call '));
+  assert.ok(dry >= 0 && sent >= 0 && call >= 0, step.join('\n'));
+  assert.ok(dry < sent && sent < call, `the batch's order, then the call that arrived after its request:\n${step.join('\n')}`);
+});
+
+test('a whole listing at the run\'s first boot is the store as the run began, writing nothing; one for an agent first seen later writes what it holds; one after a restart reports what went since', () => {
+  const sum = (id, sources, content) => ({ id, level: 1, sourceLevel: 0, sources, parent: null, content });
+  const said = (t) => ({ participant: 'summary', content: t });
+  const held = [['1', ['[[c:a.in]]']], ['2', ['[[c:b.in]]']], ['4', []]];
+  const lg = [
+    { kind: 'compiles', step: null, at: 'boot', boot: 1, blobs: { s1: said('one'), s2: said('two'), s3: said('three'), s4: said('four') }, store: { fixture: { whole: true, messages: held, summaries: [sum('L1-1', ['1'], 's1'), sum('L1-2', ['2'], 's2'), sum('L1-4', ['4'], 's4')] } }, lines: [] },
+    { kind: 'compiles', step: 'q.1', boot: 1, blobs: {}, store: { fixture: { summaries: [sum('L1-3', ['1'], 's3')] }, sub: { whole: true, messages: [['9', ['[[c:s.in]]']]], summaries: [sum('S-1', ['9'], 's1')] } }, lines: [line(1, [{ sources: ['s:L1-4@1'], content: 's4' }])] },
+    { kind: 'compiles', step: 'q.2', at: 'boot', boot: 2, blobs: {}, store: { fixture: { whole: true, messages: [['1', ['[[c:a.in]]']], ['4', []]], summaries: [sum('L1-1', ['1'], 's1'), sum('L1-3', ['1'], 's3'), sum('L1-4', ['4'], 's4')] } }, lines: [] },
+    { kind: 'compiles', step: 'q.3', boot: 2, blobs: {}, lines: [line(1, [{ sources: ['s:L1-4@1'], content: 's4' }])] },
+  ];
+  const r = renderRecord({ header, log: lg, records: [], end: { ok: true } }).split('\n');
+  const section = (step) => { const at = r.indexOf(`step ${step}`); const next = r.findIndex((l, i) => i > at && !l.startsWith('  ')); return r.slice(at + 1, next); };
+  assert.deepEqual(r.filter((l) => l.startsWith('  wrote')).map((l) => l.split(' [T:')[0]), ['  wrote L1(a.in)', '  wrote [sub] L1(s.in)'], 'L1-1 and L1-2 were the store as the run began, so the only lines are q.1\'s');
+  assert.deepEqual(section('q.1').filter((l) => l.startsWith('  wrote')).map((l) => l.split(' [T:')[0]), ['  wrote L1(a.in)', '  wrote [sub] L1(s.in)'], 'step q.1 wrote one, and every summary of an agent first seen there is new');
+  assert.deepEqual(section('q.2'), ['  removed L1(-)'], 'the restart\'s listing lacks L1-2 and its one source, so it is named as a delta reporting both would name it, and nothing else changed');
+  assert.match(section('q.1').find((l) => l.startsWith('  compile')), /L1\(b\.in\+1\)/, 'message 4, which L1-4 covers, is named past message 2 while 2 is held');
+  assert.match(section('q.3').find((l) => l.startsWith('  compile')), /L1\(a\.in\+1\)/, 'and past message 1 once the restart\'s listing lacks 2');
+});
+
+test('a request\'s head line names its URL\'s query when it has one', () => {
+  const head = { model: 'm', maxTokens: 100, toolChoice: null, thinking: null, system: [], tools: [], rest: null };
+  const req = (id, query) => ({ id, arrived: '11', kind: 'agent', agent: 'primary', step: 'q.1', stream: true, head: { ...head, ...(query ? { query } : {}) }, messages: [{ role: 'user', digest: 'd1', blocks: [{ type: 'text', canaries: ['[[c:q.1.in]]'] }] }], answer: { shape: 'reply' } });
+  const lg = [
+    { kind: 'compiles', step: 'q.1', blobs: { u1: text('[[c:q.1.in]] a') }, lines: [line(1, [m(1, 'u1')])] },
+    { kind: 'request', step: 'q.1', request: { id: 'a1', kind: 'agent' } },
+  ];
+  const heads = (r) => renderRecord({ header, log: lg, records: [r], end: { ok: true } }).split('\n').filter((l) => l.startsWith('H:'));
+  assert.ok(heads(req('a1', 'beta=true'))[0].endsWith(', query beta=true'), heads(req('a1', 'beta=true'))[0]);
+  assert.ok(!heads(req('a1', null))[0].includes('query'));
 });
