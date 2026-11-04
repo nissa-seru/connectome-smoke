@@ -52,7 +52,7 @@ test('X3: a generated text stored in parts shows each part, marked or not, by th
   ]);
 });
 
-test('X8: a stretch of one generated text that another also holds shows as part of the text the request carries, not of the other', () => {
+test('X8: where a request carries one generated text on past a stretch another also holds, the stretch shows as part of the text it continues in, not of the other', () => {
   const doc = `[[c:x.5.in]] ${prose(3000, 'x.5:in')}`;
   const at = 1001;
   const reply = `[[c:x.5.r1]] zz${doc.slice(at + 1, at + 46)} zz ${prose(200, 'x.5:r1')}`;
@@ -144,7 +144,7 @@ test('X5: thinking shows signed or not with the run\'s thinking marked, a call i
   ]);
 });
 
-test('X6: the run\'s texts include each fixture call\'s result, both texts of a mixed one, and every text and thinking the stand-in answered', () => {
+test('X6: the run\'s texts include each fixture call\'s result, both texts of a mixed one, and what the stand-in answered, each text of 32 characters or more among them', () => {
   const json = { kind: 'json', size: 700, canary: '[[c:x.4.call1]]' };
   const mixed = { kind: 'mixed', size: 1200, width: 2, height: 2, canary: '[[c:x.4.call2]]' };
   const summary = `[[s:M0123abcd]] Memory 0123abcd, carried 1 canaries to c:x.4.in: ${prose(500, 7)}`;
@@ -222,4 +222,27 @@ test('X13: a block\'s fields its line doesn\'t otherwise show appear beside its 
     '    text: odd',
   ]);
   assert.match(transcriptOf(body([user('hello')]), generated)[0], /^system\[0\]/, 'a request with no result has no form line');
+});
+
+test('X14: a cache_control of null shows as one, apart from none, on a system block, a tool, a message, a block and a result\'s inner block, as the record and the digest tell them apart', () => {
+  const generated = generatedTexts({ steps: [turn] });
+  const of = (cc) => {
+    const marked = cc === undefined ? {} : { cache_control: cc };
+    return transcriptOf(body([
+      { role: 'user', ...marked, content: [{ type: 'text', text: 'hello', ...marked }] },
+      { role: 'assistant', content: [{ type: 'tool_use', id: 'toolu_1', name: 'time--now', input: {} }] },
+      { role: 'user', content: [{ type: 'tool_result', tool_use_id: 'toolu_1', is_error: false, content: [{ type: 'text', text: 'ok', ...marked }] }] },
+    ], { system: [{ type: 'text', text: 'You are the fixture agent.', ...marked }], tools: TOOLS.map((t) => ({ ...t, ...marked })) }), generated);
+  };
+  const none = of(undefined);
+  const nulled = of(null);
+  assert.deepEqual(nulled.filter((l) => !none.includes(l)), [
+    'system[0] [cache null]: You are the fixture agent.',
+    nulled.find((l) => l.startsWith('tool time--now')),
+    '#0 user [cache null]',
+    '  text [cache null]: hello',
+    '    text [cache null]: ok',
+  ]);
+  assert.ok(nulled.find((l) => l.startsWith('tool time--now')).startsWith('tool time--now [cache null]'));
+  assert.equal(none.length, nulled.length);
 });

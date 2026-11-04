@@ -108,8 +108,6 @@ const exitWithin = (child, ms) => new Promise((resolve) => {
   child.once('exit', () => { clearTimeout(timer); resolve(true); });
 });
 
-// The host shapes requests alike for no binding-probe outcome and for an account that refuses or drops a changed
-// block (logging-adapter.ts tells only `shows` apart), so a binding configuration boots with the probe off.
 export function hostEnv({ configuration, standinUrl, control, clock }) {
   return {
     ANTHROPIC_BASE_URL: standinUrl, ANTHROPIC_API_KEY: 'sk-ant-fixture', TZ: 'UTC', AGENT_TIMEZONE: undefined, FIXTURE_CONTROL: control, FIXTURE_EPOCH_MS: String(clock),
@@ -144,7 +142,6 @@ export function laneRecipe({ configuration, control, channels, boot }) {
   };
 }
 
-// connectome-host's `/budget` writes a header, then a line per agent, `  <name>: …`.
 export function budgetReportDone(lines, agent) {
   return lines.some((l) => l.startsWith(`  ${agent}: `) || !(l === BUDGET_HEADER || /^ {2}\S/.test(l)));
 }
@@ -160,8 +157,6 @@ export function readSettle(answer, previous, ticks = {}) {
     }),
     deferredWrites: host.deferredWrites,
   });
-  // A maintain pass returns at once while a compression the host's auto-tick started is in flight, and no event marks
-  // that work's end, so the test module's tick counts hold the settle too.
   const ticking = Object.entries(ticks).filter(([, n]) => n !== 0).map(([name, n]) => `${name} ${n}`);
   return {
     ticking,
@@ -385,7 +380,6 @@ export async function runScript({ steps, configuration, standin, hostDir, facts,
     }
   }
 
-  // The turn whose request is held keeps the host from draining, so settle() would wait on it.
   async function compressionIdle(request) {
     const started = performance.now();
     for (let pass = 1; ; pass++) {

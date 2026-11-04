@@ -15,6 +15,7 @@ on:
       - test/whole-host/run.mjs
       - test/whole-host/lib/strategies/driver.mjs
       - test/whole-host/lib/common.mjs
+      - src/**
       - package.json
       - package-lock.json
       - bun.lock
