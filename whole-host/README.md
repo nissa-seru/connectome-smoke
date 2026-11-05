@@ -121,7 +121,10 @@ the lines of requests are in the order the stand-in received them:
   one it can't count under a level, since its instruction opens as a merge
   instruction does but names no level, or names a level (`Ln`) in none of
   the forms the stand-in reads, as a merge reworded to open as an L1
-  instruction would; or one to any route but a
+  instruction would (an L1 instruction that quotes a level from the
+  conversation, as the host's frontdesk transition quotes the user's open
+  questions verbatim, is refused the same way, so its run doesn't measure;
+  no workload's text names one); or one to any route but a
   POST to a path ending in `/v1/messages`, `count_tokens` included, which no
   run sends. So is a summariser retry whose hint doesn't fit what it
   re-sends. A request re-sends one the stand-in answered badly when it has
