@@ -121,7 +121,19 @@ the lines of requests are in the order the stand-in received them:
   opens as a merge instruction does but names no level it asks for, so it
   can't be counted under its level, or one to any route but a
   POST to a path ending in `/v1/messages`, `count_tokens` included, which no
-  run sends. Check 1 fails the run, naming the stand-in's reason, and the line
+  run sends. So is a summariser retry whose hint doesn't fit what it
+  re-sends. A request re-sends one the stand-in answered badly when it has
+  the same level, target and canaries, and the same summaries for an L1
+  request or the same last summary for a merge, since context-manager 0.24.0
+  re-sends a merge with whichever prior summaries its halved recall budget
+  fits, its sources last. After an answer that was only thinking, or empty,
+  the re-send must carry a retry hint, after one cut at `max_tokens` none,
+  and a hint with nothing to re-send is refused too. A merge whose sources
+  went raw, so that its last summary is its newest prior, and whose retry
+  dropped that prior, isn't read as a re-send: with a hint it is refused, so
+  the run can't be compared though nothing is wrong, and after `max_tokens`
+  it is a first attempt. Check 1 fails the run, naming the stand-in's
+  reason, and the line
   lets the view show the request. The line carries no method, and a body that
   doesn't parse, or parses to a falsy value such as `null`, gets no head, so no
   path or query either; for a route the stand-in doesn't serve, the reason

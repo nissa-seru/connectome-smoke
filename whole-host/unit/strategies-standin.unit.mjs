@@ -293,21 +293,23 @@ test('T37: a retry is a request that re-sends one that took a bad answer, its ca
   assert.deepEqual((await post(s.url, summariserBody({ canaries: ['[[c:x.10]]'] }))).json.content, [{ type: 'text', text: '' }], 'a request for another slice is a first attempt');
 }));
 
-test('T38: a merge re-sent after a bad answer may drop its oldest summaries, and carries a retry hint after thinking or nothing but none after max_tokens, as context-manager 0.24.0 re-sends it; an L1 request is re-sent whole', () => withStandin({}, async (s) => {
+test('T38: a merge re-sent after a bad answer keeps its last summary, its sources, whatever prior summaries it carries, and carries a retry hint after thinking or nothing but none after max_tokens, as context-manager 0.24.0 re-sends it; an L1 request is re-sent whole', () => withStandin({}, async (s) => {
   const { seen } = arrivals(s);
   const PLAIN = '\n\nWrite the memory directly as plain prose — do not wrap it in <thinking> or any other tags; begin immediately with the memory text itself.';
   const S = (n) => `[[s:M${String(n).padStart(8, '0')}]]`;
   const merge = (canary, summaries, hint = '') => summariserBody({ canaries: [canary], summaries, instruction: `${MERGE}${hint}` });
-  s.setStep(step('bad', [], { badAnswers: ['empty', 'max-tokens', 'thinking-only'] }));
+  const good = /^\[\[s:M[0-9a-f]{8}\]\] /;
+  s.setStep(step('bad', [], { badAnswers: ['empty', 'max-tokens', 'thinking-only', 'empty'] }));
   assert.deepEqual((await post(s.url, merge('[[c:m.1]]', [S(1), S(2), S(3), S(4)]))).json.content, [{ type: 'text', text: '' }]);
-  assert.match(textOf((await post(s.url, merge('[[c:m.1]]', [S(2), S(3), S(4)], PLAIN))).json), /^\[\[s:M[0-9a-f]{8}\]\] /, 'a hinted merge retry with its oldest summary gone is a retry');
+  assert.match(textOf((await post(s.url, merge('[[c:m.1]]', [S(1), S(3), S(4)], PLAIN))).json), good, 'a hinted retry that skipped a prior summary in the middle is a retry');
   assert.equal((await post(s.url, merge('[[c:m.2]]', [S(5), S(6), S(7)]))).json.stop_reason, 'max_tokens');
-  assert.match(textOf((await post(s.url, merge('[[c:m.2]]', [S(6), S(7)]))).json), /^\[\[s:M[0-9a-f]{8}\]\] /, 'a bare merge re-send after max_tokens is a retry');
+  assert.match(textOf((await post(s.url, merge('[[c:m.2]]', [S(8), S(7)]))).json), good, 'a bare re-send after max_tokens, with a prior the first try didn\'t send, is a retry');
   const hintedAfterCut = await post(s.url, merge('[[c:m.2]]', [S(7)], PLAIN));
   assert.equal(hintedAfterCut.status, 400);
   assert.equal(seen.at(-1).kind, 'unclassified');
   assert.match(hintedAfterCut.json.error.message, /re-sends a request cut at max_tokens, which context-manager 0\.24\.0 re-sends with no retry hint, but carries one/);
-  assert.match(textOf((await post(s.url, summariserBody({ canaries: ['[[c:l.1]]'], summaries: [S(8), S(9)] }))).json), /^<thinking>/);
+  assert.match(textOf((await post(s.url, merge('[[c:m.2]]', [S(5), S(6)]))).json), /^<thinking>/, 'a merge ending with another summary is another merge, a first attempt');
+  assert.deepEqual((await post(s.url, summariserBody({ canaries: ['[[c:l.1]]'], summaries: [S(8), S(9)] }))).json.content, [{ type: 'text', text: '' }]);
   const l1Shrunk = await post(s.url, summariserBody({ canaries: ['[[c:l.1]]'], summaries: [S(9)], instruction: `${CHAT}${PLAIN}` }));
   assert.equal(l1Shrunk.status, 400, 'an L1 retry is re-sent whole');
   assert.match(l1Shrunk.json.error.message, /carries a retry hint, but no earlier request with its canaries and summaries took a bad answer/);

@@ -334,13 +334,12 @@ export async function startStandin({ configuration, rawDir = null, refuseMerges 
   let toolNumber = 0;
   const badQueue = [];
   const badlyAnswered = [];
-  // context-manager 0.24.0 re-sends a merge after a bad answer with its recall budget halved per attempt, so its
-  // oldest prior summaries may go (`capRecallPairs`); an L1 request it retries is re-sent whole.
+  // context-manager 0.24.0 re-sends a merge after a bad answer with its recall budget halved per attempt, keeping
+  // whichever prior summaries fit (`capRecallPairs`), with its sources last; an L1 request it retries is re-sent whole.
   const resent = (record) => {
     const same = (b) => b.level === record.level && b.target === record.target && JSON.stringify(b.canaries) === JSON.stringify(record.sent.canaries);
-    const tail = (b) => record.sent.summaries.length <= b.summaries.length && (record.level >= 2 || record.sent.summaries.length === b.summaries.length)
-      && JSON.stringify(b.summaries.slice(b.summaries.length - record.sent.summaries.length)) === JSON.stringify(record.sent.summaries);
-    return badlyAnswered.findLast((b) => same(b) && tail(b)) ?? null;
+    const sources = (b) => (record.level >= 2 ? b.summaries.at(-1) === record.sent.summaries.at(-1) : JSON.stringify(b.summaries) === JSON.stringify(record.sent.summaries));
+    return badlyAnswered.findLast((b) => same(b) && sources(b)) ?? null;
   };
   const held = [];
   const heldListeners = [];
