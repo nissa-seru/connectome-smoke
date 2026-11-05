@@ -59,6 +59,7 @@ test('a record names messages by their canaries, writes each compile as what cha
     '  compile -2 + [T:user-clock-#-#-utc-9b6932fc9102](12,20)',
     '  compile L1(p.1.in-p.1.r1) [T:user-clock-#-#-utc-9b6932fc9102](12,20) [T:user-ref-img-na-#-then-9f1032607484](1,1)',
     '  compile refused BudgetExceeded [T:error-budgetexceeded-over-by-#-9ed7cf715b80]',
+    'step p.end',
     'checkpoint prefix',
     'end ok',
     'receipt fixture #5 changes L1(p.1.in-p.1.r1)/sum/1/5 #6/raw/0/5',

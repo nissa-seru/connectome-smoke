@@ -386,7 +386,7 @@ export function renderRecordLines({ header, log, records, end, judged = null }) 
   for (const step of steps) {
     const own = byStep.get(step) ?? [];
     const body = own.filter((l) => l.text.startsWith('  '));
-    if (body.length) lines.push(`step ${step}`, ...body);
+    if (own.length) lines.push(`step ${step}`, ...body);
     lines.push(...own.filter((l) => !l.text.startsWith('  ')));
   }
   lines.push(`end ${end?.ok ? 'ok' : 'failed'}`);

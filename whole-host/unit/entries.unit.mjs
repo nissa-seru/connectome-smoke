@@ -33,16 +33,36 @@ test('lines a step gained or lost are differences of their own, and a step only 
   ]);
 });
 
-test('a template\'s text that changed is filled from each side\'s first use of it, and one whose numbers don\'t fit is left as written', () => {
+test('a template\'s text that changed is never paired across the arms: each side is in one arm only, filled from that side\'s first use, and one whose numbers don\'t fit is left as written', () => {
   const base = record({ templates: ['T:user-clock-tuesday-#-#-#-aaaaaaaaaaaa = Clock: Tuesday #-#-#, #:# UTC'], steps: { 'p.1': ['compile [T:user-clock-tuesday-#-#-#-aaaaaaaaaaaa](2026,1,6,9,0) p.1.in, body 11111111'] } });
   const head = record({ templates: ['T:user-clock-tuesday-#-#-#-bbbbbbbbbbbb = Clock: Tuesday #-#-# at #:# UTC'], steps: { 'p.1': ['compile [T:user-clock-tuesday-#-#-#-bbbbbbbbbbbb](2026,1,6,9,0) p.1.in, body 11111111'] } });
-  const ds = differencesOf('H1/W1', base, head);
-  const t = ds.find((d) => d.place.step === 'templates');
-  assert.equal(t.describe, 'templates T:user-clock-tuesday-#-#-#: text changed');
-  assert.equal(t.before, 'T:user-clock-tuesday-#-#-#-aaaaaaaaaaaa = Clock: Tuesday 2026-1-6, 9:0 UTC');
-  assert.equal(t.after, 'T:user-clock-tuesday-#-#-#-bbbbbbbbbbbb = Clock: Tuesday 2026-1-6 at 9:0 UTC');
+  const ts = differencesOf('H1/W1', base, head).filter((d) => d.place.step === 'templates');
+  assert.deepEqual(ts.map((d) => [d.describe, d.before, d.after]), [
+    ['templates T:user-clock-tuesday-#-#-#: text only in base', 'T:user-clock-tuesday-#-#-#-aaaaaaaaaaaa = Clock: Tuesday 2026-1-6, 9:0 UTC', ''],
+    ['templates T:user-clock-tuesday-#-#-#: text only in head', '', 'T:user-clock-tuesday-#-#-#-bbbbbbbbbbbb = Clock: Tuesday 2026-1-6 at 9:0 UTC'],
+  ], 'two texts of one role may be two different texts, so the grouping never says one became the other');
   const short = differencesOf('H1/W1', base.replace('(2026,1,6,9,0)', '(2026,1)'), head).find((d) => d.place.step === 'templates');
   assert.equal(short.before, 'T:user-clock-tuesday-#-#-#-aaaaaaaaaaaa = Clock: Tuesday #-#-#, #:# UTC', 'two numbers for five #s fill nothing');
+});
+
+test('a role that names a memory by its id is one kind whatever the id, and an entry names its role masked', () => {
+  const fork = (id) => record({ templates: [`T:fork-#-d#-#-s-m${id}-memory-${id}-${'a'.repeat(12)} = Fork`] });
+  const none = record({});
+  const ds = [...differencesOf('H1/W1', fork('#add#'), none), ...differencesOf('H1/W2', fork('f#d#e'), none), ...differencesOf('H1/W5', fork('b#'), none)];
+  const entries = entriesOf(ds);
+  assert.equal(entries.length, 1);
+  assert.equal(entries[0].describe, 'templates T:fork-#-H-#-s-mH-memory-H: text only in base');
+  assert.equal(entries[0].count, 3);
+  const levels = entriesOf(['1', '2'].map((l) => differencesOf('H1/W1', record({ templates: [`T:summary-l${l}-${'b'.repeat(12)} = s`] }), none)).flat());
+  assert.deepEqual(levels.map((e) => [e.describe, e.count]), [['templates T:summary-l#: text only in base', 2]], 'an entry grouping two levels names neither as if it were both');
+});
+
+test('a checkpoint line is placed at its own step', () => {
+  const base = `${['# whole-host record H1/W1, from empty', 'templates', 'heads', 'step p.3', '  compile p.3.in, body 11111111', 'step p.end', 'checkpoint prefix', 'end ok'].join('\n')}\n`;
+  const head = `${['# whole-host record H1/W1, from empty', 'templates', 'heads', 'step p.3', '  compile p.3.in, body 11111111', 'end ok'].join('\n')}\n`;
+  assert.deepEqual(differencesOf('H1/W1', base, head).map((d) => [d.place.step, d.describe]), [['p.end', 'a step only one arm ran']]);
+  const both = (name) => `${['# h', 'templates', 'heads', 'step p.3', '  compile p.3.in, body 11111111', 'checkpoint ' + name, 'end ok'].join('\n')}\n`;
+  assert.deepEqual(differencesOf('H1/W1', both('prefix'), both('other')).map((d) => [d.place.step, d.describe]), [['p.3', '`checkpoint` lines whose `prefix` became `other`']]);
 });
 
 test('one kind of difference is one entry, its id the sha256 of its signature, with every place and the first as its example', () => {
@@ -67,14 +87,14 @@ test('every differing line of a record lands in exactly one entry', () => {
   const entries = entriesOf(ds);
   assert.equal(entries.reduce((n, e) => n + e.count, 0), ds.length);
   assert.deepEqual(ds.map((d) => [d.place.step, d.describe]), [
-    ['heads', 'heads H:aaaaaaaa: text only in base'],
-    ['heads', 'heads H:bbbbbbbb: text only in head'],
+    ['heads', 'heads H:H: text only in base'],
+    ['heads', 'heads H:H: text only in head'],
     ['p.1', '`compile` lines whose `H p.C,` became `H L#(p.#), p.C`'],
     ['p.1', '`compile` lines whose `H p.C,` became `H L#(p.#), p.C`'],
     ['p.1', '`call` lines only in base'],
     ['p.1', '`round` lines only in head'],
     ['end', '`totals` lines whose `{"compiles":#}` became `{"compiles":#}`'],
-  ], 'as entries.py gives these records');
+  ], 'as entries.py gives these records, but for the heads\' masked role');
   assert.equal(entries.find((e) => e.describe.startsWith('`compile`')).count, 2, 'the two compiles changed the same way');
 });
 

@@ -16,7 +16,8 @@ function shape(s) {
 }
 
 const tokens = (s) => [...new Set(shape(s).split(' ').filter(Boolean).map((t) => t.replace(/…+$/, '')))].sort().join(' ');
-const role = (key) => key.replace(/-[0-9a-f]{12}$/, '');
+const HEX_SLUG = /[a-f#]*(?:[a-f]#|#[a-f])[a-f#]*/g;
+const role = (key) => mask(key.replace(/-[0-9a-f]{12}$/, '')).replace(HEX_SLUG, 'H');
 const kindOf = (line) => line.split(' ', 1)[0];
 
 function parse(text) {
@@ -37,6 +38,7 @@ function parse(text) {
     }
     if (block === 'templates' || block === 'heads') { rec[block].set(key, `${rec[block].get(key)}\n${line}`); continue; }
     if (block === 'steps' && line.startsWith('  ')) { rec.steps.get(step).push(line.slice(2)); continue; }
+    if (block === 'steps' && line.startsWith('checkpoint ')) { rec.steps.get(step).push(line); continue; }
     block = 'tail';
     rec.tail.push(line);
   }
@@ -80,22 +82,8 @@ export function differencesOf(run, baseText, headText) {
   for (const section of ['templates', 'heads']) {
     const b = base[section];
     const h = head[section];
-    const byRole = (from, other) => {
-      const m = new Map();
-      for (const k of from.keys()) if (!other.has(k)) m.set(role(k), [...(m.get(role(k)) ?? []), k]);
-      return m;
-    };
-    const gone = byRole(b, h);
-    const came = byRole(h, b);
-    for (const r of new Set([...gone.keys(), ...came.keys()])) {
-      const bs = gone.get(r) ?? [];
-      const hs = came.get(r) ?? [];
-      for (let i = 0; i < Math.max(bs.length, hs.length); i++) {
-        const [bk, hk] = [bs[i], hs[i]];
-        const what = bk && hk ? 'changed' : bk ? 'only in base' : 'only in head';
-        add([section, mask(r), what], `${section} ${r}: text ${what}`, section, bk ? `${bk} = ${b.get(bk)}` : '', hk ? `${hk} = ${h.get(hk)}` : '');
-      }
-    }
+    for (const k of b.keys()) if (!h.has(k)) add([section, role(k), 'only in base'], `${section} ${role(k)}: text only in base`, section, `${k} = ${b.get(k)}`, '');
+    for (const k of h.keys()) if (!b.has(k)) add([section, role(k), 'only in head'], `${section} ${role(k)}: text only in head`, section, '', `${k} = ${h.get(k)}`);
   }
   const lines = (step, gone, came) => {
     for (const hunk of hunks(gone, came)) {

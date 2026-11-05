@@ -133,7 +133,7 @@ the lines of requests are in the order the stand-in received them:
   the restart's step, and a message it lacks names nothing from then on. An
   agent first seen later in the run, such as a subagent, has every summary it
   holds written.
-- **`checkpoint NAME`**: where the script took a checkpoint.
+- **`checkpoint NAME`**: where the script took a checkpoint, under its step's `step` line, which a step with nothing else to show still has.
 
 The record ends with `end ok` or `end failed`, then each agent's last receipt,
 `receipt AGENT #SEQ changes LEAF/KIND/LEVEL/LAST …` (`LEAF/removed` for a leaf
@@ -376,12 +376,12 @@ what holds.
 With `--against`, `entries.json` at `--out`'s root groups every difference between the two arms' records into entries, one per kind of difference, for the context view's reader. It's `[]` when no record differs. Each entry is `{id, describe, count, runs, places, example}`:
 
 - **`id`** is the first 12 hex of the sha256 of the entry's signature, so one kind of difference has the same id in every share's file.
-- **The signature** is the kind of difference. For a record line, it's the line's kind (its first word) and, for a line that changed, the tokens it lost and the tokens it gained, each set with hex runs of 8 or more written `H`, digit runs `#` and canaries `C`, then sorted, each once. For a template or head text, it's the text's role (its key less a final 12-hex digest) and whether it changed or is in one arm only. A step only one arm ran, and a changed header, are kinds of their own.
+- **The signature** is the kind of difference. For a record line, it's the line's kind (its first word) and, for a line that changed, the tokens it lost and the tokens it gained, each set with hex runs of 8 or more written `H`, digit runs `#` and canaries `C`, then sorted, each once. For a template or head text, it's the text's role and which arm alone has it. The role is its key less a final 12-hex digest, masked as tokens are, and with each run of hex letters and `#` that holds both, such as a memory id `m#add#` from `[[s:M56add800]]`, written `H`, so a fork's text names one role whatever its memory. A step only one arm ran, and a changed header, are kinds of their own.
 - **`describe`** says the kind in words, such as "`compile` lines whose `H p.C,` became `H L#(p.#), p.C`".
 - **`places`** lists each `{run, step}` it occurs at, in `RUNS` order and then the record's; `count` is how many, and `runs` which runs.
 - **`example`** is the first place's two sides, whole: the record line or text before and after, empty where one arm has none. A template's text has each `#` filled with the number its first use on that side names, unless that use names another count of numbers, when it's left as written.
 
-Within each step, lines are paired by the harness's longest-common-subsequence diff: in each stretch of lines that differ, a removed line pairs with the first unpaired added line of its kind, and the rest are in one arm only. Every differing line is in exactly one entry. A head's key is a digest of its own text, so a changed head shows as one head in the base only and another in the head only.
+Within each step, lines are paired by the harness's longest-common-subsequence diff: in each stretch of lines that differ, a removed line pairs with the first unpaired added line of its kind, and the rest are in one arm only. A template or head text is never paired across the arms: its key is a digest of its own text, so two texts of one role may be two different texts, such as two summaries, and the grouping doesn't claim one became the other. Each is in one arm only, and the reader, not the grouping, says which correspond. Every differing line is in exactly one entry.
 
 ## What each run's checks judge
 
