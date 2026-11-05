@@ -5,8 +5,8 @@ import { ledgerOf, moduleCounts } from '../lib/strategies/ledger.mjs';
 const layout = { memberIds: ['1', '2', '3', '4', '5', '6'], units: [{ k: 'o', n: 1 }, { k: 's', n: 2, sm: [['L1-0', 1, 'llm', 0, 40]] }, { k: 'r', t: 10 }, { k: 'r', t: 10, p: 1 }, { k: 'r', t: 10 }] };
 const line = (seq, assembly, outcome = 'compiled', more = {}) => ({ seq, agent: 'fixture', kind: 'request', assembly, outcome, messages: [], violations: [], ...(outcome === 'compiled' ? { layout } : {}), ...more });
 const log = [
-  { kind: 'compiles', step: 'a', boot: 1, lines: [line(1, 1)], store: { fixture: { messages: [['1', ['[[c:a.in]]']], ['2', ['[[c:a.r1]]']], ['3', ['[[c:b.in]]']], ['5', []]], summaries: [{ id: 'L1-0', level: 1, sourceLevel: 0, sources: ['2', '3'] }], quarantine: { compression: 0, merge: 0 } } }, blobs: {} },
-  { kind: 'compiles', step: 'b', boot: 1, lines: [line(2, 2, 'refused'), line(3, 2), line(4, 3, 'compiled', { kind: 'dry', violations: [{ invariant: 'pins', detail: 'x' }] })], store: { fixture: { quarantine: { compression: 1, merge: 0 } }, reader: { messages: [['4', ['[[c:b.r1]]']]] } }, blobs: {} },
+  { kind: 'compiles', step: 'a', boot: 1, lines: [line(1, 1)], store: { fixture: { messages: [['1', ['[[c:a.in]]']], ['2', ['[[c:a.r1]]']], ['3', ['[[c:b.in]]']], ['5', []]], summaries: [{ id: 'L1-0', level: 1, sourceLevel: 0, sources: ['2', '3'] }], quarantine: { compression: [], merge: [] } } }, blobs: {} },
+  { kind: 'compiles', step: 'b', boot: 1, lines: [line(2, 2, 'refused'), line(3, 2), line(4, 3, 'compiled', { kind: 'dry', violations: [{ invariant: 'pins', detail: 'x' }] })], store: { fixture: { quarantine: { compression: ['s1'], merge: [] } }, reader: { messages: [['4', ['[[c:b.r1]]']]] } }, blobs: {} },
 ];
 
 test('ledgerOf reads context-manager\'s layout of the compile: each view member raw, raw from an incomplete body, under which summaries, or left out, named through its store\'s names, with that store\'s agent where it isn\'t the compiling agent\'s, or by its id where no store holds it', () => {
@@ -21,9 +21,9 @@ test('ledgerOf reads context-manager\'s layout of the compile: each view member 
   assert.deepEqual(ledgerOf(log, { agent: 'fixture', layout: { memberIds: ['1'], units: [{ k: 'o', n: 2 }] } }), ['- no ledger: the compile line carries no layout context-manager gave'], 'units that don\'t account for the members exactly');
 });
 
-test('moduleCounts: request compile calls made and refused, a refusal whose retry compiled counting as one of each, calls by level, the last quarantine, the last request compile\'s layout, and lines with a breach', () => {
+test('moduleCounts: request compile calls made and refused, a refusal whose retry compiled counting as one of each, calls by level, the quarantines entered by kind, the last request compile\'s layout, and lines with a breach', () => {
   const records = [{ kind: 'summariser', level: 1 }, { kind: 'summariser', level: 1 }, { kind: 'summariser', level: 2 }, { kind: 'agent' }];
-  assert.deepEqual(moduleCounts(log, records), { compiles: 2, refused: 1, compressions: 2, merges: 1, quarantines: 1, raw: 3, summarised: 2, out: 1, invariantLines: 1 });
+  assert.deepEqual(moduleCounts(log, records), { compiles: 2, refused: 1, compressions: 2, merges: 1, compressionQuarantines: 1, mergeQuarantines: 0, raw: 3, summarised: 2, out: 1, invariantLines: 1 });
   const refusedLast = [...log, { kind: 'compiles', step: 'c', boot: 1, lines: [line(5, 4, 'refused')], blobs: {} }];
   assert.deepEqual([moduleCounts(refusedLast, []).compiles, moduleCounts(refusedLast, []).refused], [2, 2]);
   const bare = moduleCounts([{ kind: 'compiles', lines: [line(1, 1, 'compiled', { layout: undefined })], blobs: {} }], []);
@@ -34,20 +34,29 @@ test('moduleCounts: requests and quarantines are the run\'s, every agent\'s; raw
   const sub = { memberIds: ['9'], units: [{ k: 'r', t: 5 }] };
   const two = [
     ...log,
-    { kind: 'compiles', step: 'c', boot: 1, lines: [line(6, 7, 'compiled', { agent: 'helper', layout: sub }), line(7, 8, 'refused', { agent: 'helper' })], store: { helper: { quarantine: { compression: 0, merge: 2 } } }, blobs: {} },
+    { kind: 'compiles', step: 'c', boot: 1, lines: [line(6, 7, 'compiled', { agent: 'helper', layout: sub }), line(7, 8, 'refused', { agent: 'helper' })], store: { helper: { quarantine: { compression: [], merge: ['m1', 'm2'] } } }, blobs: {} },
   ];
   const fixture = moduleCounts(two, []);
-  assert.deepEqual([fixture.compiles, fixture.refused, fixture.quarantines, fixture.raw], [3, 2, 3, 3]);
+  assert.deepEqual([fixture.compiles, fixture.refused, fixture.compressionQuarantines, fixture.mergeQuarantines, fixture.raw], [3, 2, 1, 2, 3]);
   const helper = moduleCounts(two, [], 'helper');
-  assert.deepEqual([helper.compiles, helper.refused, helper.quarantines, helper.raw, helper.summarised, helper.out], [3, 2, 3, 1, 0, 0]);
+  assert.deepEqual([helper.compiles, helper.refused, helper.compressionQuarantines, helper.mergeQuarantines, helper.raw, helper.summarised, helper.out], [3, 2, 1, 2, 1, 0, 0]);
   assert.equal(moduleCounts(two, [], 'nobody').raw, undefined, 'an agent with no compile has no ledger counts');
 });
 
-test('moduleCounts: a quarantine any agent couldn\'t read leaves the run\'s quarantines unknown', () => {
-  const unread = [...log, { kind: 'compiles', step: 'c', boot: 1, lines: [], store: { helper: { quarantine: { compression: null, merge: 2 } } }, blobs: {} }];
-  assert.equal(moduleCounts(unread, []).quarantines, undefined);
+test('moduleCounts: a quarantine entered during the run counts once by its identity, though it clears before the end or comes back', () => {
+  const take = (step, compression, merge) => ({ kind: 'compiles', step, boot: 1, lines: [], store: { fixture: { quarantine: { compression, merge } } }, blobs: {} });
+  const cleared = [...log, take('c', [], ['m1']), take('d', ['s1'], []), take('e', ['s2'], [])];
+  const counts = moduleCounts(cleared, []);
+  assert.deepEqual([counts.compressionQuarantines, counts.mergeQuarantines], [2, 1], 's1 cleared and came back, and counts once; s2 is new; m1 cleared and still counts');
+  const forked = [...log, { kind: 'compiles', step: 'c', boot: 1, lines: [], store: { fork: { quarantine: { compression: ['s1'], merge: [] } } }, blobs: {} }];
+  assert.equal(moduleCounts(forked, []).compressionQuarantines, 2, 'one identity in two agents\' strategies is each agent\'s');
+});
+
+test('moduleCounts: a kind of quarantine any agent couldn\'t read at any take is unknown; the other kind still counts', () => {
+  const unread = [...log, { kind: 'compiles', step: 'c', boot: 1, lines: [], store: { helper: { quarantine: { compression: null, merge: ['m1'] } } }, blobs: {} }, { kind: 'compiles', step: 'd', boot: 1, lines: [], store: { helper: { quarantine: { compression: [], merge: ['m1'] } } }, blobs: {} }];
+  assert.deepEqual([moduleCounts(unread, []).compressionQuarantines, moduleCounts(unread, []).mergeQuarantines], [undefined, 1], 'a later read that worked doesn\'t tell what the failed one missed');
   const failed = [...log, { kind: 'compiles', step: 'c', boot: 1, lines: [], store: { helper: { quarantine: { unreadable: 'gone' } } }, blobs: {} }];
-  assert.equal(moduleCounts(failed, []).quarantines, undefined);
+  assert.deepEqual([moduleCounts(failed, []).compressionQuarantines, moduleCounts(failed, []).mergeQuarantines], [undefined, undefined]);
 });
 
 test('ledgerOf names a message by its own agent\'s store first, so a fork\'s edited copy under the same id doesn\'t rename the resident\'s', () => {

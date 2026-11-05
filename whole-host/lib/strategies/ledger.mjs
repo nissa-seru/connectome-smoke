@@ -83,23 +83,40 @@ export function ledgerOf(log, line) {
   ];
 }
 
+function quarantinesEntered(log) {
+  const kinds = { compression: new Map(), merge: new Map() };
+  const unknown = new Set();
+  let reported = false;
+  for (const e of log) {
+    if (e.kind !== 'compiles') continue;
+    for (const [a, st] of Object.entries(e.store ?? {})) {
+      if (!st || !('quarantine' in st)) continue;
+      reported = true;
+      for (const [kind, seen] of Object.entries(kinds)) {
+        const ids = st.quarantine?.[kind];
+        if (!Array.isArray(ids)) { unknown.add(kind); continue; }
+        if (!seen.has(a)) seen.set(a, new Set());
+        for (const id of ids) seen.get(a).add(id);
+      }
+    }
+  }
+  if (!reported) return {};
+  return Object.fromEntries(Object.entries(kinds).filter(([kind]) => !unknown.has(kind))
+    .map(([kind, seen]) => [kind, [...seen.values()].reduce((n, ids) => n + ids.size, 0)]));
+}
+
 export function moduleCounts(log, records, agent = FIXTURE_AGENT) {
   const calls = log.filter((e) => e.kind === 'compiles').flatMap((e) => (e.lines ?? []).filter((l) => l.kind === 'request'));
   const summariser = records.filter((r) => r.kind === 'summariser');
-  const quarantine = new Map();
-  for (const e of log) {
-    if (e.kind !== 'compiles') continue;
-    for (const [a, st] of Object.entries(e.store ?? {})) if (st && 'quarantine' in st) quarantine.set(a, st.quarantine);
-  }
-  const reported = [...quarantine.values()];
-  const known = reported.every((q) => typeof q?.compression === 'number' && typeof q?.merge === 'number');
+  const entered = quarantinesEntered(log);
   const last = fates(assemblies(log, agent).filter((l) => l.outcome === 'compiled').at(-1)?.layout)?.counts;
   return {
     compiles: calls.filter((l) => l.outcome === 'compiled').length,
     refused: calls.filter((l) => l.outcome === 'refused').length,
     compressions: summariser.filter((r) => r.level === 1).length,
     merges: summariser.filter((r) => typeof r.level === 'number' && r.level > 1).length,
-    ...(reported.length && known ? { quarantines: reported.reduce((n, q) => n + q.compression + q.merge, 0) } : {}),
+    ...(entered.compression === undefined ? {} : { compressionQuarantines: entered.compression }),
+    ...(entered.merge === undefined ? {} : { mergeQuarantines: entered.merge }),
     ...(last ? { raw: last.raw, summarised: last.summarised, out: last.out } : {}),
     invariantLines: log.filter((e) => e.kind === 'compiles').flatMap((e) => e.lines ?? []).filter((l) => (l.violations ?? []).length > 0).length,
   };

@@ -161,16 +161,28 @@ export function storeDelta(manager, seen, blobs) {
   return { out, seen: next, changed: Object.keys(out).length > 0, unread };
 }
 
-// context-manager's AutobiographicalStrategy reports its quarantines publicly: compression's as the spans it holds out,
-// merges' as a count. A strategy without them, such as a passthrough, has none to report.
+// context-manager 0.24.0's AutobiographicalStrategy reports its quarantines publicly: compression's as the spans it
+// holds out, each named by its chunk's `chunkSourceHash`, and merges' as records, each named by its `key`. A strategy
+// without them, such as a passthrough, has none to report.
 function quarantineOf(manager) {
   const strategy = readable(() => manager.getStrategy());
   if (isUnreadable(strategy)) return strategy;
   if (typeof strategy?.getMergeQuarantineStatus !== 'function') return null;
   return plain(readable(() => {
     const compression = strategy.getCompressionQuarantineStatus();
-    return { compression: compression.unreadable ? null : compression.spans.length, merge: strategy.getMergeQuarantineStatus().count };
+    const merge = strategy.getMergeQuarantineStatus();
+    return {
+      compression: compression.unreadable ? null : identities(compression.spans, 'chunkSourceHash', 'a compression quarantine span'),
+      merge: identities(merge.records, 'key', 'a merge quarantine record'),
+    };
   }));
+}
+
+function identities(items, field, what) {
+  return items.map((item) => {
+    if (typeof item?.[field] !== 'string') throw new Error(`${what} has no ${field}`);
+    return item[field];
+  }).sort();
 }
 
 export function messagesOf(manager) {

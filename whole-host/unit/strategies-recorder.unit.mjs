@@ -35,21 +35,29 @@ test('storeDelta: a take with no earlier one lists the whole store and says so; 
   assert.deepEqual([later.out, later.changed], [{}, false]);
 });
 
-test('storeDelta: context-manager\'s quarantines, compression spans and merges, are reported when they move', () => {
+test('storeDelta: context-manager\'s quarantines, compression spans and merge records, are reported by identity when they move', () => {
   const blobs = blobStore();
   let status = { count: 0, keys: [], spans: [] };
-  let merges = 0;
-  const strategy = { getCompressionQuarantineStatus: () => status, getMergeQuarantineStatus: () => ({ count: merges, records: [] }) };
+  let records = [];
+  const strategy = { getCompressionQuarantineStatus: () => status, getMergeQuarantineStatus: () => ({ count: records.length, records }) };
   const m = { ...manager([]), getStrategy: () => strategy };
   const first = storeDelta(m, undefined, blobs);
-  assert.deepEqual(first.out.quarantine, { compression: 0, merge: 0 });
+  assert.deepEqual(first.out.quarantine, { compression: [], merge: [] });
   assert.equal(storeDelta(m, first.seen, blobs).out.quarantine, undefined, 'unmoved');
-  status = { count: 3, keys: ['a', 'b', 'c'], spans: [{}] };
-  merges = 1;
-  assert.deepEqual(storeDelta(m, first.seen, blobs).out.quarantine, { compression: 1, merge: 1 }, 'spans, each once however many records it holds');
+  status = { count: 3, keys: ['a', 'b', 'c'], spans: [{ chunkSourceHash: 'span-b' }, { chunkSourceHash: 'span-a' }] };
+  records = [{ key: 'merge-1' }];
+  assert.deepEqual(storeDelta(m, first.seen, blobs).out.quarantine, { compression: ['span-a', 'span-b'], merge: ['merge-1'] }, 'each span once however many records it holds, and each merge record, by identity, in order');
   status = { count: 0, keys: [], spans: [], unreadable: true };
-  assert.deepEqual(storeDelta(m, first.seen, blobs).out.quarantine, { compression: null, merge: 1 }, 'a quarantine context-manager couldn\'t read is unknown, not none');
+  assert.deepEqual(storeDelta(m, first.seen, blobs).out.quarantine, { compression: null, merge: ['merge-1'] }, 'a quarantine context-manager couldn\'t read is unknown, not none');
   assert.equal(storeDelta(manager([]), undefined, blobs).out.quarantine, undefined, 'a strategy with no quarantine reports none');
+});
+
+test('storeDelta: a quarantined span or merge record with no identity is a read this can\'t make, not a quarantine', () => {
+  const blobs = blobStore();
+  const withSpan = (span) => ({ ...manager([]), getStrategy: () => ({ getCompressionQuarantineStatus: () => ({ count: 1, keys: ['a'], spans: [span] }), getMergeQuarantineStatus: () => ({ count: 0, records: [] }) }) });
+  assert.match(storeDelta(withSpan({ hash: 'renamed' }), undefined, blobs).out.quarantine?.unreadable ?? '', /chunkSourceHash/);
+  const withRecord = { ...manager([]), getStrategy: () => ({ getCompressionQuarantineStatus: () => ({ count: 0, keys: [], spans: [] }), getMergeQuarantineStatus: () => ({ count: 1, records: [{ id: 'renamed' }] }) }) };
+  assert.match(storeDelta(withRecord, undefined, blobs).out.quarantine?.unreadable ?? '', /key/);
 });
 
 test('storeDelta: a strategy that takes kv-unified submissions but has no receipt chain to read is reported unreadable, not as no receipt', () => {
