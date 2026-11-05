@@ -108,6 +108,45 @@ test('compiledLine: a compile whose provenance gives no sources list matching it
   assert.deepEqual(unreadable(line({ messages: [], provenance: { layout: { memberIds: [], units: [] } } })), [], 'a compile of nothing has no sources to misread');
 });
 
+test('compiledLine: a source of a kind context-manager 0.24.0 gives, without the fields 0.24.0 gives it, has an unreadable violation, and no sources are read from it', () => {
+  class AutobiographicalStrategy { config = {}; getRenderStats() { return { total: { tokens: 10 } }; } }
+  const stored = [{ id: '1', sequence: 1, role: 'user', content: [text('one')] }];
+  const layout = { memberIds: ['1'], units: [{ k: 'r', t: 1 }] };
+  const line = (source) => compiledLine(
+    { ...manager(stored), getStrategy: () => new AutobiographicalStrategy(), listPins: () => [], getRenderStats: () => null },
+    { maxTokens: 1_000, reserveForResponse: 0 },
+    { renderStats: { total: { tokens: 10 } }, messages: [{ role: 'user', content: [text('one')] }], provenance: { messages: [source], layout } },
+    blobStore(),
+  );
+  const fieldsUnread = (source) => line(source).violations.some((v) => v.invariant === 'unreadable' && /without the fields context-manager 0\.24\.0 gives them/.test(v.detail));
+  const raw = (body) => ({ kind: 'raw', bodies: [body] });
+  for (const source of [
+    raw({ messageId: '1', complete: true }),
+    raw({ messageId: '1', complete: false, missing: ['content'] }),
+    raw({ messageId: '1', complete: false, missing: ['shards', 'content'] }),
+    { kind: 'summary', summaries: [{ id: 'S', level: 1 }] },
+    { kind: 'summary', summaries: [{ id: 'S', level: 1, partial: true }] },
+    { kind: 'injection', namespace: 'recall' },
+    { kind: 'other' },
+  ]) assert.equal(fieldsUnread(source), false, JSON.stringify(source));
+  for (const source of [
+    { kind: 'raw' },
+    raw({ complete: true }),
+    raw({ messageId: '1', complete: 'yes' }),
+    raw({ messageId: '1', complete: false }),
+    raw({ messageId: '1', complete: false, missing: [] }),
+    raw({ messageId: '1', complete: false, missing: ['images'] }),
+    { kind: 'summary' },
+    { kind: 'summary', summaries: [{ level: 1 }] },
+    { kind: 'summary', summaries: [{ id: 'S' }] },
+    { kind: 'summary', summaries: [{ id: 'S', level: 1, partial: false }] },
+    { kind: 'injection' },
+  ]) {
+    assert.equal(fieldsUnread(source), true, JSON.stringify(source));
+    assert.deepEqual(line(source).messages[0].sources, ['o'], `no sources are read from ${JSON.stringify(source)}`);
+  }
+});
+
 test('storeDelta: a strategy that can\'t be read when the quarantine is first sampled is reported unreadable, not as none', () => {
   const failing = { ...manager([]), getStrategy: () => { throw new Error('gone'); } };
   assert.deepEqual(storeDelta(failing, undefined, blobStore()).out.quarantine, { unreadable: 'gone' });

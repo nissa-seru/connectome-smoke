@@ -48,8 +48,15 @@ export function blobStore() {
 }
 
 // context-manager 0.24.0 gives a compile's provenance a `messages` list parallel to its messages, each of these kinds
-// (CompiledMessageSources). A compile with no provenance at all has no layout either, which check 11 already flags.
-const SOURCE_KINDS = new Set(['raw', 'summary', 'injection', 'other']);
+// (CompiledMessageSources) with these fields; a body that isn't complete always names what it's missing. A compile
+// with no provenance at all has no layout either, which check 11 already flags.
+const SOURCE_FIELDS = {
+  raw: (s) => Array.isArray(s.bodies) && s.bodies.every((b) => b?.messageId != null && typeof b.complete === 'boolean'
+    && (b.complete || (Array.isArray(b.missing) && b.missing.length > 0 && b.missing.every((x) => x === 'shards' || x === 'content')))),
+  summary: (s) => Array.isArray(s.summaries) && s.summaries.every((x) => typeof x?.id === 'string' && typeof x.level === 'number' && (x.partial === undefined || x.partial === true)),
+  injection: (s) => typeof s.namespace === 'string',
+  other: () => true,
+};
 
 function unreadSources(compiled) {
   const sent = compiled?.messages ?? [];
@@ -57,22 +64,24 @@ function unreadSources(compiled) {
   const list = compiled.provenance.messages;
   if (!Array.isArray(list)) return `the compile's provenance gives no messages list, so its ${sent.length} messages' sources couldn't be read`;
   if (list.length !== sent.length) return `the compile's provenance gives sources for ${list.length} of its ${sent.length} messages`;
-  const odd = [...new Set(list.filter((s) => !SOURCE_KINDS.has(s?.kind)).map((s) => String(s?.kind)))];
-  return odd.length ? `the compile's provenance gives sources of a kind context-manager 0.24.0 doesn't: ${odd.join(', ')}` : null;
+  const odd = [...new Set(list.filter((s) => !Object.hasOwn(SOURCE_FIELDS, s?.kind)).map((s) => String(s?.kind)))];
+  if (odd.length) return `the compile's provenance gives sources of a kind context-manager 0.24.0 doesn't: ${odd.join(', ')}`;
+  const malformed = [...new Set(list.filter((s) => !SOURCE_FIELDS[s.kind](s)).map((s) => s.kind))];
+  return malformed.length ? `the compile's provenance gives ${malformed.join(', ')} sources without the fields context-manager 0.24.0 gives them` : null;
 }
 
 export function compiledLine(manager, budget, compiled, blobs, elsewhere) {
   const prov = compiled?.provenance?.messages;
+  const sourcesUnread = unreadSources(compiled);
   const entries = (compiled?.messages ?? []).map((m, i) => {
     const { message, marker } = normalizeMessage(m);
-    const entry = { sources: prov ? sourceStrings(prov[i]) : ['o'], content: blobs.put(message) };
+    const entry = { sources: prov && !sourcesUnread ? sourceStrings(prov[i]) : ['o'], content: blobs.put(message) };
     if (marker) entry.marker = plain(marker);
     return entry;
   });
   let slots = [];
   const reading = elsewhere && ((ids) => { const r = elsewhere(ids); slots = r.from ?? []; return r; });
   const violations = checkCompile(manager, budget, compiled, entries, { compresses: compresses(manager), elsewhere: reading });
-  const sourcesUnread = unreadSources(compiled);
   if (sourcesUnread) violations.push({ invariant: 'unreadable', detail: sourcesUnread });
   const layout = compiled?.provenance?.layout;
   return {
