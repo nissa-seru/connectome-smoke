@@ -195,6 +195,13 @@ test('unreadable: a summary or strategy read that fails is a violation naming it
   assert.deepEqual(named(check(manager(), ['r:1', 'r:2', 'r:3', 'r:4'], { compresses: { unreadable: 'strategy failed' } })), [['unreadable', 'getStrategy: strategy failed; coverage wasn\'t judged']]);
 });
 
+test('unreadable: a stored message whose content isn\'t a list, or a summary with no sourceIds list, is a read check 11 couldn\'t make, not an empty message or a summary of nothing', () => {
+  const odd = manager({ messages: [...STORE, { id: '5', sequence: 5, role: 'user', body: [text('five')] }] });
+  assert.deepEqual(named(check(odd, ['r:1', 'r:2', 'r:3', 'r:4'])), [['unreadable', 'getAllMessages: stored message 5 has no content list; no invariant was judged']]);
+  const sourceless = { ...manager(), getSummary: (id) => ({ id, level: 1, sourceLevel: 0 }) };
+  assert.deepEqual(named(check(sourceless, ['s:S@1', 'r:3', 'r:4'])).filter(([v]) => v === 'unreadable'), [['unreadable', 'getSummary(S) has no sourceIds list; what depends on it wasn\'t judged']]);
+});
+
 test('a partial copy\'s shards are those context-manager\'s layout names raw: a text an earlier summarised shard shares stands for the raw one', () => {
   const twin = [...STORE, shard('5', 5, 0, 'same words'), shard('6', 6, 1, 'same words')];
   for (const m of twin) byId.set(m.id, m);

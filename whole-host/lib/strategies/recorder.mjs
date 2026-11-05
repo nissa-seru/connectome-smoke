@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { maskRunVarying } from './compare.mjs';
 import { canariesOf, namingCanaries } from './names.mjs';
-import { checkCompile, digest, isUnreadable, normalizeMessage, readSummaries, readable, sourceStrings } from './invariants.mjs';
+import { checkCompile, digest, isUnreadable, normalizeMessage, readSummaries, readable, sourceStrings, storedMessages } from './invariants.mjs';
 
 const PASSTHROUGH = ['PassthroughStrategy', 'WindowedPassthroughStrategy'];
 
@@ -152,13 +152,13 @@ export function storeDelta(manager, seen, blobs) {
     out.whole = true;
   }
   const next = { messages: new Map(seen.messages), summaries: new Map(), head: seen.head, quarantine: seen.quarantine };
-  const messages = readable(() => manager.getAllMessages());
+  const messages = storedMessages(manager);
   if (!isUnreadable(messages)) {
     next.messages = new Map();
     const added = [];
     for (const m of messages) {
       const id = String(m.id);
-      const thinking = (Array.isArray(m.content) ? m.content : []).some((b) => b?.type === 'thinking' || b?.type === 'redacted_thinking');
+      const thinking = m.content.some((b) => b?.type === 'thinking' || b?.type === 'redacted_thinking');
       const canaries = namingCanaries(m.content);
       const before = seen.messages.get(id);
       next.messages.set(id, { thinking, canaries: JSON.stringify(canaries) });
@@ -224,11 +224,13 @@ function identities(items, field, what) {
 }
 
 export function messagesOf(manager) {
-  return plain(readable(() => manager.getAllMessages().map((m) => ({
+  const stored = storedMessages(manager);
+  if (isUnreadable(stored)) return stored;
+  return plain(readable(() => stored.map((m) => ({
     id: String(m.id),
     sequence: m.sequence,
     participant: String(m.participant),
-    blocks: (Array.isArray(m.content) ? m.content : []).map(blockShape),
+    blocks: m.content.map(blockShape),
     canaries: canariesOf(m.content),
     ...(m.bodyGroupId ? { bodyGroupId: m.bodyGroupId, shardIndex: m.shardIndex ?? 0 } : {}),
     ...(m.metadata !== undefined ? { metadata: maskRunVarying(m.metadata) } : {}),

@@ -55,6 +55,15 @@ export function readable(read) {
   }
 }
 
+// context-manager 0.24.0's StoredMessage holds its content as a list of blocks.
+export const storedMessages = (manager) => readable(() => {
+  const all = manager.getAllMessages();
+  if (!Array.isArray(all)) throw new Error('getAllMessages gave no list');
+  const at = all.findIndex((m) => !Array.isArray(m?.content));
+  if (at >= 0) throw new Error(`stored message ${all[at]?.id ?? `at ${at}`} has no content list`);
+  return all;
+});
+
 const detailOf = (write) => {
   const { shown, full } = cutText(write);
   return { detail: shown, ...(full ? { full } : {}) };
@@ -69,7 +78,8 @@ export function readSummaries(manager, name = (id) => String(id)) {
   for (const t of listed) {
     const s = readable(() => manager.getSummary(t.id));
     if (isUnreadable(s) || s === null) return { unreadable: `getSummary(${t.id}) ${isUnreadable(s) ? s.unreadable : 'is null though listed'}` };
-    out.set(String(s.id), { id: String(s.id), level: s.level, sourceLevel: s.sourceLevel, sources: (s.sourceIds ?? []).map((x) => (s.sourceLevel === 0 ? name(x) : String(x))), parent: s.parentId ?? null, tokens: s.tokens, content: s.content });
+    if (!Array.isArray(s.sourceIds)) return { unreadable: `getSummary(${t.id}) has no sourceIds list` };
+    out.set(String(s.id), { id: String(s.id), level: s.level, sourceLevel: s.sourceLevel, sources: s.sourceIds.map((x) => (s.sourceLevel === 0 ? name(x) : String(x))), parent: s.parentId ?? null, tokens: s.tokens, content: s.content });
   }
   return out;
 }
@@ -77,7 +87,7 @@ export function readSummaries(manager, name = (id) => String(id)) {
 // agent-framework's Subconscious reader merges the residents' shared slot into its view read-only, so its compiles
 // send messages its own slot doesn't hold; a view member is read from the registered agent whose slot holds it.
 function readCompile(manager, compiled, messages, elsewhere) {
-  const own = readable(() => manager.getAllMessages());
+  const own = storedMessages(manager);
   if (isUnreadable(own)) return own;
   const ownIds = new Set(own.map((m) => String(m.id)));
   const layout = compiled?.provenance?.layout;
@@ -132,8 +142,12 @@ function readCompile(manager, compiled, messages, elsewhere) {
       failed.push(`getSummary(${summaryId}): ${isUnreadable(s) ? s.unreadable : 'no such summary'}`);
       return [];
     }
+    if (!Array.isArray(s.sourceIds)) {
+      failed.push(`getSummary(${summaryId}) has no sourceIds list`);
+      return [];
+    }
     const out2 = [];
-    if (s) for (const src of s.sourceIds ?? []) out2.push(...(s.sourceLevel === 0 ? [String(src)] : leaves(String(src))));
+    for (const src of s.sourceIds) out2.push(...(s.sourceLevel === 0 ? [String(src)] : leaves(String(src))));
     const set = [...new Set(out2)];
     expanded.set(summaryId, set);
     return set;

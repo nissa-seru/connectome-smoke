@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { blobStore, compiledLine, storeDelta } from '../lib/strategies/recorder.mjs';
+import { blobStore, compiledLine, messagesOf, storeDelta } from '../lib/strategies/recorder.mjs';
 import { readsFailed } from '../lib/strategies/ledger.mjs';
 class PassthroughStrategy {}
 const manager = (messages) => ({
@@ -75,6 +75,14 @@ test('storeDelta: a read that throws an error with no message is unreadable with
   const out = storeDelta({ ...manager([]), getStrategy: () => new PassthroughStrategy() }, undefined, blobStore()).out;
   assert.equal(out.receiptHead?.unreadable, 'Error with no message');
   assert.deepEqual(readsFailed([{ kind: 'compiles', step: 'a', boot: 1, lines: [], store: { fixture: out }, blobs: {} }]), ['receipt']);
+});
+
+test('storeDelta and messagesOf: a stored message whose content isn\'t a list, as context-manager 0.24.0 stores it, or a summary with no sourceIds list, is an unreadable read, not a message or summary with nothing in it', () => {
+  const odd = manager([{ id: '1', sequence: 1, content: [text('[[c:a.in]] one')] }, { id: '2', sequence: 2, body: [text('[[c:a.r1]] two')] }]);
+  assert.match(storeDelta(odd, undefined, blobStore()).out.messages?.unreadable ?? '', /stored message 2 has no content list/);
+  assert.match(messagesOf(odd)?.unreadable ?? '', /stored message 2 has no content list/);
+  const sourceless = { ...manager([]), getSummariesInRange: () => [{ id: 'S' }], getSummary: (id) => ({ id, level: 1, sourceLevel: 0, sources: ['1'], content: 'c' }) };
+  assert.match(storeDelta(sourceless, undefined, blobStore()).out.summaries?.unreadable ?? '', /getSummary\(S\) has no sourceIds list/);
 });
 
 test('storeDelta: a strategy that takes kv-unified submissions but has no receipt chain to read is reported unreadable, not as no receipt', () => {

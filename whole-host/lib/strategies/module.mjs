@@ -1,7 +1,7 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { connect } from 'node:net';
 import { lineReader } from './control.mjs';
-import { isUnreadable, readable } from './invariants.mjs';
+import { isUnreadable, readable, storedMessages } from './invariants.mjs';
 import { cutError } from './cut.mjs';
 import { namingCanaries, messageNames } from './names.mjs';
 import { blobStore, compiledLine, messagesOf, plain, refusedLine, stateOf, storeDelta } from './recorder.mjs';
@@ -205,7 +205,7 @@ export class HarnessModule {
     for (const other of others) {
       if (branch === undefined || branchOf(other) !== branch) continue;
       if (!wanted.size) break;
-      const messages = readable(() => other.getAllMessages());
+      const messages = storedMessages(other);
       if (isUnreadable(messages)) continue;
       const before = found.length;
       for (const m of messages) if (wanted.delete(String(m.id))) found.push(m);
