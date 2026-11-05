@@ -228,6 +228,8 @@ test('a record written with no base arm is clean, and one whose base arm couldn\
   assert.ok(!/evidence/.test(viewLib.summaryOf({ rows: [{ run: 'H1/W1', outcome: 'pass', record: 'written', counts: {} }] })), 'a run with no base arm to compare with has nothing to act on');
   for (const compared of [{ new: 0, gone: 1 }, { new: 1, gone: 0 }]) assert.ok(/evidence/.test(viewLib.summaryOf({ rows: [{ run: 'H1/W1', outcome: 'pass', record: 'same', counts: {}, compared }] })), JSON.stringify(compared));
   assert.ok(!/evidence/.test(viewLib.summaryOf({ rows: [{ run: 'H1/W1', outcome: 'pass', record: 'same', counts: {}, compared: { new: 0, gone: 0 } }] })), 'flags all kept is clean');
+  assert.ok(!/evidence/.test(viewLib.summaryOf({ rows: [{ run: 'H1/W1', outcome: 'flags', flags: 3, record: 'same', counts: {}, compared: { new: 0, gone: 0 } }] })), 'a run whose flags are all kept is clean, as its exit is 0');
+  assert.ok(/evidence/.test(viewLib.summaryOf({ rows: [{ run: 'H1/W1', outcome: 'flags', flags: 3, record: 'written', counts: {} }] })), 'with no base arm, every flag is new');
   const table = summaryTable([{ run: 'H1/W2', outcome: 'pass', record: 'missing', counts: {} }]).split('\n');
   assert.match(table[2], /^\| H1\/W2 \| pass \| the base arm has none \|/);
   const failed = summaryTable([{ run: 'H1/W2', outcome: 'pass', record: 'missing', baseReason: 'its checkpoint failed: H1/W2 exited 1', counts: {} }]).split('\n');
