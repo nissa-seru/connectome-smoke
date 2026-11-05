@@ -56,12 +56,18 @@ test('storeDelta: context-manager\'s quarantines, compression spans and merge re
   assert.match(storeDelta(renamed, undefined, blobs).out.quarantine?.unreadable ?? '', /getMergeQuarantineStatus/, 'a strategy that compresses with no merge quarantine to read is unreadable, not one with none');
 });
 
-test('storeDelta: a quarantined span or merge record with no identity is a read this can\'t make, not a quarantine', () => {
+test('storeDelta: a quarantined span or merge record with no identity is a read this can\'t make, not a quarantine, and the other kind is still read', () => {
   const blobs = blobStore();
   const withSpan = (span) => ({ ...manager([]), getStrategy: () => ({ getCompressionQuarantineStatus: () => ({ count: 1, keys: ['a'], spans: [span] }), getMergeQuarantineStatus: () => ({ count: 0, records: [] }) }) });
-  assert.match(storeDelta(withSpan({ hash: 'renamed' }), undefined, blobs).out.quarantine?.unreadable ?? '', /chunkSourceHash/);
+  const span = storeDelta(withSpan({ hash: 'renamed' }), undefined, blobs);
+  assert.match(span.out.quarantine.compression?.unreadable ?? '', /chunkSourceHash/);
+  assert.deepEqual(span.out.quarantine.merge, []);
+  assert.equal(span.unread, true);
   const withRecord = { ...manager([]), getStrategy: () => ({ getCompressionQuarantineStatus: () => ({ count: 0, keys: [], spans: [] }), getMergeQuarantineStatus: () => ({ count: 1, records: [{ id: 'renamed' }] }) }) };
-  assert.match(storeDelta(withRecord, undefined, blobs).out.quarantine?.unreadable ?? '', /key/);
+  const record = storeDelta(withRecord, undefined, blobs);
+  assert.deepEqual(record.out.quarantine.compression, []);
+  assert.match(record.out.quarantine.merge?.unreadable ?? '', /key/);
+  assert.equal(record.unread, true);
 });
 
 test('storeDelta: a read that throws an error with no message is unreadable with a reason, so the receipt it was to read is a failed read, not a receipt', () => {

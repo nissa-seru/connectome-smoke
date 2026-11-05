@@ -192,7 +192,7 @@ export function storeDelta(manager, seen, blobs) {
   const quarantine = quarantineOf(manager);
   const quarantineKey = JSON.stringify(quarantine);
   if (quarantineKey !== seen.quarantine) { out.quarantine = quarantine; next.quarantine = quarantineKey; }
-  const unread = [messages, summaries, head, quarantine].some(isUnreadable);
+  const unread = [messages, summaries, head, quarantine, quarantine?.compression, quarantine?.merge].some(isUnreadable);
   return { out, seen: next, changed: Object.keys(out).length > 0, unread };
 }
 
@@ -207,14 +207,13 @@ function quarantineOf(manager) {
     if (isUnreadable(compressing)) return compressing;
     return compressing ? { unreadable: 'the strategy compresses but has no getMergeQuarantineStatus to read its quarantines from' } : null;
   }
-  return plain(readable(() => {
-    const compression = strategy.getCompressionQuarantineStatus();
-    const merge = strategy.getMergeQuarantineStatus();
-    return {
-      compression: compression.unreadable ? null : identities(compression.spans, 'chunkSourceHash', 'a compression quarantine span'),
-      merge: identities(merge.records, 'key', 'a merge quarantine record'),
-    };
-  }));
+  return {
+    compression: plain(readable(() => {
+      const status = strategy.getCompressionQuarantineStatus();
+      return status.unreadable ? null : identities(status.spans, 'chunkSourceHash', 'a compression quarantine span');
+    })),
+    merge: plain(readable(() => identities(strategy.getMergeQuarantineStatus().records, 'key', 'a merge quarantine record'))),
+  };
 }
 
 function identities(items, field, what) {

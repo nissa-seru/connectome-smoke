@@ -81,6 +81,12 @@ test('readsFailed names a module read the driver made that failed, by what it re
   assert.deepEqual(readsFailed([...log, read('messages', { unreadable: 'gone' })]), ['messages']);
 });
 
+test('moduleCounts and readsFailed: a kind of quarantine whose own read failed is unknown and named, and the other kind still counts', () => {
+  const at = [...log, { kind: 'compiles', step: 'c', boot: 1, lines: [], store: { helper: { quarantine: { compression: { unreadable: 'a compression quarantine span has no chunkSourceHash' }, merge: ['m1'] } } }, blobs: {} }];
+  assert.deepEqual(moduleCounts(at, []).quarantines, { compression: 'unreadable', merge: 1 });
+  assert.deepEqual(readsFailed(at), ['compression quarantines']);
+});
+
 test('ledgerOf names a message by its own agent\'s store first, so a fork\'s edited copy under the same id doesn\'t rename the resident\'s', () => {
   const one = { memberIds: ['1'], units: [{ k: 'r', t: 1 }] };
   const resident = { agent: 'fixture', layout: one }, forked = { agent: 'fork', layout: one };
