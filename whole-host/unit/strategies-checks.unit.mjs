@@ -776,6 +776,18 @@ test('no workload text a run sends, its checkpoints\' included, names a summary 
   assert.deepEqual(named, []);
 });
 
+test('no run that queues a bad summariser answer has a second agent that can compress, its checkpoints\' included, so the agent a re-send is read as re-sending is its own', () => {
+  const facts = { budget: 100_000, maxTokens: 16_000 };
+  const lengths = JSON.parse(readFileSync(new URL('../stack.json', import.meta.url), 'utf-8'));
+  const driven = new Set();
+  for (let id of RUNS) for (; id && !driven.has(id); id = runOf(id, configurations(), facts, lengths).from) driven.add(id);
+  const runs = [...driven].map((id) => runOf(id, configurations(), facts, lengths));
+  const second = (run) => run.configuration.modules?.subagents === true || run.configuration.subconscious?.enabled === true;
+  const queues = (run) => run.steps().some((st) => (st.badAnswers ?? []).length > 0);
+  assert.ok(runs.some(queues) && runs.some(second), 'some run queues bad answers, and some has a second agent');
+  assert.deepEqual(runs.filter((run) => second(run) && queues(run)).map((run) => run.id), []);
+});
+
 test('check 6 counts a request as judged only where it held it to some message', () => {
   const script = [{ id: 'a', segment: 's', replies: [{}] }, { id: 'b', segment: 's', replies: [{}] }, { id: 'c', segment: 's', replies: [{}] }];
   const empty = { messages: [], summaries: [] };

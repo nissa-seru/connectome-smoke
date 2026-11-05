@@ -149,11 +149,10 @@ the lines of requests are in the order the stand-in received them:
   retry can drop that prior only if the prior alone runs past the halved
   recall budget, 50,000 tokens at a first retry, half the 100,000 that
   `compressionRecallBudgetTokens` defaults to. Summariser requests name no
-  agent, so another agent's merge alike in level, target and canaries to one
-  the stand-in answered badly is read as its re-send when it ends with the
-  same last summary, or like it with none, and is refused when it ends with
-  another while a merge cut at `max_tokens` waits for its re-send. Check 1
-  fails the run, naming the stand-in's
+  agent, so a second agent's merge alike to one the stand-in answered badly
+  couldn't be told from its re-send, and no run that queues a bad answer has
+  a second agent that can compress, a subagent or a subconscious, as a unit
+  test pins. Check 1 fails the run, naming the stand-in's
   reason, and the line
   lets the view show the request. The line carries no method, and a body that
   doesn't parse, or parses to a falsy value such as `null`, gets no head, so no
