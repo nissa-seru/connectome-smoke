@@ -304,7 +304,7 @@ export function checkCompile(manager, budget, compiled, messages, { compresses =
   if (!isUnreadable(configured) && typeof tokens !== 'number') {
     const strategy = readable(() => manager.getStrategy());
     if (isUnreadable(strategy)) out.push({ invariant: 'unreadable', detail: `getStrategy: ${strategy.unreadable}; budget wasn't judged` });
-    else if (typeof strategy?.getRenderStats === 'function') out.push({ invariant: 'unreadable', detail: `the compile gave no render stats, though its strategy ${strategy.constructor?.name || 'unnamed'} reports them; budget wasn't judged` });
+    else if (typeof strategy?.getRenderStats === 'function') out.push({ invariant: 'unreadable', read: false, detail: `the compile gave no render stats, though its strategy ${strategy.constructor?.name || 'unnamed'} reports them; budget wasn't judged` });
     else unjudged.push(`budget: ${strategy?.constructor?.name || 'an unnamed strategy'} gives no render stats`);
   }
   const input = budget.maxTokens - (budget.reserveForResponse ?? 0);
@@ -383,7 +383,7 @@ export function checkCompile(manager, budget, compiled, messages, { compresses =
     for (const p of pins) {
       const from = sequenceOf.get(String(p.firstMessageId)), to = sequenceOf.get(String(p.lastMessageId));
       if (from === undefined || to === undefined) {
-        out.push({ invariant: 'unreadable', detail: `pin ${spanName('pin', nameOf(p.firstMessageId), nameOf(p.lastMessageId))} names a message the compile's view doesn't hold; that pin wasn't judged` });
+        out.push({ invariant: 'unreadable', read: false, detail: `pin ${spanName('pin', nameOf(p.firstMessageId), nameOf(p.lastMessageId))} names a message the compile's view doesn't hold; that pin wasn't judged` });
         continue;
       }
       const allowed = p.level ?? p.maxLevel ?? 0;

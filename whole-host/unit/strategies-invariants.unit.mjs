@@ -2,6 +2,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { checkCompile } from '../lib/strategies/invariants.mjs';
 import * as invariantsLib from '../lib/strategies/invariants.mjs';
+import { compileInvariants } from '../lib/strategies/checks.mjs';
+import { readsFailed } from '../lib/strategies/ledger.mjs';
 const text = (t) => ({ type: 'text', text: t });
 const call = (id) => ({ type: 'tool_use', id, name: 'look', input: {} });
 const result = (id) => ({ type: 'tool_result', toolUseId: id, content: 'seen' });
@@ -477,6 +479,23 @@ test('budget: a compile whose strategy gives no render stats isn\'t judged for i
   const snapshot = checkCompile({ ...manager(), getStrategy: () => new AutobiographicalStrategy(), getRenderStats: () => ({ total: { tokens: 99_999 } }) }, BUDGET, compiled, messages);
   assert.deepEqual(named(snapshot), [['unreadable', 'the compile gave no render stats, though its strategy AutobiographicalStrategy reports them; budget wasn\'t judged']], 'not judged on the manager\'s last live compile\'s stats, over budget or under');
   assert.deepEqual(check(manager(), ['r:1', 'r:2', 'r:3', 'r:4']).unjudged, [], 'with stats, judged');
+});
+
+test('a pin naming a message the compile\'s view doesn\'t hold, and a compile with no render stats though its strategy reports them, are check 11\'s flags but not failed reads', () => {
+  class AutobiographicalStrategy { config = {}; getRenderStats() { return null; } }
+  const pin = check(manager({ pins: [{ id: 'p1', firstMessageId: '1', lastMessageId: '9', level: 0 }] }), ['r:1', 'r:2', 'r:3', 'r:4']);
+  const [compiled, messages] = compile(['r:1', 'r:2', 'r:3', 'r:4']);
+  delete compiled.renderStats;
+  const stats = checkCompile({ ...manager(), getStrategy: () => new AutobiographicalStrategy() }, BUDGET, compiled, messages);
+  const pinsFailing = check({ ...manager(), listPins: () => { throw new Error('gone'); } }, ['r:1', 'r:2', 'r:3', 'r:4']);
+  const logOf = (...lists) => lists.map((violations, i) => ({ kind: 'compiles', step: `s${i}`, boot: 1, lines: [{ seq: i + 1, agent: 'fixture', kind: 'request', outcome: 'compiled', violations }], blobs: {} }));
+  const candidate = logOf(pin, stats);
+  assert.deepEqual(compileInvariants(candidate).map((f) => f.detail), [
+    'pin pin(start+1-9) names a message the compile\'s view doesn\'t hold; that pin wasn\'t judged',
+    'the compile gave no render stats, though its strategy AutobiographicalStrategy reports them; budget wasn\'t judged',
+  ], 'each is a check-11 flag, compared across the arms like any other');
+  assert.deepEqual(readsFailed(candidate), [], 'and neither is a read the harness couldn\'t make');
+  assert.deepEqual(readsFailed(logOf(pinsFailing)), ['a compile check\'s inputs'], 'the control: a pins read that fails is');
 });
 
 test('store order names a summary none of whose messages the store holds as unplaced, and judges the rest', () => {

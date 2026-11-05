@@ -119,7 +119,7 @@ export function readsFailed(log) {
     }
     for (const line of e.lines ?? []) {
       if (line.outcome === 'unrecordable') failed.add('a compile');
-      if ((line.violations ?? []).some((v) => v.invariant === 'unreadable')) failed.add('a compile check\'s inputs');
+      if ((line.violations ?? []).some((v) => v.invariant === 'unreadable' && v.read !== false)) failed.add('a compile check\'s inputs');
     }
   }
   return [...failed];
