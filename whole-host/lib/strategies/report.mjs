@@ -31,7 +31,7 @@ export function runChecks({ records, log, script, products, store, agent = FIXTU
     ...[...new Set([...(budget.requests > 0 ? [agent] : []), ...compilingAgents(log)])].map((a) => ({
       check: 13, name: `pairing ${a}`,
       flags: a !== FIXTURE_AGENT && sharing.length > 1
-        ? withJudged([{ check: 13, step: 'the run', what: `${a}:shared-side`, message: `couldn't judge ${a}'s pairing: ${sharing.join(' and ')} compile requests, and the stand-in tells only the configuration's own agent's requests from the rest` }], null)
+        ? withJudged([{ check: 13, step: 'the run', what: `${a}:shared-side`, message: `couldn't judge ${a}'s pairing: ${sharing.join(' and ')} compile requests, and the stand-in tells only the configuration's own agent's requests from the rest` }], 0)
         : pairing(records, log, a),
       applies: a === agent && budget.requests > 0 ? `${a} made ${budget.requests} request(s)` : `${a} compiled requests`,
     })),

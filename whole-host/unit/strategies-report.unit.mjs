@@ -115,9 +115,9 @@ test('check 13 can\'t judge two agents besides the configuration\'s own, since t
   const line = (seq, agent, content) => ({ seq, agent, kind: 'request', assembly: seq, outcome: 'compiled', stamp: String(seq * 10), messages: [{ sources: ['r:1'], content }] });
   const log = [{ kind: 'compiles', step: 'a', lines: [line(1, 'fixture', 'x1'), line(2, 'Subconscious', 'xs'), line(3, 'knowledge', 'xk')], blobs: { x1: blob('[[c:a.in]]'), xs: blob('[[c:a.wake]]'), xk: blob('[[c:a.task]]') } }];
   const { flags, judged } = runChecks({ records: [req('r1', 'primary', '[[c:a.in]]', '11'), req('s1', 'sub', '[[c:a.wake]]', '21'), req('k1', 'sub', '[[c:a.task]]', '31')], log, script: [{ id: 'a', segment: 's', kind: 'channel' }], products: [], store: null, windowTokens: 1_000_000 });
-  assert.deepEqual(flags.filter((f) => f.check === 13).map((f) => f.what), ['Subconscious:shared-side', 'knowledge:shared-side']);
+  assert.deepEqual(flags.filter((f) => f.check === 13).map((f) => f.what), ['Subconscious:shared-side', 'knowledge:shared-side', 'judged-none:pairing Subconscious', 'judged-none:pairing knowledge']);
   assert.match(flags.find((f) => f.what === 'knowledge:shared-side').message, /couldn't judge knowledge's pairing: Subconscious and knowledge compile requests/);
-  assert.deepEqual(Object.fromEntries(judged.filter((j) => j.check === 13).map((j) => [j.name, j.judged])), { 'pairing fixture': 1, 'pairing Subconscious': null, 'pairing knowledge': null }, 'counted as unknown, so no judged-none flag doubles it');
+  assert.deepEqual(Object.fromEntries(judged.filter((j) => j.check === 13).map((j) => [j.name, j.judged])), { 'pairing fixture': 1, 'pairing Subconscious': 0, 'pairing knowledge': 0 }, 'judging nothing of either, so the run doesn\'t measure');
 });
 
 test('judged: every check reports how many items it judged; zero where check 3, 11, 12 or 13 applies is a couldn\'t-judge flag, and the report prints the counts', () => {

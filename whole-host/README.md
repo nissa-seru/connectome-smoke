@@ -617,7 +617,8 @@ shows the host's last lines names that file.
   compile's last canary, which a clock the two processes don't share would
   show. The stand-in tells only the configuration's own agent's requests from
   the rest, so where two other agents compile, each gets a couldn't-judge flag
-  instead.
+  instead. Each of these judges nothing of that agent, so the run doesn't
+  measure.
 - **Check 14: the workload's own property,** which `workloads.mjs` states for
   each workload. A property either counts what it judged or names the check
   that judges it, and is then held to that check's count. A completed run
