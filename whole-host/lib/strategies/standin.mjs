@@ -333,8 +333,15 @@ export async function startStandin({ configuration, rawDir = null, refuseMerges 
   let clock = 0;
   let toolNumber = 0;
   const badQueue = [];
-  const badlyAnswered = new Set();
-  const sentKey = (record) => JSON.stringify([record.level, record.target, record.sent.canaries, record.sent.summaries]);
+  const badlyAnswered = [];
+  // context-manager 0.24.0 re-sends a merge after a bad answer with its recall budget halved per attempt, so its
+  // oldest prior summaries may go (`capRecallPairs`); an L1 request it retries is re-sent whole.
+  const resent = (record) => {
+    const same = (b) => b.level === record.level && b.target === record.target && JSON.stringify(b.canaries) === JSON.stringify(record.sent.canaries);
+    const tail = (b) => record.sent.summaries.length <= b.summaries.length && (record.level >= 2 || record.sent.summaries.length === b.summaries.length)
+      && JSON.stringify(b.summaries.slice(b.summaries.length - record.sent.summaries.length)) === JSON.stringify(record.sent.summaries);
+    return badlyAnswered.findLast((b) => same(b) && tail(b)) ?? null;
+  };
   const held = [];
   const heldListeners = [];
   if (rawDir) mkdirSync(rawDir, { recursive: true });
@@ -498,9 +505,10 @@ export async function startStandin({ configuration, rawDir = null, refuseMerges 
     if (rejectMerges && merge) return 'rejection';
     if (refuseMerges && merge) return 'refusal';
     if (record.carried) return 'refusal';
-    if (badQueue.length && !record.retry) {
-      badlyAnswered.add(sentKey(record));
-      return badQueue.shift();
+    if (badQueue.length && !record.resends) {
+      const shape = badQueue.shift();
+      badlyAnswered.push({ level: record.level, target: record.target, canaries: record.sent.canaries, summaries: record.sent.summaries, shape });
+      return shape;
     }
     return 'summary';
   }
@@ -549,12 +557,18 @@ export async function startStandin({ configuration, rawDir = null, refuseMerges 
       record.sent = { canaries: found(texts(body), CANARY), summaries: found(texts(body), SUMMARY) };
       record.target = requestedTarget(instruction);
       record.retry = /do not call any tools for this|do not wrap it in <thinking>/.test(instruction);
-      const resends = badlyAnswered.has(sentKey(record));
-      if (resends !== record.retry) {
+      // context-manager 0.24.0 re-sends a request answered with only thinking, or with nothing, with a retry hint,
+      // and a merge cut at max_tokens with none.
+      const of = resent(record);
+      if (of) record.resends = of.shape;
+      const hinted = of ? of.shape !== 'max-tokens' : false;
+      if ((of !== null || record.retry) && record.retry !== hinted) {
         kind = 'unclassified';
-        reason = resends
-          ? 'it re-sends a request that took a bad answer, its canaries and summaries alike, but carries no retry hint the stand-in knows'
-          : 'it carries a retry hint, but no earlier request with its canaries and summaries took a bad answer';
+        reason = !of
+          ? 'it carries a retry hint, but no earlier request with its canaries and summaries took a bad answer'
+          : hinted
+            ? `it re-sends a request answered ${of.shape}, but carries no retry hint the stand-in knows`
+            : 'it re-sends a request cut at max_tokens, which context-manager 0.24.0 re-sends with no retry hint, but carries one';
         Object.assign(record, { kind, reason });
       }
     }
