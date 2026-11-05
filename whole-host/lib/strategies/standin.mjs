@@ -527,7 +527,10 @@ export async function startStandin({ configuration, rawDir = null, refuseMerges 
     const record = { id, seq, at: Math.round(performance.now() - t0), arrived, clock, step: step?.id ?? null, kind, ...(agent ? { agent } : {}), ...(reason ? { reason } : {}), ...(body ? normalise(body, req.headers, mask) : {}) };
     if (query !== null && record.head) record.head.query = query;
     if (path !== '/v1/messages' && record.head) record.head.path = path;
-    if (kind === 'summariser' && body) record.texts = summariserTexts(body, mask);
+    if (kind === 'summariser' && body) {
+      record.texts = summariserTexts(body, mask);
+      record.level = requestedLevel(blocksOf(body.messages.at(-1).content).at(-1).text);
+    }
     records.push(record);
     if (rawDir) writeFileSync(join(rawDir, `${id}.json`), raw);
     for (const cb of listeners) cb({ id, seq, kind, step: record.step, at: record.at, clock });
@@ -578,7 +581,6 @@ export async function startStandin({ configuration, rawDir = null, refuseMerges 
     }
     record.sent = { canaries: found(texts(body), CANARY), summaries: found(texts(body), SUMMARY) };
     const instruction = blocksOf(body.messages.at(-1).content).at(-1).text;
-    record.level = requestedLevel(instruction);
     record.target = requestedTarget(instruction);
     record.retry = /do not call any tools for this|do not wrap it in <thinking>/.test(instruction);
     const carried = refuseContent ? contentAt(body, record.level) : null;

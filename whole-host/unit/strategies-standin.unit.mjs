@@ -4,6 +4,7 @@ import { mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { countTokens, repairMarks, startStandin as startServer, tokensSent } from '../lib/strategies/standin.mjs';
+import { moduleCounts } from '../lib/strategies/ledger.mjs';
 
 const ANSWER_BOUND_MS = 10_000;
 const started = new Set();
@@ -307,6 +308,21 @@ test('T34: with refuseContent a summariser request carrying the refused content 
   plain.setStep(step('m', []));
   assert.equal((await post(plain.url, l1('REFUSED-CONTENT', ''))).json.stop_reason, 'end_turn');
   assert.equal((await plain.close()).find((r) => r.kind === 'summariser').carried, undefined);
+});
+
+test('T35: a summariser request the stand-in refuses before answering keeps the level it asked for, so the counts take every summariser request', async () => {
+  const s = await startStandin({ configuration: { windowTokens: 50_000 } });
+  s.setStep(step('m', []));
+  const sent = [
+    [{ ...summariserBody({}), max_tokens: undefined }, 400, 1],
+    [{ ...summariserBody({ instruction: MERGE }), max_tokens: undefined }, 400, 2],
+    [summariserBody({ textChars: 400_000 }), 400, 1],
+    [summariserBody({}), 200, 1],
+  ];
+  for (const [body, status] of sent) assert.equal((await post(s.url, body)).status, status);
+  const records = (await s.close()).filter((r) => r.kind === 'summariser');
+  assert.deepEqual(records.map((r) => [r.refused ?? null, r.level]), [['max_tokens', 1], ['max_tokens', 2], ['window', 1], [null, 1]]);
+  assert.deepEqual(['compressions', 'merges'].map((k) => moduleCounts([], records)[k]), [3, 1], 'every summariser request, refused or answered, is counted under its level');
 });
 
 test('T3/T22: a call goes with the id its reply names, and a reply\'s error answers its request with that provider error', () => withStandin({}, async (s) => {
