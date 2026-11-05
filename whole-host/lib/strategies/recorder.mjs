@@ -48,8 +48,7 @@ export function blobStore() {
 }
 
 // context-manager 0.24.0 gives a compile's provenance a `messages` list parallel to its messages, each of these kinds
-// (CompiledMessageSources) with these fields; a body that isn't complete always names what it's missing. A compile
-// with no provenance at all has no layout either, which check 11 already flags.
+// (CompiledMessageSources) with these fields; a body that isn't complete always names what it's missing.
 const SOURCE_FIELDS = {
   raw: (s) => Array.isArray(s.bodies) && s.bodies.every((b) => b?.messageId != null && typeof b.complete === 'boolean'
     && (b.complete || (Array.isArray(b.missing) && b.missing.length > 0 && b.missing.every((x) => x === 'shards' || x === 'content')))),
