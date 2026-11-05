@@ -28,7 +28,7 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const LABEL = '[whole-host]';
 
 const { opt, flag, missing } = parseArgs(process.argv.slice(2));
-const fail = (message) => { console.error(`${LABEL} ${message}`); process.exit(2); };
+const fail = (message) => { console.error(`${LABEL} ${message}`); if (message.includes('\n')) console.error(`${LABEL} ${message.split('\n')[0]}`); process.exit(2); };
 for (const name of missing(['against', 'checkpoints', 'host', 'out', 'overlay', 'runs', 'shard', 'workdir'])) fail(`--${name} needs a value`);
 const stack = JSON.parse(readFileSync(join(HERE, 'stack.json'), 'utf-8'));
 const all = configurations();

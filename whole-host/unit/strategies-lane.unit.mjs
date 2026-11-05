@@ -246,6 +246,19 @@ test('run.mjs refuses an --against whose base arm wrote no run.json, before it c
   } finally { for (const d of [host, against]) rmSync(d, { recursive: true, force: true }); }
 });
 
+test('run.mjs ends a failure whose cause runs to many lines with the cause\'s own line, so a log\'s last line names it', () => {
+  const host = tree({ 'package.json': JSON.stringify({ name: '@animalabs/connectome-host', repository: { url: `git+${join(tmpdir(), 'no-such-whole-host-release')}` } }) });
+  const work = mkdtempSync(join(tmpdir(), 'whole-host-work-'));
+  try {
+    const r = spawnSync(process.execPath, [join(import.meta.dirname, '..', 'run.mjs'), '--host', host, '--runs', 'H1/W1', '--workdir', work], { encoding: 'utf-8', timeout: 30_000 });
+    assert.equal(r.status, 2);
+    const lines = r.stderr.trim().split('\n');
+    assert.ok(lines.length > 1, 'git\'s own output follows the cause');
+    assert.match(lines[0], /installing v[\d.]+ failed: git clone .* exited 128$/);
+    assert.equal(lines.at(-1), lines[0]);
+  } finally { for (const d of [host, work]) rmSync(d, { recursive: true, force: true }); }
+});
+
 test('run.mjs refuses a value option given no value, before it clones or installs anything', () => {
   const host = tree({ 'package.json': JSON.stringify({ name: '@animalabs/connectome-host' }) });
   try {
