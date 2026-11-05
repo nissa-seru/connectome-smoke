@@ -13,45 +13,45 @@ const answer = ({ ready = true, pending = false, queue = 0, compressed = 30, dra
 });
 
 test('R7: a settle is settled only when every agent is ready, the host is drained and nothing it deferred is still to land', () => {
-  assert.equal(readSettle(answer(), null).settled, true);
+  assert.equal(readSettle(answer(), null, {}, 'fixture').settled, true);
   for (const [what, a] of [
     ['a deferred write', answer({ deferredWrites: 1 })],
     ['a host not drained', answer({ drained: false, activeTurnAgents: ['fixture'] })],
     ['an agent not ready', answer({ ready: false, pending: true })],
     ['an answer that isn\'t ok', answer({ ok: false })],
-  ]) assert.equal(readSettle(a, null).settled, false, what);
+  ]) assert.equal(readSettle(a, null, {}, 'fixture').settled, false, what);
   const two = answer();
   two.maintenance.agents.push({ ...two.maintenance.agents[0], agentName: 'reader', ready: false, pending: 'Compressing chunk 3', progress: { ...two.maintenance.agents[0].progress, pending: true } });
-  assert.equal(readSettle(two, null).settled, false, 'one agent of two not ready');
+  assert.equal(readSettle(two, null, {}, 'fixture').settled, false, 'one agent of two not ready');
   two.maintenance.agents[1] = { ...two.maintenance.agents[0], agentName: 'reader' };
-  assert.equal(readSettle(two, null).settled, true, 'both ready');
+  assert.equal(readSettle(two, null, {}, 'fixture').settled, true, 'both ready');
 });
 
 test('R7c: a compression the host\'s auto-tick started holds the settle while the test module counts it, though maintenance looks settled', () => {
-  assert.equal(readSettle(answer(), null, { fixture: 0 }).settled, true);
-  const read = readSettle(answer(), null, { fixture: 1 });
+  assert.equal(readSettle(answer(), null, { fixture: 0 }, 'fixture').settled, true);
+  const read = readSettle(answer(), null, { fixture: 1 }, 'fixture');
   assert.equal(read.settled, false);
   assert.equal(read.inFlight, true);
   assert.deepEqual(read.ticking, ['fixture 1']);
 });
 
 test('R7: work is in flight while a compression runs, a turn is alive or a wake is parked, and otherwise isn\'t', () => {
-  assert.equal(readSettle(answer({ ready: false, pending: true }), null).inFlight, true);
-  assert.equal(readSettle(answer({ drained: false, activeTurnAgents: ['fixture'] }), null).inFlight, true);
-  assert.equal(readSettle(answer({ drained: false, parkedAdmissions: 1 }), null).inFlight, true);
-  assert.equal(readSettle(answer({ ready: false, queue: 2 }), null).inFlight, false);
-  assert.equal(readSettle(answer({ deferredWrites: 1 }), null).inFlight, false);
+  assert.equal(readSettle(answer({ ready: false, pending: true }), null, {}, 'fixture').inFlight, true);
+  assert.equal(readSettle(answer({ drained: false, activeTurnAgents: ['fixture'] }), null, {}, 'fixture').inFlight, true);
+  assert.equal(readSettle(answer({ drained: false, parkedAdmissions: 1 }), null, {}, 'fixture').inFlight, true);
+  assert.equal(readSettle(answer({ ready: false, queue: 2 }), null, {}, 'fixture').inFlight, false);
+  assert.equal(readSettle(answer({ deferredWrites: 1 }), null, {}, 'fixture').inFlight, false);
 });
 
 test('R7: a pass moved the work on when its progress or its deferred writes differ from the pass before, and the first pass always has', () => {
   const before = answer({ ready: false, queue: 2, compressed: 29 });
-  assert.equal(readSettle(before, null).moved, true);
-  const seen = readSettle(before, null).progress;
-  assert.equal(readSettle(answer({ ready: false, queue: 1, compressed: 30 }), seen).moved, true, 'a chunk compressed');
-  assert.equal(readSettle(answer({ ready: false, queue: 2, compressed: 29 }), seen).moved, false, 'nothing changed');
-  const deferred = readSettle(answer({ deferredWrites: 2 }), null).progress;
-  assert.equal(readSettle(answer({ deferredWrites: 1 }), deferred).moved, true, 'a deferred write landed');
-  assert.equal(readSettle(answer({ deferredWrites: 2 }), deferred).moved, false, 'none landed');
+  assert.equal(readSettle(before, null, {}, 'fixture').moved, true);
+  const seen = readSettle(before, null, {}, 'fixture').progress;
+  assert.equal(readSettle(answer({ ready: false, queue: 1, compressed: 30 }), seen, {}, 'fixture').moved, true, 'a chunk compressed');
+  assert.equal(readSettle(answer({ ready: false, queue: 2, compressed: 29 }), seen, {}, 'fixture').moved, false, 'nothing changed');
+  const deferred = readSettle(answer({ deferredWrites: 2 }), null, {}, 'fixture').progress;
+  assert.equal(readSettle(answer({ deferredWrites: 1 }), deferred, {}, 'fixture').moved, true, 'a deferred write landed');
+  assert.equal(readSettle(answer({ deferredWrites: 2 }), deferred, {}, 'fixture').moved, false, 'none landed');
 });
 
 test('D12: `/budget`\'s output is whole once it holds the agent\'s own line, or a line that is no part of the report, and not before', () => {
@@ -69,8 +69,33 @@ test('D12: `/budget`\'s output is whole once it holds the agent\'s own line, or 
 test('R7b: an answer with no deferred-write count isn\'t settled, so a host that stops reporting it fails the settle', () => {
   const unreported = answer();
   delete unreported.hostMode.deferredWrites;
-  assert.equal(readSettle(unreported, null).settled, false);
-  assert.equal(readSettle(answer(), null).settled, true);
+  assert.equal(readSettle(unreported, null, {}, 'fixture').settled, false);
+  assert.equal(readSettle(answer(), null, {}, 'fixture').settled, true);
+});
+
+test('R7d: an ok answer whose agents aren\'t a list, or list no agent with the run\'s name, is unreadable and never settled', () => {
+  const moved = answer();
+  moved.maintenance.members = moved.maintenance.agents;
+  delete moved.maintenance.agents;
+  const keyed = answer();
+  keyed.maintenance.agents = { fixture: keyed.maintenance.agents[0] };
+  const empty = answer();
+  empty.maintenance.agents = [];
+  const renamed = answer();
+  renamed.maintenance.agents = renamed.maintenance.agents.map(({ agentName, ...rest }) => ({ name: agentName, ...rest }));
+  for (const [what, a, said] of [
+    ['agents moved', moved, 'holds no list of agents'],
+    ['agents keyed by name', keyed, 'holds no list of agents'],
+    ['an empty list', empty, 'lists no agent named "fixture"'],
+    ['each agent\'s name under another key', renamed, 'lists no agent named "fixture"'],
+  ]) {
+    const read = readSettle(a, null, {}, 'fixture');
+    assert.equal(read.settled, false, what);
+    assert.equal(read.unreadable, said, what);
+  }
+  assert.equal(readSettle(answer(), null, {}, 'other').unreadable, 'lists no agent named "other"');
+  assert.equal(readSettle(answer({ ok: false }), null, {}, 'fixture').unreadable, undefined, 'an answer that isn\'t ok is the settle\'s own failure');
+  assert.equal(readSettle(answer(), null, {}, 'fixture').unreadable, undefined);
 });
 
 test('R12: a configuration whose model binds thinking boots its host with the start-up binding probe off; any other, without the setting', () => {
