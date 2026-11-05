@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { changedRequests, movedIn, STEP_SUMMARY_BYTES, stepSummary, summaryTable, viewOf } from '../lib/view.mjs';
+import { changedRequests, movedIn, STEP_SUMMARY_BYTES, stepSummary, stepSummaryAfter, summaryTable, viewOf } from '../lib/view.mjs';
 import * as viewLib from '../lib/view.mjs';
 
 const lines = (...xs) => xs.map(([text, request = null]) => ({ text, request }));
@@ -248,4 +248,16 @@ test('the step summary keeps within its bytes even when the views that didn\'t f
   const out = stepSummary({ table: 'T', views, budget: 1000 });
   assert.ok(Buffer.byteLength(out) <= 1000, `${Buffer.byteLength(out)} bytes`);
   assert.match(out, /30 views didn't fit within this summary's 1000 bytes: each is <run>\/view\.md in the job's evidence\./);
+});
+
+test("an arm's step summary takes only what the step's summary file leaves of GitHub's 1 MiB, and adds nothing that wouldn't fit", () => {
+  // review:review-349 #25: a view's two arms run in one Actions step and append to one summary file.
+  const view = (run, n) => ({ run, path: `${run}/view.md`, text: 'v'.repeat(n) });
+  const alone = stepSummaryAfter(0, { table: 'T', views: [view('a', 10)] });
+  assert.equal(alone, stepSummary({ table: 'T', views: [view('a', 10)] }), 'with nothing there, it is the whole budget');
+  const after = stepSummaryAfter(STEP_SUMMARY_BYTES - 2000, { table: 'T', views: [view('a', 1500), view('b', 1500)] });
+  assert.ok(Buffer.byteLength(after) <= 2000, `${Buffer.byteLength(after)} bytes`);
+  assert.match(after, /The view of b \(1500 bytes\) didn't fit within this summary's 2000 bytes/);
+  assert.equal(stepSummaryAfter(STEP_SUMMARY_BYTES - 20, { table: 'T'.repeat(100), views: [view('a', 10)] }), '', 'what wouldn\'t fit at all is left out');
+  assert.equal(stepSummaryAfter(STEP_SUMMARY_BYTES + 5, { table: 'T', views: [] }), '');
 });

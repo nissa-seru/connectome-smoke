@@ -214,6 +214,15 @@ export function viewOf({ run, changed, lines, transcript, ledger }) {
   return `${out.join('\n')}\n`;
 }
 
+// A view's two arms run in one Actions step and append to its one summary file, which GitHub holds to 1 MiB in all, so
+// an arm takes what the file leaves, and adds nothing where even its notes wouldn't fit (review:review-349 #25).
+export function stepSummaryAfter(there, { table, views }) {
+  const budget = STEP_SUMMARY_BYTES - there;
+  if (budget <= 0) return '';
+  const text = stepSummary({ table, views, budget });
+  return Buffer.byteLength(text, 'utf8') <= budget ? text : '';
+}
+
 export function stepSummary({ table, views, budget = STEP_SUMMARY_BYTES }) {
   const bytes = (s) => Buffer.byteLength(s, 'utf8');
   const cutNote = (n) => `${n} more flag(s) didn't fit within this summary's ${budget} bytes: they're in summary.md and each run's report.txt in the job's evidence.\n`;

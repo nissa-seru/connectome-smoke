@@ -395,7 +395,12 @@ what holds.
   where even those names wouldn't fit, saying how many didn't. Where
   `summary.md` itself is longer, the summary holds as much of it as fits and
   says how many flags it left out; every flag is in `summary.md` and in its
-  run's `report.txt`. The evidence is what `--out` holds.
+  run's `report.txt`. The evidence is what `--out` holds. An invocation
+  appends to whatever the step's summary file already holds, as a view's
+  second arm does after its first in one step, so it takes only what the file
+  leaves of that 1 MiB, and adds nothing where even its notes wouldn't fit.
+  A run that couldn't run shows no view there, even one written before it
+  failed.
 
 ## The differences as data
 

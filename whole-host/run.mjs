@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { createHash } from 'node:crypto';
-import { appendFileSync, cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
+import { appendFileSync, cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { basename, dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -17,7 +17,7 @@ import { configurations } from './lib/strategies/script.mjs';
 import { exitCode, refuseUnrecordable, renderRecordLines } from './lib/record.mjs';
 import { flagsAgainst, readAgainst, recordAgainst, releaseDiffers, slug } from './lib/against.mjs';
 import { differencesOf, entriesOf } from './lib/entries.mjs';
-import { changedRequests, readsFailedOf, stepSummary, summaryOf, unmeasured, viewOf } from './lib/view.mjs';
+import { changedRequests, readsFailedOf, stepSummaryAfter, summaryOf, unmeasured, viewOf } from './lib/view.mjs';
 import { generatedTexts, transcriptOf } from './lib/strategies/transcript.mjs';
 import { ledgerOf, moduleCounts, readsFailed } from './lib/strategies/ledger.mjs';
 import { shares } from './lib/shares.mjs';
@@ -316,7 +316,13 @@ for (const id of names) {
 if (against) writeFileSync(join(out, 'entries.json'), JSON.stringify(entriesOf(runs.flatMap((id) => differences.get(id) ?? [])), null, 1));
 const table = summaryOf({ rows, flagged: flaggedRuns });
 writeFileSync(join(out, 'summary.md'), `${table}\n`);
-if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, stepSummary({ table, views }));
+// A run that failed after its view was written couldn't run, so its view isn't shown (review:review-349 #12).
+const shown = views.filter((v) => results.find((x) => x.run === v.run)?.outcome !== 'couldnt-run');
+if (process.env.GITHUB_STEP_SUMMARY) {
+  const file = process.env.GITHUB_STEP_SUMMARY;
+  const text = stepSummaryAfter(existsSync(file) ? statSync(file).size : 0, { table, views: shown });
+  if (text) appendFileSync(file, text);
+}
 writeFileSync(join(out, 'run.json'), JSON.stringify({ lane, runs, runtime, release: { tag: stack.release, versions: release.versions }, candidate: { versions: candidate.versions, overlays: packs }, seconds, results }, null, 1));
 if (flag('update-seconds')) {
   const merged = { runs: { ...stack.seconds?.runs, ...seconds.runs }, checkpoints: { ...stack.seconds?.checkpoints, ...seconds.checkpoints } };
