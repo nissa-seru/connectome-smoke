@@ -118,6 +118,19 @@ test('pins: a pin naming a message the compile\'s view doesn\'t hold is a couldn
   ]);
 });
 
+test('unreadable: a pin or render stats present without the fields context-manager 0.24.0 gives them is a failed read, not a couldn\'t-judge flag of the candidate\'s', () => {
+  const pinned = (pin) => checkCompile(manager({ pins: [{ id: 'p1', firstMessageId: '1', lastMessageId: '2', level: 0, ...pin }] }), BUDGET, ...compile(['r:1', 'r:2', 'r:3', 'r:4']));
+  for (const pin of [{ firstMessageId: undefined }, { lastMessageId: 2 }, { level: '1' }, { level: undefined, maxLevel: null }]) {
+    const v = pinned(pin).filter((x) => x.invariant === 'unreadable');
+    assert.deepEqual(v.map((x) => [x.detail, x.read]), [['pin p1 has no string firstMessageId and lastMessageId, or a level that isn\'t a number; that pin wasn\'t judged', undefined]], JSON.stringify(pin));
+  }
+  const [compiled, messages] = compile(['r:1', 'r:2', 'r:3', 'r:4']);
+  compiled.renderStats = { total: { count: 100 } };
+  const reporting = { ...manager(), getStrategy: () => ({ config: {}, getRenderStats() { return null; } }) };
+  const stats = checkCompile(reporting, BUDGET, compiled, messages).filter((x) => x.invariant === 'unreadable');
+  assert.deepEqual(stats.map((x) => [x.detail, x.read]), [['the compile\'s render stats give no numeric total.tokens; budget wasn\'t judged', undefined]]);
+});
+
 test('unreadable: a store or pins read that fails is a violation naming the read, never a compile judged clean; the manager\'s render stats aren\'t read at all', () => {
   const failing = (what) => () => { throw new Error(`${what} failed`); };
   assert.deepEqual(named(check({ ...manager(), getAllMessages: failing('store') }, ['r:1'])), [['unreadable', 'getAllMessages: store failed; no invariant was judged']]);
