@@ -226,6 +226,9 @@ test('a row says when its run can\'t be compared because a run didn\'t measure o
 
 test('a record written with no base arm is clean, and one whose base arm couldn\'t run it says so in its row', () => {
   assert.ok(!/evidence/.test(viewLib.summaryOf({ rows: [{ run: 'H1/W1', outcome: 'pass', record: 'written', counts: {} }] })), 'a run with no base arm to compare with has nothing to act on');
+  // review:review-349 #16: a flag gone from the head fails the invocation as a new one does, so it points to the evidence.
+  for (const compared of [{ new: 0, gone: 1 }, { new: 1, gone: 0 }]) assert.ok(/evidence/.test(viewLib.summaryOf({ rows: [{ run: 'H1/W1', outcome: 'pass', record: 'same', counts: {}, compared }] })), JSON.stringify(compared));
+  assert.ok(!/evidence/.test(viewLib.summaryOf({ rows: [{ run: 'H1/W1', outcome: 'pass', record: 'same', counts: {}, compared: { new: 0, gone: 0 } }] })), 'flags all kept is clean');
   const table = summaryTable([{ run: 'H1/W2', outcome: 'pass', record: 'missing', counts: {} }]).split('\n');
   assert.match(table[2], /^\| H1\/W2 \| pass \| the base arm has none \|/);
 });
