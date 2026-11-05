@@ -74,6 +74,13 @@ test('readsFailed names each read of the run\'s that failed, once, and nothing f
   assert.deepEqual(readsFailed([...log, at({ fixture: { quarantine: null } })]), [], 'a strategy that stopped reporting quarantines');
 });
 
+test('readsFailed names a module read the driver made that failed, by what it read: the store\'s summary level, or its messages', () => {
+  const read = (op, answer) => ({ kind: 'read', step: 'e', op, answer });
+  assert.deepEqual(readsFailed([...log, read('state', { maxLevel: 3 }), read('messages', []), read('dry', { seq: null })]), [], 'reads that worked');
+  assert.deepEqual(readsFailed([...log, read('state', { maxLevel: { unreadable: 'gone' } })]), ['the store\'s summary level']);
+  assert.deepEqual(readsFailed([...log, read('messages', { unreadable: 'gone' })]), ['messages']);
+});
+
 test('ledgerOf names a message by its own agent\'s store first, so a fork\'s edited copy under the same id doesn\'t rename the resident\'s', () => {
   const one = { memberIds: ['1'], units: [{ k: 'r', t: 1 }] };
   const resident = { agent: 'fixture', layout: one }, forked = { agent: 'fork', layout: one };

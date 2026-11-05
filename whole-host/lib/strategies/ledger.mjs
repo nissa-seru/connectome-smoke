@@ -1,4 +1,5 @@
 import { assemblies, FIXTURE_AGENT } from './checks.mjs';
+import { isUnreadable } from './invariants.mjs';
 import { byStoreOrder, messageNames, spanName } from './names.mjs';
 
 function namesAt(log, line) {
@@ -104,9 +105,16 @@ function quarantinesEntered(log) {
   return Object.fromEntries(Object.entries(kinds).map(([kind, seen]) => [kind, unknown.has(kind) ? 'unreadable' : [...seen.values()].reduce((n, ids) => n + ids.size, 0)]));
 }
 
+const READS = { state: 'the store\'s summary level', messages: 'messages' };
+
 export function readsFailed(log) {
   const failed = new Set();
   for (const e of log) {
+    if (e.kind === 'read') {
+      const a = e.answer;
+      if (isUnreadable(a) || (a && typeof a === 'object' && !Array.isArray(a) && Object.values(a).some(isUnreadable))) failed.add(READS[e.op] ?? `the ${e.op} read`);
+      continue;
+    }
     if (e.kind !== 'compiles') continue;
     for (const st of Object.values(e.store ?? {})) {
       if (!st) continue;
