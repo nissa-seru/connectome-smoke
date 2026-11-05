@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { readAgainst, recordAgainst, releaseDiffers } from '../lib/against.mjs';
+import { flagsAgainst, readAgainst, recordAgainst, releaseDiffers } from '../lib/against.mjs';
 
 const LANE = 'a'.repeat(64);
 const RUNS = ['H1/W1', 'H1/W2', 'H2/W7'];
@@ -55,5 +55,20 @@ test('a head run\'s record is the same as the base arm\'s, differs from it, or h
     assert.deepEqual(recordAgainst(against, 'H1/W1', 'r2\n'), { record: 'differs', base: 'r1\n' });
     assert.deepEqual(recordAgainst(against, 'H1/W2', 'r1\n'), { record: 'missing', base: null });
     assert.deepEqual(recordAgainst(null, 'H1/W1', 'r1\n'), { record: 'written', base: null });
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+test('a head run\'s flags are each new, gone or kept against the base arm\'s, counted one for one, so a flag raised once more on the head is new once', () => {
+  const a = { check: 11, step: 'p.9', what: 'fixture:request:pins', detail: 'summary 4 at L1 covers 1' };
+  const b = { check: 1, step: 'the run', detail: 'the run failed: x' };
+  const c = { check: 2, step: 'close-merge', detail: 'missing an L3 merge request' };
+  const dir = baseArm({ results: [{ run: 'H1/W1', record: 'written', flags: { new: [a, a], gone: [], kept: [b] } }, { run: 'H1/W2', record: null }], records: { 'H1/W1': 'r1\n' } });
+  try {
+    const against = readAgainst(dir, { lane: LANE, runs: RUNS, names: ['H1/W1', 'H1/W2'] });
+    assert.deepEqual(flagsAgainst(against, 'H1/W1', [a, c]), { new: [c], gone: [a, b], kept: [a] }, 'the base arm\'s own flags are its new and kept');
+    assert.deepEqual(flagsAgainst(against, 'H1/W1', [b, a, a, a]), { new: [a], gone: [], kept: [b, a, a] });
+    assert.deepEqual(flagsAgainst(against, 'H1/W1', [{ ...a, detail: 'summary 5 at L1 covers 1' }]).gone, [a, a, b], 'a flag whose detail moved is gone, and the moved one new');
+    assert.equal(flagsAgainst(against, 'H1/W2', [a]), null, 'a run the base arm couldn\'t run has no flags to compare with');
+    assert.deepEqual(flagsAgainst(null, 'H1/W1', [a, c]), { new: [a, c], gone: [], kept: [] }, 'with no base arm every flag is new');
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });

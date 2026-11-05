@@ -1,9 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
-import { perCheckReport, readExpected, runChecks, summaryNamer, workloadReport } from '../lib/strategies/report.mjs';
+import { comparableFlags, perCheckReport, runChecks, summaryNamer, workloadReport } from '../lib/strategies/report.mjs';
 import { calibrationEdge, judgedBy, withJudged } from '../lib/strategies/checks.mjs';
 
 const configuration = { name: 'H1/W1' };
@@ -15,71 +12,24 @@ test('the report passes a run with no flag and every product', () => {
   assert.match(r.lines[0], /^H1\/W1: no flags\.$/);
 });
 
-test('an expected failure covers the flags its key and match name, and names its finding; an entry no flag meets fails the run; another configuration\'s entry covers nothing', () => {
-  const shape = (step) => ({ check: 11, step, what: 'fixture:request:shape', message: 'fixture\'s request compile 45 breaks shape' });
-  const entry = (step, more = {}) => ({ configuration: 'H1/W1', check: 11, step, what: 'fixture:request:shape', finding: 'D1', reason: 'passthrough cuts a call from its result', match: '^fixture\'s request compile 45 breaks shape$', ...more });
-  const covered = perCheckReport({ configuration, candidate: { flags: [shape('p.42'), shape('p.42'), shape('p.45')], missing: [] }, expected: [entry('p.42'), entry('p.45')] });
-  assert.equal(covered.verdict, 'pass');
-  assert.equal(covered.expected.length, 3);
-  assert.match(covered.lines[0], /^H1\/W1: no flags, 3 expected \(D1\)\.$/);
-  assert.ok(covered.lines.some((l) => /check 11 at p\.45: .*\[expected: D1\]/.test(l)));
-  const fixed = perCheckReport({ configuration, candidate: { flags: [shape('p.42')], missing: [] }, expected: [entry('p.42'), entry('p.45')] });
-  assert.equal(fixed.verdict, 'flags');
-  assert.deepEqual(fixed.flags.map((f) => [f.check, f.step, f.what]), [[11, 'p.45', 'fixture:request:shape']]);
-  assert.match(fixed.flags[0].message, /expects a flag here for D1 matching \/\^fixture's request compile 45 breaks shape\$\/, and the run raised none: if D1 is fixed, the change that fixed it removes the entry/);
-  const unrelated = perCheckReport({ configuration, candidate: { flags: [shape('p.42'), { check: 11, step: 'p.42', what: 'fixture:request:coverage', message: 'm' }], missing: [] }, expected: [entry('p.42', { configuration: 'passthrough' })] });
-  assert.equal(unrelated.flags.length, 2, 'an entry for another configuration covers nothing here');
-  assert.equal(unrelated.expected.length, 0);
+test('a report\'s flags as the arms compare them: every flag, the clamp edge and missing products included, by check, step, kind and the detail the report shows', () => {
+  const pins = { check: 11, step: 'p.9', what: 'fixture:request:pins', detail: 'summary 4 at L1 covers 1', message: 'fixture\'s request compile 9 breaks pins: summary 4 at L1 covers 1', request: 'r9' };
+  const r = perCheckReport({ configuration, candidate: { flags: [{ ...flag(10, 'c.cm.cp', 'calibration at the clamp edge (1.8)'), what: 'clamp-edge' }, pins, flag(1, 'the run', 'the run failed: x')], missing: [{ segment: 'close-merge', missing: ['an L3 merge request'] }] } });
+  assert.deepEqual(comparableFlags(r), [
+    { check: 10, step: 'c.cm.cp', what: 'clamp-edge', detail: 'calibration at the clamp edge (1.8)' },
+    { check: 11, step: 'p.9', what: 'fixture:request:pins', detail: 'summary 4 at L1 covers 1' },
+    { check: 1, step: 'the run', detail: 'the run failed: x' },
+    { check: 2, step: 'close-merge', detail: 'missing an L3 merge request' },
+  ], 'a check 11 flag is compared by its detail, not by its message, which names its compile by number');
+  assert.deepEqual(comparableFlags(perCheckReport({ configuration, candidate: { flags: [], missing: [] } })), []);
 });
 
-test('a flag two entries both cover is a flag of its own, naming both findings, since neither can then tell whether its finding still shows', () => {
-  const pins = { check: 11, step: 'p.9', what: 'fixture:request:pins', detail: 'summary 4 at L1 covers 1, inside pin p1 allowing L0', message: 'm' };
-  const entry = (finding, match) => ({ configuration: configuration.name, check: 11, step: 'p.9', what: 'fixture:request:pins', match, finding, reason: 'r' });
-  const r = perCheckReport({ configuration, candidate: { flags: [pins], missing: [] }, expected: [entry('D3', '^summary 4 at L1 covers 1, inside pin p1 allowing L0$'), entry('D3b', '^summary 4 at L1 covers 1, inside pin p1 allowing L0$')] });
+test('no file of known findings covers a flag: every flag the checks raise is the report\'s', () => {
+  const r = perCheckReport({ configuration, candidate: { flags: [flag(11, 'p.42'), flag(11, 'p.45')], missing: [] } });
   assert.equal(r.verdict, 'flags');
-  assert.equal(r.flags.length, 1);
-  assert.match(r.flags[0].message, /entries for D3 and D3b both cover this flag/);
-  assert.equal(perCheckReport({ configuration, candidate: { flags: [pins], missing: [] }, expected: [entry('D3', '^summary 4 at L1 covers 1, inside pin p1 allowing L0$')] }).verdict, 'pass');
-});
-
-test('the expected failures read: none without the file, and an entry missing a field or an anchored match, naming an unknown configuration or repeating a key throws, naming it', () => {
-  const dir = mkdtempSync(join(tmpdir(), 'expected-'));
-  const at = (entries) => { const p = join(dir, `e${Math.random()}.json`); writeFileSync(p, JSON.stringify(entries)); return p; };
-  const good = { configuration: 'H1/W1', check: 11, step: 'p.42', what: 'fixture:request:shape', finding: 'D1', reason: 'r', match: '^m$' };
-  assert.deepEqual(readExpected(join(dir, 'absent.json'), ['H1/W1']), []);
-  assert.deepEqual(readExpected(at([good]), ['H1/W1', 'H3/W1']), [good]);
-  assert.throws(() => readExpected(at([{ ...good, finding: '' }]), ['H1/W1']), /entry 0: has no finding/);
-  assert.throws(() => readExpected(at([good, { ...good, check: '11' }]), ['H1/W1']), /entry 1: has no check number/);
-  assert.throws(() => readExpected(at([{ ...good, configuration: 'H9' }]), ['H1/W1']), /entry 0: names a configuration this run has none of: H9/);
-  assert.throws(() => readExpected(at([good, { ...good, reason: 'another' }]), ['H1/W1']), /entry 1: repeats another entry/);
-  assert.throws(() => readExpected(at({ entries: [] }), ['H1/W1']), /isn't a list of entries/);
-  const { what, ...noWhat } = good;
-  assert.throws(() => readExpected(at([noWhat]), ['H1/W1']), /entry 0: has no what: an entry covers one kind of flag/);
-  const { match, ...noMatch } = good;
-  assert.throws(() => readExpected(at([noMatch]), ['H1/W1']), /entry 0: has no match: an entry covers the flags whose detail as the report shows it/);
-  for (const loose of ['m$', '^m', 'm', '^m\\$', '^known|other$', '^.*$', '^m+$', '^[mn]$', '^lost \\d messages$', '^a\\sb$', '^\\w$', '^\\bm$']) assert.throws(() => readExpected(at([{ ...good, match: loose }]), ['H1/W1']), /entry 0: has a match that isn't an escaped literal between \^ and \$/, loose);
-  assert.equal(readExpected(at([{ ...good, match: '^a\\.b \\(c\\) \\$5 \\\\ \\[d\\]$' }]), ['H1/W1']).length, 1, 'an escaped metacharacter or backslash is literal');
-  const pins = { ...good, what: 'fixture:request:pins' };
-  assert.equal(readExpected(at([{ ...pins, match: '^allowing L0$' }, { ...pins, match: '^allowing L1$', finding: 'D39' }]), ['H1/W1']).length, 2, 'entries sharing a key, each with its own match');
-  assert.throws(() => readExpected(at([{ ...pins, match: '^x$' }, { ...pins, match: '^x$', reason: 'again' }]), ['H1/W1']), /entry 1: repeats another entry's configuration, check, step, what and match/);
-});
-
-test('an entry\'s match covers the flags whose shown detail it names: D3 and D39 at one step each cover their own, a pins flag of a third shape is a flag, and an entry whose match no flag meets fails the run', () => {
-  const pins = (detail) => ({ check: 11, step: 'p.9', what: 'fixture:request:pins', detail, message: `fixture's request compile 9 breaks pins: ${detail}` });
-  const entry = (finding, match) => ({ configuration: 'H1/W1', check: 11, step: 'p.9', what: 'fixture:request:pins', match, finding, reason: 'r' });
-  const d3 = entry('D3', '^summary 4 sent over raw pin p1, allowing L0$');
-  const d39 = entry('D39', '^summary 7 sent under level pin p2, allowing L1$');
-  const both = perCheckReport({ configuration, candidate: { flags: [pins('summary 4 sent over raw pin p1, allowing L0'), pins('summary 7 sent under level pin p2, allowing L1')], missing: [] }, expected: [d3, d39] });
-  assert.equal(both.verdict, 'pass');
-  assert.match(both.lines[0], /^H1\/W1: no flags, 2 expected \(D3, D39\)\.$/);
-  assert.ok(both.lines.some((l) => /allowing L1 \[expected: D39\]$/.test(l)));
-  const third = perCheckReport({ configuration, candidate: { flags: [pins('summary 4 sent over raw pin p1, allowing L0'), pins('summary 7 sent under level pin p2, allowing L1'), pins('pin p3 names no stored message')], missing: [] }, expected: [d3, d39] });
-  assert.deepEqual(third.flags.map((f) => f.detail), ['pin p3 names no stored message'], 'a pins flag neither match finds isn\'t covered');
-  const gone = perCheckReport({ configuration, candidate: { flags: [pins('summary 4 sent over raw pin p1, allowing L0')], missing: [] }, expected: [d3, d39] });
-  assert.equal(gone.flags.length, 1);
-  assert.match(gone.flags[0].message, /expects a flag here for D39 matching \/\^summary 7 sent under level pin p2, allowing L1\$\/, and the run raised none/);
-  const noDetail = perCheckReport({ configuration, candidate: { flags: [{ check: 4, step: 'p.9', what: 'more-than-once', message: '3 stored message(s) reach the request more than once' }], missing: [] }, expected: [{ configuration: 'H1/W1', check: 4, step: 'p.9', what: 'more-than-once', match: '^3 stored message\\(s\\) reach the request more than once$', finding: 'D3', reason: 'r' }] });
-  assert.equal(noDetail.verdict, 'pass', 'a flag with no detail is matched by its message');
+  assert.equal(r.flags.length, 2);
+  assert.match(r.lines[0], /^H1\/W1: 2 flag\(s\), 0 missing product\(s\)\.$/);
+  assert.equal(r.expected, undefined);
 });
 
 test('a clamp-edge calibration makes the run invalid, and the first line says so', () => {

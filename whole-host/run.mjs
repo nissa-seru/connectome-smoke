@@ -6,16 +6,16 @@ import { basename, dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs, sh } from './lib/common.mjs';
 import { installCandidate, readPacks } from './lib/install.mjs';
-import { EPOCH, EXPECTED_FAILURES, asRun, contentsOf, keptWhole, laneVersion, stackVersions } from './lib/strategies/lane.mjs';
+import { EPOCH, asRun, contentsOf, keptWhole, laneVersion, stackVersions } from './lib/strategies/lane.mjs';
 import { hostFacts, runScript } from './lib/strategies/driver.mjs';
 import { startStandin, tokensSent } from './lib/strategies/standin.mjs';
 import { judge, judgedAgent } from './lib/strategies/judge.mjs';
 import { FIXTURE_AGENT } from './lib/strategies/checks.mjs';
-import { readExpected, workloadReport } from './lib/strategies/report.mjs';
+import { comparableFlags, workloadReport } from './lib/strategies/report.mjs';
 import { RUNS, runOf } from './lib/strategies/workloads.mjs';
 import { configurations } from './lib/strategies/script.mjs';
 import { exitCode, refuseUnrecordable, renderRecordLines } from './lib/record.mjs';
-import { readAgainst, recordAgainst, releaseDiffers, slug } from './lib/against.mjs';
+import { flagsAgainst, readAgainst, recordAgainst, releaseDiffers, slug } from './lib/against.mjs';
 import { changedRequests, stepSummary, summaryOf, viewOf } from './lib/view.mjs';
 import { generatedTexts, transcriptOf } from './lib/strategies/transcript.mjs';
 import { ledgerOf, moduleCounts } from './lib/strategies/ledger.mjs';
@@ -80,9 +80,6 @@ let candidate;
 try { candidate = installCandidate({ root: hostDir, packs, dir: join(work, 'candidate'), leaveOut: [work, out], npmCi }); } catch (e) { fail(`installing the candidate failed: ${e.message}`); }
 console.log(`${LABEL} candidate ${named(candidate.versions)}${packs.length ? `, with ${packs.map((p) => p.name).join(', ')} laid over` : ''}`);
 
-const expected = (() => {
-  try { return readExpected(EXPECTED_FAILURES, everyRun); } catch (e) { return fail(`the expected failures couldn't be read: ${e.message}`); }
-})();
 const readJsonLines = (path) => (existsSync(path) ? readFileSync(path, 'utf-8').trim().split('\n').filter(Boolean).map((l) => JSON.parse(l)) : []);
 
 async function drive(job, side, { storeDir, epoch, dir, scratch = dir, rawDir = null, hostLogs = { dir, at: relative(out, dir) } }) {
@@ -184,12 +181,13 @@ async function workloadRun(id, { rawDir = null, dir }) {
     judged = await judge({ records: d.records, log: d.log, script: d.steps, storeCopy: sessions[0] ?? null, configuration: d.configuration, installDir: candidate.installDir, run: d.run, declared: job.products });
   } catch (e) { const c = cutError(e, 2000); return { outcome: 'couldnt-run', reason: `the run couldn't be judged: ${c.shown}`, ...(c.full ? { reasonFull: `the run couldn't be judged: ${c.full}` } : {}) }; }
   const breaches = d.run.ok ? job.check({ log: d.log, records: d.records }) : [];
-  const report = workloadReport({ id, workload: job.workload, owns: job.owns, judged, breaches, completed: d.run.ok, expected });
+  const report = workloadReport({ id, workload: job.workload, owns: job.owns, judged, breaches, completed: d.run.ok });
   writeFileSync(join(dir, 'report.txt'), `${report.lines.join('\n')}\n`);
   return {
     reported: true,
     outcome: report.verdict === 'pass' ? 'pass' : report.verdict,
     failures: report.flags,
+    flagged: comparableFlags(report),
     lines: report.lines,
     judged: report.judged,
     log: d.log,
@@ -204,6 +202,7 @@ async function workloadRun(id, { rawDir = null, dir }) {
 const results = [];
 const rows = [];
 const views = [];
+const flaggedRuns = [];
 const reportCouldnt = (dir, id, r) => {
   mkdirSync(dir, { recursive: true });
   (r.reported ? appendFileSync : writeFileSync)(join(dir, 'report.txt'), `${id}: couldn't run: ${r.reason}\n${r.reasonFull ? `  whole: ${r.reasonFull}\n` : ''}`);
@@ -216,6 +215,7 @@ for (const id of names) {
   let r = null;
   let row;
   let record = null;
+  let flags = null;
   let selfCheck = null;
   let stage = 'it couldn\'t be run';
   try {
@@ -232,6 +232,7 @@ for (const id of names) {
       stage = 'its record couldn\'t be compared with the base arm\'s';
       const compared = recordAgainst(against, id, text);
       record = compared.record;
+      flags = flagsAgainst(against, id, r.flagged);
       let changed = null;
       if (record === 'differs') {
         stage = 'its view couldn\'t be written';
@@ -254,7 +255,7 @@ for (const id of names) {
         console.log(`${LABEL} ${id}: the record differs from the base arm's; the run's is ${slug(id)}/${slug(id)}.record in this job's evidence, and what changed is in ${slug(id)}/view.md`);
       }
       stage = 'its counts couldn\'t be read';
-      row = { run: id, outcome: r.outcome, flags: r.failures?.length ?? 0, record, changed, ledgerOf: r.agent, counts: moduleCounts(r.log, r.records, r.agent), tokens: tokensSent(r.records) };
+      row = { run: id, outcome: r.outcome, flags: r.failures?.length ?? 0, ...(against && flags ? { compared: { new: flags.new.length, gone: flags.gone.length } } : {}), record, changed, ledgerOf: r.agent, counts: moduleCounts(r.log, r.records, r.agent), tokens: tokensSent(r.records) };
     } else {
       reportCouldnt(dir, id, r);
       row = { run: id, outcome: r.outcome, reason: r.reason, record: 'couldn\'t run' };
@@ -283,15 +284,17 @@ for (const id of names) {
     r = { ...(r ?? {}), outcome: 'couldnt-run', reason: `${stage}: ${c.shown}`, ...(c.full ? { reasonFull: `${stage}: ${c.full}` } : {}) };
     if (seconds.runs[id] === undefined) seconds.runs[id] = Math.round((since(t) - (checkpointTime - before)) * 10) / 10;
     record = null;
+    flags = null;
     selfCheck = null;
     reportCouldnt(dir, id, r);
     row = { run: id, outcome: r.outcome, reason: r.reason, record: 'couldn\'t run' };
     console.log(`${LABEL} ${id}: couldn't run: ${r.reason}`);
   }
   rows.push(row);
-  results.push({ run: id, outcome: r.outcome, reason: r.reason, failures: r.failures, record, ...(selfCheck ? { selfCheck } : {}) });
+  if (r.failures?.length) flaggedRuns.push({ run: id, flags: r.failures });
+  results.push({ run: id, outcome: r.outcome, reason: r.reason, record, ...(flags ? { flags } : {}), ...(selfCheck ? { selfCheck } : {}) });
 }
-const table = summaryOf({ rows, flagged: results.filter((x) => x.failures?.length).map((x) => ({ run: x.run, flags: x.failures })) });
+const table = summaryOf({ rows, flagged: flaggedRuns });
 writeFileSync(join(out, 'summary.md'), `${table}\n`);
 if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, stepSummary({ table, views }));
 writeFileSync(join(out, 'run.json'), JSON.stringify({ lane, runs, release: { tag: stack.release, versions: release.versions }, candidate: { versions: candidate.versions, overlays: packs }, seconds, results }, null, 1));

@@ -421,12 +421,17 @@ test('a run unrecordable() refuses becomes couldn\'t-run with its reason, the ou
   assert.equal(exitCode([{ outcome: 'pass', record: 'same', selfCheck: { outcome: 'couldnt-run' } }]), 2);
 });
 
-test('an invocation exits 0 when every run passed with its record the base arm\'s, or written where there\'s no base arm, and 1 when a record differs or has no base to compare with', () => {
-  assert.equal(exitCode([{ outcome: 'pass', record: 'written' }]), 0);
-  assert.equal(exitCode([{ outcome: 'pass', record: 'written', selfCheck: { outcome: 'same' } }]), 0);
-  assert.equal(exitCode([{ outcome: 'pass', record: 'same' }, { outcome: 'pass', record: 'missing' }]), 1);
-  assert.equal(exitCode([{ outcome: 'flags', record: 'written' }]), 1);
-  assert.equal(exitCode([{ outcome: 'pass', record: 'written', selfCheck: { outcome: 'differs' } }]), 1);
+test('an invocation exits 0 when every run\'s record and flags are the base arm\'s, or written with no flags where there\'s no base arm, and 1 when a record differs or has no base to compare with, or a flag is new or gone', () => {
+  const none = { new: [], gone: [], kept: [] };
+  const f = { check: 11, step: 'p.9', detail: 'd' };
+  assert.equal(exitCode([{ outcome: 'pass', record: 'written', flags: none }]), 0);
+  assert.equal(exitCode([{ outcome: 'pass', record: 'written', flags: none, selfCheck: { outcome: 'same' } }]), 0);
+  assert.equal(exitCode([{ outcome: 'pass', record: 'same', flags: none }, { outcome: 'pass', record: 'missing' }]), 1);
+  assert.equal(exitCode([{ outcome: 'flags', record: 'written', flags: { ...none, new: [f] } }]), 1);
+  assert.equal(exitCode([{ outcome: 'pass', record: 'written', flags: none, selfCheck: { outcome: 'differs' } }]), 1);
+  assert.equal(exitCode([{ outcome: 'flags', record: 'same', flags: { ...none, kept: [f] } }]), 0, 'a flag the base arm raised too is no change');
+  assert.equal(exitCode([{ outcome: 'pass', record: 'same', flags: { ...none, gone: [f] } }]), 1, 'a flag the head no longer raises is a change');
+  assert.equal(exitCode([{ outcome: 'flags', record: 'same', flags: { ...none, new: [f], kept: [f] } }]), 1);
 });
 
 test('a request the stand-in couldn\'t classify gets a line of its own with its body, so a changed one is named and its view can show it', () => {

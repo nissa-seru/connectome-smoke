@@ -1,4 +1,3 @@
-import { existsSync, readFileSync } from 'node:fs';
 import { bindingControl, budgets, compileInvariants, compilingAgents, ofSide, pairing, withJudged, reloads, declaredProducts, everyTurnAnswers, wellFormed, windowsRaw, coverage, bookkeeping, calibrationEdge, FIXTURE_AGENT, STREAM_BOUND } from './checks.mjs';
 import { messageNames, spanName } from './names.mjs';
 import { cutText } from './cut.mjs';
@@ -48,77 +47,30 @@ export function runChecks({ records, log, script, products, store, agent = FIXTU
   return { flags, missing, headroom: budget.headroom, notes, judged };
 }
 
-const key = (f) => `${f.check}|${f.step}|${f.what ?? ''}`;
-
-const META = new Set('.*+?()[]{}|^$');
-function literal(match) {
-  if (!match.startsWith('^') || !match.endsWith('$')) return false;
-  const body = match.slice(1, -1);
-  for (let i = 0; i < body.length; i++) {
-    if (body[i] === '\\') { i++; if (i >= body.length || !(META.has(body[i]) || body[i] === '\\')) return false; continue; }
-    if (META.has(body[i])) return false;
-  }
-  return true;
-}
-
-export function readExpected(path, names) {
-  if (!existsSync(path)) return [];
-  const entries = JSON.parse(readFileSync(path, 'utf-8'));
-  if (!Array.isArray(entries)) throw new Error(`${path} isn't a list of entries`);
-  const byKey = new Map();
-  entries.forEach((e, i) => {
-    const bad = (why) => { throw new Error(`${path} entry ${i}: ${why}`); };
-    if (!e || typeof e !== 'object') bad('isn\'t an object');
-    for (const field of ['configuration', 'step', 'finding', 'reason']) if (typeof e[field] !== 'string' || !e[field]) bad(`has no ${field}`);
-    if (!Number.isInteger(e.check)) bad('has no check number');
-    if (typeof e.what !== 'string' || !e.what) bad('has no what: an entry covers one kind of flag, so it can cover only flags that name their kind');
-    if (typeof e.match !== 'string' || !e.match) bad('has no match: an entry covers the flags whose detail as the report shows it, cut where the report cuts it (their message, where they have none), its match names, escaped and anchored');
-    if (!literal(e.match)) bad('has a match that isn\'t an escaped literal between ^ and $, so it could cover flags other than the one it names');
-    if (!names.includes(e.configuration)) bad(`names a configuration this run has none of: ${e.configuration}`);
-    const k = `${e.configuration}|${key(e)}`;
-    const others = byKey.get(k) ?? [];
-    if (others.some((o) => o.match === e.match)) bad(`repeats another entry's configuration, check, step, what and match`);
-    byKey.set(k, [...others, e]);
-  });
-  return entries;
-}
-
-export function perCheckReport({ configuration, candidate, expected = [] }) {
+export function perCheckReport({ configuration, candidate }) {
   const invalid = candidate.flags.filter((f) => f.check === 10 && f.what === 'clamp-edge');
-  const entries = expected.filter((e) => e.configuration === configuration.name).map((e) => ({ e, re: new RegExp(e.match) }));
-  const coverOf = (f) => entries.filter(({ e, re }) => key(e) === key(f) && re.test(f.detail ?? f.message ?? ''));
-  const counted = candidate.flags.filter((f) => !invalid.includes(f));
-  const covered = [];
-  const flags = [];
-  const met = new Set();
-  for (const f of counted) {
-    const by = coverOf(f);
-    if (!by.length) { flags.push(f); continue; }
-    if (by.length > 1) flags.push({ check: f.check, step: f.step, what: f.what, message: `expected-failures.json's entries for ${by.map((x) => x.e.finding).join(' and ')} both cover this flag, so neither can tell whether its own finding still shows: give them matches that don't overlap (${f.detail ?? f.message})` });
-    covered.push({ f, finding: [...new Set(by.map((x) => x.e.finding))].join('; ') });
-    for (const x of by) met.add(x);
-  }
-  for (const x of entries) {
-    const { e } = x;
-    if (!met.has(x)) flags.push({ check: e.check, step: e.step, what: e.what, message: `expected-failures.json expects a flag here for ${e.finding} matching /${e.match}/, and the run raised none: if ${e.finding} is fixed, the change that fixed it removes the entry` });
-  }
+  const flags = candidate.flags.filter((f) => !invalid.includes(f));
   const missing = candidate.missing.flatMap((m) => m.missing.map((name) => ({ segment: m.segment, name })));
   const verdict = invalid.length ? 'invalid' : flags.length || missing.length ? 'flags' : 'pass';
   const lines = [];
   if (invalid.length) lines.push(`INVALID: ${invalid[0].message}${invalid.length > 1 ? ` (and ${invalid.length - 1} more)` : ''}. Its folds are clamped folds, not a store's.`);
-  const findings = [...new Set(covered.map((c) => c.finding))];
-  lines.push(`${configuration.name}: ${verdict === 'pass' ? 'no flags' : `${flags.length} flag(s), ${missing.length} missing product(s)`}${covered.length ? `, ${covered.length} expected (${findings.join(', ')})` : ''}.`);
+  lines.push(`${configuration.name}: ${verdict === 'pass' ? 'no flags' : `${flags.length} flag(s), ${missing.length} missing product(s)`}.`);
   const whole = (x) => (x.full ? [`  whole: ${x.full}`] : []);
   for (const f of flags) lines.push(`- check ${f.check} at ${f.step}${f.request ? ` (${f.request})` : ''}: ${f.message}`, ...whole(f));
-  for (const { f, finding } of covered) lines.push(`- check ${f.check} at ${f.step}${f.request ? ` (${f.request})` : ''}: ${f.message} [expected: ${finding}]`, ...whole(f));
   for (const m of missing) lines.push(`- check 2, ${m.segment}: missing ${m.name}`);
   for (const n of candidate.notes ?? []) lines.push(`- ${n.message ?? n}`, ...(n.full ? [`  whole: ${n.full}`] : []));
   if (candidate.judged?.length) lines.push(`- judged: ${candidate.judged.map((j) => `check ${j.check} ${j.name} ${j.judged ?? '?'}${j.besides ? ` (${j.besides})` : ''}`).join(', ')}`);
   if (candidate.headroom?.length) lines.push(`- budget headroom, each segment's least: ${candidate.headroom.map((h) => `${h.segment} ${h.bound - h.tokens} of ${h.bound}${h.kind === 'continuation' ? ' (a stream\'s fresh input through a continuation round, against the stream bound)' : ' (a compiled request\'s whole input, against the model\'s window)'}`).join(', ')}`);
-  return { verdict, lines, invalid, flags, expected: covered.map((c) => c.f), missing, judged: candidate.judged ?? [] };
+  return { verdict, lines, invalid, flags, missing, judged: candidate.judged ?? [] };
 }
 
-export function workloadReport({ id, workload, owns = [], judged, breaches, completed, expected = [] }) {
+export const comparableFlags = (report) => [
+  ...report.invalid,
+  ...report.flags,
+  ...report.missing.map((m) => ({ check: 2, step: m.segment, message: `missing ${m.name}` })),
+].map((f) => ({ check: f.check, step: f.step, ...(f.what ? { what: f.what } : {}), detail: f.detail ?? f.message }));
+
+export function workloadReport({ id, workload, owns = [], judged, breaches, completed }) {
   const isOwned = (f) => owns.some((o) => o.check === f.check && (o.what === undefined || o.what === f.what));
   const judgedFlags = judged.flags.filter((f) => !isOwned(f));
   const owned = judged.flags.length - judgedFlags.length;
@@ -132,7 +84,7 @@ export function workloadReport({ id, workload, owns = [], judged, breaches, comp
     flags.push({ check: 14, step: 'the run', what: 'judged-none:property', message: `couldn't judge: ${workload}'s property ${why}, though the run completed` });
   }
   const notes = [...(judged.notes ?? []), ...(owned ? [`${owned} flag(s) are ${workload}'s by design, judged by its property (runOf owns)`] : [])];
-  return perCheckReport({ configuration: { name: id }, candidate: { flags, missing: judged.missing ?? [], notes, headroom: judged.headroom, judged: counts }, expected });
+  return perCheckReport({ configuration: { name: id }, candidate: { flags, missing: judged.missing ?? [], notes, headroom: judged.headroom, judged: counts } });
 }
 
 export function summaryNamer(store) {

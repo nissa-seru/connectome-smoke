@@ -28,6 +28,26 @@ export function releaseDiffers(against, release) {
   return `--against ${against.dir} made its checkpoints with ${against.release?.tag ?? 'no release'} (${named(against.release?.versions)}), and this invocation with ${release.tag} (${named(release.versions)}), so the two arms' runs wouldn't start from the same stores`;
 }
 
+const flagKey = (f) => JSON.stringify([f.check, f.step, f.what ?? null, f.detail]);
+
+export function flagsAgainst(against, id, own) {
+  if (!against) return { new: own, gone: [], kept: [] };
+  const base = against.result(id);
+  if (base?.record == null) return null;
+  const theirs = [...(base.flags?.new ?? []), ...(base.flags?.kept ?? [])];
+  const keys = theirs.map(flagKey);
+  const taken = new Set();
+  const out = { new: [], gone: [], kept: [] };
+  for (const f of own) {
+    const k = flagKey(f);
+    const at = keys.findIndex((t, i) => !taken.has(i) && t === k);
+    if (at < 0) out.new.push(f);
+    else { taken.add(at); out.kept.push(f); }
+  }
+  out.gone = theirs.filter((_, i) => !taken.has(i));
+  return out;
+}
+
 export function recordAgainst(against, id, text) {
   if (!against) return { record: 'written', base: null };
   if (against.result(id)?.record == null) return { record: 'missing', base: null };

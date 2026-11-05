@@ -6,7 +6,7 @@ The context view runs it twice for a pull request in context-manager, agent-fram
 
 ## Running it
 
-`node whole-host/run.mjs --host DIR` drives the connectome-host checkout at `DIR` through every run, judges each, and writes its record. With `--against BASE`, it compares each run's record with the base arm's in `BASE`. It exits 0 when every run passed, with its record the same as the base arm's (or, with no `--against`, written) and its self-check, where one ran, the same; 1 when a run flagged something, a record differs or has no base record to compare with, or a self-check differs; and 2 when a run or its self-check couldn't run, or when the invocation stopped before running anything. A run whose `report.txt` can't be written ends the invocation there, as an uncaught error, which exits 1.
+`node whole-host/run.mjs --host DIR` drives the connectome-host checkout at `DIR` through every run, judges each, and writes its record. With `--against BASE`, it compares each run's record with the base arm's in `BASE`. It exits 0 when every run's record is the same as the base arm's, with no flag new or gone (or, with no `--against`, written, with no flag at all), and its self-check, where one ran, the same; 1 when a record differs or has no base record to compare with, a flag is new or gone, or a self-check differs; and 2 when a run or its self-check couldn't run, or when the invocation stopped before running anything. A run whose `report.txt` can't be written ends the invocation there, as an uncaught error, which exits 1.
 
 The harness imports only Node's own modules, and Bun's in the test module the host loads, so it needs no install of its own. `npm ci` in `whole-host/` installs context-manager for one unit test, `readStore`'s, and `npm test` runs the unit tests.
 
@@ -18,7 +18,7 @@ The harness imports only Node's own modules, and Bun's in the test module the ho
 - `--self-check` drives each run a second time with the test module's recording off, and fails a run whose request bodies differ once the run-varying values are masked in both, wherever they appear, cache markers included, where a record writes a marker whole: every record rests on recording changing nothing the host sends. It compares the bodies alone, not the headers, path or query; the record's heads hold the path, the query and the `anthropic-beta` and `anthropic-version` headers. With recording off the driver sets `FIXTURE_RECORD=off`, and otherwise leaves it unset, dropping a runner's own, so a runner's setting can't turn the recording arm off. An arm with recording off that logged compile batches anyway can't be judged, nor can one whose drive failed, and the summary names which arm. Where they differ, the first differing pair of request bodies is kept in the run's evidence, under `self-check/`. The context view runs it on the head arm. A change whose effect recording happened to hide would leave every record as it was, so only the self-check would show it, and it also shows a head whose requests vary from one drive to the next.
 - `--shard i/n` runs share `i` of `n`, balanced by the seconds `stack.json` records. Both arms of a view take the same share.
 - `--workdir DIR` keeps the run's installs and stores in `DIR`, which must be empty or new, since the release is installed there and every run's store starts there. The candidate is `--host`'s own install unless `--overlay` is given, when it's installed there too.
-- `--out DIR` chooses where each run's record, `report.txt` and view are written, and `run.json` and `summary.md`; it's `DIR/out` under the work directory when not given. `run.json` names the harness (`lane`), the runs the shares were drawn from (`runs`, in `RUNS` order), the release that wrote the checkpoints with its stack (`release`), the candidate's stack and overlays (`candidate`), each run's and checkpoint's seconds, and each run's result: its outcome (`pass`, `flags`, `invalid` or `couldnt-run`) and the reason it couldn't run, its record (`same`, `differs`, `missing` or `written`, or `null` when it couldn't run), its flags and its self-check.
+- `--out DIR` chooses where each run's record, `report.txt` and view are written, and `run.json` and `summary.md`; it's `DIR/out` under the work directory when not given. `run.json` names the harness (`lane`), the runs the shares were drawn from (`runs`, in `RUNS` order), the release that wrote the checkpoints with its stack (`release`), the candidate's stack and overlays (`candidate`), each run's and checkpoint's seconds, and each run's result: its outcome (`pass`, `flags`, `invalid` or `couldnt-run`) and the reason it couldn't run, its record (`same`, `differs`, `missing` or `written`, or `null` when it couldn't run), its flags, `new`, `gone` and `kept` against the base arm's ("Flags across the arms", below), and its self-check.
 - `--update-seconds` merges this invocation's seconds, each run's and each checkpoint's, over the ones `stack.json` records, which `--shard` balances by. It writes the file through a temporary one, so an interrupted write leaves the old file whole. Two invocations writing at once each keep their own merge, and the later one's stands.
 
 Records are made on Linux. The test module stamps each request compile from the machine's monotonic clock, which it reads there (`module.mjs`), under Bun through `clock_gettime` in `libc.so.6`. A run whose compiles carry no stamp is refused as couldn't-run (`record.mjs`, `unrecordable`), so every run couldn't run anywhere but Linux, and under Bun on a Linux whose C library isn't at `libc.so.6`, such as a plain musl one.
@@ -372,8 +372,7 @@ what holds.
 
 ## What each run's checks judge
 
-Each run's `report.txt` lists its flags, the expected failures that cover some
-of them, and the checks' counts. A flag, a note or a reason the record or the
+Each run's `report.txt` lists its flags and the checks' counts. A flag, a note or a reason the record or the
 summary shows cut short, such as a thrown error, a command's output or a long
 list of names, has its whole text on the line under it, `  whole: …`; a run
 that couldn't run has its reason there, whole the same way. Two reasons are
@@ -432,7 +431,7 @@ shows the host's last lines names that file.
   completed under a configuration that compresses (`judge.mjs`), so not H3's
   passthrough runs. A store with no summaries is check 5's `no-summaries`
   flag, and checks 4 and 5 judge nothing of it, as in
-  C3h/W7/fable-no-tools, whose expected failure covers that flag. A request
+  C3h/W7/fable-no-tools, which raises that flag at context-manager 0.24.0, since with a Fable-family compression model and no tools declared every L1 is deferred. A request
   whose own input the final store doesn't hold isn't judged, and the report's
   judged line counts those beside what it judged. A subagent's inputs carry
   canaries of their own rather than a step's `.in`, so a subagent request's
@@ -581,33 +580,11 @@ A count shown as `?` is one the check couldn't establish, and its own flag
 says why. Where a check applies to a run and judged nothing, that's a
 couldn't-judge flag, never a pass.
 
-## Expected failures
+## Flags across the arms
 
-`whole-host/expected-failures.json` lists the flags of known findings
-that the runs meet. Each entry has its `configuration` (a run),
-`check`, `step` and `what`, the `finding` it belongs to and its `reason`, and a
-`match`: the flag's detail as its report shows it, cut where the report cuts
-it (its message, for a flag with no detail), as a literal, with each regular-expression metacharacter escaped by a
-backslash and no other escape, anchored at both ends. The harness refuses an
-entry whose match is anything else. So it covers exactly the flags of its
-`what` showing that detail at its check and step: one, or several identical
-ones where a step raises the same flag once per request. A flag that names no
-`what`, such as check 1's refusals and check 12's, can't be covered, since an
-entry must name one. Two more things are flags:
+With `--against`, each run's flags are compared with the base arm's, and its result in `run.json` lists them as `new` (raised on the head and not the base), `gone` (raised on the base and not the head) and `kept` (raised on both). Each is the flag's check, its step (`the run` for a run-level flag, a segment's name for a missing product), its kind (`what`, where it has one) and its detail as the report shows it, cut where the report cuts it (its message, for a flag with no detail). Flags are compared by those four, counted one for one, so a flag the head raises once more than the base is `new` once. A check 11 flag is compared by its detail, not its message, since its message names its compile by number, which a change earlier in the run can move. A check 10 clamp edge and check 2's missing products are compared as flags too, though the report counts them apart from its flags. With no `--against`, every flag is `new`. A run the base arm couldn't run, or the head couldn't, has no `flags`.
 
-- an entry no flag meets, which means its finding no longer shows. The change
-  that fixed it removes the entry;
-- a flag two entries cover.
-
-A check 10 clamp-edge flag is no entry's to cover: it makes the run invalid
-whatever the entries say, and an entry written for one is reported unmet.
-
-A flag no entry covers, beside an entry no flag meets at the same check and
-step, usually means a known finding moved, such as a count or a message index
-that changed. Read the two details. If it's the same finding, rewrite the
-entry's `match` from the new flag. A person rewrites entries, and
-nothing else does, since blessing new flags automatically would
-hide the losses the entries are there to catch.
+A flag both arms raise is the stack's before the change as much as after it, so it moves nothing: a known finding shows as `kept` until a change fixes it, when it shows as `gone`. A `gone` flag beside a `new` one at the same check and step usually means a flag's detail moved, such as a count or a message index that changed. Read the two details to tell a finding that moved from one that went and another that came.
 
 ## When the format changes
 

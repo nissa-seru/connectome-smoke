@@ -127,8 +127,9 @@ export function summaryTable(rows) {
   const counted = (r) => `${r.flags ?? '?'} flag(s)`;
   const outcome = (r) => {
     const main = r.outcome === undefined ? '?' : r.outcome === 'couldnt-run' ? `couldn't run: ${r.reason ?? 'no reason given'}` : r.outcome === 'flags' ? counted(r) : r.outcome === 'invalid' ? `invalid: ${counted(r)}` : r.outcome;
+    const moved = r.compared && (r.compared.new || r.compared.gone) ? `, ${r.compared.new} new and ${r.compared.gone} gone against the base arm` : '';
     const self = !r.selfCheck ? '' : `; self-check ${r.selfCheck.outcome === 'couldnt-run' ? `couldn't run: ${r.selfCheck.reason ?? 'no reason given'}` : r.selfCheck.outcome}`;
-    return escaped(`${main}${self}`);
+    return escaped(`${main}${moved}${self}`);
   };
   return [
     `| run | outcome | record | ${COLUMNS.map(([name]) => name).join(' | ')} |`,
@@ -141,7 +142,7 @@ export function summaryOf({ rows, flagged = [] }) {
   const clean = rows.every((r) => r.outcome === 'pass' && ['same', 'written'].includes(r.record) && (!r.selfCheck || r.selfCheck.outcome === 'same'));
   const parts = [summaryTable(rows)];
   if (!clean) {
-    parts.push("Each run's `report.txt`, record and view are under its directory in this job's evidence, its name with `/` written as `_`. A flag that a known finding explains is an entry in `whole-host/expected-failures.json` (`whole-host/README.md`, \"Expected failures\").");
+    parts.push("Each run's `report.txt`, record and view are under its directory in this job's evidence, its name with `/` written as `_`.");
   }
   for (const { run, flags } of flagged) {
     parts.push([`### ${run}: ${flags.length} flag(s)`, ...flags.map((f) => `- check ${f.check} at ${f.step}${f.request ? ` (${f.request})` : ''}: ${f.message}`)].join('\n'));

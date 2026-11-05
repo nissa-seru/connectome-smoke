@@ -8,8 +8,6 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 
 export const LANE_PATHS = ['lib', 'run.mjs'];
 
-export const EXPECTED_FAILURES = join(ROOT, 'expected-failures.json');
-
 export const KEY_PACKAGES = ['connectome-host', 'agent-framework', 'context-manager', 'membrane', 'chronicle'].map((p) => `@animalabs/${p}`);
 
 export function asRun(configuration, facts) {

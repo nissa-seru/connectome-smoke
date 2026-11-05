@@ -74,7 +74,7 @@ test('a store that kept no summaries, where the configuration compresses, is a c
   const empty = { readStore: async () => { throw new Error('no summaries in agents/fixture at /tmp/x, from a configuration that compresses'); }, audit };
   const judged = await judge({ ...side(configurations().H1), readers: empty });
   const flag = judged.flags.filter((f) => f.check === 5 && f.what === 'no-summaries');
-  assert.equal(flag.length, 1, 'one flag, keyed so an expected failure can name it');
+  assert.equal(flag.length, 1, 'one flag, keyed so the two arms can compare it');
   assert.equal(flag[0].message, 'the store kept no summaries in agents/fixture, though the configuration compresses', 'the same message whichever copy of the store was read');
   const unreadable = { readStore: async () => { throw new Error('getSummary(L1-3) is null, though getSummariesInRange lists it'); }, audit };
   await assert.rejects(judge({ ...side(configurations().H1), readers: unreadable }), /getSummary/);

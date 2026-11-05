@@ -190,11 +190,23 @@ test('the summary says where a run\'s evidence is and what to do when anything i
   const out = viewLib.summaryOf({ rows: [{ run: 'H1/W2', outcome: 'flags', flags: 25, record: 'differs', changed: { requests: ['r1'], added: 1, removed: 1 }, counts: {} }], flagged: [{ run: 'H1/W2', flags: Array.from({ length: 25 }, (_, i) => flag(i)) }] });
   assert.match(out, /`report\.txt`/);
   assert.doesNotMatch(out, /--update-records|versions\.txt|test\/whole-host/, 'nothing is committed to update, and the harness lives in connectome-smoke');
-  assert.match(out, /whole-host\/expected-failures\.json/);
+  assert.doesNotMatch(out, /expected-failures/, 'a flag both arms raise is kept, with no file of known findings');
   assert.match(out, /\n### H1\/W2: 25 flag\(s\)\n- check 4 at s\.0: m0\n/);
   assert.ok(out.includes('- check 4 at s.19: m19\n'));
   assert.ok(out.includes('- check 4 at s.24: m24'), 'no count of flags is left out of the summary');
   assert.ok(!/more in/.test(out));
+});
+
+test('a row against a base arm counts its flags new and gone there, and says nothing of them where none moved', () => {
+  const rows = [
+    { run: 'H1/W1', outcome: 'flags', flags: 3, compared: { new: 1, gone: 2 }, record: 'same', counts: {} },
+    { run: 'H1/W2', outcome: 'pass', flags: 0, compared: { new: 0, gone: 2 }, record: 'same', counts: {} },
+    { run: 'H1/W5', outcome: 'flags', flags: 2, compared: { new: 0, gone: 0 }, record: 'same', counts: {} },
+  ];
+  const table = summaryTable(rows).split('\n');
+  assert.equal(table[2].split(' | ')[1], '3 flag(s), 1 new and 2 gone against the base arm');
+  assert.equal(table[3].split(' | ')[1], 'pass, 0 new and 2 gone against the base arm');
+  assert.equal(table[4].split(' | ')[1], '2 flag(s)');
 });
 
 test('a record written with no base arm is clean, and one whose base arm couldn\'t run it says so in its row', () => {

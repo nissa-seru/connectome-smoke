@@ -22,7 +22,7 @@ test('N1: the lane version moves with every file under lib and with run.mjs, and
     'lib/common.mjs': 'common',
     'lib/record.mjs': 'record',
     'run.mjs': 'run',
-    'expected-failures.json': '[]',
+    'stack.json': '{}',
     'package.json': '{}',
     'README.md': 'readme',
     'unit/x.unit.mjs': 'test',
@@ -31,7 +31,7 @@ test('N1: the lane version moves with every file under lib and with run.mjs, and
     const v = laneVersion(root);
     assert.match(v, /^[0-9a-f]{64}$/);
     assert.equal(laneVersion(root), v, 'the same files give the same version');
-    for (const [rel, text] of [['README.md', 'readme 2'], ['expected-failures.json', '[1]'], ['package.json', '{"x":1}'], ['unit/x.unit.mjs', 'test 2'], ['unit/y.unit.mjs', 'new']]) {
+    for (const [rel, text] of [['README.md', 'readme 2'], ['stack.json', '{"x":1}'], ['package.json', '{"x":1}'], ['unit/x.unit.mjs', 'test 2'], ['unit/y.unit.mjs', 'new']]) {
       writeFileSync(join(root, rel), text);
       assert.equal(laneVersion(root), v, `${rel} is outside the lane`);
     }
