@@ -1003,7 +1003,7 @@ test('a property another check judges names it: the continuation check 2, W7 wit
   assert.equal(WORKLOADS.W9.check().judgedBy, 12);
 });
 
-test('W7 merges-refused: each refused merge raises one off-path alert at its step, a step where the counts differ is flagged, and a run where the stand-in refused no merge can\'t be judged', () => {
+test('W7 merges-refused: each refused merge raises one off-path alert at its step, a step where the counts differ is flagged, and a run where the stand-in refused no merge can\'t be judged, though an off-path refusal alert there still flags', () => {
   const refused = (step) => ({ kind: 'summariser', step, answer: { shape: 'refusal' } });
   const merged = (step) => ({ kind: 'summariser', step, answer: { shape: 'summary' } });
   const alert = (step, kind = 'refusal-offpath') => ({ kind: 'ipc', step, event: { type: 'ops:alert', kind } });
@@ -1015,11 +1015,16 @@ test('W7 merges-refused: each refused merge raises one off-path alert at its ste
   assert.deepEqual(missing.map((f) => [f.step, f.message]), [['7.5', '1 refused merge(s) at this step raised 0 off-path refusal alert(s), where each raises one and nothing else does']]);
   const extra = check([refused('7.3')], [alert('7.3'), alert('7.6')]);
   assert.deepEqual(extra.map((f) => [f.step, f.message]), [['7.6', '0 refused merge(s) at this step raised 1 off-path refusal alert(s), where each raises one and nothing else does']]);
-  const none = check([merged('7.3')], [alert('7.3')]);
+  const none = check([merged('7.3')], [alert('7.3', 'context-refusal')]);
   assert.deepEqual([none.judged, none.map((f) => f.message)], [0, ['couldn\'t judge: the stand-in refused no merge']]);
+  const stray = check([merged('7.3')], [alert('7.3')]);
+  assert.deepEqual([stray.judged, stray.map((f) => [f.step, f.message])], [0, [
+    [null, 'couldn\'t judge: the stand-in refused no merge'],
+    ['7.3', '0 refused merge(s) at this step raised 1 off-path refusal alert(s), where each raises one and nothing else does'],
+  ]]);
 });
 
-test('W7 chunk-refused: every summariser request that carried the refused content is judged, a step whose L1 requests carried it ahead of their slice or whose merges carried it is flagged, as is a step whose refused requests and off-path refusal alerts differ in number, and a run where none carried it in its slice can\'t be judged', () => {
+test('W7 chunk-refused: every summariser request that carried the refused content is judged, a step whose L1 requests carried it ahead of their slice or whose merges carried it is flagged, as is a step whose refused requests and off-path refusal alerts differ in number, and a run where none carried it can\'t be judged, though an off-path refusal alert there still flags', () => {
   const call = (step, carried) => ({ kind: 'summariser', step, ...(carried ? { carried } : {}), answer: { shape: carried ? 'refusal' : 'summary' } });
   const alert = (step, kind = 'refusal-offpath') => ({ kind: 'ipc', step, event: { type: 'ops:alert', kind } });
   const alertsFor = (records) => records.filter((r) => r.answer.shape === 'refusal').map((r) => alert(r.step));
@@ -1032,8 +1037,15 @@ test('W7 chunk-refused: every summariser request that carried the refused conten
     ['7.14', '2 L1 request(s) carried the content the summariser refuses ahead of the slice they asked it to remember'],
     ['7.17', '1 L1 request(s) carried the content the summariser refuses ahead of the slice they asked it to remember, and 1 merge request(s) carried it'],
   ]);
-  const never = check([call('7.14', 'ahead'), call('7.15')]);
-  assert.deepEqual([never.judged, never.map((f) => f.message)], [0, ['couldn\'t judge: no summariser request carried the refused content in the slice it was asked to remember']]);
+  const aheadOnly = check([call('7.14', 'ahead'), call('7.15')]);
+  assert.deepEqual([aheadOnly.judged, aheadOnly.map((f) => [f.step, f.message])], [1, [['7.14', '1 L1 request(s) carried the content the summariser refuses ahead of the slice they asked it to remember']]]);
+  const never = check([call('7.15')]);
+  assert.deepEqual([never.judged, never.map((f) => f.message)], [0, ['couldn\'t judge: no summariser request carried the refused content']]);
+  const stray = check([call('7.15')], [alert('7.15')]);
+  assert.deepEqual([stray.judged, stray.map((f) => [f.step, f.message])], [0, [
+    [null, 'couldn\'t judge: no summariser request carried the refused content'],
+    ['7.15', '0 refused summariser request(s) at this step raised 1 off-path refusal alert(s), where each raises one and nothing else does'],
+  ]]);
   const slice = [call('7.13', 'slice'), call('7.13', 'slice')];
   const missing = check(slice, [alert('7.13'), alert('7.13', 'compression-quarantine')]);
   assert.equal(missing.judged, 2);

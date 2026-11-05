@@ -238,9 +238,11 @@ host shapes requests alike for no probe outcome and for an account that
 refuses or drops a changed block (`logging-adapter.ts` tells only `shows`
 apart). `/budget` writes a header, then a line per agent, `  <name>: …`,
 which is how the driver knows the report has ended. A maintenance pass
-returns at once while a compression the host's auto-tick started is in
-flight, and no event marks that work's end, so a settle waits for the test
-module's tick counts too. And the web UI, which W6 and W9 open, is a WebSocket to
+names each agent it reports by `agentName`, which is how a settle finds the
+run's own agent, and returns at once while a compression the host's
+auto-tick started is in flight, and no event marks that work's end, so a
+settle waits for the test module's tick counts too. And the web UI, which
+W6 and W9 open, is a WebSocket to
 `/ws` on the URL the host logs (`[webui] listening on <url>`), whose welcome
 names the session (`welcome.session.id`), which a session-changing message
 such as `suppress` must carry.
