@@ -2,6 +2,7 @@ import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { CANARY, SUMMARY } from './standin.mjs';
 import { namingCanaries } from './names.mjs';
+import { isUnreadable, storedMessages } from './invariants.mjs';
 
 export async function readStore({ installDir, storePath, namespace, isolate = false }) {
   const cmEntry = join(installDir, 'node_modules', '@animalabs', 'context-manager', 'dist', 'src', 'index.js');
@@ -10,7 +11,9 @@ export async function readStore({ installDir, storePath, namespace, isolate = fa
   // context-manager 0.24.0's `ContextManager.open` locks the store and opens it with `openOrCreate`, so a caller passes a copy.
   const cm = await ContextManager.open({ path: storePath, namespace, strategy, ...(isolate ? { isolate: true } : {}) });
   try {
-    const messages = cm.getAllMessages().map(storedEntry);
+    const stored = storedMessages(cm);
+    if (isUnreadable(stored)) throw new Error(`getAllMessages: ${stored.unreadable}`);
+    const messages = stored.map(storedEntry);
     const ids = cm.getSummariesInRange({}).map((s) => s.id);
     if (ids.length === 0) throw new Error(`no summaries in ${namespace} at ${storePath}, from a configuration that compresses; it holds ${messages.length} message(s)${messages.length ? `, first carrying ${messages.find((m) => m.canaries.length)?.canaries[0] ?? 'no canary'}` : ''}`);
     const entries = new Map();
