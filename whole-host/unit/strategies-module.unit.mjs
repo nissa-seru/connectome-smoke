@@ -255,7 +255,7 @@ test('module: an ended agent\'s tick still in flight counts in ticks, and its ma
   const managers = new Map();
   const [module, Own] = harness({ listAgents: () => registered.map((name) => ({ name })), getAgent: (name) => (registered.includes(name) ? { getContextManager: () => managers.get(name) } : null) });
   let finish;
-  const strategy = { tick: () => new Promise((resolve) => { finish = resolve; }) };
+  const strategy = Object.assign(new AutobiographicalStrategy(), { tick: () => new Promise((resolve) => { finish = resolve; }) });
   const sub = new Own();
   sub.getStrategy = () => strategy;
   managers.set('sub', sub);
@@ -272,7 +272,8 @@ test('module: an ended agent\'s tick still in flight counts in ticks, and its ma
   assert.deepEqual(await module.answer({ op: 'ticks' }), {});
   const after = await module.answer({ op: 'take' });
   assert.deepEqual(after.store.sub.messages, [['2', ['[[c:a.summary]]']]], 'what its tick wrote after it left');
-  assert.deepEqual((await module.answer({ op: 'take' })).store, {}, 'then forgotten');
+  assert.equal(module.managers.has('sub'), false, 'then forgotten, its tick settled and its reads made');
+  assert.deepEqual((await module.answer({ op: 'take' })).store, {}, 'and read no more');
 });
 
 test('module: with recording off, an ended agent\'s tick in flight still counts in ticks', async () => {
