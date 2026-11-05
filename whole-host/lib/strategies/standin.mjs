@@ -343,8 +343,8 @@ export async function startStandin({ configuration, rawDir = null, refuseMerges 
     const sources = (b) => (record.level >= 2 ? b.summaries.at(-1) === record.sent.summaries.at(-1) : JSON.stringify(b.summaries) === JSON.stringify(record.sent.summaries));
     return badlyAnswered.findLast((b) => alike(b, record) && sources(b)) ?? null;
   };
-  // It retries the merge at the head of its queue until that merge is written, so until a merge cut at max_tokens is
-  // re-sent and answered well, a hintless merge alike in level, target and canaries can only be that re-send.
+  // context-manager 0.24.0 retries the merge at the head of its queue until that merge is written or quarantined
+  // (`recordMergeRejection`, src/strategies/autobiographical.ts:6909).
   const cutAndOpen = (record) => (record.level >= 2 ? badlyAnswered.findLast((b) => !b.settled && b.shape === 'max-tokens' && alike(b, record)) ?? null : null);
   const held = [];
   const heldListeners = [];
