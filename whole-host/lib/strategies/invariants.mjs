@@ -55,14 +55,28 @@ export function readable(read) {
   }
 }
 
-// context-manager 0.24.0's StoredMessage holds its content as a list of blocks.
+// context-manager 0.24.0's StoredMessage: an id, a numeric sequence, a participant and its content as a list of blocks.
+const messageLacks = (m) => (m?.id == null ? 'id'
+  : typeof m.sequence !== 'number' ? 'numeric sequence'
+    : typeof m.participant !== 'string' ? 'participant'
+      : !Array.isArray(m.content) ? 'content list' : null);
+
 export const storedMessages = (manager) => readable(() => {
   const all = manager.getAllMessages();
   if (!Array.isArray(all)) throw new Error('getAllMessages gave no list');
-  const at = all.findIndex((m) => !Array.isArray(m?.content));
-  if (at >= 0) throw new Error(`stored message ${all[at]?.id ?? `at ${at}`} has no content list`);
+  const at = all.findIndex(messageLacks);
+  if (at >= 0) throw new Error(`stored message ${all[at]?.id ?? `at ${at}`} has no ${messageLacks(all[at])}`);
   return all;
 });
+
+// context-manager 0.24.0's SummaryEntry: a string id and content, a numeric level and sourceLevel, and its sources' ids.
+export function summaryLacks(s) {
+  if (typeof s?.id !== 'string') return 'has no string id';
+  if (typeof s.content !== 'string') return 'has no content';
+  if (typeof s.level !== 'number' || typeof s.sourceLevel !== 'number') return 'has no numeric level and sourceLevel';
+  if (!Array.isArray(s.sourceIds)) return 'has no sourceIds list';
+  return s.sourceIds.every((x) => typeof x === 'string') ? null : 'has a source id that isn\'t a string';
+}
 
 const detailOf = (write) => {
   const { shown, full } = cutText(write);
@@ -74,11 +88,13 @@ export const isUnreadable = (v) => !!v && typeof v === 'object' && !Array.isArra
 export function readSummaries(manager, name = (id) => String(id)) {
   const listed = readable(() => manager.getSummariesInRange({}));
   if (isUnreadable(listed)) return listed;
+  if (!Array.isArray(listed)) return { unreadable: 'getSummariesInRange gave no list' };
   const out = new Map();
   for (const t of listed) {
     const s = readable(() => manager.getSummary(t.id));
     if (isUnreadable(s) || s === null) return { unreadable: `getSummary(${t.id}) ${isUnreadable(s) ? s.unreadable : 'is null though listed'}` };
-    if (!Array.isArray(s.sourceIds)) return { unreadable: `getSummary(${t.id}) has no sourceIds list` };
+    const lacks = summaryLacks(s);
+    if (lacks) return { unreadable: `getSummary(${t.id}) ${lacks}` };
     out.set(String(s.id), { id: String(s.id), level: s.level, sourceLevel: s.sourceLevel, sources: s.sourceIds.map((x) => (s.sourceLevel === 0 ? name(x) : String(x))), parent: s.parentId ?? null, tokens: s.tokens, content: s.content });
   }
   return out;
@@ -93,7 +109,7 @@ function readCompile(manager, compiled, messages, elsewhere) {
   const layout = compiled?.provenance?.layout;
   const sentIds = messages.flatMap((m) => m.sources).filter((s) => s.startsWith('r:')).map((s) => s.slice(2).split('!')[0]);
   const members = [...new Set([...(layout?.memberIds ?? []).map(String), ...sentIds])].filter((id) => !ownIds.has(id));
-  const { found = [], unfound = members, nameOf: foundName = () => null } = members.length && elsewhere ? elsewhere(members) : {};
+  const { found = [], unfound = members, nameOf: foundName = () => null, failed: slotsFailed = [] } = members.length && elsewhere ? elsewhere(members) : {};
   const stored = [...own, ...found];
   let ownName = null;
   const nameOf = (id) => {
@@ -108,6 +124,7 @@ function readCompile(manager, compiled, messages, elsewhere) {
   const failed = [
     ...(laidOut ? [] : ['the compile gave no layout, so its view\'s members beyond its own slot weren\'t read']),
     ...(unfoundText ? [unfoundText.shown] : []),
+    ...slotsFailed.map((f) => `another slot's read failed: ${f}`),
   ];
   const wholeOf = new Map(unfoundText?.full ? [[unfoundText.shown, unfoundText.full]] : []);
   const layoutRaw = new Set();
@@ -142,8 +159,9 @@ function readCompile(manager, compiled, messages, elsewhere) {
       failed.push(`getSummary(${summaryId}): ${isUnreadable(s) ? s.unreadable : 'no such summary'}`);
       return [];
     }
-    if (!Array.isArray(s.sourceIds)) {
-      failed.push(`getSummary(${summaryId}) has no sourceIds list`);
+    const lacks = summaryLacks(s);
+    if (lacks) {
+      failed.push(`getSummary(${summaryId}) ${lacks}`);
       return [];
     }
     const out2 = [];

@@ -200,13 +200,19 @@ export class HarnessModule {
     }
     others.delete(manager);
     // A derived context (a fork) writes its own branch; a view merges slots on the compiling manager's branch.
-    const branchOf = (m) => { const d = readable(() => m.getDerivation?.() ?? null); return isUnreadable(d) ? undefined : d?.branch ?? null; };
-    const branch = branchOf(manager);
+    const derivation = (m) => readable(() => m.getDerivation?.() ?? null);
+    const failed = [];
+    const own = derivation(manager);
+    if (isUnreadable(own)) failed.push(`the compiling agent's derivation: ${own.unreadable}`);
+    const branch = isUnreadable(own) ? undefined : own?.branch ?? null;
     for (const other of others) {
-      if (branch === undefined || branchOf(other) !== branch) continue;
-      if (!wanted.size) break;
+      if (branch === undefined || !wanted.size) break;
+      const named = this.agentName(other, null) ?? 'an agent';
+      const d = derivation(other);
+      if (isUnreadable(d)) { failed.push(`${named}'s derivation: ${d.unreadable}`); continue; }
+      if ((d?.branch ?? null) !== branch) continue;
       const messages = storedMessages(other);
-      if (isUnreadable(messages)) continue;
+      if (isUnreadable(messages)) { failed.push(`${named}'s messages: ${messages.unreadable}`); continue; }
       const before = found.length;
       for (const m of messages) if (wanted.delete(String(m.id))) found.push(m);
       if (found.length > before) {
@@ -224,7 +230,7 @@ export class HarnessModule {
       }
       return `${holder.agent ?? '?'}/${named.get(holder)(id)}`;
     };
-    return { found, unfound: [...wanted], from: from.filter(Boolean), nameOf };
+    return { found, unfound: [...wanted], from: from.filter(Boolean), nameOf, ...(failed.length ? { failed } : {}) };
   }
 
   ticksInFlight(manager) {

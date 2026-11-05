@@ -4,7 +4,7 @@ import { blobStore, compiledLine, messagesOf, storeDelta } from '../lib/strategi
 import { readsFailed } from '../lib/strategies/ledger.mjs';
 class PassthroughStrategy {}
 const manager = (messages) => ({
-  getAllMessages: () => messages,
+  getAllMessages: () => messages.map((m, i) => ({ sequence: i + 1, participant: 'user', ...m })),
   getSummariesInRange: () => [],
   getSummary: () => null,
   getStrategy: () => new PassthroughStrategy(),
@@ -83,6 +83,21 @@ test('storeDelta and messagesOf: a stored message whose content isn\'t a list, a
   assert.match(messagesOf(odd)?.unreadable ?? '', /stored message 2 has no content list/);
   const sourceless = { ...manager([]), getSummariesInRange: () => [{ id: 'S' }], getSummary: (id) => ({ id, level: 1, sourceLevel: 0, sources: ['1'], content: 'c' }) };
   assert.match(storeDelta(sourceless, undefined, blobStore()).out.summaries?.unreadable ?? '', /getSummary\(S\) has no sourceIds list/);
+});
+
+test('storeDelta and messagesOf: a stored message without the id, numeric sequence or participant context-manager 0.24.0 stores, or a summary without its content, levels or string source ids, or a listing that isn\'t a list, is an unreadable read', () => {
+  const one = (m) => manager([{ id: '1', content: [text('[[c:a.in]] one')], ...m }]);
+  for (const [m, lacks] of [[{ id: undefined }, 'stored message at 0 has no id'], [{ sequence: undefined }, 'stored message 1 has no numeric sequence'], [{ participant: undefined }, 'stored message 1 has no participant']]) {
+    assert.equal(storeDelta(one(m), undefined, blobStore()).out.messages?.unreadable, lacks);
+    assert.equal(messagesOf(one(m))?.unreadable, lacks);
+  }
+  const summary = { id: 'S', level: 1, sourceLevel: 0, sourceIds: ['1'], content: 'c' };
+  const listing = (s, listed = [{ id: 'S' }]) => ({ ...manager([]), getSummariesInRange: () => listed, getSummary: () => s });
+  assert.ok(Array.isArray(storeDelta(listing(summary), undefined, blobStore()).out.summaries), 'the control');
+  for (const [s, lacks] of [[{ ...summary, content: undefined }, 'has no content'], [{ ...summary, sourceLevel: undefined }, 'has no numeric level and sourceLevel'], [{ ...summary, sourceIds: [{ id: '1' }] }, 'has a source id that isn\'t a string']]) {
+    assert.equal(storeDelta(listing(s), undefined, blobStore()).out.summaries?.unreadable, `getSummary(S) ${lacks}`);
+  }
+  assert.equal(storeDelta(listing(summary, ''), undefined, blobStore()).out.summaries?.unreadable, 'getSummariesInRange gave no list', 'not an empty store\'s listing');
 });
 
 test('storeDelta: a strategy that takes kv-unified submissions but has no receipt chain to read is reported unreadable, not as no receipt', () => {

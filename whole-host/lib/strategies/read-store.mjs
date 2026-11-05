@@ -2,7 +2,7 @@ import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { CANARY, SUMMARY } from './standin.mjs';
 import { namingCanaries } from './names.mjs';
-import { isUnreadable, storedMessages } from './invariants.mjs';
+import { isUnreadable, storedMessages, summaryLacks } from './invariants.mjs';
 
 export async function readStore({ installDir, storePath, namespace, isolate = false }) {
   const cmEntry = join(installDir, 'node_modules', '@animalabs', 'context-manager', 'dist', 'src', 'index.js');
@@ -20,6 +20,8 @@ export async function readStore({ installDir, storePath, namespace, isolate = fa
     for (const id of ids) {
       const s = cm.getSummary(id);
       if (!s) throw new Error(`getSummary(${id}) is null, though getSummariesInRange lists it`);
+      const lacks = summaryLacks(s);
+      if (lacks) throw new Error(`getSummary(${id}) ${lacks}`);
       entries.set(id, s);
     }
     const byMessage = new Map(messages.map((m) => [m.id, m]));
@@ -30,6 +32,8 @@ export async function readStore({ installDir, storePath, namespace, isolate = fa
       return s.sourceIds.flatMap((id) => {
         const child = entries.get(id) ?? cm.getSummary(id);
         if (!child) throw new Error(`summary ${s.id}'s source ${id} can't be read`);
+        const lacks = summaryLacks(child);
+        if (lacks) throw new Error(`getSummary(${id}) ${lacks}`);
         return leaves(child, seen);
       });
     };

@@ -8,7 +8,7 @@ class AutobiographicalStrategy {
 class Manager {
   constructor(tokens = 1_000) {
     this.tokens = tokens;
-    this.messages = [{ id: 1, sequence: 1, content: [{ type: 'text', text: '[[c:a.in]] hello' }] }];
+    this.messages = [{ id: 1, sequence: 1, participant: 'user', content: [{ type: 'text', text: '[[c:a.in]] hello' }] }];
   }
   getAllMessages() { return this.messages; }
   getSummariesInRange() { return []; }
@@ -51,7 +51,7 @@ test('module: a take covers an agent that compiled and has left the registry onc
   module.agentOf.set(sub, 'sub');
   await sub.compile();
   registered.length = 0;
-  sub.messages = [...sub.messages, { id: 2, sequence: 2, content: [{ type: 'text', text: '[[c:a.report]] done' }] }];
+  sub.messages = [...sub.messages, { id: 2, sequence: 2, participant: 'user', content: [{ type: 'text', text: '[[c:a.report]] done' }] }];
   const last = await module.answer({ op: 'take' });
   assert.deepEqual(last.store.sub.messages, [['1', ['[[c:a.in]]']], ['2', ['[[c:a.report]]']]], 'its store, read after it left');
   assert.equal(last.lines.length, 1);
@@ -149,20 +149,39 @@ test('module: with recording off the agent\'s compiles reach the manager as call
 
 test('module: a compile\'s view member another agent\'s slot holds is read from that agent\'s manager', async () => {
   const shared = new Manager();
-  shared.messages = [{ id: 9, sequence: 9, content: [{ type: 'text', text: '[[c:a.chat]] hi' }] }];
+  shared.messages = [{ id: 9, sequence: 9, participant: 'user', content: [{ type: 'text', text: '[[c:a.chat]] hi' }] }];
   const [module, Own] = harness({ listAgents: () => [{ name: 'fixture' }, { name: 'reader' }], getAgent: (name) => (name === 'fixture' ? { getContextManager: () => shared } : null) });
   const reader = new Own();
   const { nameOf, ...read } = module.elsewhere(reader, ['9', '10']);
   assert.deepEqual(read, { found: shared.messages, unfound: ['10'], from: ['fixture'] }, 'and which agent\'s slot held them');
   assert.deepEqual([nameOf('9'), nameOf('10')], ['fixture/a.chat', null], 'named in the store that holds it, with its agent');
-  shared.messages = [...shared.messages, { id: 11, sequence: 11, content: [{ type: 'tool_use', id: 't1', name: 'deliver_summary', input: { text: '[[c:h1.read]] words' } }] }];
+  shared.messages = [...shared.messages, { id: 11, sequence: 11, participant: 'user', content: [{ type: 'tool_use', id: 't1', name: 'deliver_summary', input: { text: '[[c:h1.read]] words' } }] }];
   assert.equal(module.elsewhere(reader, ['11']).nameOf('11'), 'fixture/h1.read', 'a message whose only block is a call, by its call\'s canary');
   assert.deepEqual({ ...module.elsewhere(shared, ['9']), nameOf: undefined }, { found: [], unfound: ['9'], from: [], nameOf: undefined }, 'never its own slot');
 });
 
+test('module: another slot whose stored message has no content list, as context-manager 0.24.0 stores it, gives none of its messages and is a failed read', () => {
+  const shared = new Manager();
+  shared.messages = [{ id: 9, sequence: 9, participant: 'user', body: [{ type: 'text', text: '[[c:a.chat]] hi' }] }];
+  const [module, Own] = harness({ listAgents: () => [{ name: 'fixture' }, { name: 'reader' }], getAgent: (name) => (name === 'fixture' ? { getContextManager: () => shared } : null) });
+  const { nameOf, ...read } = module.elsewhere(new Own(), ['9']);
+  assert.deepEqual(read, { found: [], unfound: ['9'], from: [], failed: ['fixture\'s messages: stored message 9 has no content list'] });
+});
+
+test('module: a slot whose read fails is a failed read, though another slot holds the member', () => {
+  const failing = new Manager();
+  failing.getAllMessages = () => { throw new Error('busy'); };
+  const holding = new Manager();
+  holding.messages = [{ id: 9, sequence: 9, participant: 'user', content: [{ type: 'text', text: '[[c:a.chat]] hi' }] }];
+  const slots = { a: failing, b: holding };
+  const [module, Own] = harness({ listAgents: () => [{ name: 'a' }, { name: 'b' }], getAgent: (name) => ({ getContextManager: () => slots[name] }) });
+  const { nameOf, ...read } = module.elsewhere(new Own(), ['9']);
+  assert.deepEqual(read, { found: holding.messages, unfound: [], from: ['b'], failed: ['a\'s messages: busy'] });
+});
+
 test('module: a reader\'s compile judges the members of its view another agent\'s slot holds, through the compile it records', async () => {
   const shared = new Manager();
-  shared.messages = [{ id: 9, sequence: 9, content: [{ type: 'text', text: '[[c:a.chat]] hi' }] }];
+  shared.messages = [{ id: 9, sequence: 9, participant: 'user', content: [{ type: 'text', text: '[[c:a.chat]] hi' }] }];
   const module = new HarnessModule(null);
   module.framework = { listAgents: () => [{ name: 'fixture' }], getAgent: (name) => (name === 'fixture' ? { getContextManager: () => shared } : null) };
   const Reader = class extends Manager {
@@ -229,7 +248,7 @@ test('module: a dry compile asked for answers with its own compile\'s line, thou
 
 test('module: a derivation that can\'t be read matches no branch, so no other slot is read for that compile', () => {
   const other = new Manager();
-  other.messages = [{ id: 9, sequence: 9, content: [{ type: 'text', text: 'elsewhere' }] }];
+  other.messages = [{ id: 9, sequence: 9, participant: 'user', content: [{ type: 'text', text: 'elsewhere' }] }];
   other.getDerivation = () => { throw new Error('busy'); };
   const [module, Own] = harness({ listAgents: () => [{ name: 'other' }], getAgent: () => ({ getContextManager: () => other }) });
   const compiling = new Own();
@@ -239,9 +258,9 @@ test('module: a derivation that can\'t be read matches no branch, so no other sl
 
 test('module: another slot is read only on the compiling manager\'s branch, so a fork\'s copy of a message never stands for the resident\'s', () => {
   const resident = new Manager();
-  resident.messages = [{ id: 9, sequence: 9, content: [{ type: 'text', text: 'as stored' }] }];
+  resident.messages = [{ id: 9, sequence: 9, participant: 'user', content: [{ type: 'text', text: 'as stored' }] }];
   const fork = new Manager();
-  fork.messages = [{ id: 9, sequence: 9, content: [{ type: 'text', text: 'edited on the fork' }] }];
+  fork.messages = [{ id: 9, sequence: 9, participant: 'user', content: [{ type: 'text', text: 'edited on the fork' }] }];
   fork.getDerivation = () => ({ branch: 'fork-1', parentBranch: 'main' });
   const [module, Own] = harness({ listAgents: () => [{ name: 'fork' }, { name: 'fixture' }], getAgent: (name) => ({ getContextManager: () => (name === 'fork' ? fork : resident) }) });
   assert.deepEqual(module.elsewhere(new Own(), ['9']).found, resident.messages);
@@ -266,7 +285,7 @@ test('module: an ended agent\'s tick still in flight counts in ticks, and its ma
   assert.deepEqual(await module.answer({ op: 'ticks' }), { 'sub (ended)': 1 });
   const during = await module.answer({ op: 'take' });
   assert.deepEqual(during.store.sub.messages, [['1', ['[[c:a.in]]']]]);
-  sub.messages = [...sub.messages, { id: 2, sequence: 2, content: [{ type: 'text', text: '[[c:a.summary]] done' }] }];
+  sub.messages = [...sub.messages, { id: 2, sequence: 2, participant: 'user', content: [{ type: 'text', text: '[[c:a.summary]] done' }] }];
   finish();
   await ticking;
   assert.deepEqual(await module.answer({ op: 'ticks' }), {});
@@ -316,7 +335,7 @@ test('module: a compile is judged against the store as it stands when the compil
   const compiling = held.compile({ maxTokens: 1_000, reserveForResponse: 0 });
   for (let i = 0; i < 1_000 && !release; i++) await new Promise((resolve) => setImmediate(resolve));
   assert.ok(release, 'the premise: the wrapped compile called the held one, which is waiting');
-  held.messages = [{ id: 2, sequence: 2, content: [{ type: 'text', text: '[[c:a.r1]] stored meanwhile' }] }];
+  held.messages = [{ id: 2, sequence: 2, participant: 'user', content: [{ type: 'text', text: '[[c:a.r1]] stored meanwhile' }] }];
   release();
   await compiling;
   assert.deepEqual(module.lines.at(-1).violations, [{ invariant: 'coverage', detail: '1 stored bodies in no message sent: a.r1' }]);
