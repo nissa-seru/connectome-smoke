@@ -117,7 +117,9 @@ the lines of requests are in the order the stand-in received them:
   instruction. SHAPE is the stand-in's answer.
 - **`unclassified CARRIED, head H:KEY, body HASH`**: a request the stand-in
   could tell neither as an agent's nor as the summariser's, such as one whose
-  compression instruction it doesn't recognise, or one to any route but a
+  compression instruction it doesn't recognise, states no target length, or
+  opens as a merge instruction does but names no level it asks for, so it
+  can't be counted under its level, or one to any route but a
   POST to a path ending in `/v1/messages`, `count_tokens` included, which no
   run sends. Check 1 fails the run, naming the stand-in's reason, and the line
   lets the view show the request. The line carries no method, and a body that

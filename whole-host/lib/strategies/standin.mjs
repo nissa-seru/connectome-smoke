@@ -27,9 +27,15 @@ function requestedTarget(instruction) {
   return m ? Number(m[1] ?? m[2]) : null;
 }
 
+// context-manager 0.24.0's merge instructions open so (autobiographical.ts's formatMergeInstruction,
+// formatWitnessedMergeInstruction and formatReadingMergeInstruction, knowledge.ts's consolidation), and each names the
+// level it asks for. One that opens as a merge does and names no level can't be counted under its level, so the
+// stand-in refuses it as unclassified rather than counting it as a compression (Crispin-2713, room-203 #357646).
+const MERGE_OPENS = /You have just reviewed [\s\S]+? in chronological order\.|You have just re-experienced [\s\S]+? in chronological order\.|Please consolidate these \d+ L\d summaries/;
+
 function requestedLevel(instruction) {
   const merge = instruction.match(/into a single L(\d+) memory|single L(\d+) memory|at L(\d+)\.|consolidate these \d+ L(\d) summaries/);
-  if (!merge) return 1;
+  if (!merge) return MERGE_OPENS.test(instruction) ? null : 1;
   const named = merge.slice(1).find((x) => x !== undefined);
   return /consolidate these/.test(merge[0]) ? Number(named) + 1 : Number(named);
 }
@@ -371,7 +377,8 @@ export async function startStandin({ configuration, rawDir = null, refuseMerges 
     const last = body.messages.at(-1);
     const lastBlock = blocksOf(last.content).at(-1);
     if (last.role === 'user' && lastBlock?.type === 'text' && INSTRUCTIONS.some((re) => re.test(lastBlock.text || ''))) {
-      return requestedTarget(lastBlock.text) === null ? { kind: 'unclassified', reason: 'its compression instruction states no target length' } : { kind: 'summariser' };
+      if (requestedTarget(lastBlock.text) === null) return { kind: 'unclassified', reason: 'its compression instruction states no target length' };
+      return requestedLevel(lastBlock.text) === null ? { kind: 'unclassified', reason: 'its merge instruction names no level' } : { kind: 'summariser' };
     }
     if (last.role !== 'user') return { kind: 'unclassified', reason: `the last message is the ${last.role}'s` };
     if (!step) return { kind: 'unclassified', reason: 'no step is set' };

@@ -227,6 +227,20 @@ test('T1/T4: a compression instruction that states no target is refused as uncla
   assert.equal(r.status, 400);
   assert.match(r.json.error.message, /no target/);
 }));
+test('T36: a merge instruction that names no level it asks for is refused as unclassified, not counted as a compression', () => withStandin({}, async (s) => {
+  const { seen } = arrivals(s);
+  s.setStep(step('nl', []));
+  for (const instruction of [MERGE.replace('single L2 memory', 'single higher memory'), READING_MERGE.replace('consolidating at L2.', 'consolidating one level up.')]) {
+    const r = await post(s.url, summariserBody({ instruction }));
+    assert.equal(r.status, 400, instruction.slice(0, 40));
+    assert.match(r.json.error.message, /its merge instruction names no level/);
+    assert.equal(seen.at(-1).kind, 'unclassified');
+  }
+  await post(s.url, summariserBody({ instruction: MERGE }));
+  assert.equal(seen.at(-1).kind, 'summariser', 'one that names its level is still the summariser\'s');
+  const records = await s.close();
+  assert.deepEqual(records.map((r) => r.level ?? null), [null, null, 2], 'no level is recorded for a request it couldn\'t classify');
+}));
 test('T4: an answer never runs past what max_tokens allows: one that would is cut there, with a max_tokens stop, as a provider cuts it', () => withStandin({}, async (s) => {
   const scripted = `[[c:m.r1]] ${prose(4_000)}`;
   s.setStep(step('m', [{ text: scripted }, { text: scripted }]));
