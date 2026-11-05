@@ -128,11 +128,18 @@ the lines of requests are in the order the stand-in received them:
   re-sends a merge with whichever prior summaries its halved recall budget
   fits, its sources last. After an answer that was only thinking, or empty,
   the re-send must carry a retry hint, after one cut at `max_tokens` none,
-  and a hint with nothing to re-send is refused too. A merge whose sources
-  went raw, so that its last summary is its newest prior, and whose retry
-  dropped that prior, isn't read as a re-send: with a hint it is refused, so
-  the run can't be compared though nothing is wrong, and after `max_tokens`
-  it is a first attempt. Check 1 fails the run, naming the stand-in's
+  and a hint with nothing to re-send is refused too. Since context-manager
+  retries the merge at the head of its queue until it is written, a hintless
+  merge alike in level, target and canaries to one cut at `max_tokens` and
+  not yet re-sent can only be that re-send, so one that ends with another
+  summary is refused. A merge whose sources went raw, so that its last
+  summary is its newest prior, and whose retry dropped that prior, isn't read
+  as a re-send, so it is refused, with a hint or without, and its run can't
+  be compared though nothing is wrong. Its retry can drop that prior only if
+  the prior alone runs past the halved recall budget, 50,000 tokens at a
+  first retry. Summariser requests name no agent, so another agent's merge
+  alike in those three, between such a merge and its re-send, is refused
+  too. Check 1 fails the run, naming the stand-in's
   reason, and the line
   lets the view show the request. The line carries no method, and a body that
   doesn't parse, or parses to a falsy value such as `null`, gets no head, so no

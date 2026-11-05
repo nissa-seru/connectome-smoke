@@ -315,6 +315,20 @@ test('T38: a merge re-sent after a bad answer keeps its last summary, its source
   assert.match(l1Shrunk.json.error.message, /carries a retry hint, but no earlier request with its canaries and summaries took a bad answer/);
 }));
 
+test('T39: until a merge cut at max_tokens is re-sent and answered well, a hintless merge alike in level, target and canaries but ending with another summary is refused, since context-manager 0.24.0 re-sends the merge at its queue\'s head; once it settles, such a merge is a first attempt', () => withStandin({}, async (s) => {
+  const { seen } = arrivals(s);
+  const S = (n) => `[[s:M${String(n).padStart(8, '0')}]]`;
+  const merge = (summaries) => summariserBody({ canaries: ['[[c:m.3]]'], summaries, instruction: MERGE });
+  s.setStep(step('bad', [], { badAnswers: ['max-tokens', 'empty'] }));
+  assert.equal((await post(s.url, merge([S(1), S(2)]))).json.stop_reason, 'max_tokens');
+  const unknown = await post(s.url, merge([S(1)]));
+  assert.equal(unknown.status, 400, 'it can\'t be told from the cut merge\'s re-send');
+  assert.equal(seen.at(-1).kind, 'unclassified');
+  assert.match(unknown.json.error.message, /matches a merge cut at max_tokens and not yet re-sent in level, target and canaries, but ends with another summary/);
+  assert.match(textOf((await post(s.url, merge([S(2)]))).json), /^\[\[s:M[0-9a-f]{8}\]\] /, 'its re-send is answered well');
+  assert.deepEqual((await post(s.url, merge([S(2), S(9)]))).json.content, [{ type: 'text', text: '' }], 'once it settles, a merge ending with another summary is a first attempt');
+}));
+
 test('T20: with refuseMerges every merge request is refused and an L1 answered; with rejectMerges every merge request is rejected for its request', async () => {
   for (const [opts, check] of [
     [{ refuseMerges: true }, (r) => assert.equal(r.json.stop_reason, 'refusal')],

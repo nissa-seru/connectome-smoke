@@ -336,11 +336,14 @@ export async function startStandin({ configuration, rawDir = null, refuseMerges 
   const badlyAnswered = [];
   // context-manager 0.24.0 re-sends a merge after a bad answer with its recall budget halved per attempt, keeping
   // whichever prior summaries fit (`capRecallPairs`), with its sources last; an L1 request it retries is re-sent whole.
+  const alike = (b, record) => b.level === record.level && b.target === record.target && JSON.stringify(b.canaries) === JSON.stringify(record.sent.canaries);
   const resent = (record) => {
-    const same = (b) => b.level === record.level && b.target === record.target && JSON.stringify(b.canaries) === JSON.stringify(record.sent.canaries);
     const sources = (b) => (record.level >= 2 ? b.summaries.at(-1) === record.sent.summaries.at(-1) : JSON.stringify(b.summaries) === JSON.stringify(record.sent.summaries));
-    return badlyAnswered.findLast((b) => same(b) && sources(b)) ?? null;
+    return badlyAnswered.findLast((b) => alike(b, record) && sources(b)) ?? null;
   };
+  // It retries the merge at the head of its queue until that merge is written, so until a merge cut at max_tokens is
+  // re-sent and answered well, a hintless merge alike in level, target and canaries can only be that re-send.
+  const cutAndOpen = (record) => (record.level >= 2 ? badlyAnswered.findLast((b) => !b.settled && b.shape === 'max-tokens' && alike(b, record)) ?? null : null);
   const held = [];
   const heldListeners = [];
   if (rawDir) mkdirSync(rawDir, { recursive: true });
@@ -506,7 +509,7 @@ export async function startStandin({ configuration, rawDir = null, refuseMerges 
     if (record.carried) return 'refusal';
     if (badQueue.length && !record.resends) {
       const shape = badQueue.shift();
-      badlyAnswered.push({ level: record.level, target: record.target, canaries: record.sent.canaries, summaries: record.sent.summaries, shape });
+      badlyAnswered.push({ level: record.level, target: record.target, canaries: record.sent.canaries, summaries: record.sent.summaries, shape, settled: false });
       return shape;
     }
     return 'summary';
@@ -549,6 +552,7 @@ export async function startStandin({ configuration, rawDir = null, refuseMerges 
     const record = { id, seq, at: Math.round(performance.now() - t0), arrived, clock, step: step?.id ?? null, kind, ...(agent ? { agent } : {}), ...(reason ? { reason } : {}), ...(body ? normalise(body, req.headers, mask) : {}) };
     if (query !== null && record.head) record.head.query = query;
     if (path !== '/v1/messages' && record.head) record.head.path = path;
+    let of = null;
     if (kind === 'summariser' && body) {
       const instruction = blocksOf(body.messages.at(-1).content).at(-1).text;
       record.texts = summariserTexts(body, mask);
@@ -558,7 +562,7 @@ export async function startStandin({ configuration, rawDir = null, refuseMerges 
       record.retry = /do not call any tools for this|do not wrap it in <thinking>/.test(instruction);
       // context-manager 0.24.0 re-sends a request answered with only thinking, or with nothing, with a retry hint,
       // and a merge cut at max_tokens with none.
-      const of = resent(record);
+      of = resent(record);
       if (of) record.resends = of.shape;
       const hinted = of ? of.shape !== 'max-tokens' : false;
       if ((of !== null || record.retry) && record.retry !== hinted) {
@@ -568,6 +572,10 @@ export async function startStandin({ configuration, rawDir = null, refuseMerges 
           : hinted
             ? `it re-sends a request answered ${of.shape}, but carries no retry hint the stand-in knows`
             : 'it re-sends a request cut at max_tokens, which context-manager 0.24.0 re-sends with no retry hint, but carries one';
+        Object.assign(record, { kind, reason });
+      } else if (!of && cutAndOpen(record)) {
+        kind = 'unclassified';
+        reason = 'it matches a merge cut at max_tokens and not yet re-sent in level, target and canaries, but ends with another summary, so it can\'t be told from that merge\'s re-send';
         Object.assign(record, { kind, reason });
       }
     }
@@ -623,6 +631,7 @@ export async function startStandin({ configuration, rawDir = null, refuseMerges 
     if (carried) record.carried = carried;
     const read = readSummariser(body, record.target);
     record.answer = { shape: summariserShape(read, record) };
+    if (of && record.answer.shape === 'summary') of.settled = true;
     answerSummariser(res, body, record, read);
   }
 
