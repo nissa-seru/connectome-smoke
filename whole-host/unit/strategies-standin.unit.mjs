@@ -179,12 +179,10 @@ test('T1: each compression instruction context-manager sends is a summariser req
     assert.equal(r.status, 200, instruction.slice(0, 40));
     assert.equal(seen.at(-1).kind, 'summariser', instruction.slice(0, 40));
   }
-  await post(s.url, summariserBody({ instruction: `${CHAT}\n\nWrite the memory as plain text directly in your response — do not call any tools for this.` }));
-  assert.equal(seen.at(-1).kind, 'summariser');
   await post(s.url, summariserBody({ instruction: 'Please consolidate these 3 L1 summaries (2 synthesis, 1 research) into a single cohesive memory. Aim for about 200 tokens.' }));
   const records = await s.close();
-  assert.deepEqual(records.map((r) => r.level), [1, 2, 1, 1, 2, 1, 1, 1, 1, 1, 1, 2]);
-  assert.deepEqual(records.map((r) => r.retry), [false, false, false, false, false, false, false, false, false, false, true, false]);
+  assert.deepEqual(records.map((r) => r.level), [1, 2, 1, 1, 2, 1, 1, 1, 1, 1, 2]);
+  assert.deepEqual(records.map((r) => r.retry), [false, false, false, false, false, false, false, false, false, false, false]);
 }));
 
 test('T4/T5: a summary answer opens with an id that is a function of what its request carries, then untagged padding to the target its instruction states, and the record lists what each call was sent', async () => {
@@ -269,7 +267,7 @@ test('T6: a step\'s bad answers go one each, in order, to the next first attempt
   got.push((await post(s.url, summariserBody({}))).json);
   got.push((await post(s.url, retry(CHAT))).json);
   s.setStep(step('bad.cp', []));
-  for (let i = 0; i < 3; i++) got.push((await post(s.url, summariserBody({}))).json);
+  for (let i = 0; i < 3; i++) got.push((await post(s.url, summariserBody({ canaries: [`[[c:x.${i + 2}]]`] }))).json);
   assert.match(textOf(got[0]), /^<thinking>[\s\S]*<\/thinking>$/);
   assert.equal(got[0].stop_reason, 'end_turn');
   assert.match(textOf(got[1]), /^\[\[s:M[0-9a-f]{8}\]\] /, 'the retry gets a good answer');
@@ -277,6 +275,24 @@ test('T6: a step\'s bad answers go one each, in order, to the next first attempt
   assert.equal(got[3].stop_reason, 'max_tokens');
   assert.match(textOf(got[4]), /^\[\[s:M[0-9a-f]{8}\]\] /);
 }));
+test('T37: a retry is a request that re-sends one that took a bad answer, its canaries and summaries alike, and carries a retry hint; one that re-sends it without a hint, or carries a hint with nothing to re-send, is unclassified and refused', () => withStandin({}, async (s) => {
+  const { seen } = arrivals(s);
+  const PLAIN = '\n\nWrite the memory directly as plain prose — do not wrap it in <thinking> or any other tags; begin immediately with the memory text itself.';
+  const NO_TOOLS = '\n\nWrite the memory as plain text directly in your response — do not call any tools for this.';
+  s.setStep(step('bad', [], { badAnswers: ['thinking-only', 'empty'] }));
+  assert.match(textOf((await post(s.url, summariserBody({}))).json), /^<thinking>/);
+  const reworded = await post(s.url, summariserBody({ instruction: `${CHAT}\n\nWrite the memory as prose, with no tags around it.` }));
+  assert.equal(reworded.status, 400);
+  assert.equal(seen.at(-1).kind, 'unclassified');
+  assert.match(reworded.json.error.message, /re-sends a request that took a bad answer, its canaries and summaries alike, but carries no retry hint the stand-in knows/);
+  assert.match(textOf((await post(s.url, summariserBody({ instruction: `${CHAT}${PLAIN}` }))).json), /^\[\[s:M[0-9a-f]{8}\]\] /, 'a hinted retry is answered well');
+  const unprompted = await post(s.url, summariserBody({ canaries: ['[[c:x.9]]'], instruction: `${CHAT}${NO_TOOLS}` }));
+  assert.equal(unprompted.status, 400);
+  assert.equal(seen.at(-1).kind, 'unclassified');
+  assert.match(unprompted.json.error.message, /carries a retry hint, but no earlier request with its canaries and summaries took a bad answer/);
+  assert.deepEqual((await post(s.url, summariserBody({ canaries: ['[[c:x.10]]'] }))).json.content, [{ type: 'text', text: '' }], 'a request for another slice is a first attempt');
+}));
+
 test('T20: with refuseMerges every merge request is refused and an L1 answered; with rejectMerges every merge request is rejected for its request', async () => {
   for (const [opts, check] of [
     [{ refuseMerges: true }, (r) => assert.equal(r.json.stop_reason, 'refusal')],

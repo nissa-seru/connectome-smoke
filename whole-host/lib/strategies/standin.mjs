@@ -333,6 +333,8 @@ export async function startStandin({ configuration, rawDir = null, refuseMerges 
   let clock = 0;
   let toolNumber = 0;
   const badQueue = [];
+  const badlyAnswered = new Set();
+  const sentKey = (record) => JSON.stringify([record.level, record.target, record.sent.canaries, record.sent.summaries]);
   const held = [];
   const heldListeners = [];
   if (rawDir) mkdirSync(rawDir, { recursive: true });
@@ -496,7 +498,10 @@ export async function startStandin({ configuration, rawDir = null, refuseMerges 
     if (rejectMerges && merge) return 'rejection';
     if (refuseMerges && merge) return 'refusal';
     if (record.carried) return 'refusal';
-    if (badQueue.length && !record.retry) return badQueue.shift();
+    if (badQueue.length && !record.retry) {
+      badlyAnswered.add(sentKey(record));
+      return badQueue.shift();
+    }
     return 'summary';
   }
 
@@ -530,14 +535,28 @@ export async function startStandin({ configuration, rawDir = null, refuseMerges 
     const seq = records.length + 1;
     const id = `r${seq}`;
     const routed = req.method === 'POST' && path.endsWith('/v1/messages');
-    const { kind, agent, reason } = routed ? classify(body) : { kind: 'unclassified', reason: `it goes to ${req.method} ${path}, which no run sends and the stand-in doesn't model` };
+    const classified = routed ? classify(body) : { kind: 'unclassified', reason: `it goes to ${req.method} ${path}, which no run sends and the stand-in doesn't model` };
+    const { agent } = classified;
+    let { kind, reason } = classified;
     const mask = runVaryingMasker();
     const record = { id, seq, at: Math.round(performance.now() - t0), arrived, clock, step: step?.id ?? null, kind, ...(agent ? { agent } : {}), ...(reason ? { reason } : {}), ...(body ? normalise(body, req.headers, mask) : {}) };
     if (query !== null && record.head) record.head.query = query;
     if (path !== '/v1/messages' && record.head) record.head.path = path;
     if (kind === 'summariser' && body) {
+      const instruction = blocksOf(body.messages.at(-1).content).at(-1).text;
       record.texts = summariserTexts(body, mask);
-      record.level = requestedLevel(blocksOf(body.messages.at(-1).content).at(-1).text);
+      record.level = requestedLevel(instruction);
+      record.sent = { canaries: found(texts(body), CANARY), summaries: found(texts(body), SUMMARY) };
+      record.target = requestedTarget(instruction);
+      record.retry = /do not call any tools for this|do not wrap it in <thinking>/.test(instruction);
+      const resends = badlyAnswered.has(sentKey(record));
+      if (resends !== record.retry) {
+        kind = 'unclassified';
+        reason = resends
+          ? 'it re-sends a request that took a bad answer, its canaries and summaries alike, but carries no retry hint the stand-in knows'
+          : 'it carries a retry hint, but no earlier request with its canaries and summaries took a bad answer';
+        Object.assign(record, { kind, reason });
+      }
     }
     records.push(record);
     if (rawDir) writeFileSync(join(rawDir, `${id}.json`), raw);
@@ -587,10 +606,6 @@ export async function startStandin({ configuration, rawDir = null, refuseMerges 
       answerAgent(res, body, record, reply);
       return;
     }
-    record.sent = { canaries: found(texts(body), CANARY), summaries: found(texts(body), SUMMARY) };
-    const instruction = blocksOf(body.messages.at(-1).content).at(-1).text;
-    record.target = requestedTarget(instruction);
-    record.retry = /do not call any tools for this|do not wrap it in <thinking>/.test(instruction);
     const carried = refuseContent ? contentAt(body, record.level) : null;
     if (carried) record.carried = carried;
     const read = readSummariser(body, record.target);
