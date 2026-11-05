@@ -604,11 +604,14 @@ shows the host's last lines names that file.
   merges-refused and chunk-refused check 1, which flags every alert not
   owned, and W9 check 12. W7's
   chunk-refused puts a mark in its third turn's message, and the stand-in
-  refuses every summariser request that carries the mark, wherever it sits.
-  The property judges each such request: an L1 request may carry it only
-  after context-manager's notice that opens the slice to remember, and a
-  merge not at all. An L1 request that carries it with no such notice
-  can't be judged, so the run can't be compared. As merges-refused does
+  refuses every summariser request that carries the mark, wherever it sits:
+  its system prompt, its tools, or any block of any message.
+  The property judges each such request, those the stand-in refuses for
+  another reason first included: an L1 request may carry it only in its
+  messages after context-manager's notice that opens the slice to remember,
+  and a merge not at all. context-manager sends that notice once, and a
+  slice may quote it, so an L1 request that carries the mark with no notice,
+  or with more than one, can't be judged, and the run can't be compared. As merges-refused does
   for its merges, it also takes
   check 1's off-path refusal alerts and holds each step to one per refused
   request. W5

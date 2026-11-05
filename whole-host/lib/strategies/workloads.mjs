@@ -396,8 +396,8 @@ export const WORKLOADS = {
         const carrying = calls.filter((r) => r.carried);
         const alerts = refusalAlerts(run, calls.filter((r) => r.answer?.shape === 'refusal'), 'summariser request(s)');
         if (!carrying.length) return withJudged([{ step: null, message: 'couldn\'t judge: no summariser request carried the refused content' }, ...alerts], 0);
-        const unnoticed = carrying.filter((r) => r.carried === 'unnoticed');
-        if (unnoticed.length) return withJudged([{ step: unnoticed[0].step, message: `couldn't judge: ${unnoticed.length} L1 request(s) carried the refused content with no notice opening the slice they asked the summariser to remember, so where it sat can't be read` }, ...alerts], 0);
+        const unplaced = carrying.filter((r) => r.carried === 'unplaced');
+        if (unplaced.length) return withJudged([{ step: unplaced[0].step, message: `couldn't judge: ${unplaced.length} L1 request(s) carried the refused content with no single notice opening the slice they asked the summariser to remember, so where it sat can't be read` }, ...alerts], 0);
         const byStep = new Map();
         for (const r of carrying.filter((x) => x.carried !== 'slice')) {
           const at = byStep.get(r.step) ?? { ahead: 0, merge: 0 };

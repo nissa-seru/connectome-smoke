@@ -45,7 +45,8 @@ export const SUMMARY = /\[\[s:M[0-9a-f]{8}\]\]/g;
 export const REFUSED_CONTENT = 'REFUSED-CONTENT';
 
 // context-manager 0.24.0's L1 requests, its source-only and split-stitch rungs included, open the slice they ask the
-// summariser to remember with this notice (`COMPRESSION_MARKER`, src/strategies/autobiographical.ts:513).
+// summariser to remember with this notice (`COMPRESSION_MARKER`, src/strategies/autobiographical.ts:513), once, and
+// "the target itself may quote the marker" (:9671).
 const SLICE_OPENS = 'System: You will soon form a new memory, get ready.';
 
 const canaryOrder = (a, b) => {
@@ -310,13 +311,14 @@ export function tokensSent(records) {
 }
 
 export function contentAt(body, level) {
-  const all = texts(body).join('\u0000');
-  const at = all.indexOf(REFUSED_CONTENT);
-  if (at === -1) return null;
+  const messages = JSON.stringify(body.messages ?? []);
+  const outside = JSON.stringify({ ...body, messages: undefined }).includes(REFUSED_CONTENT);
+  const at = messages.indexOf(REFUSED_CONTENT);
+  if (at === -1 && !outside) return null;
   if (level >= 2) return 'merge';
-  const opens = all.indexOf(SLICE_OPENS);
-  if (opens === -1) return 'unnoticed';
-  return at > opens ? 'slice' : 'ahead';
+  const opens = messages.indexOf(SLICE_OPENS);
+  if (opens === -1 || messages.includes(SLICE_OPENS, opens + 1)) return 'unplaced';
+  return !outside && at > opens ? 'slice' : 'ahead';
 }
 
 const summariserTexts = (body, mask) => (body.messages || []).flatMap((m) => blocksOf(m.content).filter((b) => b.type === 'text' && !(b.text || '').match(CANARY)).map((b) => mask(b.text || '')));
@@ -559,6 +561,10 @@ export async function startStandin({ configuration, rawDir = null, refuseMerges 
       record.level = requestedLevel(instruction);
       record.sent = { canaries: found(texts(body), CANARY), summaries: found(texts(body), SUMMARY) };
       record.target = requestedTarget(instruction);
+      if (refuseContent) {
+        const carried = contentAt(body, record.level);
+        if (carried) record.carried = carried;
+      }
       record.retry = /do not call any tools for this|do not wrap it in <thinking>/.test(instruction);
       // context-manager 0.24.0 re-sends a request answered with only thinking, or with nothing, with a retry hint,
       // and a merge cut at max_tokens with none.
@@ -627,8 +633,6 @@ export async function startStandin({ configuration, rawDir = null, refuseMerges 
       answerAgent(res, body, record, reply);
       return;
     }
-    const carried = refuseContent ? contentAt(body, record.level) : null;
-    if (carried) record.carried = carried;
     const read = readSummariser(body, record.target);
     record.answer = { shape: summariserShape(read, record) };
     if (of && record.answer.shape === 'summary') of.settled = true;
