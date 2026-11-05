@@ -75,6 +75,13 @@ test('a head run\'s flags are each new, gone or kept against the base arm\'s, co
     assert.deepEqual(flagsAgainst(against, 'H1/W1', [{ ...a, whole: '0123456789ab' }, a, b]), { new: [{ ...a, whole: '0123456789ab' }], gone: [a], kept: [a, b] }, 'a flag whose whole text differs past the cut is another flag, so the base\'s second one is gone');
     assert.deepEqual(flagsAgainst(null, 'H1/W1', [a, c]), { new: [a, c], gone: [], kept: [] }, 'with no base arm every flag is new');
   } finally { rmSync(dir, { recursive: true, force: true }); }
+  const cut = (whole) => ({ ...a, whole });
+  const both = baseArm({ results: [{ run: 'H1/W1', record: 'written', flags: { new: [cut('111111111111')], gone: [], kept: [] } }], records: { 'H1/W1': 'r1\n' } });
+  try {
+    const against = readAgainst(both, { lane: LANE, runs: RUNS, names: ['H1/W1'], runtime: RUNTIME });
+    assert.deepEqual(flagsAgainst(against, 'H1/W1', [cut('222222222222')]), { new: [cut('222222222222')], gone: [cut('111111111111')], kept: [] }, 'two cut flags whose whole texts differ are two flags');
+    assert.deepEqual(flagsAgainst(against, 'H1/W1', [cut('111111111111')]), { new: [], gone: [], kept: [cut('111111111111')] }, 'and two whose whole texts match are one');
+  } finally { rmSync(both, { recursive: true, force: true }); }
 });
 
 test('a run\'s measurements: the head\'s and, with a base arm, the base\'s, and the base\'s reason where it couldn\'t run the run; none for a run the head couldn\'t run', () => {
