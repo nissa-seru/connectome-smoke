@@ -15,7 +15,7 @@ import { comparableFlags, unmeasuredOf, workloadReport } from './lib/strategies/
 import { RUNS, runOf } from './lib/strategies/workloads.mjs';
 import { configurations } from './lib/strategies/script.mjs';
 import { exitCode, refuseUnrecordable, renderRecordLines } from './lib/record.mjs';
-import { flagsAgainst, readAgainst, recordAgainst, releaseDiffers, slug } from './lib/against.mjs';
+import { flagsAgainst, measuredOf, readAgainst, recordAgainst, releaseDiffers, slug } from './lib/against.mjs';
 import { differencesOf, entriesOf } from './lib/entries.mjs';
 import { changedRequests, readsFailedOf, stepSummaryAfter, summaryOf, unmeasured, viewOf } from './lib/view.mjs';
 import { generatedTexts, transcriptOf } from './lib/strategies/transcript.mjs';
@@ -301,10 +301,7 @@ for (const id of names) {
     console.log(`${LABEL} ${id}: couldn't run: ${r.reason}`);
   }
   const base = against?.result(id);
-  const measured = r.outcome === 'couldnt-run' ? {} : {
-    unmeasured: r.unmeasured ?? [], ...(against ? { baseUnmeasured: base?.unmeasured ?? [] } : {}),
-    readsFailed: readsFailed(r.log ?? []), ...(against ? { baseReadsFailed: base?.readsFailed ?? [] } : {}),
-  };
+  const measured = measuredOf(r, { against: Boolean(against), base, readsFailed: readsFailed(r.log ?? []) });
   Object.assign(row, measured);
   const why = [[unmeasured(row), 'didn\'t measure'], [readsFailedOf(row), 'a read failed']].filter(([said]) => said).map(([said, what]) => `${what}: ${said}`);
   if (why.length) console.log(`${LABEL} ${id}: can't be compared: ${why.join('; ')}`);

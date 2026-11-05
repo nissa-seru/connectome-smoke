@@ -51,6 +51,15 @@ export function flagsAgainst(against, id, own) {
   return out;
 }
 
+export function measuredOf(r, { against, base, readsFailed }) {
+  if (r.outcome === 'couldnt-run') return {};
+  return {
+    unmeasured: r.unmeasured ?? [], ...(against ? { baseUnmeasured: base?.unmeasured ?? [] } : {}),
+    readsFailed, ...(against ? { baseReadsFailed: base?.readsFailed ?? [] } : {}),
+    ...(base?.outcome === 'couldnt-run' ? { baseReason: base.reason ?? '' } : {}),
+  };
+}
+
 export function recordAgainst(against, id, text) {
   if (!against) return { record: 'written', base: null };
   if (against.result(id)?.record == null) return { record: 'missing', base: null };

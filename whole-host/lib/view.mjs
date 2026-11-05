@@ -129,7 +129,7 @@ export const readsFailedOf = (r) => byArm(r.readsFailed, r.baseReadsFailed);
 
 export function summaryTable(rows) {
   const cell = (v) => (v === undefined || v === null ? '?' : String(v));
-  const record = (r) => (r.record === 'differs' ? `differs: ${r.changed.requests.length} request(s)${r.changed.stopped?.length ? `, ${r.changed.stopped.length} no longer sent` : ''}, +${r.changed.added} -${r.changed.removed} line(s)` : r.record === 'missing' ? 'the base arm has none' : r.record ?? 'none');
+  const record = (r) => (r.record === 'differs' ? `differs: ${r.changed.requests.length} request(s)${r.changed.stopped?.length ? `, ${r.changed.stopped.length} no longer sent` : ''}, +${r.changed.added} -${r.changed.removed} line(s)` : r.record === 'missing' ? (r.baseReason === undefined ? 'the base arm has none' : `the base arm couldn't run it: ${r.baseReason || 'no reason given'}`) : r.record ?? 'none');
   const escaped = (t) => t.replaceAll('|', '\\|').replace(/\r?\n/g, ' ');
   const counted = (r) => `${r.flags ?? '?'} flag(s)`;
   const outcome = (r) => {

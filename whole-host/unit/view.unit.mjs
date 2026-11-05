@@ -230,6 +230,8 @@ test('a record written with no base arm is clean, and one whose base arm couldn\
   assert.ok(!/evidence/.test(viewLib.summaryOf({ rows: [{ run: 'H1/W1', outcome: 'pass', record: 'same', counts: {}, compared: { new: 0, gone: 0 } }] })), 'flags all kept is clean');
   const table = summaryTable([{ run: 'H1/W2', outcome: 'pass', record: 'missing', counts: {} }]).split('\n');
   assert.match(table[2], /^\| H1\/W2 \| pass \| the base arm has none \|/);
+  const failed = summaryTable([{ run: 'H1/W2', outcome: 'pass', record: 'missing', baseReason: 'its checkpoint failed: H1/W2 exited 1', counts: {} }]).split('\n');
+  assert.match(failed[2], /^\| H1\/W2 \| pass \| the base arm couldn't run it: its checkpoint failed: H1\/W2 exited 1 \|/);
 });
 
 test('the step summary cuts its table only at GitHub\'s limit, and says how many flags it left out and where they are', () => {

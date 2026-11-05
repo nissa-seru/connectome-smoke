@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { flagsAgainst, readAgainst, recordAgainst, releaseDiffers } from '../lib/against.mjs';
+import { flagsAgainst, measuredOf, readAgainst, recordAgainst, releaseDiffers } from '../lib/against.mjs';
 
 const LANE = 'a'.repeat(64);
 const RUNS = ['H1/W1', 'H1/W2', 'H2/W7'];
@@ -75,4 +75,16 @@ test('a head run\'s flags are each new, gone or kept against the base arm\'s, co
     assert.deepEqual(flagsAgainst(against, 'H1/W1', [{ ...a, whole: '0123456789ab' }, a, b]), { new: [{ ...a, whole: '0123456789ab' }], gone: [a], kept: [a, b] }, 'a flag whose whole text differs past the cut is another flag, so the base\'s second one is gone');
     assert.deepEqual(flagsAgainst(null, 'H1/W1', [a, c]), { new: [a, c], gone: [], kept: [] }, 'with no base arm every flag is new');
   } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+test('a run\'s measurements: the head\'s and, with a base arm, the base\'s, and the base\'s reason where it couldn\'t run the run; none for a run the head couldn\'t run', () => {
+  const ran = { outcome: 'flags', unmeasured: ['the run failed'] };
+  assert.deepEqual(measuredOf(ran, { against: false, base: null, readsFailed: ['receipt'] }), { unmeasured: ['the run failed'], readsFailed: ['receipt'] });
+  const base = { outcome: 'pass', record: 'H1_W2.record', unmeasured: ['check 4 (coverage) judged nothing'], readsFailed: ['merge quarantines'] };
+  assert.deepEqual(measuredOf({ outcome: 'pass' }, { against: true, base, readsFailed: [] }), { unmeasured: [], baseUnmeasured: ['check 4 (coverage) judged nothing'], readsFailed: [], baseReadsFailed: ['merge quarantines'] });
+  assert.deepEqual(measuredOf({ outcome: 'pass' }, { against: true, base: undefined, readsFailed: [] }), { unmeasured: [], baseUnmeasured: [], readsFailed: [], baseReadsFailed: [] }, 'a base arm with no result for the run');
+  const failed = { outcome: 'couldnt-run', record: null, reason: 'its checkpoint failed: H1/W2 exited 1' };
+  assert.deepEqual(measuredOf({ outcome: 'pass' }, { against: true, base: failed, readsFailed: [] }), { unmeasured: [], baseUnmeasured: [], readsFailed: [], baseReadsFailed: [], baseReason: 'its checkpoint failed: H1/W2 exited 1' });
+  assert.equal(measuredOf({ outcome: 'pass' }, { against: true, base: { ...failed, reason: undefined }, readsFailed: [] }).baseReason, '');
+  assert.deepEqual(measuredOf({ outcome: 'couldnt-run', reason: 'x' }, { against: true, base: failed, readsFailed: ['receipt'] }), {});
 });
