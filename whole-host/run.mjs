@@ -19,7 +19,7 @@ import { flagsAgainst, measuredOf, readAgainst, recordAgainst, releaseDiffers, s
 import { differencesOf, entriesOf } from './lib/entries.mjs';
 import { changedRequests, readsFailedOf, stepSummaryAfter, summaryOf, unmeasured, viewOf } from './lib/view.mjs';
 import { generatedTexts, transcriptOf } from './lib/strategies/transcript.mjs';
-import { ledgerOf, moduleCounts, readsFailed } from './lib/strategies/ledger.mjs';
+import { ledgerOf, moduleCounts } from './lib/strategies/ledger.mjs';
 import { shares } from './lib/shares.mjs';
 import { selfCheckOf } from './lib/strategies/compare.mjs';
 import { cutError } from './lib/strategies/cut.mjs';
@@ -49,11 +49,13 @@ const checkpointKey = (id) => runOf(id, all, {}, runOptions).from;
 const share = shares(listed, +shard[2], stack.seconds, checkpointKey)[+shard[1] - 1];
 const names = share.ids;
 const listing = (option, dir) => { try { return readdirSync(dir); } catch (e) { return fail(`${option} ${dir} can't be listed: ${e.code ?? e.message}`); } };
-const work = opt('workdir') ? resolve(opt('workdir')) : mkdtempSync(join(tmpdir(), 'whole-host-'));
-if (opt('workdir') && existsSync(work) && listing('--workdir', work).length) fail(`--workdir ${work} isn't empty: the release is installed there and every run's store starts there, so give it an empty or new directory`);
-const out = resolve(opt('out', join(work, 'out')));
-if (existsSync(out) && listing('--out', out).length) fail(`--out ${out} isn't empty: an --out holds one invocation's evidence, so give it an empty or new directory`);
+const workdir = opt('workdir') ? resolve(opt('workdir')) : null;
+if (workdir && existsSync(workdir) && listing('--workdir', workdir).length) fail(`--workdir ${workdir} isn't empty: the release is installed there and every run's store starts there, so give it an empty or new directory`);
+const outGiven = opt('out') ? resolve(opt('out')) : null;
+if (outGiven && existsSync(outGiven) && listing('--out', outGiven).length) fail(`--out ${outGiven} isn't empty: an --out holds one invocation's evidence, so give it an empty or new directory`);
 if (!names.length) { console.log(`${LABEL} shard ${shard[0]} holds none of ${listed.join(', ')}`); process.exit(0); }
+const work = workdir ?? mkdtempSync(join(tmpdir(), 'whole-host-'));
+const out = outGiven ?? join(work, 'out');
 if (+shard[2] > 1) console.log(`${LABEL} shard ${shard[0]}: ${names.length} of ${listed.length} runs, about ${share.seconds} s by stack.json's seconds`);
 const runs = everyRun.filter((n) => listed.includes(n));
 const lane = laneVersion();
@@ -304,7 +306,7 @@ for (const id of names) {
     console.log(`${LABEL} ${id}: couldn't run: ${r.reason}`);
   }
   const base = against?.result(id);
-  const measured = measuredOf(r, { against: Boolean(against), base, readsFailed: readsFailed(r.log ?? []) });
+  const measured = measuredOf(r, { against: Boolean(against), base, log: r.log ?? [] });
   Object.assign(row, measured);
   const why = [[unmeasured(row), 'didn\'t measure'], [readsFailedOf(row), 'a read failed']].filter(([said]) => said).map(([said, what]) => `${what}: ${said}`);
   if (why.length) console.log(`${LABEL} ${id}: can't be compared: ${why.join('; ')}`);

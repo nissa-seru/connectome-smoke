@@ -1,5 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
+import { readsFailed } from './strategies/ledger.mjs';
 
 export const slug = (id) => id.replaceAll('/', '_');
 export const recordPath = (dir, id) => join(dir, slug(id), `${slug(id)}.record`);
@@ -51,11 +52,11 @@ export function flagsAgainst(against, id, own) {
   return out;
 }
 
-export function measuredOf(r, { against, base, readsFailed }) {
+export function measuredOf(r, { against, base, log }) {
   if (r.outcome === 'couldnt-run') return {};
   return {
     unmeasured: r.unmeasured ?? [], ...(against ? { baseUnmeasured: base?.unmeasured ?? [] } : {}),
-    readsFailed, ...(against ? { baseReadsFailed: base?.readsFailed ?? [] } : {}),
+    readsFailed: readsFailed(log), ...(against ? { baseReadsFailed: base?.readsFailed ?? [] } : {}),
     ...(base?.outcome === 'couldnt-run' ? { baseReason: base.reason ?? '' } : {}),
   };
 }

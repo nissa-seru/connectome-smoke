@@ -293,6 +293,17 @@ test('run.mjs refuses an --out or --workdir it can\'t list, a --runs naming a ru
   } finally { for (const d of [host, out]) rmSync(d, { recursive: true, force: true }); }
 });
 
+test('run.mjs leaves nothing behind for an empty share, making its temporary work directory only once it has runs to drive', () => {
+  const host = tree({ 'package.json': JSON.stringify({ name: '@animalabs/connectome-host' }) });
+  const tmp = mkdtempSync(join(tmpdir(), 'whole-host-tmp-'));
+  try {
+    const r = spawnSync(process.execPath, [join(import.meta.dirname, '..', 'run.mjs'), '--host', host, '--runs', 'H1/W1', '--shard', '2/2'], { encoding: 'utf-8', timeout: 30_000, env: { ...process.env, TMPDIR: tmp } });
+    assert.equal(r.status, 0, r.stderr);
+    assert.match(r.stdout, /shard 2\/2 holds none of H1\/W1/);
+    assert.deepEqual(readdirSync(tmp), []);
+  } finally { for (const d of [host, tmp]) rmSync(d, { recursive: true, force: true }); }
+});
+
 test('run.mjs refuses an --out that isn\'t empty, since an --out holds one invocation\'s evidence, before it clones or installs anything', () => {
   const host = tree({ 'package.json': JSON.stringify({ name: '@animalabs/connectome-host' }) });
   const out = tree({ 'run.json': '{}' });
