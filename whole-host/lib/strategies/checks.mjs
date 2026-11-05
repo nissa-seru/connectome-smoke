@@ -60,8 +60,8 @@ export function bindingControl(records) {
 export function pairing(records, log = [], agent = FIXTURE_AGENT) {
   const paired = requestPairs(records, log, agent);
   if (!paired) return withJudged([], 0);
-  if (paired.disagree?.length) return withJudged([{ check: 13, step: 'the run', what: `${agent}:disagree`, ...cutMessage((cut) => `couldn't judge ${agent}'s pairing: by the clock ${cut(paired.disagree, 4)} pair, but the request doesn't end on the compile's last canary, so the two processes' stamps may not share a clock`) }], null);
-  if (paired.unstamped.length) return withJudged([{ check: 13, step: 'the run', what: `${agent}:unstamped`, ...cutMessage((cut, whole) => `couldn't judge ${agent}'s pairing: ${cut(paired.unstamped, 4)}${!whole && paired.unstamped.length > 4 ? ` and ${paired.unstamped.length - 4} more` : ''} carry no clock stamp to order by`) }], null);
+  if (paired.disagree?.length) return withJudged([{ check: 13, step: 'the run', what: `${agent}:disagree`, ...cutMessage((cut) => `couldn't judge ${agent}'s pairing: by the clock ${cut(paired.disagree, 4)} pair, but the request doesn't end on the compile's last canary, so the two processes' stamps may not share a clock`) }], 0);
+  if (paired.unstamped.length) return withJudged([{ check: 13, step: 'the run', what: `${agent}:unstamped`, ...cutMessage((cut, whole) => `couldn't judge ${agent}'s pairing: ${cut(paired.unstamped, 4)}${!whole && paired.unstamped.length > 4 ? ` and ${paired.unstamped.length - 4} more` : ''} carry no clock stamp to order by`) }], 0);
   return withJudged(paired.unpaired.map((l) => ({ check: 13, step: l.step ?? 'the run', what: `${agent}:unpaired`, message: `${agent}'s request compile ${l.seq} (assembly ${l.assembly}) went out in no request: none arrived at the stand-in after it and before the agent's next compile, so agent-framework never sent it, or the pairing went wrong` })), paired.pairs.length + paired.unpaired.length);
 }
 
