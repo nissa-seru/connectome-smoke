@@ -147,8 +147,17 @@ export function budgetReportDone(lines, agent) {
 }
 const BUDGET_HEADER = '--- Stream Token Budgets ---';
 
-export function readSettle(answer, previous, ticks = {}) {
-  const agents = answer?.maintenance?.agents ?? [];
+export function maintainedAgents(answer, agent) {
+  const agents = answer?.maintenance?.agents;
+  if (!Array.isArray(agents)) return { unreadable: 'holds no list of agents' };
+  if (!agents.some((a) => a?.agentName === agent)) return { unreadable: `lists no agent named ${JSON.stringify(agent)}` };
+  return { agents };
+}
+
+export function readSettle(answer, previous, ticks = {}, agent) {
+  const listed = maintainedAgents(answer, agent);
+  if (answer?.ok === true && listed.unreadable) return { unreadable: listed.unreadable, ticking: [], settled: false, inFlight: false, moved: false, progress: previous };
+  const agents = listed.agents ?? [];
   const host = answer?.hostMode ?? {};
   const progress = JSON.stringify({
     agents: agents.map((a) => {
@@ -344,13 +353,19 @@ export async function runScript({ steps, configuration, standin, hostDir, facts,
       pass++;
       const t = performance.now();
       const answer = await ctl.hostCommand({ command: 'maintain' }, { timeoutMs: MAINTAIN_MS });
-      const read = readSettle(answer, progress, await ctl.moduleRequest('ticks'));
+      const read = readSettle(answer, progress, await ctl.moduleRequest('ticks'), agentName);
       const { ticking } = read;
       const first = progress === null;
       progress = read.progress;
       const agents = answer?.maintenance?.agents ?? [];
       const { drained, deferredWrites, activeTurnAgents = [] } = answer?.hostMode ?? {};
       log('settle', { phase: 'pass', pass, ms: Math.round(performance.now() - t), ok: answer?.ok, ran: answer?.maintenance?.ran, runId: answer?.maintenance?.history?.[0]?.id ?? null, agents, drained, deferredWrites, activeTurnAgents, inFlight: read.inFlight, moved: read.moved, ...(ticking.length ? { ticking } : {}) });
+      if (read.unreadable) {
+        const why = `couldn't read the settle: the host's maintain answer ${read.unreadable}`;
+        log('settle', { phase: 'end', settled: false, passes: pass, ms: Math.round(performance.now() - started), why });
+        fail({ step: current?.id ?? null, reason: why });
+        throw new RunFailure('unreadable');
+      }
       if (read.settled) {
         const fence = await ipcFence();
         log('settle', { phase: 'end', settled: true, passes: pass, ms: Math.round(performance.now() - started), fenceMs: fence });
@@ -384,9 +399,10 @@ export async function runScript({ steps, configuration, standin, hostDir, facts,
     const started = performance.now();
     for (let pass = 1; ; pass++) {
       const answer = await ctl.hostCommand({ command: 'maintain' }, { timeoutMs: MAINTAIN_MS });
-      const agents = answer?.maintenance?.agents ?? [];
+      const listed = maintainedAgents(answer, agentName);
+      if (answer?.ok === true && listed.unreadable) throw new RunFailure(`couldn't read whether compression is idle: the host's maintain answer ${listed.unreadable}`);
       const ticks = await ctl.moduleRequest('ticks');
-      const idle = answer?.ok === true && agents.every((a) => a.ready === true && a.progress?.pending !== true) && !readSettle(answer, null, ticks).ticking.length;
+      const idle = answer?.ok === true && listed.agents.every((a) => a.ready === true && a.progress?.pending !== true) && !readSettle(answer, null, ticks, agentName).ticking.length;
       if (idle) {
         log('held', { request: request.id, agent: request.agent, passes: pass, ms: Math.round(performance.now() - started) });
         return;
