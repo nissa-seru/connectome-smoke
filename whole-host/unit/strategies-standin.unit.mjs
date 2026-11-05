@@ -278,6 +278,37 @@ test('T20: with refuseMerges every merge request is refused and an L1 answered; 
   }
 });
 
+test('T34: with refuseContent a summariser request carrying the refused content is refused, and its record says whether the content sat in the slice, ahead of it, or in a merge', async () => {
+  const NOTICE = 'Context Manager: System: You will soon form a new memory, get ready. The messages that follow are the slice of recent experience you are about to compress. After them, write the memory in your own voice.';
+  const l1 = (ahead, slice) => ({
+    model: 'claude-opus-5-5', max_tokens: 16000, stream: false, tools: TOOLS,
+    messages: [{ role: 'user', content: [
+      { type: 'text', text: `user: [[c:x.1]] ${ahead} ${prose(300, 3)}` },
+      { type: 'text', text: NOTICE },
+      { type: 'text', text: `user: [[c:x.2]] ${slice} ${prose(300, 5)}` },
+      { type: 'text', text: `Context Manager: ${CHAT}` },
+    ] }],
+  });
+  const merge = summariserBody({ instruction: MERGE });
+  merge.messages[0].content[0].text = `user: [[c:x.1]] REFUSED-CONTENT ${prose(400, 3)}`;
+  const sent = [
+    ['ahead', l1('REFUSED-CONTENT', ''), 'refusal'],
+    ['slice', l1('', 'REFUSED-CONTENT'), 'refusal'],
+    ['merge', merge, 'refusal'],
+    [undefined, l1('', ''), 'end_turn'],
+  ];
+  const s = await startStandin({ configuration: { windowTokens: 50_000 }, refuseContent: true });
+  s.setStep(step('m', []));
+  for (const [, body, stop] of sent) assert.equal((await post(s.url, body)).json.stop_reason, stop);
+  const records = (await s.close()).filter((r) => r.kind === 'summariser');
+  assert.deepEqual(records.map((r) => r.carried), sent.map(([carried]) => carried));
+  assert.deepEqual(records.map((r) => r.answer.shape), ['refusal', 'refusal', 'refusal', 'summary']);
+  const plain = await startStandin({ configuration: { windowTokens: 50_000 } });
+  plain.setStep(step('m', []));
+  assert.equal((await post(plain.url, l1('REFUSED-CONTENT', ''))).json.stop_reason, 'end_turn');
+  assert.equal((await plain.close()).find((r) => r.kind === 'summariser').carried, undefined);
+});
+
 test('T3/T22: a call goes with the id its reply names, and a reply\'s error answers its request with that provider error', () => withStandin({}, async (s) => {
   s.setStep(step('e', [{ text: '[[c:e.r1]] calling', calls: [{ id: 'toolu_same', name: 'time--now', input: {} }, { id: 'toolu_same', name: 'time--now', input: {} }] }, { error: { status: 529, type: 'overloaded_error', message: 'busy' } }]));
   const one = await post(s.url, agentBody({ canary: '[[c:e.in]]' }));

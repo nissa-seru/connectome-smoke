@@ -557,8 +557,14 @@ shows the host's last lines names that file.
   each workload. A property either counts what it judged or names the check
   that judges it, and is then held to that check's count. A completed run
   whose property does neither, or names a check that judged nothing, is a
-  couldn't-judge flag. The continuation names check 2, W7 without refused
-  merges check 1, which flags every alert not owned, and W9 check 12. W5
+  couldn't-judge flag. The continuation names check 2, W7's variants but
+  merges-refused and chunk-refused check 1, which flags every alert not
+  owned, and W9 check 12. W7's
+  chunk-refused puts a mark in its third turn's message, and the stand-in
+  refuses every summariser request that carries the mark, wherever it sits.
+  The property judges each such request: an L1 request may carry it only
+  after context-manager's notice that opens the slice to remember, and a
+  merge not at all. W5
   takes each body from every messages read, so a body removed before the
   run's last read is still judged in the requests that sent it. W4 judges
   each of its own calls: its script gives each reply one call with its

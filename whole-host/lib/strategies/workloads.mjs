@@ -3,6 +3,7 @@ import { isUnreadable } from './invariants.mjs';
 import { png } from './png.mjs';
 import { hash32, prose, seeded } from './prose.mjs';
 import { CHANNEL, READER, TOOL, continuation, prefix, products } from './script.mjs';
+import { REFUSED_CONTENT } from './standin.mjs';
 
 const SIZES = {
   user: [450, 1800],
@@ -34,7 +35,7 @@ function writer(ctx, workload) {
   const turn = (step, o = {}) => {
     const sid = id(step);
     const canaries = [c(step, 'in')];
-    const text = `${c(step, 'in')} ${o.user ?? prose(between(o.size ?? SIZES.user), `${sid}:in`)}`;
+    const text = `${c(step, 'in')} ${o.mark ? `${o.mark} ` : ''}${o.user ?? prose(between(o.size ?? SIZES.user), `${sid}:in`)}`;
     const calls = o.calls ?? 1;
     const rounds = calls === 0 ? 0 : (o.rounds ?? 1);
     const replies = [];
@@ -82,6 +83,7 @@ const PHASE_PLAN = [
   { calls: 1 }, { calls: 1 },
 ];
 const phaseTurn = (n) => PHASE_PLAN[(n - 1) % PHASE_PLAN.length];
+const REFUSED_TURN = 3;
 
 const READING_PLAN = [
   { calls: 1, rounds: 2 }, { calls: 1, rounds: 2 }, { calls: 1, rounds: 2 },
@@ -352,11 +354,11 @@ export const WORKLOADS = {
   W7: {
     from: 'checkpoint',
     turns: 21,
-    property: 'failures: at each step, the merges the stand-in refuses raise one off-path refusal alert each, and nothing else raises one',
-    variants: ['merges-refused', 'merges-rejected', 'fable-no-tools', 'no-tools'],
+    property: 'failures: at each step, the merges the stand-in refuses raise one off-path refusal alert each, and nothing else raises one; content the summariser refuses reaches it only in the slice it is asked to remember',
+    variants: ['merges-refused', 'merges-rejected', 'fable-no-tools', 'no-tools', 'chunk-refused'],
     owns: (variant) => (variant === 'merges-refused' ? [{ check: 1, what: 'refusal-offpath' }] : []),
     fromEmpty: (variant) => variant === 'fable-no-tools' || variant === 'no-tools',
-    standin: (variant) => ({ refuseMerges: variant === 'merges-refused', rejectMerges: variant === 'merges-rejected' }),
+    standin: (variant) => ({ refuseMerges: variant === 'merges-refused', rejectMerges: variant === 'merges-rejected', refuseContent: variant === 'chunk-refused' }),
     recipe: (variant) => ({
       ...(variant === 'fable-no-tools' || variant === 'no-tools' ? { agent: { allowedTools: [] } } : {}),
       ...(variant === 'fable-no-tools' ? { agent: { allowedTools: [], strategy: { compressionModel: 'claude-fable-5-1' } } } : {}),
@@ -376,6 +378,7 @@ export const WORKLOADS = {
       const steps = [];
       for (let n = 1; n <= turns; n++) {
         if (noTools) steps.push(w.turn(n, { calls: 0, size: SIZES.reading }));
+        else if (ctx.variant === 'chunk-refused') steps.push(w.turn(n, { ...phaseTurn(n), ...(n === REFUSED_TURN ? { mark: REFUSED_CONTENT } : {}) }));
         else steps.push(w.turn(n, ctx.variant === 'merges-refused' ? phaseTurn(n) : {}));
       }
       return steps;
@@ -396,6 +399,23 @@ export const WORKLOADS = {
           if (n !== a) out.push({ step, message: `${n} refused merge(s) at this step raised ${a} off-path refusal alert(s), where each raises one and nothing else does` });
         }
         return withJudged(out, refused.length);
+      }
+      if (ctx.variant === 'chunk-refused') {
+        const carrying = calls.filter((r) => r.carried);
+        if (!carrying.some((r) => r.carried === 'slice')) return withJudged([{ step: null, message: 'couldn\'t judge: no summariser request carried the refused content in the slice it was asked to remember' }], 0);
+        const byStep = new Map();
+        for (const r of carrying.filter((x) => x.carried !== 'slice')) {
+          const at = byStep.get(r.step) ?? { ahead: 0, merge: 0 };
+          at[r.carried]++;
+          byStep.set(r.step, at);
+        }
+        for (const [step, { ahead, merge }] of byStep) {
+          out.push({ step, message: [
+            ahead ? `${ahead} L1 request(s) carried the content the summariser refuses ahead of the slice they asked it to remember` : null,
+            merge ? `${merge} merge request(s) carried it` : null,
+          ].filter(Boolean).join(', and ') });
+        }
+        return withJudged(out, carrying.length);
       }
       return judgedBy(out, 1);
     },
@@ -645,7 +665,7 @@ export const RUNS = [
   'C5h/W5',
   'C8h/W6',
   'C3h/W7/merges-refused', 'C3h/W7/fable-no-tools', 'C3h/W7/no-tools',
-  'H1/W7/merges-refused', 'H1/W7/merges-rejected', 'H2/W7/merges-refused',
+  'H1/W7/merges-refused', 'H1/W7/merges-rejected', 'H2/W7/merges-refused', 'H1/W7/chunk-refused',
   'C3h/W8/unenforced', 'C6h/W8/enforced', 'H1/W8/enforced', 'H4/W8/unenforced',
   'H3/W9', 'C3h/W9', 'C6h/W9', 'H1/W9',
   'C6h/W11', 'H1/W11',
