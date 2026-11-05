@@ -104,7 +104,7 @@ export function differencesOf(run, baseText, headText) {
   };
   for (const step of new Set([...base.steps.keys(), ...head.steps.keys()])) {
     if (!base.steps.has(step) || !head.steps.has(step)) {
-      add(['step', `only in ${base.steps.has(step) ? 'base' : 'head'}`], 'a step only one arm ran', step, (base.steps.get(step) ?? []).join('\n'), (head.steps.get(step) ?? []).join('\n'));
+      add(['step', `only in ${base.steps.has(step) ? 'base' : 'head'}`], 'a step only one arm recorded', step, (base.steps.get(step) ?? []).join('\n'), (head.steps.get(step) ?? []).join('\n'));
       continue;
     }
     lines(step, base.steps.get(step), head.steps.get(step));

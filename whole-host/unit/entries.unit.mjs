@@ -23,14 +23,14 @@ test('a changed line is one difference, at its run and step, with both whole lin
   assert.equal(d.after, 'compile p.1.in L1(p.0), body 33333333');
 });
 
-test('lines a step gained or lost are differences of their own, and a step only one arm ran is one difference', () => {
+test('lines a step gained or lost are differences of their own, and a step only one arm recorded is one difference', () => {
   const base = record({ steps: { 'p.1': ['compile p.1.in, body 11111111', 'call p.1 [T:call-merge-aaaaaaaaaaaa] -> refused, body 44444444'], 'p.2': ['compile p.2.in, body 55555555'] } });
   const head = record({ steps: { 'p.1': ['compile p.1.in, body 11111111', 'round + p.1.r1, body 22222222'] } });
   const ds = differencesOf('H1/W1', base, head);
   assert.deepEqual(ds.map((d) => [d.describe, d.place.step, d.before, d.after]), [
     ['`call` lines only in base', 'p.1', 'call p.1 [T:call-merge-aaaaaaaaaaaa] -> refused, body 44444444', ''],
     ['`round` lines only in head', 'p.1', '', 'round + p.1.r1, body 22222222'],
-    ['a step only one arm ran', 'p.2', 'compile p.2.in, body 55555555', ''],
+    ['a step only one arm recorded', 'p.2', 'compile p.2.in, body 55555555', ''],
   ]);
 });
 
@@ -63,7 +63,7 @@ test('a role that names a memory by its id is one kind whatever the id, and an e
 test('a checkpoint line is placed at its own step', () => {
   const base = `${['# whole-host record H1/W1, from empty', 'templates', 'heads', 'step p.3', '  compile p.3.in, body 11111111', 'step p.end', 'checkpoint prefix', 'end ok'].join('\n')}\n`;
   const head = `${['# whole-host record H1/W1, from empty', 'templates', 'heads', 'step p.3', '  compile p.3.in, body 11111111', 'end ok'].join('\n')}\n`;
-  assert.deepEqual(differencesOf('H1/W1', base, head).map((d) => [d.place.step, d.describe]), [['p.end', 'a step only one arm ran']]);
+  assert.deepEqual(differencesOf('H1/W1', base, head).map((d) => [d.place.step, d.describe]), [['p.end', 'a step only one arm recorded']]);
   const both = (name) => `${['# h', 'templates', 'heads', 'step p.3', '  compile p.3.in, body 11111111', 'checkpoint ' + name, 'end ok'].join('\n')}\n`;
   assert.deepEqual(differencesOf('H1/W1', both('prefix'), both('other')).map((d) => [d.place.step, d.describe]), [['p.3', '`checkpoint` lines whose `prefix` became `other`']]);
 });
