@@ -85,12 +85,19 @@ export function stateOf(manager) {
   return { maxLevel: plain(readable(() => manager.getMaxSummaryLevel())) };
 }
 
-// context-manager 0.24.0 keeps the kv-unified receipt chain's head at `kvUnifiedReceipts.head`. agent-framework 0.32.0
-// gives it each send's acceptance time as wall time and a submission id made per send with the wall time in it, so
-// both are left out.
+// context-manager 0.24.0 keeps the kv-unified receipt chain of a strategy with `beginKvUnifiedSubmission` in its
+// private `kvUnifiedReceipts`, and the chain's head at `.head`. agent-framework 0.32.0 gives it each send's acceptance
+// time as wall time and a submission id made per send with the wall time in it, so both are left out.
 export function receiptHeadOf(manager) {
   return plain(readable(() => {
-    const head = manager.getStrategy().kvUnifiedReceipts?.head ?? null;
+    const strategy = manager.getStrategy();
+    const chain = strategy?.kvUnifiedReceipts;
+    if (chain == null) {
+      if (typeof strategy?.beginKvUnifiedSubmission === 'function') throw new Error('the strategy takes kv-unified submissions but has no kvUnifiedReceipts to read its receipt chain from');
+      return null;
+    }
+    if (!('head' in chain)) throw new Error('kvUnifiedReceipts has no head');
+    const head = chain.head;
     if (!head) return null;
     return {
       sequence: head.sequence,

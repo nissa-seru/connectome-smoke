@@ -52,6 +52,16 @@ test('storeDelta: context-manager\'s quarantines, compression spans and merges, 
   assert.equal(storeDelta(manager([]), undefined, blobs).out.quarantine, undefined, 'a strategy with no quarantine reports none');
 });
 
+test('storeDelta: a strategy that takes kv-unified submissions but has no receipt chain to read is reported unreadable, not as no receipt', () => {
+  const blobs = blobStore();
+  const on = (strategy) => ({ ...manager([]), getStrategy: () => strategy });
+  const begin = () => {};
+  assert.match(storeDelta(on({ beginKvUnifiedSubmission: begin }), undefined, blobs).out.receiptHead?.unreadable ?? '', /kvUnifiedReceipts/, 'the chain is gone');
+  assert.match(storeDelta(on({ beginKvUnifiedSubmission: begin, kvUnifiedReceipts: {} }), undefined, blobs).out.receiptHead?.unreadable ?? '', /head/, 'the chain has no head');
+  assert.equal(storeDelta(on({ beginKvUnifiedSubmission: begin, kvUnifiedReceipts: { head: null } }), undefined, blobs).out.receiptHead, undefined, 'a chain with no receipt yet has none');
+  assert.equal(storeDelta(on({}), undefined, blobs).out.receiptHead, undefined, 'a strategy that takes no kv-unified submissions has none');
+});
+
 test('storeDelta: a strategy that can\'t be read when the quarantine is first sampled is reported unreadable, not as none', () => {
   const failing = { ...manager([]), getStrategy: () => { throw new Error('gone'); } };
   assert.deepEqual(storeDelta(failing, undefined, blobStore()).out.quarantine, { unreadable: 'gone' });
