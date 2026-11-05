@@ -563,7 +563,9 @@ shows the host's last lines names that file.
   refuses every summariser request that carries the mark, wherever it sits.
   The property judges each such request: an L1 request may carry it only
   after context-manager's notice that opens the slice to remember, and a
-  merge not at all. W5
+  merge not at all. As merges-refused does for its merges, it also takes
+  check 1's off-path refusal alerts and holds each step to one per refused
+  request. W5
   takes each body from every messages read, so a body removed before the
   run's last read is still judged in the requests that sent it. W4 judges
   each of its own calls: its script gives each reply one call with its

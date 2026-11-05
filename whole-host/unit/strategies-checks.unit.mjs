@@ -1019,9 +1019,11 @@ test('W7 merges-refused: each refused merge raises one off-path alert at its ste
   assert.deepEqual([none.judged, none.map((f) => f.message)], [0, ['couldn\'t judge: the stand-in refused no merge']]);
 });
 
-test('W7 chunk-refused: every summariser request that carried the refused content is judged, a step whose L1 requests carried it ahead of their slice or whose merges carried it is flagged, and a run where none carried it in its slice can\'t be judged', () => {
+test('W7 chunk-refused: every summariser request that carried the refused content is judged, a step whose L1 requests carried it ahead of their slice or whose merges carried it is flagged, as is a step whose refused requests and off-path refusal alerts differ in number, and a run where none carried it in its slice can\'t be judged', () => {
   const call = (step, carried) => ({ kind: 'summariser', step, ...(carried ? { carried } : {}), answer: { shape: carried ? 'refusal' : 'summary' } });
-  const check = (records) => WORKLOADS.W7.check({ records, log: [] }, { variant: 'chunk-refused' });
+  const alert = (step, kind = 'refusal-offpath') => ({ kind: 'ipc', step, event: { type: 'ops:alert', kind } });
+  const alertsFor = (records) => records.filter((r) => r.answer.shape === 'refusal').map((r) => alert(r.step));
+  const check = (records, log = alertsFor(records)) => WORKLOADS.W7.check({ records, log }, { variant: 'chunk-refused' });
   const held = check([call('7.13', 'slice'), call('7.13', 'slice'), call('7.14'), call('7.16')]);
   assert.deepEqual([held.length, held.judged], [0, 2]);
   const cascade = check([call('7.13', 'slice'), call('7.14', 'ahead'), call('7.14', 'ahead'), call('7.17', 'merge'), call('7.17', 'ahead'), call('7.18')]);
@@ -1032,6 +1034,13 @@ test('W7 chunk-refused: every summariser request that carried the refused conten
   ]);
   const never = check([call('7.14', 'ahead'), call('7.15')]);
   assert.deepEqual([never.judged, never.map((f) => f.message)], [0, ['couldn\'t judge: no summariser request carried the refused content in the slice it was asked to remember']]);
+  const slice = [call('7.13', 'slice'), call('7.13', 'slice')];
+  const missing = check(slice, [alert('7.13'), alert('7.13', 'compression-quarantine')]);
+  assert.equal(missing.judged, 2);
+  assert.deepEqual(missing.map((f) => [f.step, f.message]), [['7.13', '2 refused summariser request(s) at this step raised 1 off-path refusal alert(s), where each raises one and nothing else does']]);
+  const extra = check(slice, [alert('7.13'), alert('7.13'), alert('7.15')]);
+  assert.deepEqual(extra.map((f) => [f.step, f.message]), [['7.15', '0 refused summariser request(s) at this step raised 1 off-path refusal alert(s), where each raises one and nothing else does']]);
+  assert.deepEqual(WORKLOADS.W7.owns('chunk-refused'), [{ check: 1, what: 'refusal-offpath' }]);
 });
 
 test('check 1 flags a step that leaves a scripted reply unused, its own or its subagent\'s, unless it may fail and failed', () => {

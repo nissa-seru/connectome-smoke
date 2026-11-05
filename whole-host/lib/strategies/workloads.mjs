@@ -354,9 +354,9 @@ export const WORKLOADS = {
   W7: {
     from: 'checkpoint',
     turns: 21,
-    property: 'failures: at each step, the merges the stand-in refuses raise one off-path refusal alert each, and nothing else raises one; content the summariser refuses reaches it only in the slice it is asked to remember',
+    property: 'failures: at each step, the summariser requests the stand-in refuses, its merges or those carrying the content it refuses, raise one off-path refusal alert each, and nothing else raises one; content the summariser refuses reaches it only in the slice it is asked to remember',
     variants: ['merges-refused', 'merges-rejected', 'fable-no-tools', 'no-tools', 'chunk-refused'],
-    owns: (variant) => (variant === 'merges-refused' ? [{ check: 1, what: 'refusal-offpath' }] : []),
+    owns: (variant) => (['merges-refused', 'chunk-refused'].includes(variant) ? [{ check: 1, what: 'refusal-offpath' }] : []),
     fromEmpty: (variant) => variant === 'fable-no-tools' || variant === 'no-tools',
     standin: (variant) => ({ refuseMerges: variant === 'merges-refused', rejectMerges: variant === 'merges-rejected', refuseContent: variant === 'chunk-refused' }),
     recipe: (variant) => ({
@@ -388,17 +388,8 @@ export const WORKLOADS = {
       const calls = run.records.filter((r) => r.kind === 'summariser');
       if (ctx.variant === 'merges-refused') {
         const refused = calls.filter((r) => r.answer?.shape === 'refusal');
-        const alerts = run.log.filter((e) => e.kind === 'ipc' && e.event?.type === 'ops:alert' && e.event.kind === 'refusal-offpath');
         if (!refused.length) return withJudged([{ step: null, message: 'couldn\'t judge: the stand-in refused no merge' }], 0);
-        const count = (list) => list.reduce((m, x) => m.set(x.step, (m.get(x.step) ?? 0) + 1), new Map());
-        const byStep = count(refused);
-        const alertsBy = count(alerts);
-        for (const step of new Set([...byStep.keys(), ...alertsBy.keys()])) {
-          const n = byStep.get(step) ?? 0;
-          const a = alertsBy.get(step) ?? 0;
-          if (n !== a) out.push({ step, message: `${n} refused merge(s) at this step raised ${a} off-path refusal alert(s), where each raises one and nothing else does` });
-        }
-        return withJudged(out, refused.length);
+        return withJudged(refusalAlerts(run, refused, 'merge(s)'), refused.length);
       }
       if (ctx.variant === 'chunk-refused') {
         const carrying = calls.filter((r) => r.carried);
@@ -415,6 +406,7 @@ export const WORKLOADS = {
             merge ? `${merge} merge request(s) carried it` : null,
           ].filter(Boolean).join(', and ') });
         }
+        out.push(...refusalAlerts(run, calls.filter((r) => r.answer?.shape === 'refusal'), 'summariser request(s)'));
         return withJudged(out, carrying.length);
       }
       return judgedBy(out, 1);
@@ -614,6 +606,20 @@ export const WORKLOADS = {
     },
   },
 };
+
+function refusalAlerts(run, refused, noun) {
+  const alerts = run.log.filter((e) => e.kind === 'ipc' && e.event?.type === 'ops:alert' && e.event.kind === 'refusal-offpath');
+  const count = (list) => list.reduce((m, x) => m.set(x.step, (m.get(x.step) ?? 0) + 1), new Map());
+  const byStep = count(refused);
+  const alertsBy = count(alerts);
+  const out = [];
+  for (const step of new Set([...byStep.keys(), ...alertsBy.keys()])) {
+    const n = byStep.get(step) ?? 0;
+    const a = alertsBy.get(step) ?? 0;
+    if (n !== a) out.push({ step, message: `${n} refused ${noun} at this step raised ${a} off-path refusal alert(s), where each raises one and nothing else does` });
+  }
+  return out;
+}
 
 function restoredWithin(run, agent, stepOf, noun) {
   const firstByStep = new Map();
