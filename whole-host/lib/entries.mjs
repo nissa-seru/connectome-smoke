@@ -32,6 +32,8 @@ function parse(text) {
   for (const line of lines.slice(1)) {
     if (line === 'templates' || line === 'heads') { block = line; continue; }
     if (line.startsWith('step ')) { block = 'steps'; step = line.slice(5); rec.steps.set(step, []); continue; }
+    // The writer writes no step line for a record whose steps have none, so the tail can follow templates or heads.
+    if ((block === 'templates' || block === 'heads') && !line.startsWith('  ') && !/^[TH]:/.test(line)) block = 'tail';
     if ((block === 'templates' || block === 'heads') && !line.startsWith('  ')) {
       const at = line.indexOf(' = ');
       key = at < 0 ? line : line.slice(0, at);

@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { differencesOf, entriesOf } from '../lib/entries.mjs';
+import { renderRecord } from '../lib/record.mjs';
 
 const record = ({ templates = [], heads = [], steps = {}, tail = ['end ok'] }) => `${[
   '# whole-host record H1/W1, from empty',
@@ -138,4 +139,12 @@ test('two records that differ where no kind of difference is found throw, so a r
   for (const [what, head] of Object.entries(unplaced)) assert.throws(() => differencesOf('H1/W1', base, head), /the records differ, but no difference between them was found/, what);
   assert.deepEqual(differencesOf('H1/W1', base, base), [], 'the same record has no differences, and that\'s no error');
   assert.equal(differencesOf('H1/W1', base, base.replace('body 22222222', 'body 33333333')).length, 1);
+});
+
+test('a record the writer writes with no step, as for a run that failed before any, keeps its end, totals and judged lines in its tail', () => {
+  // review:review-349 #7: the parser had read them as templates' keys, since the writer writes no step line and no heads.
+  const written = (ok) => renderRecord({ header: '# whole-host record H1/W1, from empty', log: [], records: [], end: { ok }, judged: [{ check: 14, name: 'property', judged: ok ? 1 : 0 }] });
+  assert.doesNotMatch(written(true), /^step |^heads$/m, 'the writer writes no step and no heads here');
+  const ds = differencesOf('H1/W1', written(true), written(false));
+  assert.deepEqual(ds.map((d) => [d.place.step, d.before, d.after]), [['end', 'end ok', 'end failed'], ['end', 'judged 14 property 1', 'judged 14 property 0']]);
 });
