@@ -885,7 +885,7 @@ test('check 6 counts, beside what it judged, each message of the two turns befor
   assert.equal(windowsRaw([{ ...req, messages: [msg('user', carrying('[[c:a.in]]', '[[c:a.r1]]', '[[c:b.in]]', '[[c:b.r1]]', '[[c:c.in]]'))] }], turns, [], whole).besides, undefined);
 });
 
-test('W1 and W2 hold the store to L3 by its end: L3 passes, L2 flags, and a run with no state read, or a configuration that doesn\'t summarise, is couldn\'t-judge', () => {
+test('W1 and W2 hold the store to L3 by its end: L3 passes, L2 flags, and a run with no state read, a state read with no level or an unreadable one, or a configuration that doesn\'t summarise, is couldn\'t-judge', () => {
   const ran = (maxLevel) => ({ log: [{ kind: 'read', op: 'state', step: 'w.70', answer: { maxLevel } }], records: [] });
   for (const w of ['W1', 'W2']) {
     const atL3 = WORKLOADS[w].check(ran(3), { configuration: {} });
@@ -895,6 +895,10 @@ test('W1 and W2 hold the store to L3 by its end: L3 passes, L2 flags, and a run 
     assert.deepEqual(atL2.map((f) => f.message), ['the store reached L2 in 70 turns, short of L3'], w);
     const unread = WORKLOADS[w].check({ log: [], records: [] }, { configuration: {} });
     assert.deepEqual([unread.judged, unread[0].message], [0, 'couldn\'t judge: the run logged no state read'], w);
+    const failed = WORKLOADS[w].check(ran({ unreadable: 'boom' }), { configuration: {} });
+    assert.deepEqual([failed.judged, failed[0].message], [0, 'couldn\'t judge: the state read gave no level for the store (unreadable: boom)'], w);
+    const levelless = WORKLOADS[w].check(ran(undefined), { configuration: {} });
+    assert.deepEqual([levelless.judged, levelless[0].message], [0, 'couldn\'t judge: the state read gave no level for the store'], w);
     const plain = WORKLOADS[w].check(ran(3), { configuration: { summarises: false } });
     assert.deepEqual([plain.judged, plain[0].message], [0, 'couldn\'t judge: the property needs a configuration that summarises, and this one doesn\'t'], w);
   }

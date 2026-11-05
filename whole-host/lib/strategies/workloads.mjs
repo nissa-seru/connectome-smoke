@@ -220,7 +220,8 @@ export const WORKLOADS = {
       const last = readsOf(run, 'state').at(-1);
       if (!last) return withJudged([{ step: null, message: 'couldn\'t judge: the run logged no state read' }], 0);
       const got = last.answer?.maxLevel;
-      return withJudged(typeof got === 'number' && got >= 3 ? [] : [{ step: last.step ?? null, message: `the store reached L${got ?? '?'} in ${this.turns} turns, short of L3` }], 1);
+      if (typeof got !== 'number') return withJudged([{ step: last.step ?? null, message: `couldn't judge: the state read gave no level for the store${typeof got?.unreadable === 'string' ? ` (unreadable: ${got.unreadable})` : ''}` }], 0);
+      return withJudged(got >= 3 ? [] : [{ step: last.step ?? null, message: `the store reached L${got} in ${this.turns} turns, short of L3` }], 1);
     },
   },
 
