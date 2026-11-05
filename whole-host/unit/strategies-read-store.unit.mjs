@@ -34,13 +34,33 @@ test('readStore refuses a stored message without a content list, as context-mana
       'export class AutobiographicalStrategy { getTopologyViolations() { return []; } }',
       'export class ContextManager {',
       '  static async open() { return new ContextManager(); }',
-      '  getAllMessages() { return [{ id: \'1\', participant: \'user\', content: [{ type: \'text\', text: \'[[c:p.1.in]] one\' }] }, { id: \'2\', participant: \'user\', body: [{ type: \'text\', text: \'[[c:p.1.r1]] two\' }] }]; }',
+      '  getAllMessages() { return [{ id: \'1\', sequence: 1, participant: \'user\', content: [{ type: \'text\', text: \'[[c:p.1.in]] one\' }] }, { id: \'2\', sequence: 2, participant: \'user\', body: [{ type: \'text\', text: \'[[c:p.1.r1]] two\' }] }]; }',
       '  getSummariesInRange() { return [{ id: \'S\' }]; }',
       '  getSummary(id) { return { id, level: 1, sourceLevel: 0, sourceIds: [\'1\', \'2\'], content: \'S\' }; }',
       '  async close() {}',
       '}',
     ].join('\n'));
     await assert.rejects(readStore({ installDir: dir, storePath: join(dir, 'store'), namespace: 'agents/fixture' }), /getAllMessages: stored message 2 has no content list/);
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+test('readStore refuses a summary without the content, levels or string source ids context-manager 0.24.0 gives it, so the judge can\'t read it as an unmarked summary', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'read-store-summary-'));
+  try {
+    const pack = join(dir, 'node_modules', '@animalabs', 'context-manager');
+    mkdirSync(join(pack, 'dist', 'src'), { recursive: true });
+    writeFileSync(join(pack, 'package.json'), JSON.stringify({ type: 'module' }));
+    writeFileSync(join(pack, 'dist', 'src', 'index.js'), [
+      'export class AutobiographicalStrategy { getTopologyViolations() { return []; } }',
+      'export class ContextManager {',
+      '  static async open() { return new ContextManager(); }',
+      '  getAllMessages() { return [{ id: \'1\', sequence: 1, participant: \'user\', content: [{ type: \'text\', text: \'[[c:p.1.in]] one\' }] }]; }',
+      '  getSummariesInRange() { return [{ id: \'S\' }]; }',
+      '  getSummary(id) { return { id, level: 1, sourceLevel: 0, sourceIds: [\'1\'], text: \'renamed\' }; }',
+      '  async close() {}',
+      '}',
+    ].join('\n'));
+    await assert.rejects(readStore({ installDir: dir, storePath: join(dir, 'store'), namespace: 'agents/fixture' }), /getSummary\(S\) has no content/);
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
 

@@ -19,7 +19,7 @@ const byId = new Map(STORE.map((m) => [m.id, m]));
 
 const manager = ({ messages = STORE, summaries = {}, pins = [], config = {}, stats = null } = {}) => ({
   getAllMessages: () => messages,
-  getSummary: (id) => (summaries[id] ? { id, level: 1, sourceLevel: 0, ...summaries[id] } : null),
+  getSummary: (id) => (summaries[id] ? { id, level: 1, sourceLevel: 0, content: '', ...summaries[id] } : null),
   getStrategy: () => ({ config }),
   getRenderStats: () => stats,
   listPins: () => pins,
@@ -196,10 +196,27 @@ test('unreadable: a summary or strategy read that fails is a violation naming it
 });
 
 test('unreadable: a stored message whose content isn\'t a list, or a summary with no sourceIds list, is a read check 11 couldn\'t make, not an empty message or a summary of nothing', () => {
-  const odd = manager({ messages: [...STORE, { id: '5', sequence: 5, role: 'user', body: [text('five')] }] });
+  const odd = manager({ messages: [...STORE, { id: '5', sequence: 5, role: 'user', participant: 'Ann', body: [text('five')] }] });
   assert.deepEqual(named(check(odd, ['r:1', 'r:2', 'r:3', 'r:4'])), [['unreadable', 'getAllMessages: stored message 5 has no content list; no invariant was judged']]);
-  const sourceless = { ...manager(), getSummary: (id) => ({ id, level: 1, sourceLevel: 0 }) };
+  const sourceless = { ...manager(), getSummary: (id) => ({ id, level: 1, sourceLevel: 0, content: '' }) };
   assert.deepEqual(named(check(sourceless, ['s:S@1', 'r:3', 'r:4'])).filter(([v]) => v === 'unreadable'), [['unreadable', 'getSummary(S) has no sourceIds list; what depends on it wasn\'t judged']]);
+});
+
+test('unreadable: a stored message without its participant or numeric sequence, or a summary without its content or string source ids, is a read check 11 couldn\'t make', () => {
+  const odd = (m) => manager({ messages: [...STORE, { id: '5', sequence: 5, role: 'user', participant: 'Ann', content: [text('five')], ...m }] });
+  assert.deepEqual(named(check(odd({ participant: undefined }), ['r:1', 'r:2', 'r:3', 'r:4'])), [['unreadable', 'getAllMessages: stored message 5 has no participant; no invariant was judged']]);
+  assert.deepEqual(named(check(odd({ sequence: undefined }), ['r:1', 'r:2', 'r:3', 'r:4'])), [['unreadable', 'getAllMessages: stored message 5 has no numeric sequence; no invariant was judged']]);
+  const shaped = (s) => ({ ...manager(), getSummary: (id) => ({ id, level: 1, sourceLevel: 0, content: '', sourceIds: ['1', '2'], ...s }) });
+  assert.deepEqual(named(check(shaped({ content: undefined }), ['s:S@1', 'r:3', 'r:4'])).filter(([v]) => v === 'unreadable'), [['unreadable', 'getSummary(S) has no content; what depends on it wasn\'t judged']]);
+  assert.deepEqual(named(check(shaped({ sourceIds: [{ id: '1' }] }), ['s:S@1', 'r:3', 'r:4'])).filter(([v]) => v === 'unreadable'), [['unreadable', 'getSummary(S) has a source id that isn\'t a string; what depends on it wasn\'t judged']]);
+});
+
+test('unreadable: another slot\'s read that failed is a failed read, though another slot held the member', () => {
+  const shared = [stored('9', 9, 'user', [text('nine')])];
+  const elsewhere = (ids) => ({ found: shared.filter((m) => ids.includes(m.id)), unfound: [], failed: ['reader\'s messages: busy'] });
+  const [compiled, messages] = compile(['r:1', 'r:2', 'r:3', 'r:4']);
+  compiled.provenance = { layout: { memberIds: ['1', '2', '3', '4', '9'], units: [{ k: 'r', t: 1 }, { k: 'r', t: 1 }, { k: 'r', t: 1 }, { k: 'r', t: 1 }, { k: 'o', n: 1 }] } };
+  assert.deepEqual(named(checkCompile(manager(), BUDGET, compiled, messages, { elsewhere })).filter(([v]) => v === 'unreadable'), [['unreadable', 'another slot\'s read failed: reader\'s messages: busy; what depends on it wasn\'t judged']]);
 });
 
 test('a partial copy\'s shards are those context-manager\'s layout names raw: a text an earlier summarised shard shares stands for the raw one', () => {
