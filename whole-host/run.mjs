@@ -11,7 +11,7 @@ import { hostFacts, runScript } from './lib/strategies/driver.mjs';
 import { startStandin, tokensSent } from './lib/strategies/standin.mjs';
 import { judge, judgedAgent } from './lib/strategies/judge.mjs';
 import { FIXTURE_AGENT } from './lib/strategies/checks.mjs';
-import { comparableFlags, workloadReport } from './lib/strategies/report.mjs';
+import { comparableFlags, unmeasuredOf, workloadReport } from './lib/strategies/report.mjs';
 import { RUNS, runOf } from './lib/strategies/workloads.mjs';
 import { configurations } from './lib/strategies/script.mjs';
 import { exitCode, refuseUnrecordable, renderRecordLines } from './lib/record.mjs';
@@ -191,6 +191,7 @@ async function workloadRun(id, { rawDir = null, dir }) {
     outcome: report.verdict === 'pass' ? 'pass' : report.verdict,
     failures: report.flags,
     flagged: comparableFlags(report),
+    unmeasured: unmeasuredOf(report, { completed: d.run.ok }),
     lines: report.lines,
     judged: report.judged,
     log: d.log,
@@ -300,7 +301,8 @@ for (const id of names) {
   rows.push(row);
   if (r.failures?.length) flaggedRuns.push({ run: id, flags: r.failures });
   const counts = row.counts && { compiles: row.counts.compiles, compressions: row.counts.compressions, merges: row.counts.merges, quarantines: null };
-  results.push({ run: id, outcome: r.outcome, reason: r.reason, record, ...(flags ? { flags } : {}), ...(counts ? { counts } : {}), ...(selfCheck ? { selfCheck } : {}) });
+  const measured = r.outcome === 'couldnt-run' ? {} : { unmeasured: r.unmeasured ?? [], ...(against ? { baseUnmeasured: against.result(id)?.unmeasured ?? [] } : {}) };
+  results.push({ run: id, outcome: r.outcome, reason: r.reason, record, ...(flags ? { flags } : {}), ...measured, ...(counts ? { counts } : {}), ...(selfCheck ? { selfCheck } : {}) });
 }
 if (against) writeFileSync(join(out, 'entries.json'), JSON.stringify(entriesOf(runs.flatMap((id) => differences.get(id) ?? [])), null, 1));
 const table = summaryOf({ rows, flagged: flaggedRuns });

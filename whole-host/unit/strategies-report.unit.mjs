@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { comparableFlags, perCheckReport, runChecks, summaryNamer, workloadReport } from '../lib/strategies/report.mjs';
+import { createHash } from 'node:crypto';
+import { comparableFlags, perCheckReport, runChecks, summaryNamer, unmeasuredOf, workloadReport } from '../lib/strategies/report.mjs';
 import { calibrationEdge, judgedBy, withJudged } from '../lib/strategies/checks.mjs';
 
 const configuration = { name: 'H1/W1' };
@@ -22,6 +23,24 @@ test('a report\'s flags as the arms compare them: every flag, the clamp edge and
     { check: 2, step: 'close-merge', detail: 'missing an L3 merge request' },
   ], 'a check 11 flag is compared by its detail, not by its message, which names its compile by number');
   assert.deepEqual(comparableFlags(perCheckReport({ configuration, candidate: { flags: [], missing: [] } })), []);
+});
+
+test('a flag whose shown text was cut carries a hash of its whole text, which the arms compare it by', () => {
+  const full = `summary 4 at L1 covers ${'a, '.repeat(400)}b`;
+  const cut = { check: 11, step: 'p.9', what: 'fixture:request:pins', detail: 'summary 4 at L1 covers a, a…', full, message: 'm' };
+  const r = perCheckReport({ configuration, candidate: { flags: [cut, flag(1, 'the run', 'short')], missing: [] } });
+  const [c, plain] = comparableFlags(r);
+  assert.equal(c.whole, createHash('sha256').update(full).digest('hex').slice(0, 12));
+  assert.equal(c.detail, 'summary 4 at L1 covers a, a…', 'the shown text stays the detail');
+  assert.ok(!('whole' in plain), 'a flag shown whole carries no hash');
+});
+
+test('a run that failed, had its folds clamped, or had a check judge nothing where it applies didn\'t measure, and says how', () => {
+  const judgedNone = { check: 4, step: 'the run', what: 'judged-none:coverage', message: 'couldn\'t judge: check 4 (coverage) judged nothing, though it applies (x)' };
+  const clamp = { ...flag(10, 'c.cm.cp', 'calibration at the clamp edge (1.8)'), what: 'clamp-edge' };
+  const r = perCheckReport({ configuration, candidate: { flags: [clamp, judgedNone, flag(11, 'p.1')], missing: [] } });
+  assert.deepEqual(unmeasuredOf(r, { completed: false }), ['the run failed', 'its folds were clamped (check 10)', 'check 4 (coverage) judged nothing']);
+  assert.deepEqual(unmeasuredOf(perCheckReport({ configuration, candidate: { flags: [flag(11, 'p.1')], missing: [] } }), { completed: true }), [], 'an ordinary flag is a measurement');
 });
 
 test('no file of known findings covers a flag: every flag the checks raise is the report\'s', () => {

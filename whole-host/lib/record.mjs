@@ -454,7 +454,7 @@ export function refuseUnrecordable(r) {
 }
 
 export function exitCode(results) {
-  if (results.some((r) => r.outcome === 'couldnt-run' || r.selfCheck?.outcome === 'couldnt-run')) return 2;
+  if (results.some((r) => r.outcome === 'couldnt-run' || r.selfCheck?.outcome === 'couldnt-run' || r.unmeasured?.length || r.baseUnmeasured?.length)) return 2;
   const moved = (flags) => Boolean(flags && (flags.new.length || flags.gone.length));
   return results.every((r) => (r.record === 'same' || r.record === 'written') && !moved(r.flags) && (!r.selfCheck || r.selfCheck.outcome === 'same')) ? 0 : 1;
 }

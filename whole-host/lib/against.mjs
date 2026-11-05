@@ -31,7 +31,7 @@ export function releaseDiffers(against, release) {
   return `--against ${against.dir} made its checkpoints with ${against.release?.tag ?? 'no release'} (${named(against.release?.versions)}), and this invocation with ${release.tag} (${named(release.versions)}), so the two arms' runs wouldn't start from the same stores`;
 }
 
-const flagKey = (f) => JSON.stringify([f.check, f.step, f.what ?? null, f.detail]);
+const flagKey = (f) => JSON.stringify([f.check, f.step, f.what ?? null, f.detail, f.whole ?? null]);
 
 export function flagsAgainst(against, id, own) {
   if (!against) return { new: own, gone: [], kept: [] };

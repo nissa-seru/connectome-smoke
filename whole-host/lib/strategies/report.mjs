@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { bindingControl, budgets, compileInvariants, compilingAgents, ofSide, pairing, withJudged, reloads, declaredProducts, everyTurnAnswers, wellFormed, windowsRaw, coverage, bookkeeping, calibrationEdge, FIXTURE_AGENT, STREAM_BOUND } from './checks.mjs';
 import { messageNames, spanName } from './names.mjs';
 import { cutText } from './cut.mjs';
@@ -68,7 +69,13 @@ export const comparableFlags = (report) => [
   ...report.invalid,
   ...report.flags,
   ...report.missing.map((m) => ({ check: 2, step: m.segment, message: `missing ${m.name}` })),
-].map((f) => ({ check: f.check, step: f.step, ...(f.what ? { what: f.what } : {}), detail: f.detail ?? f.message }));
+].map((f) => ({ check: f.check, step: f.step, ...(f.what ? { what: f.what } : {}), detail: f.detail ?? f.message, ...(f.full ? { whole: createHash('sha256').update(f.full).digest('hex').slice(0, 12) } : {}) }));
+
+export const unmeasuredOf = (report, { completed }) => [
+  ...(completed ? [] : ['the run failed']),
+  ...(report.invalid.length ? ['its folds were clamped (check 10)'] : []),
+  ...report.flags.filter((f) => f.what?.startsWith('judged-none:')).map((f) => `check ${f.check} (${f.what.slice('judged-none:'.length)}) judged nothing`),
+];
 
 export function workloadReport({ id, workload, owns = [], judged, breaches, completed }) {
   const isOwned = (f) => owns.some((o) => o.check === f.check && (o.what === undefined || o.what === f.what));

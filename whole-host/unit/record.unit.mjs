@@ -434,6 +434,13 @@ test('an invocation exits 0 when every run\'s record and flags are the base arm\
   assert.equal(exitCode([{ outcome: 'flags', record: 'same', flags: { ...none, new: [f], kept: [f] } }]), 1);
 });
 
+test('a run that didn\'t measure, on either arm, makes the invocation exit 2, whatever its record and flags', () => {
+  const none = { new: [], gone: [], kept: [] };
+  assert.equal(exitCode([{ outcome: 'flags', record: 'same', flags: none, unmeasured: ['the run failed'] }]), 2);
+  assert.equal(exitCode([{ outcome: 'pass', record: 'same', flags: none, unmeasured: [], baseUnmeasured: ['check 4 (coverage) judged nothing'] }]), 2);
+  assert.equal(exitCode([{ outcome: 'pass', record: 'same', flags: none, unmeasured: [], baseUnmeasured: [] }]), 0);
+});
+
 test('a request the stand-in couldn\'t classify gets a line of its own with its body, so a changed one is named and its view can show it', () => {
   const head = { model: 'm', maxTokens: 100, toolChoice: null, thinking: null, system: [], tools: [], rest: null };
   const odd = (digest) => ({ id: 'r1', seq: 1, kind: 'unclassified', reason: 'its compression instruction states no target length', step: 'q.1', stream: true, head, messages: [{ role: 'user', digest, blocks: [{ type: 'text', canaries: ['[[c:q.1.in]]'] }] }], answer: { shape: 'refused' } });

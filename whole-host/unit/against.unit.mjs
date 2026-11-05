@@ -72,6 +72,7 @@ test('a head run\'s flags are each new, gone or kept against the base arm\'s, co
     assert.deepEqual(flagsAgainst(against, 'H1/W1', [b, a, a, a]), { new: [a], gone: [], kept: [b, a, a] });
     assert.deepEqual(flagsAgainst(against, 'H1/W1', [{ ...a, detail: 'summary 5 at L1 covers 1' }]).gone, [a, a, b], 'a flag whose detail moved is gone, and the moved one new');
     assert.equal(flagsAgainst(against, 'H1/W2', [a]), null, 'a run the base arm couldn\'t run has no flags to compare with');
+    assert.deepEqual(flagsAgainst(against, 'H1/W1', [{ ...a, whole: '0123456789ab' }, a, b]), { new: [{ ...a, whole: '0123456789ab' }], gone: [a], kept: [a, b] }, 'a flag whose whole text differs past the cut is another flag, so the base\'s second one is gone');
     assert.deepEqual(flagsAgainst(null, 'H1/W1', [a, c]), { new: [a, c], gone: [], kept: [] }, 'with no base arm every flag is new');
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
