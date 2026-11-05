@@ -1019,6 +1019,21 @@ test('W7 merges-refused: each refused merge raises one off-path alert at its ste
   assert.deepEqual([none.judged, none.map((f) => f.message)], [0, ['couldn\'t judge: the stand-in refused no merge']]);
 });
 
+test('W7 chunk-refused: every summariser request that carried the refused content is judged, a step whose L1 requests carried it ahead of their slice or whose merges carried it is flagged, and a run where none carried it in its slice can\'t be judged', () => {
+  const call = (step, carried) => ({ kind: 'summariser', step, ...(carried ? { carried } : {}), answer: { shape: carried ? 'refusal' : 'summary' } });
+  const check = (records) => WORKLOADS.W7.check({ records, log: [] }, { variant: 'chunk-refused' });
+  const held = check([call('7.13', 'slice'), call('7.13', 'slice'), call('7.14'), call('7.16')]);
+  assert.deepEqual([held.length, held.judged], [0, 2]);
+  const cascade = check([call('7.13', 'slice'), call('7.14', 'ahead'), call('7.14', 'ahead'), call('7.17', 'merge'), call('7.17', 'ahead'), call('7.18')]);
+  assert.equal(cascade.judged, 5);
+  assert.deepEqual(cascade.map((f) => [f.step, f.message]), [
+    ['7.14', '2 L1 request(s) carried the content the summariser refuses ahead of the slice they asked it to remember'],
+    ['7.17', '1 L1 request(s) carried the content the summariser refuses ahead of the slice they asked it to remember, and 1 merge request(s) carried it'],
+  ]);
+  const never = check([call('7.14', 'ahead'), call('7.15')]);
+  assert.deepEqual([never.judged, never.map((f) => f.message)], [0, ['couldn\'t judge: no summariser request carried the refused content in the slice it was asked to remember']]);
+});
+
 test('check 1 flags a step that leaves a scripted reply unused, its own or its subagent\'s, unless it may fail and failed', () => {
   const agent = (id, step, sub = false) => ({ id, kind: 'agent', step, ...(sub ? { agent: 'sub' } : { agent: 'primary' }) });
   const turn = { id: 's.2', replies: [{ text: 'a' }, { text: 'b' }], sub: { replies: [{ text: 'f' }] } };
