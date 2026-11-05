@@ -388,12 +388,14 @@ export const WORKLOADS = {
       const calls = run.records.filter((r) => r.kind === 'summariser');
       if (ctx.variant === 'merges-refused') {
         const refused = calls.filter((r) => r.answer?.shape === 'refusal');
-        if (!refused.length) return withJudged([{ step: null, message: 'couldn\'t judge: the stand-in refused no merge' }], 0);
-        return withJudged(refusalAlerts(run, refused, 'merge(s)'), refused.length);
+        const alerts = refusalAlerts(run, refused, 'merge(s)');
+        if (!refused.length) return withJudged([{ step: null, message: 'couldn\'t judge: the stand-in refused no merge' }, ...alerts], 0);
+        return withJudged(alerts, refused.length);
       }
       if (ctx.variant === 'chunk-refused') {
         const carrying = calls.filter((r) => r.carried);
-        if (!carrying.some((r) => r.carried === 'slice')) return withJudged([{ step: null, message: 'couldn\'t judge: no summariser request carried the refused content in the slice it was asked to remember' }], 0);
+        const alerts = refusalAlerts(run, calls.filter((r) => r.answer?.shape === 'refusal'), 'summariser request(s)');
+        if (!carrying.length) return withJudged([{ step: null, message: 'couldn\'t judge: no summariser request carried the refused content' }, ...alerts], 0);
         const byStep = new Map();
         for (const r of carrying.filter((x) => x.carried !== 'slice')) {
           const at = byStep.get(r.step) ?? { ahead: 0, merge: 0 };
@@ -406,7 +408,7 @@ export const WORKLOADS = {
             merge ? `${merge} merge request(s) carried it` : null,
           ].filter(Boolean).join(', and ') });
         }
-        out.push(...refusalAlerts(run, calls.filter((r) => r.answer?.shape === 'refusal'), 'summariser request(s)'));
+        out.push(...alerts);
         return withJudged(out, carrying.length);
       }
       return judgedBy(out, 1);
