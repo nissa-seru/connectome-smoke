@@ -123,8 +123,9 @@ the lines of requests are in the order the stand-in received them:
   the forms the stand-in reads, as a merge reworded to open as an L1
   instruction would (an L1 instruction that quotes a level from the
   conversation, as the host's frontdesk transition quotes the user's open
-  questions verbatim, is refused the same way, so its run doesn't measure;
-  no workload's text names one); or one to any route but a
+  questions verbatim, is refused the same way, so its run doesn't measure,
+  or counted under the quoted level where the quote takes one of the
+  stand-in's forms; no workload's text names one); or one to any route but a
   POST to a path ending in `/v1/messages`, `count_tokens` included, which no
   run sends. So is a summariser retry whose hint doesn't fit what it
   re-sends. A request re-sends one the stand-in answered badly when it has
@@ -404,8 +405,8 @@ what holds.
   appends to whatever the step's summary file already holds, as a view's
   second arm does after its first in one step, so it takes only what the file
   leaves of that 1 MiB, and adds nothing where even its notes wouldn't fit.
-  A run that couldn't run shows no view there, even one written before it
-  failed.
+  A run that couldn't run shows no view there, and keeps none in `--out`,
+  even one written before it failed.
 
 ## The differences as data
 

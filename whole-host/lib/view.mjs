@@ -214,7 +214,7 @@ export function viewOf({ run, changed, lines, transcript, ledger }) {
   return `${out.join('\n')}\n`;
 }
 
-// GitHub holds one step's summary file to 1 MiB in all, and a view's two arms append to it in one Actions step.
+// GitHub holds one step's summary file to 1 MiB in all.
 export function stepSummaryAfter(there, { table, views }) {
   const budget = STEP_SUMMARY_BYTES - there;
   if (budget <= 0) return '';

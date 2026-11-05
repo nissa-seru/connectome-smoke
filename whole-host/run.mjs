@@ -295,6 +295,7 @@ for (const id of names) {
     flags = null;
     selfCheck = null;
     differences.delete(id);
+    rmSync(join(dir, 'view.md'), { force: true });
     reportCouldnt(dir, id, r);
     row = { run: id, outcome: r.outcome, reason: r.reason, record: 'couldn\'t run' };
     console.log(`${LABEL} ${id}: couldn't run: ${r.reason}`);
