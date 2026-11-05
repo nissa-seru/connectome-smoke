@@ -44,6 +44,9 @@ test('a template\'s text that changed is never paired across the arms: each side
   ], 'two texts of one role may be two different texts, so the grouping never says one became the other');
   const short = differencesOf('H1/W1', base.replace('(2026,1,6,9,0)', '(2026,1)'), head).find((d) => d.place.step === 'templates');
   assert.equal(short.before, 'T:user-clock-tuesday-#-#-#-aaaaaaaaaaaa = Clock: Tuesday #-#-#, #:# UTC', 'two numbers for five #s fill nothing');
+  // A bare first use names no numbers, so a later use's can't fill it (review:review-349 #13).
+  const bare = differencesOf('H1/W1', base.replace('compile [T:user-clock-tuesday-#-#-#-aaaaaaaaaaaa](2026,1,6,9,0) p.1.in', 'compile [T:user-clock-tuesday-#-#-#-aaaaaaaaaaaa] p.1.in [T:user-clock-tuesday-#-#-#-aaaaaaaaaaaa](2026,1,6,9,0)'), head).find((d) => d.place.step === 'templates');
+  assert.equal(bare.before, 'T:user-clock-tuesday-#-#-#-aaaaaaaaaaaa = Clock: Tuesday #-#-#, #:# UTC', 'the first use is the bare one, which names no number');
 });
 
 test('a role that names a memory by its id is one kind whatever the id, and an entry names its role masked', () => {

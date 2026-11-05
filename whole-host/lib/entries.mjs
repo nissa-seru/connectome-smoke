@@ -54,9 +54,10 @@ function filled(side, text) {
   if (!side.startsWith('T:') || at < 0) return side;
   const key = side.slice(0, at);
   const template = side.slice(at + 3);
-  const use = new RegExp(`\\[${key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\]\\(([^)]*)\\)`).exec(text);
+  // The first use, bare or with its numbers: a bare one names none (review:review-349 #13).
+  const use = new RegExp(`\\[${key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\](?:\\(([^)]*)\\))?`).exec(text);
   const parts = template.split('#');
-  const numbers = use ? use[1].split(',') : null;
+  const numbers = use ? (use[1] === undefined ? [] : use[1].split(',')) : null;
   if (!numbers || numbers.length !== parts.length - 1) return side;
   return `${key} = ${parts.map((p, i) => `${p}${numbers[i] ?? ''}`).join('')}`;
 }
