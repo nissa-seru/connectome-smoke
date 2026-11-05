@@ -239,6 +239,20 @@ test('T36: a merge instruction that names no level it asks for is refused as unc
   const records = await s.close();
   assert.deepEqual(records.map((r) => r.level ?? null), [null, null, 2], 'no level is recorded for a request it couldn\'t classify');
 }));
+test('T40: an instruction that names a level in none of the forms the stand-in reads is refused as unclassified, not counted as a compression', () => withStandin({}, async (s) => {
+  // review:review-349 #20: a merge reworded to open as an L1 instruction does was read as level 1.
+  const { seen } = arrivals(s);
+  s.setStep(step('lv', []));
+  const reworded = 'Write the memory of this slice of the log. Consolidate the preceding summaries into one L2 memory. Target ~200 tokens.';
+  const r = await post(s.url, summariserBody({ instruction: reworded }));
+  assert.equal(r.status, 400);
+  assert.match(r.json.error.message, /its instruction names a level \(L2\) in none of the forms the stand-in reads/);
+  assert.equal(seen.at(-1).kind, 'unclassified');
+  await post(s.url, summariserBody({ instruction: CHAT }));
+  assert.equal(seen.at(-1).kind, 'summariser', 'an L1 instruction that names no level is still level 1');
+  const records = await s.close();
+  assert.deepEqual(records.map((x) => x.level ?? null), [null, 1]);
+}));
 test('T4: an answer never runs past what max_tokens allows: one that would is cut there, with a max_tokens stop, as a provider cuts it', () => withStandin({}, async (s) => {
   const scripted = `[[c:m.r1]] ${prose(4_000)}`;
   s.setStep(step('m', [{ text: scripted }, { text: scripted }]));

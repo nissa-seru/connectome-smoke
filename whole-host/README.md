@@ -117,9 +117,11 @@ the lines of requests are in the order the stand-in received them:
   instruction. SHAPE is the stand-in's answer.
 - **`unclassified CARRIED, head H:KEY, body HASH`**: a request the stand-in
   could tell neither as an agent's nor as the summariser's, such as one whose
-  compression instruction it doesn't recognise, states no target length, or
-  opens as a merge instruction does but names no level it asks for, so it
-  can't be counted under its level, or one to any route but a
+  compression instruction it doesn't recognise or states no target length;
+  one it can't count under a level, since its instruction opens as a merge
+  instruction does but names no level, or names a level (`Ln`) in none of
+  the forms the stand-in reads, as a merge reworded to open as an L1
+  instruction would; or one to any route but a
   POST to a path ending in `/v1/messages`, `count_tokens` included, which no
   run sends. So is a summariser retry whose hint doesn't fit what it
   re-sends. A request re-sends one the stand-in answered badly when it has
