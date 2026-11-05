@@ -27,8 +27,10 @@ import { cutError } from './lib/strategies/cut.mjs';
 const HERE = dirname(fileURLToPath(import.meta.url));
 const LABEL = '[whole-host]';
 
-const { opt, flag } = parseArgs(process.argv.slice(2));
+const { opt, flag, missing } = parseArgs(process.argv.slice(2));
 const fail = (message) => { console.error(`${LABEL} ${message}`); process.exit(2); };
+// An option given with no value would read as not given: a bare --against as a base arm (review:review-349 #11).
+for (const name of missing(['against', 'checkpoints', 'host', 'out', 'overlay', 'runs', 'shard', 'workdir'])) fail(`--${name} needs a value`);
 const stack = JSON.parse(readFileSync(join(HERE, 'stack.json'), 'utf-8'));
 const all = configurations();
 const everyRun = RUNS;

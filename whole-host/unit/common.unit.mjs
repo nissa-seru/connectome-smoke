@@ -4,7 +4,7 @@ import { once } from 'node:events';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { spawnHost } from '../lib/common.mjs';
+import { spawnHost, parseArgs } from '../lib/common.mjs';
 import * as commonLib from '../lib/common.mjs';
 
 test('a host that can\'t be started exits, with why in its output, rather than throwing an error no one listens for', async () => {
@@ -25,4 +25,11 @@ test('a command that fails shows the last 3,000 characters of its output, and ke
   const shown = error.message.split('exited 3\n')[1];
   assert.equal(shown, `${'x'.repeat(2997)}END`, 'the shown output is its last 3,000 characters');
   assert.equal(error.full?.split('exited 3\n')[1], `START${'x'.repeat(5000)}END`, 'the whole output is kept beside it');
+});
+
+test('an option that takes a value and is given none is named, so the invocation can refuse it rather than run without it', () => {
+  // review:review-349 #11: a bare --against read as no --against, and the head ran as a base arm.
+  const { missing } = parseArgs(['--host', 'h', '--against', '--self-check', '--out', '', '--runs']);
+  assert.deepEqual(missing(['host', 'against', 'out', 'runs', 'workdir']), ['against', 'out', 'runs']);
+  assert.deepEqual(parseArgs(['--against', 'base', '--out', 'o']).missing(['against', 'out']), []);
 });

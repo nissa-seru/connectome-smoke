@@ -77,5 +77,10 @@ export function spawnHost({ hostDir, recipePath, dataDir, cwd, sockPath, env = {
 export function parseArgs(argv) {
   const opt = (name, def) => { const i = argv.indexOf(`--${name}`); return i >= 0 ? argv[i + 1] : def; };
   const flag = (name) => argv.includes(`--${name}`);
-  return { opt, flag };
+  // The options among these that are given with no value: last, empty, or followed by another option.
+  const missing = (names) => names.filter((name) => {
+    const i = argv.indexOf(`--${name}`);
+    return i >= 0 && (argv[i + 1] === undefined || argv[i + 1] === '' || argv[i + 1].startsWith('--'));
+  });
+  return { opt, flag, missing };
 }
