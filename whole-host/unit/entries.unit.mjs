@@ -48,11 +48,12 @@ test('a template\'s text that changed is never paired across the arms: each side
 test('a role that names a memory by its id is one kind whatever the id, and an entry names its role masked', () => {
   const fork = (id) => record({ templates: [`T:fork-#-d#-#-s-m${id}-memory-${id}-${'a'.repeat(12)} = Fork`] });
   const none = record({});
-  const ds = [...differencesOf('H1/W1', fork('#add#'), none), ...differencesOf('H1/W2', fork('f#d#e'), none), ...differencesOf('H1/W5', fork('b#'), none)];
+  // '#' alone is a memory id of digits only, such as M12345678's (review:review-349 #3).
+  const ds = [...differencesOf('H1/W1', fork('#add#'), none), ...differencesOf('H1/W2', fork('f#d#e'), none), ...differencesOf('H1/W5', fork('b#'), none), ...differencesOf('H1/W6', fork('#'), none)];
   const entries = entriesOf(ds);
   assert.equal(entries.length, 1);
   assert.equal(entries[0].describe, 'templates T:fork-#-H-#-s-mH-memory-H: text only in base');
-  assert.equal(entries[0].count, 3);
+  assert.equal(entries[0].count, 4);
   const levels = entriesOf(['1', '2'].map((l) => differencesOf('H1/W1', record({ templates: [`T:summary-l${l}-${'b'.repeat(12)} = s`] }), none)).flat());
   assert.deepEqual(levels.map((e) => [e.describe, e.count]), [['templates T:summary-l#: text only in base', 2]], 'an entry grouping two levels names neither as if it were both');
 });

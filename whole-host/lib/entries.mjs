@@ -17,7 +17,9 @@ function shape(s) {
 
 const tokens = (s) => [...new Set(shape(s).split(' ').filter(Boolean).map((t) => t.replace(/…+$/, '')))].sort().join(' ');
 const HEX_SLUG = /[a-f#]*(?:[a-f]#|#[a-f])[a-f#]*/g;
-const role = (key) => mask(key.replace(/-[0-9a-f]{12}$/, '')).replace(HEX_SLUG, 'H');
+// A memory id of digits alone, such as M12345678's, slugs to a lone `#` after `m` or `memory-` (review:review-349 #3).
+const DIGIT_MEMORY = /(^|-)(m|memory-)#(?=-|$)/g;
+const role = (key) => mask(key.replace(/-[0-9a-f]{12}$/, '')).replace(HEX_SLUG, 'H').replace(DIGIT_MEMORY, '$1$2H');
 const kindOf = (line) => line.split(' ', 1)[0];
 
 function parse(text) {
