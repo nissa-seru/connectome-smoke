@@ -575,15 +575,19 @@ shows the host's last lines names that file.
   - **`pins`:** a summary sent over pinned messages is at a level the pin
     allows.
   - **Couldn't-judge flags,** which say what wasn't judged rather than that
-    context-manager broke something, each counted beside check 11's judged
-    compiles in the report:
+    context-manager broke something:
     - **`unplaced`:** what store order couldn't place: a raw copy that holds
       none of its shards' text, where the body goes out in several messages or
       its one copy doesn't carry every shard; a copy of a body no
       slot read holds; or a summary none of whose messages a slot read holds.
-      The order is judged without it.
-    - **`unreadable`:** a read an invariant needs failed, or a compile whose
-      strategy gives render stats gave none, so that invariant wasn't judged.
+      The order is judged without it, and the report counts what it couldn't
+      place beside check 11's judged compiles.
+    - **`unreadable`:** a read an invariant needs failed, so that invariant
+      wasn't judged, and the report counts it beside check 11's judged
+      compiles as a read that failed. Two are judgements of what was read
+      rather than failed reads, and aren't counted so: a compile whose
+      strategy gives render stats gave none, and a pin names a message the
+      compile's view doesn't hold.
   - **`unrecordable`:** the module couldn't record the compile at all.
 - **Check 12: reloads.** At a restart with a reload check, the dry compile
   after the boot matches the one before the shutdown: the same outcome, the
