@@ -29,7 +29,7 @@ export function compileInvariants(log = []) {
       if (line.outcome === 'compiled') judged++;
       for (const v of line.violations ?? []) {
         if (v.invariant === 'unplaced') unplaced += v.count ?? 0;
-        if (v.invariant === 'unreadable') unread++;
+        if (v.invariant === 'unreadable' && v.read !== false) unread++; // read: false judged what it read (review:review-349 #24)
       }
       for (const u of line.unjudged ?? []) unjudged.set(u, (unjudged.get(u) ?? 0) + 1);
       if (line.outcome === 'unrecordable') flags.push({ check: 11, step: e.step, what: `${line.agent}:${line.kind}:unrecordable`, message: `the harness module couldn't record ${line.agent}'s ${line.kind} compile ${line.seq}: ${line.reason}`, ...(line.full ? { full: `the harness module couldn't record ${line.agent}'s ${line.kind} compile ${line.seq}: ${line.full}` } : {}) });

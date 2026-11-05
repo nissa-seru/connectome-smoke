@@ -641,6 +641,12 @@ test('check 11: each breach a compile line carries is a flag, named by agent, ki
   ] }]);
   assert.deepEqual(besides.map((f) => [f.what, f.message]), [['fixture:request:unreadable', 'couldn\'t judge all of fixture\'s request compile 2: listPins: failed; pins weren\'t judged']], 'a budget its strategy gives no stats for is counted, not flagged');
   assert.equal(besides.besides, 'budget couldn\'t be judged in 2, as PassthroughStrategy gives no render stats; 1 read an invariant needed failed');
+  // review:review-349 #24: a judgement that read everything it needed (read: false) isn't a failed read.
+  const judgedOnly = compileInvariants([{ kind: 'compiles', step: 'a', lines: [
+    { seq: 1, agent: 'fixture', kind: 'request', outcome: 'compiled', violations: [{ invariant: 'unreadable', read: false, detail: 'the compile gave no render stats, though its strategy S reports them; budget wasn\'t judged' }] },
+  ] }]);
+  assert.equal(judgedOnly.length, 1, 'it stays a flag');
+  assert.equal(judgedOnly.besides, undefined, 'and counts as no failed read');
 });
 
 const resetStore = {
