@@ -114,8 +114,10 @@ export function entriesOf(differences) {
   const byId = new Map();
   for (const d of differences) {
     const id = createHash('sha256').update(JSON.stringify(d.sig)).digest('hex').slice(0, 12);
-    if (!byId.has(id)) byId.set(id, { id, describe: d.describe, places: [], example: { place: d.place, before: d.before, after: d.after } });
-    byId.get(id).places.push({ ...d.place, digest: createHash('sha256').update(JSON.stringify([d.before, d.after])).digest('hex').slice(0, 12) });
+    if (!byId.has(id)) byId.set(id, { id, describe: d.describe, places: [], examples: [] });
+    const e = byId.get(id);
+    e.places.push({ ...d.place, digest: createHash('sha256').update(JSON.stringify([d.before, d.after])).digest('hex').slice(0, 12) });
+    if (!e.examples.some((x) => x.run === d.place.run)) e.examples.push({ ...d.place, before: d.before, after: d.after });
   }
-  return [...byId.values()].map(({ id, describe, places, example }) => ({ id, describe, count: places.length, runs: [...new Set(places.map((p) => p.run))], places, example }));
+  return [...byId.values()].map(({ id, describe, places, examples }) => ({ id, describe, count: places.length, runs: [...new Set(places.map((p) => p.run))], places, examples }));
 }
