@@ -71,11 +71,12 @@ export const comparableFlags = (report) => [
   ...report.missing.map((m) => ({ check: 2, step: m.segment, message: `missing ${m.name}` })),
 ].map((f) => ({ check: f.check, step: f.step, ...(f.what ? { what: f.what } : {}), detail: f.detail ?? f.message, ...(f.full ? { whole: createHash('sha256').update(f.full).digest('hex').slice(0, 12) } : {}) }));
 
-export const unmeasuredOf = (report, { completed }) => [
+export const unmeasuredOf = (report, { completed }) => [...new Set([
   ...(completed ? [] : ['the run failed']),
   ...(report.invalid.length ? ['its folds were clamped (check 10)'] : []),
   ...report.flags.filter((f) => f.what?.startsWith('judged-none:')).map((f) => `check ${f.check} (${f.what.slice('judged-none:'.length)}) judged nothing`),
-];
+  ...(completed ? report.judged.filter((j) => j.check === 14 && j.judged === 0).map(() => 'check 14 (property) judged nothing') : []),
+])];
 
 export function workloadReport({ id, workload, owns = [], judged, breaches, completed }) {
   const isOwned = (f) => owns.some((o) => o.check === f.check && (o.what === undefined || o.what === f.what));

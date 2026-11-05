@@ -216,6 +216,14 @@ test('a row against a base arm counts its flags new and gone there, and says not
   assert.equal(table[4].split(' | ')[1], '2 flag(s)');
 });
 
+test('a row says when its run can\'t be compared because a run didn\'t measure or a read failed, naming the arm', () => {
+  const cell = (r) => summaryTable([{ run: 'H1/W1', outcome: 'pass', record: 'same', counts: {}, ...r }]).split('\n')[2].split(' | ')[1];
+  assert.equal(cell({ unmeasured: ['the run failed'], baseUnmeasured: [] }), 'pass; didn\'t measure: the run failed');
+  assert.equal(cell({ unmeasured: [], baseUnmeasured: ['check 4 (coverage) judged nothing'] }), 'pass; didn\'t measure: check 4 (coverage) judged nothing (base arm)');
+  assert.equal(cell({ readsFailed: ['receipt'], baseReadsFailed: ['merge quarantines'] }), 'pass; a read failed: receipt, merge quarantines (base arm)');
+  assert.ok(/evidence/.test(viewLib.summaryOf({ rows: [{ run: 'H1/W1', outcome: 'pass', record: 'same', counts: {}, baseUnmeasured: ['the run failed'] }] })), 'such a run isn\'t clean');
+});
+
 test('a record written with no base arm is clean, and one whose base arm couldn\'t run it says so in its row', () => {
   assert.ok(!/evidence/.test(viewLib.summaryOf({ rows: [{ run: 'H1/W1', outcome: 'pass', record: 'written', counts: {} }] })), 'a run with no base arm to compare with has nothing to act on');
   const table = summaryTable([{ run: 'H1/W2', outcome: 'pass', record: 'missing', counts: {} }]).split('\n');

@@ -123,6 +123,10 @@ const COLUMNS = [
   ['invariant lines', (c) => c.counts?.invariantLines],
 ];
 
+const byArm = (head, base) => [...(head ?? []), ...(base ?? []).map((x) => `${x} (base arm)`)].join(', ');
+export const unmeasured = (r) => byArm(r.unmeasured, r.baseUnmeasured);
+export const readsFailedOf = (r) => byArm(r.readsFailed, r.baseReadsFailed);
+
 export function summaryTable(rows) {
   const cell = (v) => (v === undefined || v === null ? '?' : String(v));
   const record = (r) => (r.record === 'differs' ? `differs: ${r.changed.requests.length} request(s)${r.changed.stopped?.length ? `, ${r.changed.stopped.length} no longer sent` : ''}, +${r.changed.added} -${r.changed.removed} line(s)` : r.record === 'missing' ? 'the base arm has none' : r.record ?? 'none');
@@ -131,8 +135,9 @@ export function summaryTable(rows) {
   const outcome = (r) => {
     const main = r.outcome === undefined ? '?' : r.outcome === 'couldnt-run' ? `couldn't run: ${r.reason ?? 'no reason given'}` : r.outcome === 'flags' ? counted(r) : r.outcome === 'invalid' ? `invalid: ${counted(r)}` : r.outcome;
     const moved = r.compared && (r.compared.new || r.compared.gone) ? `, ${r.compared.new} new and ${r.compared.gone} gone against the base arm` : '';
+    const why = [[unmeasured(r), 'didn\'t measure'], [readsFailedOf(r), 'a read failed']].filter(([said]) => said).map(([said, what]) => `; ${what}: ${said}`).join('');
     const self = !r.selfCheck ? '' : `; self-check ${r.selfCheck.outcome === 'couldnt-run' ? `couldn't run: ${r.selfCheck.reason ?? 'no reason given'}` : r.selfCheck.outcome}`;
-    return escaped(`${main}${moved}${self}`);
+    return escaped(`${main}${moved}${self}${why}`);
   };
   return [
     `| run | outcome | record | ${COLUMNS.map(([name]) => name).join(' | ')} |`,
@@ -142,7 +147,7 @@ export function summaryTable(rows) {
 }
 
 export function summaryOf({ rows, flagged = [] }) {
-  const clean = rows.every((r) => r.outcome === 'pass' && ['same', 'written'].includes(r.record) && (!r.selfCheck || r.selfCheck.outcome === 'same'));
+  const clean = rows.every((r) => r.outcome === 'pass' && ['same', 'written'].includes(r.record) && (!r.selfCheck || r.selfCheck.outcome === 'same') && !unmeasured(r) && !readsFailedOf(r));
   const parts = [summaryTable(rows)];
   if (!clean) {
     parts.push("Each run's `report.txt`, record and view are under its directory in this job's evidence, its name with `/` written as `_`.");

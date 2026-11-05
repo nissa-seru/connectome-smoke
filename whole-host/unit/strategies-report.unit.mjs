@@ -43,6 +43,15 @@ test('a run that failed, had its folds clamped, or had a check judge nothing whe
   assert.deepEqual(unmeasuredOf(perCheckReport({ configuration, candidate: { flags: [flag(11, 'p.1')], missing: [] } }), { completed: true }), [], 'an ordinary flag is a measurement');
 });
 
+test('a workload property that judged nothing on a completed run didn\'t measure, whether or not it said why in a breach of its own', () => {
+  const judged = { flags: [], missing: [], notes: [], judged: [] };
+  const said = workloadReport({ id: 'H1/W7/merges-refused', workload: 'W7', judged, breaches: withJudged([{ message: 'couldn\'t judge: the stand-in refused no merge' }], 0), completed: true });
+  assert.deepEqual(unmeasuredOf(said, { completed: true }), ['check 14 (property) judged nothing'], 'its couldn\'t-judge is a breach with no kind, read by its count');
+  const silent = workloadReport({ id: 'H1/W1', workload: 'W1', judged, breaches: withJudged([], 0), completed: true });
+  assert.deepEqual(unmeasuredOf(silent, { completed: true }), ['check 14 (property) judged nothing'], 'and named once where its judged-none flag says it too');
+  assert.deepEqual(unmeasuredOf(workloadReport({ id: 'H1/W1', workload: 'W1', judged, breaches: withJudged([], 3), completed: true }), { completed: true }), []);
+});
+
 test('no file of known findings covers a flag: every flag the checks raise is the report\'s', () => {
   const r = perCheckReport({ configuration, candidate: { flags: [flag(11, 'p.42'), flag(11, 'p.45')], missing: [] } });
   assert.equal(r.verdict, 'flags');

@@ -17,7 +17,7 @@ import { configurations } from './lib/strategies/script.mjs';
 import { exitCode, refuseUnrecordable, renderRecordLines } from './lib/record.mjs';
 import { flagsAgainst, readAgainst, recordAgainst, releaseDiffers, slug } from './lib/against.mjs';
 import { differencesOf, entriesOf } from './lib/entries.mjs';
-import { changedRequests, stepSummary, summaryOf, viewOf } from './lib/view.mjs';
+import { changedRequests, readsFailedOf, stepSummary, summaryOf, unmeasured, viewOf } from './lib/view.mjs';
 import { generatedTexts, transcriptOf } from './lib/strategies/transcript.mjs';
 import { ledgerOf, moduleCounts, readsFailed } from './lib/strategies/ledger.mjs';
 import { shares } from './lib/shares.mjs';
@@ -298,14 +298,17 @@ for (const id of names) {
     row = { run: id, outcome: r.outcome, reason: r.reason, record: 'couldn\'t run' };
     console.log(`${LABEL} ${id}: couldn't run: ${r.reason}`);
   }
-  rows.push(row);
-  if (r.failures?.length) flaggedRuns.push({ run: id, flags: r.failures });
-  const counts = row.counts && { compiles: row.counts.compiles, compressions: row.counts.compressions, merges: row.counts.merges, quarantines: row.counts.quarantines };
   const base = against?.result(id);
   const measured = r.outcome === 'couldnt-run' ? {} : {
     unmeasured: r.unmeasured ?? [], ...(against ? { baseUnmeasured: base?.unmeasured ?? [] } : {}),
     readsFailed: readsFailed(r.log ?? []), ...(against ? { baseReadsFailed: base?.readsFailed ?? [] } : {}),
   };
+  Object.assign(row, measured);
+  const why = [[unmeasured(row), 'didn\'t measure'], [readsFailedOf(row), 'a read failed']].filter(([said]) => said).map(([said, what]) => `${what}: ${said}`);
+  if (why.length) console.log(`${LABEL} ${id}: can't be compared: ${why.join('; ')}`);
+  rows.push(row);
+  if (r.failures?.length) flaggedRuns.push({ run: id, flags: r.failures });
+  const counts = row.counts && { compiles: row.counts.compiles, compressions: row.counts.compressions, merges: row.counts.merges, quarantines: row.counts.quarantines };
   results.push({ run: id, outcome: r.outcome, reason: r.reason, record, ...(flags ? { flags } : {}), ...measured, ...(counts ? { counts } : {}), ...(selfCheck ? { selfCheck } : {}) });
 }
 if (against) writeFileSync(join(out, 'entries.json'), JSON.stringify(entriesOf(runs.flatMap((id) => differences.get(id) ?? [])), null, 1));
