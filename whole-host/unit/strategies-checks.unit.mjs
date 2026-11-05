@@ -1031,7 +1031,7 @@ test('W11 flags a pin or mark lost as later ones are added, a first pin the pane
 });
 
 
-test('a property another check judges names it: the continuation check 2, W7 without refused merges check 1, and W9 check 12', () => {
+test('a property another check judges names it: the continuation check 2, W7\'s variants but merges-refused and chunk-refused check 1, and W9 check 12', () => {
   assert.equal(WORKLOADS.continuation.check().judgedBy, 2);
   for (const variant of ['merges-rejected', 'fable-no-tools', 'no-tools']) {
     const flags = WORKLOADS.W7.check({ log: [], records: [] }, { variant });
@@ -1061,7 +1061,7 @@ test('W7 merges-refused: each refused merge raises one off-path alert at its ste
   ]]);
 });
 
-test('W7 chunk-refused: every summariser request that carried the refused content is judged, a step whose L1 requests carried it ahead of their slice or whose merges carried it is flagged, as is a step whose refused requests and off-path refusal alerts differ in number, and a run where none carried it, or where an L1 request carried it with no single notice opening a slice, can\'t be judged, though an off-path refusal alert there still flags', () => {
+test('W7 chunk-refused: every summariser request that carried the refused content is judged, a step whose L1 requests carried it ahead of their slice or whose merges carried it is flagged, as is a step whose refused requests and off-path refusal alerts differ in number, and a run where none carried it, or where an L1 request carried it in its messages with no single notice opening a slice, can\'t be judged, though an off-path refusal alert there still flags', () => {
   const call = (step, carried) => ({ kind: 'summariser', step, ...(carried ? { carried } : {}), answer: { shape: carried ? 'refusal' : 'summary' } });
   const alert = (step, kind = 'refusal-offpath') => ({ kind: 'ipc', step, event: { type: 'ops:alert', kind } });
   const alertsFor = (records) => records.filter((r) => r.answer.shape === 'refusal').map((r) => alert(r.step));
@@ -1083,6 +1083,10 @@ test('W7 chunk-refused: every summariser request that carried the refused conten
     [null, 'couldn\'t judge: no summariser request carried the refused content'],
     ['7.15', '0 refused summariser request(s) at this step raised 1 off-path refusal alert(s), where each raises one and nothing else does'],
   ]]);
+  const refusedFirst = check([call('7.13', 'slice'), { kind: 'summariser', step: '7.14', carried: 'ahead', refused: 'max_tokens', answer: { shape: 'refused' } }]);
+  assert.deepEqual([refusedFirst.judged, refusedFirst.map((f) => [f.step, f.message])], [2, [['7.14', '1 L1 request(s) carried the content the summariser refuses ahead of the slice they asked it to remember']]], 'a carrier refused for something else is judged, and raises no refusal alert');
+  const unplacedStray = check([call('7.14', 'unplaced')], [alert('7.14'), alert('7.15')]);
+  assert.deepEqual([unplacedStray.judged, unplacedStray.map((f) => f.step)], [0, ['7.14', '7.15']], 'an unplaced run still holds each step to its alerts');
   const unplaced = check([call('7.13', 'slice'), call('7.14', 'unplaced'), call('7.14', 'unplaced')]);
   assert.deepEqual([unplaced.judged, unplaced.map((f) => [f.step, f.message])], [0, [['7.14', 'couldn\'t judge: 2 L1 request(s) carried the refused content with no single notice opening the slice they asked the summariser to remember, so where it sat can\'t be read']]]);
   const slice = [call('7.13', 'slice'), call('7.13', 'slice')];

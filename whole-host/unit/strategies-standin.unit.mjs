@@ -288,7 +288,7 @@ test('T6: a step\'s bad answers go one each, in order, to the next first attempt
   assert.equal(got[3].stop_reason, 'max_tokens');
   assert.match(textOf(got[4]), /^\[\[s:M[0-9a-f]{8}\]\] /);
 }));
-test('T37: a retry is a request that re-sends one that took a bad answer, its canaries and summaries alike, and carries a retry hint; one that re-sends it without a hint, or carries a hint with nothing to re-send, is unclassified and refused', () => withStandin({}, async (s) => {
+test('T37: a retry of an L1 request answered with only thinking re-sends it, its canaries and summaries alike, and carries a retry hint; one that re-sends it without a hint, or carries a hint with nothing to re-send, is unclassified and refused', () => withStandin({}, async (s) => {
   const { seen } = arrivals(s);
   const PLAIN = '\n\nWrite the memory directly as plain prose — do not wrap it in <thinking> or any other tags; begin immediately with the memory text itself.';
   const NO_TOOLS = '\n\nWrite the memory as plain text directly in your response — do not call any tools for this.';
@@ -390,6 +390,8 @@ test('T34: with refuseContent a summariser request carrying the refused content 
   unnoticed.messages[0].content.splice(1, 1);
   const quoted = l1('', 'REFUSED-CONTENT');
   quoted.messages[0].content.splice(0, 0, { type: 'text', text: NOTICE });
+  const between = l1('REFUSED-CONTENT', '');
+  between.messages[0].content.splice(0, 0, { type: 'text', text: NOTICE });
   const inSystem = { ...l1('', ''), system: [{ type: 'text', text: 'REFUSED-CONTENT' }] };
   const inSystemUnnoticed = { ...l1('', ''), system: [{ type: 'text', text: 'REFUSED-CONTENT' }] };
   inSystemUnnoticed.messages = [{ ...inSystemUnnoticed.messages[0], content: inSystemUnnoticed.messages[0].content.filter((b) => b.text !== NOTICE) }];
@@ -404,6 +406,7 @@ test('T34: with refuseContent a summariser request carrying the refused content 
     ['merge', merge, 'refusal'],
     ['unplaced', unnoticed, 'refusal'],
     ['unplaced', quoted, 'refusal'],
+    ['unplaced', between, 'refusal'],
     ['ahead', inSystem, 'refusal'],
     ['ahead', inSystemUnnoticed, 'refusal'],
     ['ahead', inTools, 'refusal'],
@@ -416,7 +419,7 @@ test('T34: with refuseContent a summariser request carrying the refused content 
   for (const [, body, stop] of sent) assert.equal((await post(s.url, body)).json.stop_reason, stop);
   const records = (await s.close()).filter((r) => r.kind === 'summariser');
   assert.deepEqual(records.map((r) => r.carried), sent.map(([carried]) => carried));
-  assert.deepEqual(records.map((r) => r.answer.shape), ['refusal', 'refusal', 'refusal', 'refusal', 'refusal', 'refusal', 'refusal', 'refusal', 'refusal', 'refused', 'summary']);
+  assert.deepEqual(records.map((r) => r.answer.shape), ['refusal', 'refusal', 'refusal', 'refusal', 'refusal', 'refusal', 'refusal', 'refusal', 'refusal', 'refusal', 'refused', 'summary']);
   assert.equal(records.at(-2).refused, 'max_tokens');
   const plain = await startStandin({ configuration: { windowTokens: 50_000 } });
   plain.setStep(step('m', []));
