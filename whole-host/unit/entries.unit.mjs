@@ -141,6 +141,18 @@ test('two records that differ where no kind of difference is found throw, so a r
   assert.equal(differencesOf('H1/W1', base, base.replace('body 22222222', 'body 33333333')).length, 1);
 });
 
+test('a template of many lines, as the writer writes it, is one text: a changed line of it changes that template, and nothing reaches the tail', () => {
+  const header = { configuration: 'H1/W1', release: { tag: 'v0.0.1', versions: {} }, from: 'empty', candidate: { versions: {} } };
+  const blobs = (note) => ({ b1: { participant: 'user', content: [{ type: 'text', text: '[[c:p.1.in]] hello' }] }, n: { participant: 'user', content: [{ type: 'text', text: `Routing notes:\n- keep the thread\n- ${note}` }] } });
+  const written = (note) => renderRecord({ header, log: [{ kind: 'compiles', step: 'p.1', blobs: blobs(note), lines: [{ seq: 1, agent: 'fixture', kind: 'request', assembly: 1, outcome: 'compiled', stamp: '10', messages: [{ sources: ['r:1'], content: 'b1' }, { sources: ['r:2'], content: 'n' }] }] }], records: [], end: { ok: true } });
+  const base = written('answer in English');
+  assert.match(base, /^T:user-routing-notes-[0-9a-f]{12} = Routing notes:\n  - keep the thread\n  - answer in English$/m, 'the writer continues a template\'s later lines indented');
+  const ds = differencesOf('H1/W1', base, written('answer in French'));
+  assert.deepEqual(ds.map((d) => [d.place.step, d.sig[0]]), [['templates', 'templates'], ['templates', 'templates'], ['p.1', 'line']]);
+  assert.match(ds[0].before, /= Routing notes:\n {2}- keep the thread\n {2}- answer in English$/);
+  assert.match(ds[1].after, /= Routing notes:\n {2}- keep the thread\n {2}- answer in French$/);
+});
+
 test('a record the writer writes with no step, as for a run that failed before any, keeps its end, totals and judged lines in its tail', () => {
   const written = (ok) => renderRecord({ header: '# whole-host record H1/W1, from empty', log: [], records: [], end: { ok }, judged: [{ check: 14, name: 'property', judged: ok ? 1 : 0 }] });
   assert.doesNotMatch(written(true), /^step |^heads$/m, 'the writer writes no step and no heads here');
