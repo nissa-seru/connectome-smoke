@@ -124,3 +124,17 @@ test('records that are the same have no differences', () => {
   assert.deepEqual(differencesOf('H1/W1', r, r), []);
   assert.deepEqual(entriesOf([]), []);
 });
+
+test('two records that differ where no kind of difference is found throw, so a run is never said to differ with nothing to show', () => {
+  const base = record({ templates: ['T:a-111111111111 = A text', 'T:b-222222222222 = B text'], heads: ['H:11111111 = head one'], steps: { 'p.1': ['compile p.1.in, body 11111111'], 'p.2': ['compile p.2.in, body 22222222'] } });
+  const unplaced = {
+    'a trailing newline': base.slice(0, -1),
+    'step order': base.replace('step p.1\n  compile p.1.in, body 11111111\nstep p.2\n  compile p.2.in, body 22222222\n', 'step p.2\n  compile p.2.in, body 22222222\nstep p.1\n  compile p.1.in, body 11111111\n'),
+    'template order': base.replace('T:a-111111111111 = A text\nT:b-222222222222 = B text\n', 'T:b-222222222222 = B text\nT:a-111111111111 = A text\n'),
+    'a head whose key is the same and whose text isn\'t': base.replace('H:11111111 = head one', 'H:11111111 = head one, changed'),
+    'a step written twice': base.replace('step p.2\n  compile p.2.in, body 22222222\n', 'step p.2\n  compile p.2.in, body 99999999\nstep p.2\n  compile p.2.in, body 22222222\n'),
+  };
+  for (const [what, head] of Object.entries(unplaced)) assert.throws(() => differencesOf('H1/W1', base, head), /the records differ, but no difference between them was found/, what);
+  assert.deepEqual(differencesOf('H1/W1', base, base), [], 'the same record has no differences, and that\'s no error');
+  assert.equal(differencesOf('H1/W1', base, base.replace('body 22222222', 'body 33333333')).length, 1);
+});

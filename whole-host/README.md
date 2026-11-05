@@ -380,7 +380,7 @@ what holds.
 
 ## The differences as data
 
-With `--against`, `entries.json` at `--out`'s root groups every difference between the two arms' records into entries, one per kind of difference, for the context view's reader. It's `[]` when no record differs. Each entry is `{id, describe, count, runs, places, examples}`:
+With `--against`, `entries.json` at `--out`'s root groups every difference between the two arms' records into entries, one per kind of difference, for the context view's reader. It's `[]` when no record differs. A run whose record differs has at least one place: two records that differ where no kind of difference is found, such as only in their order or a trailing newline, fail the run as couldn't run, "its differences couldn't be grouped", so a run never reads as differing with nothing to show. Each entry is `{id, describe, count, runs, places, examples}`:
 
 - **`id`** is the first 12 hex of the sha256 of the entry's signature, so one kind of difference has the same id in every share's file.
 - **The signature** is the kind of difference. For a record line, it's the line's kind (its first word) and, for a line that changed, the tokens it lost and the tokens it gained, each set with hex runs of 8 or more written `H`, digit runs `#` and canaries `C`, then sorted, each once. For a template or head text, it's the text's role and which arm alone has it. The role is its key less a final 12-hex digest, masked as tokens are, and with each run of hex letters and `#` that holds both, such as a memory id `m#add#` from `[[s:M56add800]]`, written `H`, so a fork's text names one role whatever its memory. A step only one arm ran, and a changed header, are kinds of their own.

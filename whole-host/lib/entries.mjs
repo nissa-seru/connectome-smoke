@@ -107,6 +107,10 @@ export function differencesOf(run, baseText, headText) {
     lines(step, base.steps.get(step), head.steps.get(step));
   }
   lines('end', base.tail, head.tail);
+  // A record that differs where no kind of difference is found would be a run said to differ with nothing to show, so
+  // it fails its run at the grouping stage, and a run's record differs exactly when it has places (review:review-331 #5;
+  // Oscar-1005, room-203 #357642).
+  if (!out.length && baseText !== headText) throw new Error('the records differ, but no difference between them was found');
   return out;
 }
 
