@@ -341,7 +341,7 @@ export async function startStandin({ configuration, rawDir = null, refuseMerges 
   const alike = (b, record) => b.level === record.level && b.target === record.target && JSON.stringify(b.canaries) === JSON.stringify(record.sent.canaries);
   const resent = (record) => {
     const sources = (b) => (record.level >= 2 ? b.summaries.at(-1) === record.sent.summaries.at(-1) : JSON.stringify(b.summaries) === JSON.stringify(record.sent.summaries));
-    return badlyAnswered.findLast((b) => alike(b, record) && sources(b)) ?? null;
+    return badlyAnswered.findLast((b) => !b.settled && alike(b, record) && sources(b)) ?? null;
   };
   // context-manager 0.24.0 retries the merge at the head of its queue until that merge is written or quarantined
   // (`recordMergeRejection`, src/strategies/autobiographical.ts:6909).
