@@ -762,6 +762,14 @@ test('check 4 on a subagent: its requests are held to its own store up to the la
   assert.match(flags[0].message, /\[\[c:k\.s1\]\] \[\[c:k\.s1call1\]\]/);
 });
 
+test('no workload text a run sends names a summary level, so none can be quoted into an L1 instruction the stand-in refuses or miscounts', () => {
+  const facts = { budget: 100_000, maxTokens: 16_000 };
+  const lengths = JSON.parse(readFileSync(new URL('../stack.json', import.meta.url), 'utf-8'));
+  const strings = (v) => (typeof v === 'string' ? [v] : Array.isArray(v) ? v.flatMap(strings) : v && typeof v === 'object' ? Object.values(v).flatMap(strings) : []);
+  const named = RUNS.flatMap((id) => runOf(id, configurations(), facts, lengths).steps().flatMap((st) => strings(st).filter((t) => /\bL\d+\b/.test(t)).map((t) => `${id} ${st.id}: ${t.match(/\bL\d+\b/)[0]}`)));
+  assert.deepEqual(named, []);
+});
+
 test('check 6 counts a request as judged only where it held it to some message', () => {
   const script = [{ id: 'a', segment: 's', replies: [{}] }, { id: 'b', segment: 's', replies: [{}] }, { id: 'c', segment: 's', replies: [{}] }];
   const empty = { messages: [], summaries: [] };

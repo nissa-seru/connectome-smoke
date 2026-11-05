@@ -125,7 +125,8 @@ the lines of requests are in the order the stand-in received them:
   conversation, as the host's frontdesk transition quotes the user's open
   questions verbatim, is refused the same way, so its run doesn't measure,
   or counted under the quoted level where the quote takes one of the
-  stand-in's forms; no workload's text names one); or one to any route but a
+  stand-in's forms; no workload's text names one, as a unit test pins); or
+  one to any route but a
   POST to a path ending in `/v1/messages`, `count_tokens` included, which no
   run sends. So is a summariser retry whose hint doesn't fit what it
   re-sends. A request re-sends one the stand-in answered badly when it has
