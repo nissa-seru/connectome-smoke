@@ -343,6 +343,8 @@ test('K2d: a /budget report with no line for the run\'s agent, or one in neither
   const lines = [
     [], ['  other: 30.0k (last: 0, 0%)'], ['  fixture: 30.0k (last: 0, 0%); its stream doesn\'t break at this budget mid-turn'],
     ['  fixture: 30.0k (last: 0, 0%); only the context window interrupts this stream'], ['  fixture: 30.0k'],
+    ['  fixture: 30k (last: 0, 0%)'], ['  fixture: 30,000 (last: 0, 0%)'],
+    ['  fixture: 30.0k (last: 0, 0%); its stream doesn\'t break at this budget mid-turn: for its size, only before a request its 1,000,000 window can\'t hold'],
   ];
   const logs = [...lines.map((l) => under(budgetReport(...l))), under({ kind: 'budget-report', boot: 1, lines: ['--- Budgets ---'], ms: 5 }), under({ kind: 'budget-report', boot: 1, lines: ['No agents.'], ms: 5 }), under({ kind: 'budget-report', boot: 1, lines: ['Unknown command: /budget'], ms: 5 })];
   for (const log of logs) {

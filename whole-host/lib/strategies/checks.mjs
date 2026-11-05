@@ -259,7 +259,7 @@ export function hostTokens(n) {
 // connectome-host's `/budget` writes an agent's line as its stream budget and last use, and adds the rest when
 // agent-framework breaks its stream mid-turn only at its window, for a model whose thinking binds
 // (`handleBudget`, src/commands.ts:846; `windowInsteadOfBudget`, #508).
-const BUDGET_LINE = /^(\S+) \(last: [^()]*\)(?:; its stream doesn't break at this budget mid-turn: for its size, only before a request its (\S+) window can't hold)?$/;
+const BUDGET_LINE = /^(\d+\.\d[kM]|\d+) \(last: [^()]*\)(?:; its stream doesn't break at this budget mid-turn: for its size, only before a request its (\d+\.\d[kM]|\d+) window can't hold)?$/;
 
 function budgetReports(log, agent, listed) {
   const governs = new Map();
