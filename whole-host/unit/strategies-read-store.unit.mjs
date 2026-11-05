@@ -6,7 +6,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { readStore, storedEntry } from '../lib/strategies/read-store.mjs';
 
-const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
+const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 
 test('readStore reads a subagent\'s own isolated slot, not the shared one, when asked to isolate (shown by what each slot holds, since a store with summaries needs a summariser)', { timeout: 60_000 }, async () => {
   const { ContextManager, AutobiographicalStrategy } = await import(pathToFileURL(join(root, 'node_modules', '@animalabs', 'context-manager', 'dist', 'src', 'index.js')).href);

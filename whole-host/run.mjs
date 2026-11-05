@@ -14,7 +14,8 @@ import { FIXTURE_AGENT } from './lib/strategies/checks.mjs';
 import { readExpected, workloadReport } from './lib/strategies/report.mjs';
 import { RUNS, runOf } from './lib/strategies/workloads.mjs';
 import { configurations } from './lib/strategies/script.mjs';
-import { compareVersions, everyRunUpdated, exitCode, refuseUnrecordable, renderRecordLines, versionsText } from './lib/record.mjs';
+import { exitCode, refuseUnrecordable, renderRecordLines } from './lib/record.mjs';
+import { readAgainst, recordAgainst, releaseDiffers, slug } from './lib/against.mjs';
 import { changedRequests, stepSummary, summaryOf, viewOf } from './lib/view.mjs';
 import { generatedTexts, transcriptOf } from './lib/strategies/transcript.mjs';
 import { ledgerOf, moduleCounts } from './lib/strategies/ledger.mjs';
@@ -23,11 +24,7 @@ import { selfCheckOf } from './lib/strategies/compare.mjs';
 import { cutError } from './lib/strategies/cut.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const ROOT = resolve(HERE, '..', '..');
 const LABEL = '[whole-host]';
-const RECORDS = join(HERE, 'records');
-const versionsOnly = (versions) => Object.fromEntries(Object.entries(versions).map(([k, v]) => [k, String(v).replace(/ \((?:source|git) [0-9a-f]+\)$| \(sha512-[^)]*\)$/, '')]));
-
 
 const { opt, flag } = parseArgs(process.argv.slice(2));
 const fail = (message) => { console.error(`${LABEL} ${message}`); process.exit(2); };
@@ -39,24 +36,31 @@ const unknown = listed.filter((n) => !everyRun.includes(n));
 if (unknown.length) fail(`no run ${unknown.join(', ')}; there are ${everyRun.join(', ')}`);
 const shard = /^(\d+)\/(\d+)$/.exec(opt('shard', '1/1'));
 if (!shard || +shard[1] < 1 || +shard[1] > +shard[2]) fail(`--shard takes i/n with 1 <= i <= n, not ${opt('shard')}`);
+if (!opt('host')) fail('--host DIR names the connectome-host checkout to drive: the harness runs outside it');
+const hostDir = resolve(opt('host'));
+const hostName = (() => { try { return JSON.parse(readFileSync(join(hostDir, 'package.json'), 'utf-8')).name; } catch (e) { return fail(`--host ${hostDir} has no package.json that can be read: ${e.message}`); } })();
+if (hostName !== '@animalabs/connectome-host') fail(`--host ${hostDir} is ${hostName ?? 'a package with no name'}, not connectome-host`);
 const runOptions = { prefixTurns: stack.prefixTurns ?? {} };
 const checkpointKey = (id) => runOf(id, all, {}, runOptions).from;
 const share = shares(listed, +shard[2], stack.seconds, checkpointKey)[+shard[1] - 1];
 const names = share.ids;
 if (!names.length) { console.log(`${LABEL} shard ${shard[0]} holds none of ${listed.join(', ')}`); process.exit(0); }
 if (+shard[2] > 1) console.log(`${LABEL} shard ${shard[0]}: ${names.length} of ${listed.length} runs, about ${share.seconds} s by stack.json's seconds`);
+const runs = everyRun.filter((n) => listed.includes(n));
+const lane = laneVersion();
+let against = null;
+if (opt('against')) { try { against = readAgainst(resolve(opt('against')), { lane, runs, names }); } catch (e) { fail(e.message); } }
 const work = opt('workdir') ? resolve(opt('workdir')) : mkdtempSync(join(tmpdir(), 'whole-host-'));
 if (opt('workdir') && existsSync(work) && readdirSync(work).length) fail(`--workdir ${work} isn't empty: the release is installed there and every run's store starts there, so give it an empty or new directory`);
 mkdirSync(work, { recursive: true });
 const out = resolve(opt('out', join(work, 'out')));
 mkdirSync(out, { recursive: true });
-const lane = laneVersion();
 const checkpointsDir = opt('checkpoints') ? resolve(opt('checkpoints')) : null;
 const npmCi = (cwd) => sh('npm', ['ci', '--ignore-scripts', '--no-audit', '--no-fund', '--loglevel=error'], { cwd, timeout: 900_000 });
 const named = (versions) => Object.entries(versions).map(([k, v]) => `${k.replace('@animalabs/', '')}@${v}`).join(' ');
 
 function installRelease(dir) {
-  const repository = String(JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf-8')).repository?.url ?? '').replace(/^git\+/, '');
+  const repository = String(JSON.parse(readFileSync(join(hostDir, 'package.json'), 'utf-8')).repository?.url ?? '').replace(/^git\+/, '');
   if (!repository) fail('package.json names no repository to clone the release from');
   sh('git', ['clone', '--quiet', '--depth', '1', '--branch', stack.release, '--', repository, dir], { timeout: 300_000 });
   npmCi(dir);
@@ -67,17 +71,18 @@ console.log(`${LABEL} lane ${lane.slice(0, 12)} · release ${stack.release} · w
 let release;
 try { release = installRelease(join(work, 'release')); } catch (e) { fail(`installing ${stack.release} failed: ${e.message}`); }
 console.log(`${LABEL} checkpoints from ${named(release.versions)}`);
+const otherRelease = against && releaseDiffers(against, { tag: stack.release, versions: release.versions });
+if (otherRelease) fail(otherRelease);
 
 let packs;
 try { packs = readPacks(String(opt('overlay', '')).split(',').map((s) => s.trim()).filter(Boolean).map((p) => resolve(p))); } catch (e) { fail(e.message); }
 let candidate;
-try { candidate = installCandidate({ root: ROOT, packs, dir: join(work, 'candidate'), leaveOut: [work, out], npmCi }); } catch (e) { fail(`installing the candidate failed: ${e.message}`); }
+try { candidate = installCandidate({ root: hostDir, packs, dir: join(work, 'candidate'), leaveOut: [work, out], npmCi }); } catch (e) { fail(`installing the candidate failed: ${e.message}`); }
 console.log(`${LABEL} candidate ${named(candidate.versions)}${packs.length ? `, with ${packs.map((p) => p.name).join(', ')} laid over` : ''}`);
 
 const expected = (() => {
   try { return readExpected(EXPECTED_FAILURES, everyRun); } catch (e) { return fail(`the expected failures couldn't be read: ${e.message}`); }
 })();
-const slug = (id) => id.replaceAll('/', '_');
 const readJsonLines = (path) => (existsSync(path) ? readFileSync(path, 'utf-8').trim().split('\n').filter(Boolean).map((l) => JSON.parse(l)) : []);
 
 async function drive(job, side, { storeDir, epoch, dir, scratch = dir, rawDir = null, hostLogs = { dir, at: relative(out, dir) } }) {
@@ -219,24 +224,24 @@ for (const id of names) {
     console.log((r.lines?.length ? r.lines : [`${id}: couldn't run: ${r.reason}`]).join('\n'));
     stage = 'its record couldn\'t be checked';
     if (refuseUnrecordable(r)) console.log(`${LABEL} ${id}: couldn't run: ${r.reason}`);
-    let text = null;
     if (r.outcome !== 'couldnt-run') {
       stage = 'its record couldn\'t be written';
       const recordLines = renderRecordLines({ header: { configuration: id, from: r.from }, log: r.log, records: r.records, end: r.end, judged: r.judged });
-      text = `${recordLines.map((l) => l.text).join('\n')}\n`;
+      const text = `${recordLines.map((l) => l.text).join('\n')}\n`;
       writeFileSync(join(dir, `${slug(id)}.record`), text);
-      const committed = join(RECORDS, `${slug(id)}.record`);
-      record = flag('update-records') ? 'updated' : existsSync(committed) && readFileSync(committed, 'utf-8') === text ? 'same' : existsSync(committed) ? 'differs' : 'missing';
+      stage = 'its record couldn\'t be compared with the base arm\'s';
+      const compared = recordAgainst(against, id, text);
+      record = compared.record;
       let changed = null;
-      if (record === 'differs' || record === 'missing') {
+      if (record === 'differs') {
         stage = 'its view couldn\'t be written';
-        changed = changedRequests(record === 'missing' ? '' : readFileSync(committed, 'utf-8'), recordLines);
+        changed = changedRequests(compared.base, recordLines);
         const answersIn = (dir) => (existsSync(dir) ? readdirSync(dir) : []).filter((f) => /^r\d+\.answer\.json$/.test(f)).map((f) => JSON.parse(readFileSync(join(dir, f), 'utf-8')));
         const cp = r.from === 'empty' ? null : checkpoints.get(r.from);
         const generated = generatedTexts({ steps: [...(cp?.steps ?? []), ...r.steps], answers: [...(cp ? answersIn(cp.answers) : []), ...answersIn(bodies)] });
         const owner = new Map(recordLines.filter((l) => l.request).map((l) => [l.request, l]));
         const view = viewOf({
-          run: id, record, changed, lines: recordLines,
+          run: id, changed, lines: recordLines,
           ledger: (request) => {
             const l = owner.get(request);
             if (!l?.compile) return [];
@@ -246,7 +251,7 @@ for (const id of names) {
         });
         writeFileSync(join(dir, 'view.md'), view);
         views.push({ run: id, path: `${slug(id)}/view.md`, text: view });
-        console.log(`${LABEL} ${id}: the record ${record === 'missing' ? 'isn\'t committed' : 'differs from the committed one'}; the run's is ${slug(id)}/${slug(id)}.record in this job's evidence, and what changed is in ${slug(id)}/view.md`);
+        console.log(`${LABEL} ${id}: the record differs from the base arm's; the run's is ${slug(id)}/${slug(id)}.record in this job's evidence, and what changed is in ${slug(id)}/view.md`);
       }
       stage = 'its counts couldn\'t be read';
       row = { run: id, outcome: r.outcome, flags: r.failures?.length ?? 0, record, changed, ledgerOf: r.agent, counts: moduleCounts(r.log, r.records, r.agent), tokens: tokensSent(r.records) };
@@ -273,11 +278,6 @@ for (const id of names) {
       }
       console.log(`${LABEL} ${id}: self-check: ${selfCheck.outcome === 'same' ? `the stand-in received the same ${selfCheck.requests} request bodies with the test module's recording off` : selfCheck.outcome === 'couldnt-run' ? `couldn't run: ${selfCheck.reason}` : `request ${selfCheck.at} differs with recording off: ${selfCheck.detail}`}`);
     }
-    if (record === 'updated') {
-      stage = 'its record couldn\'t be committed';
-      mkdirSync(RECORDS, { recursive: true });
-      writeFileSync(join(RECORDS, `${slug(id)}.record`), text);
-    }
   } catch (e) {
     const c = cutError(e, 2000);
     r = { ...(r ?? {}), outcome: 'couldnt-run', reason: `${stage}: ${c.shown}`, ...(c.full ? { reasonFull: `${stage}: ${c.full}` } : {}) };
@@ -291,16 +291,10 @@ for (const id of names) {
   rows.push(row);
   results.push({ run: id, outcome: r.outcome, reason: r.reason, failures: r.failures, record, ...(selfCheck ? { selfCheck } : {}) });
 }
-const versionsNow = versionsText({ release: { tag: stack.release, versions: versionsOnly(release.versions) }, candidate: { versions: versionsOnly(candidate.versions) } });
-const everyUpdated = everyRunUpdated(everyRun, results);
-if (flag('update-records') && !everyUpdated) console.log(`${LABEL} records/versions.txt is left as it was: it names the stack of the last invocation that updated every record, and this invocation updated ${results.filter((x) => x.record === 'updated').length} of ${everyRun.length} records`);
-const { state: versions, changes: versionMoves } = compareVersions(RECORDS, versionsNow, { update: flag('update-records') && everyUpdated });
-const versionNote = versions === 'differs' ? `Versions differ from the committed records/versions.txt: ${versionMoves.join('; ')}.` : versions === 'missing' ? 'No records/versions.txt is committed.' : null;
-if (versionNote) console.log(`${LABEL} ${versionNote}`);
-const table = summaryOf({ versionNote, rows, flagged: results.filter((x) => x.failures?.length).map((x) => ({ run: x.run, flags: x.failures })), overlay: String(opt('overlay', '')) });
+const table = summaryOf({ rows, flagged: results.filter((x) => x.failures?.length).map((x) => ({ run: x.run, flags: x.failures })) });
 writeFileSync(join(out, 'summary.md'), `${table}\n`);
 if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, stepSummary({ table, views }));
-writeFileSync(join(out, 'run.json'), JSON.stringify({ lane, release: { tag: stack.release, versions: release.versions }, candidate: { versions: candidate.versions, overlays: packs }, versions, seconds, results }, null, 1));
+writeFileSync(join(out, 'run.json'), JSON.stringify({ lane, runs, release: { tag: stack.release, versions: release.versions }, candidate: { versions: candidate.versions, overlays: packs }, seconds, results }, null, 1));
 if (flag('update-seconds')) {
   const merged = { runs: { ...stack.seconds?.runs, ...seconds.runs }, checkpoints: { ...stack.seconds?.checkpoints, ...seconds.checkpoints } };
   const written = join(HERE, `stack.json.${process.pid}`);
@@ -308,4 +302,4 @@ if (flag('update-seconds')) {
   renameSync(written, join(HERE, 'stack.json'));
   console.log(`${LABEL} wrote ${Object.keys(seconds.runs).length} runs' and ${Object.keys(seconds.checkpoints).length} checkpoints' seconds into stack.json`);
 }
-process.exit(exitCode(results, { versions }));
+process.exit(exitCode(results));

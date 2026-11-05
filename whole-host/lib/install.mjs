@@ -8,7 +8,7 @@ export function readPacks(paths) {
   return paths.map((p) => {
     let name;
     try { name = JSON.parse(sh('tar', ['-xzOf', p, 'package/package.json']).stdout).name; } catch (e) { throw new Error(`the overlay ${p} couldn't be read as a packed release: ${e.message}`); }
-    if (name === '@animalabs/connectome-host') throw new Error(`the overlay ${p} is connectome-host, which this checkout is: change the checkout to run a host change`);
+    if (name === '@animalabs/connectome-host') throw new Error(`the overlay ${p} is connectome-host, which --host is: give --host the host change's checkout to run a host change`);
     if (!KEY_PACKAGES.includes(name)) throw new Error(`the overlay ${p} is ${name}; overlay one of ${KEY_PACKAGES.filter((k) => k !== '@animalabs/connectome-host').join(', ')}`);
     return { path: p, name, integrity: `sha512-${createHash('sha512').update(readFileSync(p)).digest('base64')}` };
   });

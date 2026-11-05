@@ -1,112 +1,35 @@
 # Whole-host records
 
-`test/whole-host/` runs this host against a stand-in for Anthropic's API,
-through a set of workload runs, and keeps one record per run in
-`test/whole-host/records/`. Each run's recipe loads the host's context
-strategy and the fixture's own MCPL server. It turns off the subagents
-module (H2's configuration and W9's workload turn it back on), the lessons, retrieval, wake and workspace
-modules, cache keepalive and the context maintenance timer (`driver.mjs`'s
-recipe, `script.mjs`'s configurations). A record says what every request the
-run sent carried. A change that moves what those requests carry changes the
-records, and their diff in the pull request is what to read.
+`whole-host/` drives connectome-host against a stand-in for Anthropic's API, through a set of workload runs, and writes one record per run. Each run's recipe loads the host's context strategy and the fixture's own MCPL server. It turns off the subagents module (H2's configuration and W9's workload turn it back on), the lessons, retrieval, wake and workspace modules, cache keepalive and the context maintenance timer (`driver.mjs`'s recipe, `script.mjs`'s configurations). A record says what every request the run sent carried.
+
+The context view runs it twice for a pull request in context-manager, agent-framework, membrane or connectome-host: once with the base branch's tip, the base arm, and once with the pull request merged onto it, the head arm, with everything else at the host's lockfile versions. A change that moves what the resident's requests carry changes the head arm's records, and how they differ from the base arm's is what the view shows. Both arms run this harness, from this repository, so a change to the harness moves both arms alike.
 
 ## Running it
 
-`npm run test:whole-host` runs every run, judges it, and compares each run's
-record with the committed one. It exits 0 when every run passed and every
-record matched, 1 when a run flagged something or a record differs, and 2
-when a run couldn't run. A run whose `report.txt` can't be written ends the
-invocation there, as an uncaught error, which exits 1.
+`node whole-host/run.mjs --host DIR` drives the connectome-host checkout at `DIR` through every run, judges each, and writes its record. With `--against BASE`, it compares each run's record with the base arm's in `BASE`. It exits 0 when every run passed, with its record the same as the base arm's (or, with no `--against`, written) and its self-check, where one ran, the same; 1 when a run flagged something, a record differs or has no base record to compare with, or a self-check differs; and 2 when a run or its self-check couldn't run, or when the invocation stopped before running anything. A run whose `report.txt` can't be written ends the invocation there, as an uncaught error, which exits 1.
 
-- `--runs A,B` runs only those (`CONFIGURATION/WORKLOAD[/VARIANT]`, as
-  `workloads.mjs` `RUNS` lists them).
-- `--update-records` writes each run's record over the committed one. Use it
-  once the change a diff shows is the change you mean. It rewrites
-  `records/versions.txt` only when it ran and updated every run, so that file
-  names the stack of the last invocation that updated every record. A record
-  updated alone under another stack wasn't made with the stack it names, and
-  under that stack the file's comparison fails until every run is updated.
-- `--overlay PACK.tgz` lays a packed agent-framework, context-manager,
-  membrane or chronicle over this checkout's install, to see what a change to
-  one of them does here. A host change is a change to this checkout itself.
-- `--checkpoints DIR` keeps the runs' starting checkpoints in `DIR` between
-  invocations, keyed by the lane, the release's versions, the run that
-  writes each, its configuration, the clock's start and its steps. The
-  environment the host inherits isn't in the key.
-- `--self-check` drives each run a second time with the test module's
-  recording off, and fails a run whose request bodies differ once the
-  run-varying values are masked in both, wherever they appear, cache markers
-  included, where a record writes a marker whole: every record rests on
-  recording changing nothing the host sends. It compares the bodies alone,
-  not the headers, path or query; the record's heads hold the path, the query
-  and the `anthropic-beta` and `anthropic-version` headers. With recording off the driver
-  sets `FIXTURE_RECORD=off`, and otherwise leaves it unset, dropping a
-  runner's own, so a runner's setting can't turn the recording arm off. An arm
-  with recording off that logged compile batches anyway can't be judged, nor
-  can one whose drive failed, and the summary names which arm. Where they
-  differ, the first differing pair of request bodies is kept in the run's
-  evidence, under `self-check/`. CI runs it in six shares on a pull request
-  that changes a file the test module loads; the host's own source, whose code
-  runs within and around the compiles the module records, since a compile runs
-  the agent's strategy, which can be the host's own, and the host's modules
-  gather their context just before each request compile; `package.json` or a
-  lockfile, which choose the stack the module runs beside; `run.mjs`,
-  `driver.mjs` or `common.mjs`, which set up, drive and compare the two arms;
-  or the workflow itself.
-  A host change whose effect recording happened to hide would leave every
-  record as it was, so only the self-check would show it.
-- `--shard i/n` runs one of CI's shares, balanced by the seconds
-  `stack.json` records.
-- `--workdir DIR` keeps the run's installs and stores in `DIR`, which must be
-  empty or new, since the release is installed there and every run's store
-  starts there. The candidate is this checkout's own install unless
-  `--overlay` is given, when it's installed there too.
-- `--out DIR` chooses where each run's record, `report.txt` and view are
-  written, and `run.json` and `summary.md`; it's `DIR/out` under the work
-  directory when not given.
-- `--update-seconds` merges this invocation's seconds, each run's and each
-  checkpoint's, over the ones `stack.json` records, which `--shard` balances
-  by. It writes the file through a temporary one, so an interrupted write
-  leaves the old file whole. Two invocations writing at once each keep their
-  own merge, and the later one's stands.
+The harness imports only Node's own modules, and Bun's in the test module the host loads, so it needs no install of its own. `npm ci` in `whole-host/` installs context-manager for one unit test, `readStore`'s, and `npm test` runs the unit tests.
 
-Records are made on Linux. The test module stamps each request compile from
-the machine's monotonic clock, which it reads there (`module.mjs`), under Bun
-through `clock_gettime` in `libc.so.6`. A run whose compiles carry no stamp is
-refused as couldn't-run (`record.mjs`, `unrecordable`), so every run couldn't
-run anywhere but Linux, and under Bun on a Linux whose C library isn't at
-`libc.so.6`, such as a plain musl one.
+- `--host DIR` names the connectome-host checkout to drive, by its `package.json`. It's required. Without `--overlay` the candidate is `DIR`'s own install, so `DIR` needs `npm ci` first; with one, the harness copies `DIR` and installs the copy itself. The release whose checkpoints the runs start from is cloned from the repository `DIR`'s `package.json` names, at the tag `stack.json` names.
+- `--against BASE` compares each run's record with the one the base arm wrote, where `BASE` is the base arm's `--out`. The invocation stops before it runs anything, exit 2, unless `BASE/run.json` was written by the same harness (its `lane`), from the same `--runs` and for the same `--shard`, with each record it lists present; once the release is installed, it stops the same way unless the base arm's checkpoints came from the same release and stack. Otherwise a difference could be put down to the change that isn't the change's. A run the base arm couldn't run has no record there, so its record is `missing`. Only a run whose record `differs` gets a view.
+- `--runs A,B` runs only those (`CONFIGURATION/WORKLOAD[/VARIANT]`, as `workloads.mjs` `RUNS` lists them).
+- `--overlay PACK.tgz` lays a packed agent-framework, context-manager, membrane or chronicle over `--host`'s install, to see what a change to one of them does to the host. A host change is a change to the `--host` checkout itself.
+- `--checkpoints DIR` keeps the runs' starting checkpoints in `DIR` between invocations, keyed by the lane, the release's versions, the run that writes each, its configuration, the clock's start and its steps. The environment the host inherits isn't in the key. Both arms of a view can share it, since their checkpoints come from the same release.
+- `--self-check` drives each run a second time with the test module's recording off, and fails a run whose request bodies differ once the run-varying values are masked in both, wherever they appear, cache markers included, where a record writes a marker whole: every record rests on recording changing nothing the host sends. It compares the bodies alone, not the headers, path or query; the record's heads hold the path, the query and the `anthropic-beta` and `anthropic-version` headers. With recording off the driver sets `FIXTURE_RECORD=off`, and otherwise leaves it unset, dropping a runner's own, so a runner's setting can't turn the recording arm off. An arm with recording off that logged compile batches anyway can't be judged, nor can one whose drive failed, and the summary names which arm. Where they differ, the first differing pair of request bodies is kept in the run's evidence, under `self-check/`. The context view runs it on the head arm. A change whose effect recording happened to hide would leave every record as it was, so only the self-check would show it, and it also shows a head whose requests vary from one drive to the next.
+- `--shard i/n` runs share `i` of `n`, balanced by the seconds `stack.json` records. Both arms of a view take the same share.
+- `--workdir DIR` keeps the run's installs and stores in `DIR`, which must be empty or new, since the release is installed there and every run's store starts there. The candidate is `--host`'s own install unless `--overlay` is given, when it's installed there too.
+- `--out DIR` chooses where each run's record, `report.txt` and view are written, and `run.json` and `summary.md`; it's `DIR/out` under the work directory when not given. `run.json` names the harness (`lane`), the runs the shares were drawn from (`runs`, in `RUNS` order), the release that wrote the checkpoints with its stack (`release`), the candidate's stack and overlays (`candidate`), each run's and checkpoint's seconds, and each run's result: its outcome (`pass`, `flags`, `invalid` or `couldnt-run`) and the reason it couldn't run, its record (`same`, `differs`, `missing` or `written`, or `null` when it couldn't run), its flags and its self-check.
+- `--update-seconds` merges this invocation's seconds, each run's and each checkpoint's, over the ones `stack.json` records, which `--shard` balances by. It writes the file through a temporary one, so an interrupted write leaves the old file whole. Two invocations writing at once each keep their own merge, and the later one's stands.
 
-A run that throws anywhere in its own work, from being set up to its
-self-check, or whose checkpoint couldn't be made, couldn't run, with the
-reason in the job's log and summary; the other runs go on, unless its
-`report.txt` can't be written, which ends the invocation. Its committed
-record is written with `--update-records` only after its last step, so a run
-that couldn't run leaves the committed one as it was. A self-check whose
-drive with recording off failed couldn't run, and one whose bodies differ
-fails, but neither makes its run couldn't-run: the run's record is still
-written with `--update-records`, and the invocation exits 2 or 1. A run whose last take of the test module's compiles at
-a host's shutdown fails is a failed run, its record ending `end failed`, since
-it lost what was compiled after the last settle.
+Records are made on Linux. The test module stamps each request compile from the machine's monotonic clock, which it reads there (`module.mjs`), under Bun through `clock_gettime` in `libc.so.6`. A run whose compiles carry no stamp is refused as couldn't-run (`record.mjs`, `unrecordable`), so every run couldn't run anywhere but Linux, and under Bun on a Linux whose C library isn't at `libc.so.6`, such as a plain musl one.
 
-A run that continues another starts from that run's checkpoint, written by the
-release `stack.json` names, installed from that release's own lockfile, so the
-records show the candidate against a fixed starting store. A run that
-continues none (W1, W2 and others) starts empty under the candidate. Moving to
-a newer release is a change of its own.
+A run that throws anywhere in its own work, from being set up to its self-check, or whose checkpoint couldn't be made, couldn't run, with the reason in the invocation's output and summary; the other runs go on, unless its `report.txt` can't be written, which ends the invocation. A self-check whose drive with recording off failed couldn't run, and one whose bodies differ fails, but neither makes its run couldn't-run: the run's record is still written and compared, and the invocation exits 2 or 1. A run whose last take of the test module's compiles at a host's shutdown fails is a failed run, its record ending `end failed`, since it lost what was compiled after the last settle.
+
+A run that continues another starts from that run's checkpoint, written by the release `stack.json` names, installed from that release's own lockfile, so the records show the candidate against a fixed starting store. A run that continues none (W1, W2 and others) starts empty under the candidate. Moving to a newer release is a change of its own.
 
 ## Reading a record
 
-A record opens with one header line: the run, and the checkpoint it starts
-from (`empty` for one that starts empty). No record names a version. The
-versions are in `records/versions.txt`, as the last invocation that updated
-every record found them: the release that writes the checkpoints with its
-stack, and the candidate's stack, one line each. The candidate's own version isn't in it, since a
-release's `npm version` moves it, and neither is the Bun that ran, which a
-run's `run.json` names. A run compares that file as it compares a record, so
-a version change fails until the file is updated, and the job's summary names
-each version that moved, once, above its table. A raise of a version that
-changes nothing the host sends then moves one line in one file.
+A record opens with one header line: the run, and the checkpoint it starts from (`empty` for one that starts empty). No record names a version, so a candidate that differs from the base arm's only in its version, as a release's `npm version` makes it, moves no record. The versions are in each arm's `run.json`: the release that writes the checkpoints with its stack, and the candidate's stack, with the Bun that ran.
 
 Then come two blocks. Each text the stack wrote is written once, in
 `templates`, and each request head once, in `heads`; the lines below name
@@ -370,20 +293,20 @@ failed, actions, checkpoints and the end.
 ## The view of what changed
 
 The record diff says that a request changed. The view, which `run.mjs` writes
-beside the records and never commits, says what the resident received. A
+beside a head arm's record that differs from the base arm's, says what the resident received. A
 request it shows is one whose line, read without its head note and with the
-head in force for it, differs from the committed record's. A removed request
+head in force for it, differs from the base arm's. A removed request
 line (one carrying a body hash) identical to an added one elsewhere is a
 request sent at another place. Within each hunk of the diff, an added
 request line pairs with the removed one of its kind and agent it shares most
 items with, among those written the same way, as a change or whole, while
-any is left; a removed one left unpaired is a request the run no longer
+any is left; a removed one left unpaired is a request the head no longer
 sends. The pairing is the view's best reading; the record diff beside it is
 what holds.
 
 - **`summary.md`** has one row per run: its outcome (`pass`, its flags' count,
   `invalid`, or why it couldn't run, then the self-check's outcome where one
-  ran), whether its record matched, and for one that differs how many requests
+  ran), whether its record matched the base arm's, and for one that differs how many requests
   changed, then its counts. Those are, across every agent, the request compile
   calls made and refused (a refusal whose retry compiled counts as one of
   each), the compression and merge calls, and the quarantines held at the
@@ -393,11 +316,10 @@ what holds.
   compile lines whose check 11 entries hold a breach or a part it couldn't
   judge; a compile it couldn't record isn't among them. `?` is a count the run
   couldn't give. Where anything isn't clean, the table is followed by where
-  each run's report, record and view are in the job's evidence and what to do
-  next, then every flag of each flagged run. A missing product and a
+  each run's report, record and view are in the evidence, then every flag of each flagged run. A missing product and a
   calibration edge, which a report counts apart from its flags, are in the
   run's `report.txt`.
-- **`<run>/view.md`**, for each run whose record differs or isn't committed,
+- **`<run>/view.md`**, for each run whose record differs from the base arm's,
   has a section for each request whose record lines changed. Each section has
   its record line in its heading, cut at 200 characters (a changed line's
   moved items follow it whole, and a new or moved request's whole line is in
@@ -446,9 +368,7 @@ what holds.
   where even those names wouldn't fit, saying how many didn't. Where
   `summary.md` itself is longer, the summary holds as much of it as fits and
   says how many flags it left out; every flag is in `summary.md` and in its
-  run's `report.txt`. The evidence is each job's uploaded artifact,
-  `whole-host-N` for share N, or `whole-host-self-check-N` for the
-  self-check's, and `--out` locally.
+  run's `report.txt`. The evidence is what `--out` holds.
 
 ## What each run's checks judge
 
@@ -663,8 +583,8 @@ couldn't-judge flag, never a pass.
 
 ## Expected failures
 
-`test/whole-host/expected-failures.json` lists the flags of known findings
-that the committed runs meet. Each entry has its `configuration` (a run),
+`whole-host/expected-failures.json` lists the flags of known findings
+that the runs meet. Each entry has its `configuration` (a run),
 `check`, `step` and `what`, the `finding` it belongs to and its `reason`, and a
 `match`: the flag's detail as its report shows it, cut where the report cuts
 it (its message, for a flag with no detail), as a literal, with each regular-expression metacharacter escaped by a
@@ -685,11 +605,10 @@ whatever the entries say, and an entry written for one is reported unmet.
 A flag no entry covers, beside an entry no flag meets at the same check and
 step, usually means a known finding moved, such as a count or a message index
 that changed. Read the two details. If it's the same finding, rewrite the
-entry's `match` from the new flag. A person rewrites entries:
-`--update-records` never does, since blessing new flags automatically would
+entry's `match` from the new flag. A person rewrites entries, and
+nothing else does, since blessing new flags automatically would
 hide the losses the entries are there to catch.
 
 ## When the format changes
 
-A change to what a record writes changes every record, and updates this file
-in the same pull request.
+A change to what a record writes changes the records of both arms alike, so it moves no view of a pull request; it updates this file in the same change.

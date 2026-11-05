@@ -23,7 +23,7 @@ test('N1: the lane version moves with every file under lib and with run.mjs, and
     'lib/record.mjs': 'record',
     'run.mjs': 'run',
     'expected-failures.json': '[]',
-    'records/x.record': 'record',
+    'package.json': '{}',
     'README.md': 'readme',
     'unit/x.unit.mjs': 'test',
   });
@@ -31,7 +31,7 @@ test('N1: the lane version moves with every file under lib and with run.mjs, and
     const v = laneVersion(root);
     assert.match(v, /^[0-9a-f]{64}$/);
     assert.equal(laneVersion(root), v, 'the same files give the same version');
-    for (const [rel, text] of [['README.md', 'readme 2'], ['expected-failures.json', '[1]'], ['records/x.record', 'record 2'], ['unit/x.unit.mjs', 'test 2'], ['unit/y.unit.mjs', 'new']]) {
+    for (const [rel, text] of [['README.md', 'readme 2'], ['expected-failures.json', '[1]'], ['package.json', '{"x":1}'], ['unit/x.unit.mjs', 'test 2'], ['unit/y.unit.mjs', 'new']]) {
       writeFileSync(join(root, rel), text);
       assert.equal(laneVersion(root), v, `${rel} is outside the lane`);
     }
@@ -214,4 +214,31 @@ test('run.mjs refuses a run name it doesn\'t know, naming it, before it clones o
   assert.equal(r.status, 2);
   assert.match(r.stderr, /no run H9\/W99; there are [^\n]*\bH1\/W1\b/);
   assert.doesNotMatch(r.stdout + r.stderr, /lane |release /, 'it stopped before naming the lane or cloning the release');
+});
+
+const runMjs = (...args) => spawnSync(process.execPath, [join(import.meta.dirname, '..', 'run.mjs'), ...args, '--workdir', join(tmpdir(), 'never-made-whole-host')], { encoding: 'utf-8', timeout: 30_000 });
+
+test('run.mjs refuses to run without a --host that is connectome-host, before it clones or installs anything', () => {
+  const none = runMjs();
+  assert.equal(none.status, 2);
+  assert.match(none.stderr, /--host DIR names the connectome-host checkout to drive/);
+  assert.doesNotMatch(none.stdout + none.stderr, /lane |release /, 'it stopped before naming the lane or cloning the release');
+  const other = tree({ 'package.json': JSON.stringify({ name: '@animalabs/agent-framework' }) });
+  try {
+    const r = runMjs('--host', other);
+    assert.equal(r.status, 2);
+    assert.match(r.stderr, /--host \S+ is @animalabs\/agent-framework, not connectome-host/);
+    assert.doesNotMatch(r.stdout + r.stderr, /lane |release /);
+  } finally { rmSync(other, { recursive: true, force: true }); }
+});
+
+test('run.mjs refuses an --against whose base arm wrote no run.json, before it clones or installs anything', () => {
+  const host = tree({ 'package.json': JSON.stringify({ name: '@animalabs/connectome-host' }) });
+  const against = mkdtempSync(join(tmpdir(), 'against-'));
+  try {
+    const r = runMjs('--host', host, '--against', against);
+    assert.equal(r.status, 2);
+    assert.match(r.stderr, /--against \S+ holds no run\.json, so the base arm didn't finish/);
+    assert.doesNotMatch(r.stdout + r.stderr, /lane |release /);
+  } finally { for (const d of [host, against]) rmSync(d, { recursive: true, force: true }); }
 });

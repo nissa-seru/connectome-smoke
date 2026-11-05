@@ -7,24 +7,24 @@ const lines = (...xs) => xs.map(([text, request = null]) => ({ text, request }))
 const text = (...xs) => `${xs.join('\n')}\n`;
 const counts = ({ requests, added, removed, unattributed }) => ({ requests, added, removed, unattributed });
 
-test('the requests a change moved are those whose lines differ from the committed record, in the run\'s order', () => {
-  const committed = text('# h', 'step a', '  compile p.1, body 11111111', '  call - -> summary, body 22222222', 'step b', '  compile -1 + p.2, body 33333333', 'end ok');
+test('the requests a change moved are those whose lines differ from the base arm\'s record, in the run\'s order', () => {
+  const base = text('# h', 'step a', '  compile p.1, body 11111111', '  call - -> summary, body 22222222', 'step b', '  compile -1 + p.2, body 33333333', 'end ok');
   const same = lines(['# h'], ['step a'], ['  compile p.1, body 11111111', 'r1'], ['  call - -> summary, body 22222222', 's1'], ['step b'], ['  compile -1 + p.2, body 33333333', 'r2'], ['end ok']);
-  assert.deepEqual(counts(changedRequests(committed, same)), { requests: [], added: 0, removed: 0, unattributed: 0 });
+  assert.deepEqual(counts(changedRequests(base, same)), { requests: [], added: 0, removed: 0, unattributed: 0 });
   const moved = lines(['# h'], ['step a'], ['  compile p.1, body 11111111', 'r1'], ['  call - -> summary, body 2222aaaa', 's1'], ['step b'], ['  compile -1 + p.2, body 3333bbbb', 'r2'], ['end ok']);
-  assert.deepEqual(counts(changedRequests(committed, moved)), { requests: ['s1', 'r2'], added: 2, removed: 2, unattributed: 0 });
+  assert.deepEqual(counts(changedRequests(base, moved)), { requests: ['s1', 'r2'], added: 2, removed: 2, unattributed: 0 });
 });
 
 test('a line no request owns counts apart, and a request that only went away names nothing on the run\'s side', () => {
-  const committed = text('step a', '  compile p.1, body 11111111', '  wrote L1(p.1) [T:summary-l1-aaaa]', '  compile p.1 L1(p.1), body 44444444', 'end ok');
+  const base = text('step a', '  compile p.1, body 11111111', '  wrote L1(p.1) [T:summary-l1-aaaa]', '  compile p.1 L1(p.1), body 44444444', 'end ok');
   const run = lines(['step a'], ['  compile p.1, body 11111111', 'r1'], ['  wrote L1(p.1) [T:summary-l1-bbbb]'], ['end ok']);
-  assert.deepEqual(counts(changedRequests(committed, run)), { requests: [], added: 1, removed: 2, unattributed: 1 });
+  assert.deepEqual(counts(changedRequests(base, run)), { requests: [], added: 1, removed: 2, unattributed: 1 });
 });
 
 test('a request with several changed lines is named once, and an inserted line leaves the lines around it unchanged', () => {
-  const committed = text('step a', '  compile p.1, body 11111111', '  compile p.2, body 22222222');
+  const base = text('step a', '  compile p.1, body 11111111', '  compile p.2, body 22222222');
   const run = lines(['step a'], ['  compile p.1, body 11111111', 'r1'], ['  round + p.1.call1, body 55555555', 'r9'], ['  round + p.1.call2, body 66666666', 'r9'], ['  compile p.2, body 22222222', 'r2']);
-  assert.deepEqual(counts(changedRequests(committed, run)), { requests: ['r9'], added: 2, removed: 0, unattributed: 0 });
+  assert.deepEqual(counts(changedRequests(base, run)), { requests: ['r9'], added: 2, removed: 0, unattributed: 0 });
 });
 
 test('the summary has a row per run, naming what changed, with a count it wasn\'t given shown as unknown', () => {
@@ -49,8 +49,8 @@ test('a run\'s view shows each changed request\'s record line, its ledger and it
     transcript: (id, seen) => { calls.push([id, seen.size]); seen.add(id); return [`transcript of ${id}`]; },
   });
   assert.match(view, /^## H3\/W4\n\n2 request\(s\) changed and 0 no longer sent: 2 record line\(s\) added and 2 removed\.\n/);
-  assert.match(view, /### r3: `compile p\.3, body 33333333`\n\nA request the committed record doesn't have\.\n\nraw: p\.1-p\.3\n\n```text\ntranscript of r3\n```/);
-  assert.match(view, /### r4: `round \+ p\.3\.call1, body 44444444`\n\nA request the committed record doesn't have\.\n\n```text\ntranscript of r4\n```/);
+  assert.match(view, /### r3: `compile p\.3, body 33333333`\n\nA request the base arm's record doesn't have\.\n\nraw: p\.1-p\.3\n\n```text\ntranscript of r3\n```/);
+  assert.match(view, /### r4: `round \+ p\.3\.call1, body 44444444`\n\nA request the base arm's record doesn't have\.\n\n```text\ntranscript of r4\n```/);
   assert.deepEqual(calls, [['r3', 0], ['r4', 1]], 'the second transcript knows what the first showed');
 });
 
@@ -80,9 +80,9 @@ test('the step summary counts bytes, not characters, against GitHub\'s 1 MiB for
 });
 
 test('a request line removed with nothing of its kind added beside it is a request no longer sent, and the view shows its line under a heading of its own', () => {
-  const committed = text('step a', '  compile p.1, body 11111111', '  call p.1 [T:call-merge-x] -> refused, body 22222222', '  call p.1 [T:call-merge-x] -> refused, body 33333333', 'step b', '  compile -1 + p.2, body 44444444', 'end ok');
+  const base = text('step a', '  compile p.1, body 11111111', '  call p.1 [T:call-merge-x] -> refused, body 22222222', '  call p.1 [T:call-merge-x] -> refused, body 33333333', 'step b', '  compile -1 + p.2, body 44444444', 'end ok');
   const run = lines(['step a'], ['  compile p.1, body 11111111', 'r1'], ['step b'], ['  compile -1 + p.2, body 44444444', 'r2'], ['end ok']);
-  const changed = changedRequests(committed, run);
+  const changed = changedRequests(base, run);
   assert.deepEqual(changed.requests, []);
   assert.deepEqual(changed.stopped, ['  call p.1 [T:call-merge-x] -> refused, body 22222222', '  call p.1 [T:call-merge-x] -> refused, body 33333333']);
   const view = viewOf({ run: 'H2/W7', record: 'differs', changed, lines: run, transcript: () => [], ledger: () => [] });
@@ -92,9 +92,9 @@ test('a request line removed with nothing of its kind added beside it is a reque
 });
 
 test('a changed request is paired with the line it replaced, and the view shows where in that line it moved', () => {
-  const committed = text('step a', '  compile x.1 L1(a-b) L1(c) x.9 y.1, body 11111111', 'end ok');
+  const base = text('step a', '  compile x.1 L1(a-b) L1(c) x.9 y.1, body 11111111', 'end ok');
   const run = lines(['step a'], ['  compile x.1 L2(a-c) x.9 y.1, body 22222222', 'r1'], ['end ok']);
-  const changed = changedRequests(committed, run);
+  const changed = changedRequests(base, run);
   assert.deepEqual(changed.requests, ['r1']);
   assert.deepEqual(changed.stopped, []);
   assert.equal(changed.was.get('r1'), '  compile x.1 L1(a-b) L1(c) x.9 y.1, body 11111111');
@@ -104,15 +104,15 @@ test('a changed request is paired with the line it replaced, and the view shows 
 });
 
 test('a dry or refused compile is no request, so one that went away isn\'t a request no longer sent', () => {
-  const committed = text('step a', '  compile p.1, body 11111111', '  compile dry + p.1.r2 ^ 4', '  compile refused BudgetExceeded [T:error-x-0123456789ab]', 'end ok');
+  const base = text('step a', '  compile p.1, body 11111111', '  compile dry + p.1.r2 ^ 4', '  compile refused BudgetExceeded [T:error-x-0123456789ab]', 'end ok');
   const run = lines(['step a'], ['  compile p.1, body 11111111', 'r1'], ['end ok']);
-  assert.deepEqual(changedRequests(committed, run).stopped, []);
+  assert.deepEqual(changedRequests(base, run).stopped, []);
 });
 
 test('a request sent at another place with its line unchanged pairs with its old line, and isn\'t a request no longer sent', () => {
-  const committed = text('step a', '  call p.1 [T:call-x-0123456789ab] -> summary, body 11111111', '  compile p.1, body 22222222', 'end ok');
+  const base = text('step a', '  call p.1 [T:call-x-0123456789ab] -> summary, body 11111111', '  compile p.1, body 22222222', 'end ok');
   const run = lines(['step a'], ['  compile p.1, body 22222222', 'r2'], ['  call p.1 [T:call-x-0123456789ab] -> summary, body 11111111', 'r1'], ['end ok']);
-  const changed = changedRequests(committed, run);
+  const changed = changedRequests(base, run);
   assert.deepEqual(changed.stopped, []);
   assert.ok(changed.moved.has(changed.requests[0]), 'the reordered request is named, and marked as moved');
   const view = viewOf({ run: 'X', record: 'differs', changed, lines: run, transcript: () => [], ledger: () => [] });
@@ -121,9 +121,9 @@ test('a request sent at another place with its line unchanged pairs with its old
 });
 
 test('within a hunk, a changed request pairs with the old line of its kind it shares most with, not the first in order', () => {
-  const committed = text('step a', '  call a.1 a.2 a.3 [T:call-x-0123456789ab] -> summary, body 11111111', '  call b.1 b.2 b.3 [T:call-x-0123456789ab] -> summary, body 22222222', 'end ok');
+  const base = text('step a', '  call a.1 a.2 a.3 [T:call-x-0123456789ab] -> summary, body 11111111', '  call b.1 b.2 b.3 [T:call-x-0123456789ab] -> summary, body 22222222', 'end ok');
   const run = lines(['step a'], ['  call b.1 b.2 b.3 b.4 [T:call-x-0123456789ab] -> summary, body 33333333', 'r2'], ['end ok']);
-  const changed = changedRequests(committed, run);
+  const changed = changedRequests(base, run);
   assert.equal(changed.was.get('r2'), '  call b.1 b.2 b.3 [T:call-x-0123456789ab] -> summary, body 22222222');
   assert.deepEqual(changed.stopped, ['  call a.1 a.2 a.3 [T:call-x-0123456789ab] -> summary, body 11111111']);
 });
@@ -135,25 +135,25 @@ test('a moved span shows each removed and added run whole, however long', () => 
 });
 
 test('a request whose head changed, though its line reads the same because the head is named on the line before, is changed in place, not sent elsewhere', () => {
-  const committed = text('step a', '  compile p.1, head H:aaaaaaaa, body 11111111', '  round + p.1.r1, body 22222222', 'end ok');
+  const base = text('step a', '  compile p.1, head H:aaaaaaaa, body 11111111', '  round + p.1.r1, body 22222222', 'end ok');
   const run = lines(['step a'], ['  compile p.1, head H:bbbbbbbb, body 11111111', 'r1'], ['  round + p.1.r1, body 22222222', 'r2'], ['end ok']);
-  const changed = changedRequests(committed, run);
+  const changed = changedRequests(base, run);
   assert.deepEqual(changed.requests, ['r1', 'r2'], 'both send the new head');
   assert.ok(!changed.moved.has('r2'), 'r2 stayed in place; only its head changed');
 });
 
 test('a removed whole compile can\'t take the pairing of a changed compile written as a change from the one before', () => {
-  const committed = text('step a', '  compile p.1 p.2 p.3, body 11111111', '  compile + p.9, body 22222222', 'end ok');
+  const base = text('step a', '  compile p.1 p.2 p.3, body 11111111', '  compile + p.9, body 22222222', 'end ok');
   const run = lines(['step a'], ['  compile + p.9 p.1 p.2 p.3, body 33333333', 'r2'], ['end ok']);
-  const changed = changedRequests(committed, run);
+  const changed = changedRequests(base, run);
   assert.equal(changed.was.get('r2'), '  compile + p.9, body 22222222', 'paired with the old change, not the whole compile it shares more items with');
   assert.deepEqual(changed.stopped, ['  compile p.1 p.2 p.3, body 11111111']);
 });
 
 test('a request whose line turned from a change into a whole compile pairs with its old line when no whole compile of its kind went away beside it', () => {
-  const committed = text('step a', '  compile + p.9, body 22222222', 'end ok');
+  const base = text('step a', '  compile + p.9, body 22222222', 'end ok');
   const run = lines(['step a'], ['  compile p.1 p.2 p.9 p.10, body 33333333', 'r2'], ['end ok']);
-  const changed = changedRequests(committed, run);
+  const changed = changedRequests(base, run);
   assert.equal(changed.was.get('r2'), '  compile + p.9, body 22222222');
   assert.deepEqual(changed.stopped, [], 'it changed form, and is still sent');
 });
@@ -189,18 +189,18 @@ test('the summary says where a run\'s evidence is and what to do when anything i
   const flag = (i) => ({ check: 4, step: `s.${i}`, message: `m${i}` });
   const out = viewLib.summaryOf({ rows: [{ run: 'H1/W2', outcome: 'flags', flags: 25, record: 'differs', changed: { requests: ['r1'], added: 1, removed: 1 }, counts: {} }], flagged: [{ run: 'H1/W2', flags: Array.from({ length: 25 }, (_, i) => flag(i)) }] });
   assert.match(out, /`report\.txt`/);
-  assert.match(out, /--update-records/);
-  assert.match(out, /expected-failures\.json/);
+  assert.doesNotMatch(out, /--update-records|versions\.txt|test\/whole-host/, 'nothing is committed to update, and the harness lives in connectome-smoke');
+  assert.match(out, /whole-host\/expected-failures\.json/);
   assert.match(out, /\n### H1\/W2: 25 flag\(s\)\n- check 4 at s\.0: m0\n/);
   assert.ok(out.includes('- check 4 at s.19: m19\n'));
   assert.ok(out.includes('- check 4 at s.24: m24'), 'no count of flags is left out of the summary');
   assert.ok(!/more in/.test(out));
 });
 
-test('the summary\'s --update-records command carries the --overlay its run had, so following it records the same candidate', () => {
-  const rows = [{ run: 'H1/W2', outcome: 'pass', record: 'differs', changed: { requests: ['r1'], added: 1, removed: 1 }, counts: {} }];
-  assert.match(viewLib.summaryOf({ rows, overlay: 'cm.tgz,af.tgz' }), /`node test\/whole-host\/run\.mjs --update-records --overlay cm\.tgz,af\.tgz`/);
-  assert.match(viewLib.summaryOf({ rows }), /`node test\/whole-host\/run\.mjs --update-records`/);
+test('a record written with no base arm is clean, and one whose base arm couldn\'t run it says so in its row', () => {
+  assert.ok(!/evidence/.test(viewLib.summaryOf({ rows: [{ run: 'H1/W1', outcome: 'pass', record: 'written', counts: {} }] })), 'a run with no base arm to compare with has nothing to act on');
+  const table = summaryTable([{ run: 'H1/W2', outcome: 'pass', record: 'missing', counts: {} }]).split('\n');
+  assert.match(table[2], /^\| H1\/W2 \| pass \| the base arm has none \|/);
 });
 
 test('the step summary cuts its table only at GitHub\'s limit, and says how many flags it left out and where they are', () => {
