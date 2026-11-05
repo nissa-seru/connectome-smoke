@@ -144,7 +144,8 @@ export function receiptHeadOf(manager) {
     }
     if (!('head' in chain)) throw new Error('kvUnifiedReceipts has no head');
     const head = chain.head;
-    if (!head) return null;
+    if (head === null) return null;
+    if (!head || typeof head !== 'object') throw new Error('the receipt head is neither null nor a receipt');
     if (typeof head.sequence !== 'number') throw new Error('the receipt head has no numeric sequence');
     if (!Array.isArray(head.changes)) throw new Error('the receipt head has no changes list');
     if (!head.changes.every(readableChange)) throw new Error('a receipt change lacks its leafId or value, or its value a string repHash and a numeric level and lastChangedSeq');
@@ -226,14 +227,18 @@ function quarantineOf(manager) {
   if (typeof strategy?.getMergeQuarantineStatus !== 'function') {
     const compressing = compresses(manager);
     if (isUnreadable(compressing)) return compressing;
-    return compressing ? { unreadable: 'the strategy compresses but has no getMergeQuarantineStatus to read its quarantines from' } : null;
+    if (!compressing) return null;
   }
   return {
     compression: plain(readable(() => {
       const status = strategy.getCompressionQuarantineStatus();
-      return status.unreadable ? null : identities(status.spans, 'chunkSourceHash', 'a compression quarantine span');
+      if (status.unreadable) throw new Error('context-manager reports its compression quarantine unreadable');
+      return identities(status.spans, 'chunkSourceHash', 'a compression quarantine span');
     })),
-    merge: plain(readable(() => identities(strategy.getMergeQuarantineStatus().records, 'key', 'a merge quarantine record'))),
+    merge: plain(readable(() => {
+      if (typeof strategy.getMergeQuarantineStatus !== 'function') throw new Error('the strategy compresses but has no getMergeQuarantineStatus to read its merge quarantine from');
+      return identities(strategy.getMergeQuarantineStatus().records, 'key', 'a merge quarantine record');
+    })),
   };
 }
 

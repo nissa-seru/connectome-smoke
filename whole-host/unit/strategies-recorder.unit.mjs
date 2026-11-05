@@ -50,10 +50,14 @@ test('storeDelta: context-manager\'s quarantines, compression spans and merge re
   records = [{ key: 'merge-1' }];
   assert.deepEqual(storeDelta(m, first.seen, blobs).out.quarantine, { compression: ['span-a', 'span-b'], merge: ['merge-1'] }, 'each span once however many records it holds, and each merge record, by identity, in order');
   status = { count: 0, keys: [], spans: [], unreadable: true };
-  assert.deepEqual(storeDelta(m, first.seen, blobs).out.quarantine, { compression: null, merge: ['merge-1'] }, 'a quarantine context-manager couldn\'t read is unknown, not none');
+  const unknown = storeDelta(m, first.seen, blobs);
+  assert.deepEqual(unknown.out.quarantine, { compression: { unreadable: 'context-manager reports its compression quarantine unreadable' }, merge: ['merge-1'] }, 'a quarantine context-manager couldn\'t read is unknown, not none');
+  assert.equal(unknown.unread, true, 'and a take of it reads unreadable, so an ended agent\'s manager is kept');
   assert.equal(storeDelta(manager([]), undefined, blobs).out.quarantine, undefined, 'a passthrough, which has no quarantine, reports none');
-  const renamed = { ...manager([]), getStrategy: () => ({ getCompressionQuarantineStatus: () => status }) };
-  assert.match(storeDelta(renamed, undefined, blobs).out.quarantine?.unreadable ?? '', /getMergeQuarantineStatus/, 'a strategy that compresses with no merge quarantine to read is unreadable, not one with none');
+  const renamed = { ...manager([]), getStrategy: () => ({ getCompressionQuarantineStatus: () => ({ count: 1, keys: ['a'], spans: [{ chunkSourceHash: 'span-a' }] }) }) };
+  const half = storeDelta(renamed, undefined, blobs).out.quarantine;
+  assert.deepEqual(half.compression, ['span-a'], 'a strategy that compresses with no merge quarantine to read still has its compression quarantine read');
+  assert.match(half.merge?.unreadable ?? '', /getMergeQuarantineStatus/, 'and its merge quarantine is unreadable, not none');
 });
 
 test('storeDelta: a quarantined span or merge record with no identity is a read this can\'t make, not a quarantine, and the other kind is still read', () => {
@@ -107,6 +111,9 @@ test('storeDelta: a strategy that takes kv-unified submissions but has no receip
   assert.match(storeDelta(on({ beginKvUnifiedSubmission: begin }), undefined, blobs).out.receiptHead?.unreadable ?? '', /kvUnifiedReceipts/, 'the chain is gone');
   assert.match(storeDelta(on({ beginKvUnifiedSubmission: begin, kvUnifiedReceipts: {} }), undefined, blobs).out.receiptHead?.unreadable ?? '', /head/, 'the chain has no head');
   assert.equal(storeDelta(on({ beginKvUnifiedSubmission: begin, kvUnifiedReceipts: { head: null } }), undefined, blobs).out.receiptHead, undefined, 'a chain with no receipt yet has none');
+  for (const head of [undefined, false, '']) {
+    assert.match(storeDelta(on({ beginKvUnifiedSubmission: begin, kvUnifiedReceipts: { head } }), undefined, blobs).out.receiptHead?.unreadable ?? '', /neither null nor a receipt/, `a head of ${JSON.stringify(head) ?? 'undefined'} is unreadable: 0.24.0's empty chain has a null head`);
+  }
   assert.equal(storeDelta(on({}), undefined, blobs).out.receiptHead, undefined, 'a strategy that takes no kv-unified submissions has none');
 });
 
