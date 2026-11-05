@@ -48,8 +48,8 @@ function lineDiff(before, after) {
   return { added, removed, hunks };
 }
 
-export function changedRequests(committed, lines) {
-  const before = committed.split('\n');
+export function changedRequests(base, lines) {
+  const before = base.split('\n');
   if (before.at(-1) === '') before.pop();
   const after = lines.map((l) => l.text);
   const { added, removed } = lineDiff(before, after);
@@ -122,7 +122,7 @@ const COLUMNS = [
 
 export function summaryTable(rows) {
   const cell = (v) => (v === undefined || v === null ? '?' : String(v));
-  const record = (r) => (r.record === 'differs' ? `differs: ${r.changed.requests.length} request(s)${r.changed.stopped?.length ? `, ${r.changed.stopped.length} no longer sent` : ''}, +${r.changed.added} -${r.changed.removed} line(s)` : r.record ?? 'none');
+  const record = (r) => (r.record === 'differs' ? `differs: ${r.changed.requests.length} request(s)${r.changed.stopped?.length ? `, ${r.changed.stopped.length} no longer sent` : ''}, +${r.changed.added} -${r.changed.removed} line(s)` : r.record === 'missing' ? 'the base arm has none' : r.record ?? 'none');
   const escaped = (t) => t.replaceAll('|', '\\|').replace(/\r?\n/g, ' ');
   const counted = (r) => `${r.flags ?? '?'} flag(s)`;
   const outcome = (r) => {
@@ -137,11 +137,11 @@ export function summaryTable(rows) {
   ].join('\n');
 }
 
-export function summaryOf({ versionNote = null, rows, flagged = [], overlay = '' }) {
-  const clean = rows.every((r) => r.outcome === 'pass' && ['same', 'updated'].includes(r.record) && (!r.selfCheck || r.selfCheck.outcome === 'same'));
-  const parts = [...(versionNote ? [versionNote] : []), summaryTable(rows)];
-  if (!clean || versionNote) {
-    parts.push("Each run's `report.txt`, record and view are under its directory in this job's evidence, its name with `/` written as `_`. Where the change meant to move a request, `node test/whole-host/run.mjs --update-records" + (overlay ? ` --overlay ${overlay}` : '') + "` rewrites the records to commit with it. A flag that a known finding explains is an entry in `test/whole-host/expected-failures.json` (`docs/whole-host-records.md`, \"Expected failures\").");
+export function summaryOf({ rows, flagged = [] }) {
+  const clean = rows.every((r) => r.outcome === 'pass' && ['same', 'written'].includes(r.record) && (!r.selfCheck || r.selfCheck.outcome === 'same'));
+  const parts = [summaryTable(rows)];
+  if (!clean) {
+    parts.push("Each run's `report.txt`, record and view are under its directory in this job's evidence, its name with `/` written as `_`. A flag that a known finding explains is an entry in `whole-host/expected-failures.json` (`whole-host/README.md`, \"Expected failures\").");
   }
   for (const { run, flags } of flagged) {
     parts.push([`### ${run}: ${flags.length} flag(s)`, ...flags.map((f) => `- check ${f.check} at ${f.step}${f.request ? ` (${f.request})` : ''}: ${f.message}`)].join('\n'));
@@ -180,10 +180,9 @@ export function movedIn(was, now) {
   return out;
 }
 
-export function viewOf({ run, record, changed, lines, transcript, ledger }) {
+export function viewOf({ run, changed, lines, transcript, ledger }) {
   const out = [`## ${run}`, ''];
-  if (record === 'missing') out.push('No record is committed for this run, so every request is shown.', '');
-  else out.push(`${changed.requests.length} request(s) changed and ${changed.stopped?.length ?? 0} no longer sent: ${changed.added} record line(s) added and ${changed.removed} removed${changed.unattributed ? `, ${changed.unattributed} of the added belonging to no request (such as a summary written or removed, a dry compile, an action, a checkpoint or the totals)` : ''}.`, '');
+  out.push(`${changed.requests.length} request(s) changed and ${changed.stopped?.length ?? 0} no longer sent: ${changed.added} record line(s) added and ${changed.removed} removed${changed.unattributed ? `, ${changed.unattributed} of the added belonging to no request (such as a summary written or removed, a dry compile, an action, a checkpoint or the totals)` : ''}.`, '');
   const lineOf = new Map();
   const short = (t) => (t.length > HEADING_CHARS ? `${t.slice(0, HEADING_CHARS - 1)}…` : t);
   for (const l of lines) if (l.request && !lineOf.has(l.request)) lineOf.set(l.request, short(l.text.trim()));
@@ -195,13 +194,13 @@ export function viewOf({ run, record, changed, lines, transcript, ledger }) {
     const was = changed.was?.get(id);
     if (changed.moved?.has(id)) out.push('Sent at another place in the run, with its record line unchanged.', '');
     else if (was && fullOf.has(id)) out.push('Where its record line moved:', '', '```diff', ...movedIn(was, fullOf.get(id)), '```', '');
-    else if (record !== 'missing') out.push('A request the committed record doesn\'t have.', '');
+    else out.push('A request the base arm\'s record doesn\'t have.', '');
     const owned = ledger(id);
     if (owned?.length) out.push(...owned, '');
     out.push('```text', ...transcript(id, seen), '```', '');
   }
   for (const line of changed.stopped ?? []) {
-    out.push(`### no longer sent: \`${short(line.trim())}\``, '', 'The committed record has this request and the run no longer sends it, so there is no body to show; its line is:', '', '```text', line.trim(), '```', '');
+    out.push(`### no longer sent: \`${short(line.trim())}\``, '', 'The base arm\'s record has this request and the head no longer sends it, so there is no body to show; its line is:', '', '```text', line.trim(), '```', '');
   }
   return `${out.join('\n')}\n`;
 }

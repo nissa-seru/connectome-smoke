@@ -1,0 +1,36 @@
+import { existsSync, readFileSync } from 'node:fs';
+import { join, relative } from 'node:path';
+
+export const slug = (id) => id.replaceAll('/', '_');
+export const recordPath = (dir, id) => join(dir, slug(id), `${slug(id)}.record`);
+
+export function readAgainst(dir, { lane, runs, names }) {
+  const file = join(dir, 'run.json');
+  if (!existsSync(file)) throw new Error(`--against ${dir} holds no run.json, so the base arm didn't finish`);
+  let base;
+  try { base = JSON.parse(readFileSync(file, 'utf-8')); } catch (e) { throw new Error(`--against ${file} couldn't be read: ${e.message}`); }
+  if (base.lane !== lane) throw new Error(`--against ${dir} was written by the harness at lane ${String(base.lane).slice(0, 12)}, and this one is ${lane.slice(0, 12)}, so their records can't be compared`);
+  const theirs = Array.isArray(base.runs) ? base.runs : [];
+  if (theirs.join(',') !== runs.join(',')) throw new Error(`--against ${dir} drew its shares from ${theirs.join(', ') || 'no runs'}, and this invocation from ${runs.join(', ')}: give both arms the same --runs`);
+  const results = Array.isArray(base.results) ? base.results : [];
+  const ran = results.map((r) => r.run);
+  if (ran.length !== names.length || names.some((n) => !ran.includes(n))) throw new Error(`--against ${dir} ran ${ran.join(', ') || 'no runs'}, and this share runs ${names.join(', ')}: give both arms the same --shard`);
+  const lost = results.filter((r) => r.record != null && !existsSync(recordPath(dir, r.run)));
+  if (lost.length) throw new Error(`--against ${dir}'s run.json says ${lost.map((r) => r.run).join(', ')} wrote a record, and ${lost.map((r) => relative(dir, recordPath(dir, r.run))).join(', ')} isn't there`);
+  const byRun = new Map(results.map((r) => [r.run, r]));
+  return { dir, release: base.release, result: (id) => byRun.get(id) };
+}
+
+const named = (versions) => Object.entries(versions ?? {}).map(([k, v]) => `${k.replace('@animalabs/', '')}@${v}`).join(' ');
+
+export function releaseDiffers(against, release) {
+  if (JSON.stringify(against.release) === JSON.stringify(release)) return null;
+  return `--against ${against.dir} made its checkpoints with ${against.release?.tag ?? 'no release'} (${named(against.release?.versions)}), and this invocation with ${release.tag} (${named(release.versions)}), so the two arms' runs wouldn't start from the same stores`;
+}
+
+export function recordAgainst(against, id, text) {
+  if (!against) return { record: 'written', base: null };
+  if (against.result(id)?.record == null) return { record: 'missing', base: null };
+  const base = readFileSync(recordPath(against.dir, id), 'utf-8');
+  return { record: base === text ? 'same' : 'differs', base };
+}

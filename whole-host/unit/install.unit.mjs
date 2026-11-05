@@ -37,7 +37,7 @@ test('R9: an overlay is laid over a copy of the checkout and named by what was i
     assert.equal(installed.versions['@animalabs/context-manager'].startsWith('9.9.9'), true);
     assert.equal(existsSync(join(dir, 'work')), false, 'a work directory inside the checkout is left out of the copy');
     assert.equal(readFileSync(join(dir, 'src', 'index.ts'), 'utf-8'), 'export {};\n', 'and its source is copied');
-    assert.throws(() => readPacks([pack(at, '@animalabs/connectome-host', '9.9.9')]), /is connectome-host, which this checkout is/);
+    assert.throws(() => readPacks([pack(at, '@animalabs/connectome-host', '9.9.9')]), /is connectome-host, which --host is: give --host the host change's checkout/);
     assert.throws(() => readPacks([pack(at, 'left-pad', '1.0.0')]), /is left-pad; overlay one of/);
   } finally { rmSync(at, { recursive: true, force: true }); }
 });

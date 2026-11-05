@@ -1,6 +1,4 @@
 import { createHash } from 'node:crypto';
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { FIXTURE_AGENT, requestPairs } from './strategies/checks.mjs';
 import { messageNames, spanName } from './strategies/names.mjs';
 
@@ -455,44 +453,7 @@ export function refuseUnrecordable(r) {
   return cannot;
 }
 
-export const everyRunUpdated = (everyRun, results) => everyRun.every((n) => results.some((x) => x.run === n && x.record === 'updated'));
-
-export function exitCode(results, { versions = 'same' } = {}) {
+export function exitCode(results) {
   if (results.some((r) => r.outcome === 'couldnt-run' || r.selfCheck?.outcome === 'couldnt-run')) return 2;
-  if (versions !== 'same' && versions !== 'updated') return 1;
-  return results.every((r) => r.outcome === 'pass' && (r.record === 'same' || r.record === 'updated') && (!r.selfCheck || r.selfCheck.outcome === 'same')) ? 0 : 1;
-}
-
-const versionList = (v) => Object.entries(v ?? {}).map(([k, x]) => `${k.replace('@animalabs/', '')} ${x}`).join(', ');
-
-export function versionsText({ release, candidate }) {
-  const without = (v, names) => Object.fromEntries(Object.entries(v ?? {}).filter(([k]) => !names.includes(k)));
-  return `# whole-host versions\ncheckpoint ${release.tag}: ${versionList(without(release.versions, ['bun']))}\ncandidate: ${versionList(without(candidate.versions, ['bun', '@animalabs/connectome-host']))}\n`;
-}
-
-export function versionChanges(committed, now) {
-  const parse = (text) => new Map(text.split('\n').filter((l) => l && !l.startsWith('#')).map((l) => {
-    const [, kind, tag, list] = /^(\w+)(?: (\S+))?: (.*)$/.exec(l) ?? [];
-    return [kind, { tag, packages: new Map((list ?? '').split(', ').filter(Boolean).map((p) => { const at = p.lastIndexOf(' '); return [p.slice(0, at), p.slice(at + 1)]; })) }];
-  }));
-  const a = parse(committed);
-  const b = parse(now);
-  const out = [];
-  for (const kind of new Set([...a.keys(), ...b.keys()])) {
-    const x = a.get(kind) ?? { packages: new Map() };
-    const y = b.get(kind) ?? { packages: new Map() };
-    if (x.tag !== y.tag) out.push(`${kind} ${x.tag ?? 'none'} → ${y.tag ?? 'none'}`);
-    for (const name of new Set([...x.packages.keys(), ...y.packages.keys()])) {
-      if (x.packages.get(name) !== y.packages.get(name)) out.push(`${kind} ${name} ${x.packages.get(name) ?? 'none'} → ${y.packages.get(name) ?? 'none'}`);
-    }
-  }
-  return out;
-}
-
-export function compareVersions(recordsDir, now, { update = false } = {}) {
-  const file = join(recordsDir, 'versions.txt');
-  if (update) { mkdirSync(recordsDir, { recursive: true }); writeFileSync(file, now); return { state: 'updated', changes: [] }; }
-  if (!existsSync(file)) return { state: 'missing', changes: [] };
-  const committed = readFileSync(file, 'utf-8');
-  return committed === now ? { state: 'same', changes: [] } : { state: 'differs', changes: versionChanges(committed, now) };
+  return results.every((r) => r.outcome === 'pass' && (r.record === 'same' || r.record === 'written') && (!r.selfCheck || r.selfCheck.outcome === 'same')) ? 0 : 1;
 }

@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { compareVersions, exitCode, nameTemplates, refuseUnrecordable, renderRecord, renderRecordLines, unrecordable, versionChanges, versionsText } from '../lib/record.mjs';
+import { exitCode, nameTemplates, refuseUnrecordable, renderRecord, renderRecordLines, unrecordable } from '../lib/record.mjs';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -421,6 +421,14 @@ test('a run unrecordable() refuses becomes couldn\'t-run with its reason, the ou
   assert.equal(exitCode([{ outcome: 'pass', record: 'same', selfCheck: { outcome: 'couldnt-run' } }]), 2);
 });
 
+test('an invocation exits 0 when every run passed with its record the base arm\'s, or written where there\'s no base arm, and 1 when a record differs or has no base to compare with', () => {
+  assert.equal(exitCode([{ outcome: 'pass', record: 'written' }]), 0);
+  assert.equal(exitCode([{ outcome: 'pass', record: 'written', selfCheck: { outcome: 'same' } }]), 0);
+  assert.equal(exitCode([{ outcome: 'pass', record: 'same' }, { outcome: 'pass', record: 'missing' }]), 1);
+  assert.equal(exitCode([{ outcome: 'flags', record: 'written' }]), 1);
+  assert.equal(exitCode([{ outcome: 'pass', record: 'written', selfCheck: { outcome: 'differs' } }]), 1);
+});
+
 test('a request the stand-in couldn\'t classify gets a line of its own with its body, so a changed one is named and its view can show it', () => {
   const head = { model: 'm', maxTokens: 100, toolChoice: null, thinking: null, system: [], tools: [], rest: null };
   const odd = (digest) => ({ id: 'r1', seq: 1, kind: 'unclassified', reason: 'its compression instruction states no target length', step: 'q.1', stream: true, head, messages: [{ role: 'user', digest, blocks: [{ type: 'text', canaries: ['[[c:q.1.in]]'] }] }], answer: { shape: 'refused' } });
@@ -445,21 +453,10 @@ test('a summary is named by its sources\' canaries as they stood at the take tha
   assert.match(compiles[1], /L1\(b\.in\)/);
 });
 
-test('no record names a version: versions go in one file, a change in them is named once, and a differing file fails the run as a record does', () => {
+test('no record names a version, so a candidate that differs from the base arm\'s only in its version moves no record', () => {
   const body = renderRecord({ header, log: [], records: [], end: { ok: true } });
   assert.ok(!/0\.0\.[12]|v0\.0\.1/.test(body), 'the record carries no version');
   assert.match(body.split('\n')[0], /^# whole-host record H1\/W1, from empty$/);
-  const at = (cm, { host = '0.21.0', bun = '1.4.4' } = {}) => versionsText({ release: { tag: 'v0.21.0', versions: { '@animalabs/connectome-host': '0.21.0', '@animalabs/context-manager': '0.24.0', bun } }, candidate: { versions: { '@animalabs/connectome-host': host, '@animalabs/context-manager': cm, bun } } });
-  assert.equal(at('0.24.0'), '# whole-host versions\ncheckpoint v0.21.0: connectome-host 0.21.0, context-manager 0.24.0\ncandidate: context-manager 0.24.0\n', 'it names the checkpoint release and its stack, and the candidate\'s stack, but not the candidate itself or the Bun that ran');
-  assert.deepEqual(versionChanges(at('0.24.0'), at('0.24.1')), ['candidate context-manager 0.24.0 → 0.24.1']);
-  assert.deepEqual(versionChanges(at('0.24.0'), at('0.24.0')), []);
-  assert.equal(at('0.24.0', { host: '0.22.0' }), at('0.24.0'), 'a release\'s version bump of the checkout changes nothing it compares');
-  assert.equal(at('0.24.0', { bun: '1.4.9' }), at('0.24.0'), 'another Bun inside the engines range changes nothing it compares');
-  const pass = [{ outcome: 'pass', record: 'same' }];
-  assert.equal(exitCode(pass, { versions: 'same' }), 0);
-  assert.equal(exitCode(pass, { versions: 'differs' }), 1);
-  assert.equal(exitCode(pass, { versions: 'missing' }), 1);
-  assert.equal(exitCode(pass, { versions: 'updated' }), 0);
 });
 
 test('a template is named from its own text alone, so a text leaving the set renames no other', () => {
@@ -489,18 +486,6 @@ test('a run where two agents besides the fixture make request compiles is refuse
   const compiles = (agent) => ({ kind: 'compiles', lines: [{ kind: 'request', agent, outcome: 'compiled', stamp: '9' }] });
   assert.equal(unrecordable([{ kind: 'agent', agent: 'sub' }], [compiles('fixture'), compiles('spawn-a')]), null);
   assert.match(unrecordable([{ kind: 'agent', agent: 'sub' }], [compiles('fixture'), compiles('spawn-a'), compiles('spawn-b')]), /spawn-a and spawn-b each made request compiles/);
-});
-
-test('versions.txt is compared on disk: missing, the same, differing with the moves named, and written by an update', () => {
-  const dir = mkdtempSync(join(tmpdir(), 'versions-'));
-  try {
-    const at = (cm) => versionsText({ release: { tag: 'v1', versions: {} }, candidate: { versions: { '@animalabs/context-manager': cm } } });
-    assert.deepEqual(compareVersions(dir, at('1.0.0')), { state: 'missing', changes: [] });
-    assert.deepEqual(compareVersions(dir, at('1.0.0'), { update: true }), { state: 'updated', changes: [] });
-    assert.equal(readFileSync(join(dir, 'versions.txt'), 'utf-8'), at('1.0.0'));
-    assert.deepEqual(compareVersions(dir, at('1.0.0')), { state: 'same', changes: [] });
-    assert.deepEqual(compareVersions(dir, at('1.0.1')), { state: 'differs', changes: ['candidate context-manager 1.0.0 → 1.0.1'] });
-  } finally { rmSync(dir, { recursive: true, force: true }); }
 });
 
 test('two different texts that would take one key make the record refuse to be written, naming both', () => {
@@ -676,14 +661,6 @@ test('a request\'s head line names its URL\'s query when it has one', () => {
   const heads = (r) => renderRecord({ header, log: lg, records: [r], end: { ok: true } }).split('\n').filter((l) => l.startsWith('H:'));
   assert.ok(heads(req('a1', 'beta=true'))[0].endsWith(', query beta=true'), heads(req('a1', 'beta=true'))[0]);
   assert.ok(!heads(req('a1', null))[0].includes('query'));
-});
-
-test('versions.txt is updated only when every run was updated, by name: a list that repeats one run and leaves out another is not every run', () => {
-  const every = ['a', 'b', 'c'];
-  const updated = (run) => ({ run, record: 'updated' });
-  assert.equal(recordLib.everyRunUpdated(every, [updated('a'), updated('b'), updated('c')]), true);
-  assert.equal(recordLib.everyRunUpdated(every, [updated('a'), updated('b'), updated('b')]), false);
-  assert.equal(recordLib.everyRunUpdated(every, [updated('a'), updated('b'), { run: 'c', record: 'same' }]), false);
 });
 
 test('a record ends with each check\'s judged count, so a drop that stays above zero moves a line', () => {
