@@ -33,7 +33,7 @@ test('the summary has a row per run, naming what changed, with a count it wasn\'
     { run: 'H3/W4', record: 'differs', changed: { requests: ['r3', 'r4'], added: 3, removed: 2 }, counts: {} },
   ]).split('\n');
   assert.equal(table.length, 4);
-  assert.equal(table[0], '| run | outcome | record | request compiles | refused | compressions | merges | compression quarantines entered | merge quarantines entered | ledger of | raw | summarised | left out | tokens sent | invariant lines |');
+  assert.equal(table[0], '| run | outcome | record | request compiles | refused | requests to summarise messages | requests to merge summaries | compression quarantines entered | merge quarantines entered | ledger of | raw | summarised | left out | tokens sent | invariant lines |');
   assert.equal(table[1], '|---|---|---|---:|---:|---:|---:|---:|---:|---|---:|---:|---:|---:|---:|', 'counts align right, the agent\'s name left');
   assert.equal(table[2], '| H1/W1 | ? | same | 70 | 0 | 12 | 3 | 1 | 2 | fixture | 20 | 40 | 10 | 123456 | 0 |');
   assert.equal(table[3], '| H3/W4 | ? | differs: 2 request(s), +3 -2 line(s) | ? | ? | ? | ? | ? | ? | ? | ? | ? | ? | ? | ? |');

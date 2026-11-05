@@ -111,8 +111,8 @@ const quarantinesOf = (c, kind) => (c.counts?.quarantines === 'not-reported' ? '
 const COLUMNS = [
   ['request compiles', (c) => c.counts?.compiles],
   ['refused', (c) => c.counts?.refused],
-  ['compressions', (c) => c.counts?.compressions],
-  ['merges', (c) => c.counts?.merges],
+  ['requests to summarise messages', (c) => c.counts?.compressions],
+  ['requests to merge summaries', (c) => c.counts?.merges],
   ['compression quarantines entered', (c) => quarantinesOf(c, 'compression')],
   ['merge quarantines entered', (c) => quarantinesOf(c, 'merge')],
   ['ledger of', (c) => c.ledgerOf],
