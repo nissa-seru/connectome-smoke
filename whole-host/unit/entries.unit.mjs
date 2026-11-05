@@ -133,7 +133,6 @@ test('two records that differ where no kind of difference is found throw, so a r
     'a trailing newline': base.slice(0, -1),
     'step order': base.replace('step p.1\n  compile p.1.in, body 11111111\nstep p.2\n  compile p.2.in, body 22222222\n', 'step p.2\n  compile p.2.in, body 22222222\nstep p.1\n  compile p.1.in, body 11111111\n'),
     'template order': base.replace('T:a-111111111111 = A text\nT:b-222222222222 = B text\n', 'T:b-222222222222 = B text\nT:a-111111111111 = A text\n'),
-    'a head whose key is the same and whose text isn\'t': base.replace('H:11111111 = head one', 'H:11111111 = head one, changed'),
     'a step written twice': base.replace('step p.2\n  compile p.2.in, body 22222222\n', 'step p.2\n  compile p.2.in, body 99999999\nstep p.2\n  compile p.2.in, body 22222222\n'),
   };
   for (const [what, head] of Object.entries(unplaced)) assert.throws(() => differencesOf('H1/W1', base, head), /the records differ, but no difference between them was found/, what);
@@ -147,4 +146,14 @@ test('a record the writer writes with no step, as for a run that failed before a
   assert.doesNotMatch(written(true), /^step |^heads$/m, 'the writer writes no step and no heads here');
   const ds = differencesOf('H1/W1', written(true), written(false));
   assert.deepEqual(ds.map((d) => [d.place.step, d.before, d.after]), [['end', 'end ok', 'end failed'], ['end', 'judged 14 property 1', 'judged 14 property 0']]);
+});
+
+test('two records that name two texts by one template or head key throw, so no differing text is left out of the entries', () => {
+  // review:review-349 #10: a key is a digest of its own text, so one key naming two texts is a collision, and the grouping
+  // compared keys alone; beside any other difference, the changed text was silently dropped.
+  const base = record({ heads: ['H:11111111 = head one'], templates: ['T:t-aaaaaaaaaaaa = one'], steps: { 'p.1': ['compile p.1.in, body 11111111'] } });
+  const changed = (from, to) => base.replace(from, to).replace('body 11111111', 'body 22222222');
+  assert.throws(() => differencesOf('H1/W1', base, changed('H:11111111 = head one', 'H:11111111 = head two')), /the records name two texts by one key, H:11111111/);
+  assert.throws(() => differencesOf('H1/W1', base, changed('T:t-aaaaaaaaaaaa = one', 'T:t-aaaaaaaaaaaa = two')), /the records name two texts by one key, T:t-aaaaaaaaaaaa/);
+  assert.equal(differencesOf('H1/W1', base, changed('', '')).length, 1, 'a key naming one text in both arms is no difference');
 });

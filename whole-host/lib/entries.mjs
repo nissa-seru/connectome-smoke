@@ -86,6 +86,9 @@ export function differencesOf(run, baseText, headText) {
   for (const section of ['templates', 'heads']) {
     const b = base[section];
     const h = head[section];
+    // A key is a digest of its own text, so one key naming two texts is a collision the grouping can't show; it fails the
+    // run at the grouping stage rather than dropping that text (review:review-349 #10).
+    for (const k of b.keys()) if (h.has(k) && h.get(k) !== b.get(k)) throw new Error(`the records name two texts by one key, ${k}`);
     for (const k of b.keys()) if (!h.has(k)) add([section, role(k), 'only in base'], `${section} ${role(k)}: text only in base`, section, `${k} = ${b.get(k)}`, '');
     for (const k of h.keys()) if (!b.has(k)) add([section, role(k), 'only in head'], `${section} ${role(k)}: text only in head`, section, '', `${k} = ${h.get(k)}`);
   }
