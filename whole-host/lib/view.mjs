@@ -106,12 +106,15 @@ export function changedRequests(base, lines) {
 export const STEP_SUMMARY_BYTES = 1024 * 1024;
 const HEADING_CHARS = 200;
 
+const quarantinesOf = (c, kind) => (c.counts?.quarantines === 'not-reported' ? 'not reported' : c.counts?.quarantines?.[kind]);
+
 const COLUMNS = [
   ['request compiles', (c) => c.counts?.compiles],
   ['refused', (c) => c.counts?.refused],
   ['compressions', (c) => c.counts?.compressions],
   ['merges', (c) => c.counts?.merges],
-  ['quarantines', (c) => c.counts?.quarantines],
+  ['compression quarantines entered', (c) => quarantinesOf(c, 'compression')],
+  ['merge quarantines entered', (c) => quarantinesOf(c, 'merge')],
   ['ledger of', (c) => c.ledgerOf],
   ['raw', (c) => c.counts?.raw],
   ['summarised', (c) => c.counts?.summarised],

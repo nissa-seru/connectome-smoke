@@ -19,7 +19,7 @@ import { flagsAgainst, readAgainst, recordAgainst, releaseDiffers, slug } from '
 import { differencesOf, entriesOf } from './lib/entries.mjs';
 import { changedRequests, stepSummary, summaryOf, viewOf } from './lib/view.mjs';
 import { generatedTexts, transcriptOf } from './lib/strategies/transcript.mjs';
-import { ledgerOf, moduleCounts } from './lib/strategies/ledger.mjs';
+import { ledgerOf, moduleCounts, readsFailed } from './lib/strategies/ledger.mjs';
 import { shares } from './lib/shares.mjs';
 import { selfCheckOf } from './lib/strategies/compare.mjs';
 import { cutError } from './lib/strategies/cut.mjs';
@@ -300,8 +300,12 @@ for (const id of names) {
   }
   rows.push(row);
   if (r.failures?.length) flaggedRuns.push({ run: id, flags: r.failures });
-  const counts = row.counts && { compiles: row.counts.compiles, compressions: row.counts.compressions, merges: row.counts.merges, quarantines: null };
-  const measured = r.outcome === 'couldnt-run' ? {} : { unmeasured: r.unmeasured ?? [], ...(against ? { baseUnmeasured: against.result(id)?.unmeasured ?? [] } : {}) };
+  const counts = row.counts && { compiles: row.counts.compiles, compressions: row.counts.compressions, merges: row.counts.merges, quarantines: row.counts.quarantines };
+  const base = against?.result(id);
+  const measured = r.outcome === 'couldnt-run' ? {} : {
+    unmeasured: r.unmeasured ?? [], ...(against ? { baseUnmeasured: base?.unmeasured ?? [] } : {}),
+    readsFailed: readsFailed(r.log ?? []), ...(against ? { baseReadsFailed: base?.readsFailed ?? [] } : {}),
+  };
   results.push({ run: id, outcome: r.outcome, reason: r.reason, record, ...(flags ? { flags } : {}), ...measured, ...(counts ? { counts } : {}), ...(selfCheck ? { selfCheck } : {}) });
 }
 if (against) writeFileSync(join(out, 'entries.json'), JSON.stringify(entriesOf(runs.flatMap((id) => differences.get(id) ?? [])), null, 1));

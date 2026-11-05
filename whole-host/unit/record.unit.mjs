@@ -439,6 +439,8 @@ test('a run that didn\'t measure, on either arm, makes the invocation exit 2, wh
   assert.equal(exitCode([{ outcome: 'flags', record: 'same', flags: none, unmeasured: ['the run failed'] }]), 2);
   assert.equal(exitCode([{ outcome: 'pass', record: 'same', flags: none, unmeasured: [], baseUnmeasured: ['check 4 (coverage) judged nothing'] }]), 2);
   assert.equal(exitCode([{ outcome: 'pass', record: 'same', flags: none, unmeasured: [], baseUnmeasured: [] }]), 0);
+  assert.equal(exitCode([{ outcome: 'pass', record: 'same', flags: none, readsFailed: ['receipt'] }]), 2, 'a failed read on the head');
+  assert.equal(exitCode([{ outcome: 'pass', record: 'same', flags: none, readsFailed: [], baseReadsFailed: ['merge quarantines'] }]), 2, 'and on the base');
 });
 
 test('a request the stand-in couldn\'t classify gets a line of its own with its body, so a changed one is named and its view can show it', () => {

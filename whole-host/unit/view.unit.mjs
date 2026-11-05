@@ -29,14 +29,21 @@ test('a request with several changed lines is named once, and an inserted line l
 
 test('the summary has a row per run, naming what changed, with a count it wasn\'t given shown as unknown', () => {
   const table = summaryTable([
-    { run: 'H1/W1', record: 'same', ledgerOf: 'fixture', counts: { compiles: 70, refused: 0, compressions: 12, merges: 3, quarantines: 0, raw: 20, summarised: 40, out: 10, invariantLines: 0 }, tokens: { input: 23456, cacheRead: 100000, cacheWrite: 0, output: 900 } },
+    { run: 'H1/W1', record: 'same', ledgerOf: 'fixture', counts: { compiles: 70, refused: 0, compressions: 12, merges: 3, quarantines: { compression: 1, merge: 2 }, raw: 20, summarised: 40, out: 10, invariantLines: 0 }, tokens: { input: 23456, cacheRead: 100000, cacheWrite: 0, output: 900 } },
     { run: 'H3/W4', record: 'differs', changed: { requests: ['r3', 'r4'], added: 3, removed: 2 }, counts: {} },
   ]).split('\n');
   assert.equal(table.length, 4);
-  assert.equal(table[0], '| run | outcome | record | request compiles | refused | compressions | merges | quarantines | ledger of | raw | summarised | left out | tokens sent | invariant lines |');
-  assert.equal(table[1], '|---|---|---|---:|---:|---:|---:|---:|---|---:|---:|---:|---:|---:|', 'counts align right, the agent\'s name left');
-  assert.equal(table[2], '| H1/W1 | ? | same | 70 | 0 | 12 | 3 | 0 | fixture | 20 | 40 | 10 | 123456 | 0 |');
-  assert.equal(table[3], '| H3/W4 | ? | differs: 2 request(s), +3 -2 line(s) | ? | ? | ? | ? | ? | ? | ? | ? | ? | ? | ? |');
+  assert.equal(table[0], '| run | outcome | record | request compiles | refused | compressions | merges | compression quarantines entered | merge quarantines entered | ledger of | raw | summarised | left out | tokens sent | invariant lines |');
+  assert.equal(table[1], '|---|---|---|---:|---:|---:|---:|---:|---:|---|---:|---:|---:|---:|---:|', 'counts align right, the agent\'s name left');
+  assert.equal(table[2], '| H1/W1 | ? | same | 70 | 0 | 12 | 3 | 1 | 2 | fixture | 20 | 40 | 10 | 123456 | 0 |');
+  assert.equal(table[3], '| H3/W4 | ? | differs: 2 request(s), +3 -2 line(s) | ? | ? | ? | ? | ? | ? | ? | ? | ? | ? | ? | ? |');
+});
+
+test('quarantines are counted by kind, entered during the run, and a strategy that reports none or a kind that couldn\'t be read says so', () => {
+  const cells = (quarantines) => summaryTable([{ run: 'H1/W1', record: 'same', counts: { quarantines } }]).split('\n')[2].split(' | ').slice(7, 9);
+  assert.deepEqual(cells({ compression: 10, merge: 0 }), ['10', '0']);
+  assert.deepEqual(cells('not-reported'), ['not reported', 'not reported']);
+  assert.deepEqual(cells({ compression: 'unreadable', merge: 3 }), ['unreadable', '3']);
 });
 
 test('a run\'s view shows each changed request\'s record line, its ledger and its transcript, sharing what the transcripts have shown', () => {
