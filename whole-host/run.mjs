@@ -29,7 +29,6 @@ const LABEL = '[whole-host]';
 
 const { opt, flag, missing } = parseArgs(process.argv.slice(2));
 const fail = (message) => { console.error(`${LABEL} ${message}`); process.exit(2); };
-// An option given with no value would read as not given: a bare --against as a base arm (review:review-349 #11).
 for (const name of missing(['against', 'checkpoints', 'host', 'out', 'overlay', 'runs', 'shard', 'workdir'])) fail(`--${name} needs a value`);
 const stack = JSON.parse(readFileSync(join(HERE, 'stack.json'), 'utf-8'));
 const all = configurations();
@@ -316,7 +315,6 @@ for (const id of names) {
 if (against) writeFileSync(join(out, 'entries.json'), JSON.stringify(entriesOf(runs.flatMap((id) => differences.get(id) ?? [])), null, 1));
 const table = summaryOf({ rows, flagged: flaggedRuns });
 writeFileSync(join(out, 'summary.md'), `${table}\n`);
-// A run that failed after its view was written couldn't run, so its view isn't shown (review:review-349 #12).
 const shown = views.filter((v) => results.find((x) => x.run === v.run)?.outcome !== 'couldnt-run');
 if (process.env.GITHUB_STEP_SUMMARY) {
   const file = process.env.GITHUB_STEP_SUMMARY;

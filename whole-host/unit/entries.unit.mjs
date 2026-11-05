@@ -44,7 +44,6 @@ test('a template\'s text that changed is never paired across the arms: each side
   ], 'two texts of one role may be two different texts, so the grouping never says one became the other');
   const short = differencesOf('H1/W1', base.replace('(2026,1,6,9,0)', '(2026,1)'), head).find((d) => d.place.step === 'templates');
   assert.equal(short.before, 'T:user-clock-tuesday-#-#-#-aaaaaaaaaaaa = Clock: Tuesday #-#-#, #:# UTC', 'two numbers for five #s fill nothing');
-  // A bare first use names no numbers, so a later use's can't fill it (review:review-349 #13).
   const bare = differencesOf('H1/W1', base.replace('compile [T:user-clock-tuesday-#-#-#-aaaaaaaaaaaa](2026,1,6,9,0) p.1.in', 'compile [T:user-clock-tuesday-#-#-#-aaaaaaaaaaaa] p.1.in [T:user-clock-tuesday-#-#-#-aaaaaaaaaaaa](2026,1,6,9,0)'), head).find((d) => d.place.step === 'templates');
   assert.equal(bare.before, 'T:user-clock-tuesday-#-#-#-aaaaaaaaaaaa = Clock: Tuesday #-#-#, #:# UTC', 'the first use is the bare one, which names no number');
 });
@@ -52,7 +51,6 @@ test('a template\'s text that changed is never paired across the arms: each side
 test('a role that names a memory by its id is one kind whatever the id, and an entry names its role masked', () => {
   const fork = (id) => record({ templates: [`T:fork-#-d#-#-s-m${id}-memory-${id}-${'a'.repeat(12)} = Fork`] });
   const none = record({});
-  // '#' alone is a memory id of digits only, such as M12345678's (review:review-349 #3).
   const ds = [...differencesOf('H1/W1', fork('#add#'), none), ...differencesOf('H1/W2', fork('f#d#e'), none), ...differencesOf('H1/W5', fork('b#'), none), ...differencesOf('H1/W6', fork('#'), none)];
   const entries = entriesOf(ds);
   assert.equal(entries.length, 1);
@@ -144,7 +142,6 @@ test('two records that differ where no kind of difference is found throw, so a r
 });
 
 test('a record the writer writes with no step, as for a run that failed before any, keeps its end, totals and judged lines in its tail', () => {
-  // review:review-349 #7: the parser had read them as templates' keys, since the writer writes no step line and no heads.
   const written = (ok) => renderRecord({ header: '# whole-host record H1/W1, from empty', log: [], records: [], end: { ok }, judged: [{ check: 14, name: 'property', judged: ok ? 1 : 0 }] });
   assert.doesNotMatch(written(true), /^step |^heads$/m, 'the writer writes no step and no heads here');
   const ds = differencesOf('H1/W1', written(true), written(false));
@@ -152,8 +149,6 @@ test('a record the writer writes with no step, as for a run that failed before a
 });
 
 test('two records that name two texts by one template or head key throw, so no differing text is left out of the entries', () => {
-  // review:review-349 #10: a key is a digest of its own text, so one key naming two texts is a collision, and the grouping
-  // compared keys alone; beside any other difference, the changed text was silently dropped.
   const base = record({ heads: ['H:11111111 = head one'], templates: ['T:t-aaaaaaaaaaaa = one'], steps: { 'p.1': ['compile p.1.in, body 11111111'] } });
   const changed = (from, to) => base.replace(from, to).replace('body 11111111', 'body 22222222');
   assert.throws(() => differencesOf('H1/W1', base, changed('H:11111111 = head one', 'H:11111111 = head two')), /the records name two texts by one key, H:11111111/);

@@ -28,7 +28,6 @@ test('a command that fails shows the last 3,000 characters of its output, and ke
 });
 
 test('an option that takes a value and is given none is named, so the invocation can refuse it rather than run without it', () => {
-  // review:review-349 #11: a bare --against read as no --against, and the head ran as a base arm.
   const { missing } = parseArgs(['--host', 'h', '--against', '--self-check', '--out', '', '--runs']);
   assert.deepEqual(missing(['host', 'against', 'out', 'runs', 'workdir']), ['against', 'out', 'runs']);
   assert.deepEqual(parseArgs(['--against', 'base', '--out', 'o']).missing(['against', 'out']), []);

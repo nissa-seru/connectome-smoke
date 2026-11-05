@@ -240,7 +240,6 @@ test('T36: a merge instruction that names no level it asks for is refused as unc
   assert.deepEqual(records.map((r) => r.level ?? null), [null, null, 2], 'no level is recorded for a request it couldn\'t classify');
 }));
 test('T40: an instruction that names a level in none of the forms the stand-in reads is refused as unclassified, not counted as a compression', () => withStandin({}, async (s) => {
-  // review:review-349 #20: a merge reworded to open as an L1 instruction does was read as level 1.
   const { seen } = arrivals(s);
   s.setStep(step('lv', []));
   const reworded = 'Write the memory of this slice of the log. Consolidate the preceding summaries into one L2 memory. Target ~200 tokens.';

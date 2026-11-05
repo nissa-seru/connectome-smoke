@@ -17,7 +17,6 @@ function shape(s) {
 
 const tokens = (s) => [...new Set(shape(s).split(' ').filter(Boolean).map((t) => t.replace(/…+$/, '')))].sort().join(' ');
 const HEX_SLUG = /[a-f#]*(?:[a-f]#|#[a-f])[a-f#]*/g;
-// A memory id of digits alone, such as M12345678's, slugs to a lone `#` after `m` or `memory-` (review:review-349 #3).
 const DIGIT_MEMORY = /(^|-)(m|memory-)#(?=-|$)/g;
 const role = (key) => mask(key.replace(/-[0-9a-f]{12}$/, '')).replace(HEX_SLUG, 'H').replace(DIGIT_MEMORY, '$1$2H');
 const kindOf = (line) => line.split(' ', 1)[0];
@@ -32,7 +31,6 @@ function parse(text) {
   for (const line of lines.slice(1)) {
     if (line === 'templates' || line === 'heads') { block = line; continue; }
     if (line.startsWith('step ')) { block = 'steps'; step = line.slice(5); rec.steps.set(step, []); continue; }
-    // The writer writes no step line for a record whose steps have none, so the tail can follow templates or heads.
     if ((block === 'templates' || block === 'heads') && !line.startsWith('  ') && !/^[TH]:/.test(line)) block = 'tail';
     if ((block === 'templates' || block === 'heads') && !line.startsWith('  ')) {
       const at = line.indexOf(' = ');
@@ -54,7 +52,6 @@ function filled(side, text) {
   if (!side.startsWith('T:') || at < 0) return side;
   const key = side.slice(0, at);
   const template = side.slice(at + 3);
-  // The first use, bare or with its numbers: a bare one names none (review:review-349 #13).
   const use = new RegExp(`\\[${key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\](?:\\(([^)]*)\\))?`).exec(text);
   const parts = template.split('#');
   const numbers = use ? (use[1] === undefined ? [] : use[1].split(',')) : null;
@@ -87,8 +84,6 @@ export function differencesOf(run, baseText, headText) {
   for (const section of ['templates', 'heads']) {
     const b = base[section];
     const h = head[section];
-    // A key is a digest of its own text, so one key naming two texts is a collision the grouping can't show; it fails the
-    // run at the grouping stage rather than dropping that text (review:review-349 #10).
     for (const k of b.keys()) if (h.has(k) && h.get(k) !== b.get(k)) throw new Error(`the records name two texts by one key, ${k}`);
     for (const k of b.keys()) if (!h.has(k)) add([section, role(k), 'only in base'], `${section} ${role(k)}: text only in base`, section, `${k} = ${b.get(k)}`, '');
     for (const k of h.keys()) if (!b.has(k)) add([section, role(k), 'only in head'], `${section} ${role(k)}: text only in head`, section, '', `${k} = ${h.get(k)}`);
@@ -115,9 +110,6 @@ export function differencesOf(run, baseText, headText) {
     lines(step, base.steps.get(step), head.steps.get(step));
   }
   lines('end', base.tail, head.tail);
-  // A record that differs where no kind of difference is found would be a run said to differ with nothing to show, so
-  // it fails its run at the grouping stage, and a run's record differs exactly when it has places (review:review-331 #5;
-  // Oscar-1005, room-203 #357642).
   if (!out.length && baseText !== headText) throw new Error('the records differ, but no difference between them was found');
   return out;
 }

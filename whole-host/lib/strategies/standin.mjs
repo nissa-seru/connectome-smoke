@@ -29,14 +29,11 @@ function requestedTarget(instruction) {
 
 // context-manager 0.24.0's merge instructions open so (autobiographical.ts's formatMergeInstruction,
 // formatWitnessedMergeInstruction and formatReadingMergeInstruction, knowledge.ts's consolidation), and each names the
-// level it asks for. One that opens as a merge does and names no level can't be counted under its level, so the
-// stand-in refuses it as unclassified rather than counting it as a compression (Crispin-2713, room-203 #357646).
+// level it asks for, as `Ln`, which none of its L1 instructions names.
 const MERGE_OPENS = /You have just reviewed [\s\S]+? in chronological order\.|You have just re-experienced [\s\S]+? in chronological order\.|Please consolidate these \d+ L\d summaries/;
 
 function requestedLevel(instruction) {
   const merge = instruction.match(/into a single L(\d+) memory|single L(\d+) memory|at L(\d+)\.|consolidate these \d+ L(\d) summaries/);
-  // An instruction naming a level, Ln, in none of the forms above may be a merge reworded to open as an L1 instruction
-  // does, so it can't be counted under a level either (review:review-349 #20). No 0.24.0 L1 instruction names one.
   if (!merge) return MERGE_OPENS.test(instruction) || /\bL\d+\b/.test(instruction) ? null : 1;
   const named = merge.slice(1).find((x) => x !== undefined);
   return /consolidate these/.test(merge[0]) ? Number(named) + 1 : Number(named);
