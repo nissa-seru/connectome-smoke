@@ -126,6 +126,10 @@ test('H2\'s check 3 holds a subagent\'s continuation round to the stream budget 
   const unreported = await overBound('300,000');
   assert.deepEqual(unreported.map((f) => f.request), ['r2']);
   assert.match(unreported[0].message, /^couldn't judge this continuation round: .* no report of the host's stream budget for knowledge-1 came before it/, 'with no report of the host\'s stream budget, the round can\'t be judged, and says so');
+  const reworded = { role: 'user', content: [{ type: 'text', text: "Launch of spawn 'knowledge-1':\n- Its stream's budget is 300,000 tokens.\n" }] };
+  const unstated = await judge({ ...side(configuration, { records: [r1, r2], script: [{ id: 'k', segment: 's' }], log: log('300,000', '300.0k').map((e) => (e.kind === 'compiles' ? { ...e, blobs: { ...e.blobs, l1: reworded } } : e)) }), readers: counting().readers });
+  assert.equal(unstated.judged.find((j) => j.check === 3 && j.name === 'budgets').judged, 0, 'a launch budget it can\'t read leaves check 3 judging nothing of the subagent, under no bound it assumes');
+  assert.deepEqual(unstated.flags.filter((f) => f.check === 3).map((f) => f.what ?? f.message), ['no-launch-budget', 'judged-none:budgets']);
 });
 
 test('a failed H2 run that never reached its subagent is judged as the failed run it is', async () => {

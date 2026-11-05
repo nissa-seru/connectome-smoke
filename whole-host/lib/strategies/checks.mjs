@@ -306,6 +306,7 @@ export function budgets(records, script, log = [], { agent = FIXTURE_AGENT, stre
   const windowBoots = new Set();
   const own = records.filter((r) => r.kind === 'agent' && (r.agent ?? 'primary') === side);
   const agentRequests = own;
+  if (streamBound === null) return { flags: [{ check: 3, step: 'the run', what: 'no-launch-budget', message: `couldn't judge ${agent}'s continuation rounds: no compile sent it a launch notice stating its stream budget` }], headroom: [], notes: [], judged: 0, requests: own.length };
   if (unreadable && own.length) return { flags: [{ check: 3, step: 'the run', what: 'budget-unreadable', message: `couldn't judge ${agent}'s ${own.length} request(s): the host's /budget report ${unreadable}, so the bound that governs its continuation rounds can't be read` }], headroom: [], notes: [], judged: 0, requests: own.length };
   if (!paired && own.length) {
     return { flags: [{ check: 3, step: 'the run', what: 'no-compile-lines', message: `couldn't judge ${agent}'s ${own.length} request(s): the log holds no request compile line of ${agent}'s, so nothing tells a compiled request from a continuation round` }], headroom: [], notes: [], judged: null, requests: own.length };

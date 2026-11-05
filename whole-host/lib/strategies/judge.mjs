@@ -63,7 +63,6 @@ export async function judge({ records, log, script, storeCopy, configuration, in
     target = { agent: own, namespace: `agents/${own}`, isolate: false };
   }
   const launched = target.isolate ? launchStreamBound(log, target.agent) : null;
-  if (target.isolate && launched === null) flags.push({ check: 3, step: 'the run', what: 'no-launch-budget', message: `couldn't judge ${target.agent}'s continuation rounds: no compile sent it a launch notice stating its stream budget` });
   if (run?.ok && configuration.summarises !== false && storeCopy) {
     const { namespace, isolate } = target;
     store = await read({ installDir, storePath: storeCopy, namespace, isolate }).catch((e) => {
@@ -80,6 +79,6 @@ export async function judge({ records, log, script, storeCopy, configuration, in
   } else if (configuration.summarises !== false && run?.ok) {
     throw new Error('the run succeeded but left no store copy to judge');
   }
-  const checked = runChecks({ records, log, script, products: declared, store, agent: target.agent, streamBound: streamBoundFor(configuration, launched), windowTokens: configuration.windowTokens, binds: configuration.binds === true, adaptive: (configuration.agent?.strategy?.type ?? 'autobiographical') !== 'passthrough' && configuration.agent?.strategy?.adaptiveResolution !== false });
+  const checked = runChecks({ records, log, script, products: declared, store, agent: target.agent, streamBound: target.isolate && launched === null ? null : streamBoundFor(configuration, launched), windowTokens: configuration.windowTokens, binds: configuration.binds === true, adaptive: (configuration.agent?.strategy?.type ?? 'autobiographical') !== 'passthrough' && configuration.agent?.strategy?.adaptiveResolution !== false });
   return { flags: [...flags, ...checked.flags], missing: checked.missing, headroom: checked.headroom, notes: checked.notes, judged: checked.judged };
 }
