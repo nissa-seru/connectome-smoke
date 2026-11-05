@@ -2,7 +2,7 @@
 
 `whole-host/` drives connectome-host against a stand-in for Anthropic's API, through a set of workload runs, and writes one record per run. Each run's recipe loads the host's context strategy and the fixture's own MCPL server. It turns off the subagents module (H2's configuration and W9's workload turn it back on), the lessons, retrieval, wake and workspace modules, cache keepalive and the context maintenance timer (`driver.mjs`'s recipe, `script.mjs`'s configurations). A record says what every request the run sent carried.
 
-The context view runs it twice for a pull request in context-manager, agent-framework, membrane or connectome-host: once with the base branch's tip, the base arm, and once with the pull request merged onto it, the head arm, with everything else at the host's lockfile versions. A change that moves what the resident's requests carry changes the head arm's records, and how they differ from the base arm's is what the view shows. Both arms run this harness, from this repository, so a change to the harness moves both arms alike.
+The context view runs it twice for a pull request in context-manager, agent-framework, membrane or connectome-host: once with the base branch's tip, the base arm, and once with the pull request merged onto it, the head arm, with everything else installed from the host's lockfile; laying a pull request's packages over it with `npm install` can move another package from its locked version where their own version ranges require it. A change that moves what the resident's requests carry changes the head arm's records, and how they differ from the base arm's is what the view shows. Both arms run this harness, from this repository, so a change to the harness moves both arms alike.
 
 ## Running it
 
@@ -666,4 +666,4 @@ A run that didn't measure is another matter, kept or not, since a base arm that 
 
 ## When the format changes
 
-A change to what a record writes changes the records of both arms alike, so it moves no view of a pull request; it updates this file in the same change.
+A change to what a record writes changes the records of both arms alike, so it adds no difference of its own to a view of a pull request, though it can change which of the pull request's differences a view can show; it updates this file in the same change.
