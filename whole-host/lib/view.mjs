@@ -12,7 +12,7 @@ function effectiveHeads(texts) {
   });
 }
 
-function lcsSteps(a, b) {
+export function lcsSteps(a, b) {
   const width = b.length + 1;
   const common = new Uint32Array((a.length + 1) * width);
   for (let i = a.length - 1; i >= 0; i--) {

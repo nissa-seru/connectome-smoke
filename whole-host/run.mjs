@@ -16,6 +16,7 @@ import { RUNS, runOf } from './lib/strategies/workloads.mjs';
 import { configurations } from './lib/strategies/script.mjs';
 import { exitCode, refuseUnrecordable, renderRecordLines } from './lib/record.mjs';
 import { flagsAgainst, readAgainst, recordAgainst, releaseDiffers, slug } from './lib/against.mjs';
+import { differencesOf, entriesOf } from './lib/entries.mjs';
 import { changedRequests, stepSummary, summaryOf, viewOf } from './lib/view.mjs';
 import { generatedTexts, transcriptOf } from './lib/strategies/transcript.mjs';
 import { ledgerOf, moduleCounts } from './lib/strategies/ledger.mjs';
@@ -205,6 +206,7 @@ const results = [];
 const rows = [];
 const views = [];
 const flaggedRuns = [];
+const differences = new Map();
 const reportCouldnt = (dir, id, r) => {
   mkdirSync(dir, { recursive: true });
   (r.reported ? appendFileSync : writeFileSync)(join(dir, 'report.txt'), `${id}: couldn't run: ${r.reason}\n${r.reasonFull ? `  whole: ${r.reasonFull}\n` : ''}`);
@@ -237,6 +239,8 @@ for (const id of names) {
       flags = flagsAgainst(against, id, r.flagged);
       let changed = null;
       if (record === 'differs') {
+        stage = 'its differences couldn\'t be grouped';
+        differences.set(id, differencesOf(id, compared.base, text));
         stage = 'its view couldn\'t be written';
         changed = changedRequests(compared.base, recordLines);
         const answersIn = (dir) => (existsSync(dir) ? readdirSync(dir) : []).filter((f) => /^r\d+\.answer\.json$/.test(f)).map((f) => JSON.parse(readFileSync(join(dir, f), 'utf-8')));
@@ -288,14 +292,17 @@ for (const id of names) {
     record = null;
     flags = null;
     selfCheck = null;
+    differences.delete(id);
     reportCouldnt(dir, id, r);
     row = { run: id, outcome: r.outcome, reason: r.reason, record: 'couldn\'t run' };
     console.log(`${LABEL} ${id}: couldn't run: ${r.reason}`);
   }
   rows.push(row);
   if (r.failures?.length) flaggedRuns.push({ run: id, flags: r.failures });
-  results.push({ run: id, outcome: r.outcome, reason: r.reason, record, ...(flags ? { flags } : {}), ...(selfCheck ? { selfCheck } : {}) });
+  const counts = row.counts && { compiles: row.counts.compiles, compressions: row.counts.compressions, merges: row.counts.merges, quarantines: null };
+  results.push({ run: id, outcome: r.outcome, reason: r.reason, record, ...(flags ? { flags } : {}), ...(counts ? { counts } : {}), ...(selfCheck ? { selfCheck } : {}) });
 }
+if (against) writeFileSync(join(out, 'entries.json'), JSON.stringify(entriesOf(runs.flatMap((id) => differences.get(id) ?? [])), null, 1));
 const table = summaryOf({ rows, flagged: flaggedRuns });
 writeFileSync(join(out, 'summary.md'), `${table}\n`);
 if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, stepSummary({ table, views }));
