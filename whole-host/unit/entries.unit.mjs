@@ -75,9 +75,27 @@ test('one kind of difference is one entry, its id the sha256 of its signature, w
   assert.equal(e.id, createHash('sha256').update(JSON.stringify(['line', 'compile', 'changed', 'H p.C,', 'H L#(p.#), p.C'])).digest('hex').slice(0, 12));
   assert.equal(e.count, 3);
   assert.deepEqual(e.runs, ['H1/W1', 'H1/W2']);
-  assert.deepEqual(e.places, [{ run: 'H1/W1', step: 'p.1' }, { run: 'H1/W2', step: 'p.2' }, { run: 'H1/W2', step: 'p.3' }]);
+  assert.deepEqual(e.places.map(({ run, step }) => ({ run, step })), [{ run: 'H1/W1', step: 'p.1' }, { run: 'H1/W2', step: 'p.2' }, { run: 'H1/W2', step: 'p.3' }]);
   assert.deepEqual(e.example, { place: { run: 'H1/W1', step: 'p.1' }, before: 'compile p.1.in, body 11111111', after: 'compile p.1.in L1(p.0), body 33333331' });
   assert.deepEqual(Object.keys(e), ['id', 'describe', 'count', 'runs', 'places', 'example']);
+});
+
+test('each place carries the first 12 hex of the sha256 of its two sides, filled, so a difference past the example\'s place shows, and shares that split the runs give the same places', () => {
+  const base = (n) => record({ steps: { [`p.${n}`]: [`compile p.${n}.in, body 1111111${n}`] } });
+  const head = (n, x = '3') => record({ steps: { [`p.${n}`]: [`compile p.${n}.in L1(p.0), body ${x.repeat(7)}${n}`] } });
+  const differences = (x) => [...differencesOf('H1/W1', base(1), head(1)), ...differencesOf('H1/W2', base(2), head(2, x))];
+  const digest = (before, after) => createHash('sha256').update(JSON.stringify([before, after])).digest('hex').slice(0, 12);
+  const [e] = entriesOf(differences('3'));
+  assert.deepEqual(e.places, [
+    { run: 'H1/W1', step: 'p.1', digest: digest('compile p.1.in, body 11111111', 'compile p.1.in L1(p.0), body 33333331') },
+    { run: 'H1/W2', step: 'p.2', digest: digest('compile p.2.in, body 11111112', 'compile p.2.in L1(p.0), body 33333332') },
+  ]);
+  const [other] = entriesOf(differences('4'));
+  assert.equal(other.id, e.id, 'one kind of difference');
+  assert.deepEqual(other.example, e.example, 'with the same first place');
+  assert.notDeepEqual(other.places, e.places, 'and a later place\'s text shows in its digest');
+  const shares = [...entriesOf(differencesOf('H1/W1', base(1), head(1)))[0].places, ...entriesOf(differencesOf('H1/W2', base(2), head(2)))[0].places];
+  assert.deepEqual(shares, e.places, 'shares that split the runs give the same places');
 });
 
 test('every differing line of a record lands in exactly one entry', () => {

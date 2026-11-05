@@ -115,7 +115,7 @@ export function entriesOf(differences) {
   for (const d of differences) {
     const id = createHash('sha256').update(JSON.stringify(d.sig)).digest('hex').slice(0, 12);
     if (!byId.has(id)) byId.set(id, { id, describe: d.describe, places: [], example: { place: d.place, before: d.before, after: d.after } });
-    byId.get(id).places.push(d.place);
+    byId.get(id).places.push({ ...d.place, digest: createHash('sha256').update(JSON.stringify([d.before, d.after])).digest('hex').slice(0, 12) });
   }
   return [...byId.values()].map(({ id, describe, places, example }) => ({ id, describe, count: places.length, runs: [...new Set(places.map((p) => p.run))], places, example }));
 }
