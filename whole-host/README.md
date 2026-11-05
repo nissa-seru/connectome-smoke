@@ -31,9 +31,9 @@ A run that continues another starts from that run's checkpoint, written by the r
 
 A record opens with one header line: the run, and the checkpoint it starts from (`empty` for one that starts empty). No record names a version, so a candidate that differs from the base arm's only in its version, as a release's `npm version` makes it, moves no record. The versions are in each arm's `run.json`: the release that writes the checkpoints with its stack, and the candidate's stack, with the Bun that ran.
 
-Then come two blocks. Each text the stack wrote is written once, in
-`templates`, and each request head once, in `heads`; the lines below name
-them.
+Then come two blocks. Each text the stack wrote is written once for each role
+it's sent in, in `templates`, and each request head once, in `heads`; the lines
+below name them.
 
 - **`T:KEY = TEXT`.** A key is the text's role, its first three words with
   numbers as `#`, and the first 12 hex digits of the sha256 of the text as
@@ -65,17 +65,19 @@ the lines of requests are in the order the stand-in received them:
 - **`compile ITEMS ^ N,M, head H:KEY, body HASH`**: a compile context-manager
   made and the request it was sent as.
   - **ITEMS** are the messages it sent. A stored message is named by the
-    canary its text carries (`p.12.in`, `c.tool.call1`), and a run of messages
-    stored next to each other as a range (`p.3.in-p.9.r1`). A message sent raw
-    without one is its template. A summary is its level and the first and last
-    messages it covers, `L1(p.3.in-p.5.r1)`, with `~` after it where only part
-    of it went. A stored message without a canary is named, there and in the
-    receipt line, by the nearest earlier message in its store that carries one
-    and its place after it (`p.3.r1+2`), or by its place from the store's
-    start (`start+3`), as check 11's flags name it. Names are as each store
-    stood at the settle after that compile's step, where the log takes its
-    store delta, so a later step's edit renames nothing earlier, and a
-    message the delta reports removed anchors no name from then on.
+    canary its text carries (`p.12.in`, `c.tool.call1`), or by its occurrence
+    (`p.12.in:2`) where an earlier message in its store carries that canary
+    too, and a run of messages stored next to each other as a range
+    (`p.3.in-p.9.r1`). A message sent raw without one is its template. A
+    summary is its level and the first and last messages it covers,
+    `L1(p.3.in-p.5.r1)`, with `~` after it where only part of it went. A
+    stored message without a canary is named, there and in the receipt line,
+    by the nearest earlier message in its store that carries one and its place
+    after it (`p.3.r1+2`), or by its place from the store's start (`start+3`),
+    as check 11's flags name it. Names are as each store stood at the settle
+    after that compile's step, where the log takes its store delta, so a later
+    step's edit renames nothing earlier, and a message the delta reports
+    removed anchors no name from then on.
   - **`!content` or `!shards`** after a name: context-manager's own provenance
     says that body went altered, or without all its shards. **`:no-thinking`**:
     the stored message holds thinking and the copy sent holds none. Either way
@@ -259,8 +261,9 @@ A request's line, with the head in force for it, changes whenever what that
 request sends changes, apart from what the record leaves out or writes alike
 and the run-varying values it masks by their pattern in the messages, the
 system prompt and the digests of the tools and the body's other fields, the
-run's own text included (an image-ref nonce in any string there but a cache
-marker, which it writes whole; a fork call's UUID in the system prompt and the
+run's own text included (an image-ref nonce in any string there but a block's
+cache marker, which it writes whole, while a marker on a tool, the body or a
+message's own fields is masked inside its digest with the rest; a fork call's UUID in the system prompt and the
 digests, though a message's or summary's text the record writes from a compile
 keeps it as it is; and the signature of any object typed `thinking`), a change to one of which alone moves no line.
 The head's other fields, the model, `max_tokens`, `tool_choice`, `thinking`,
@@ -271,26 +274,28 @@ betas as a set, so their order and repeats move nothing. It writes alike an
 omitted or null `system`, an empty list, and any other value that is neither a
 string nor a list, while a string, the empty one included, is one text block;
 an omitted, null or empty `tools`; a system prompt sent as a string and
-as one text block, and a system block's null or missing text and an empty
-one; an omitted `thinking` and a null one; any `stream` but `true` and none;
-an ephemeral cache marker with no TTL and one of `5m`; and a message's string
+as one text block, a system block's null or missing text and an empty one,
+and its null or missing `type`; an omitted `thinking` and a null one; any
+`stream` but `true` and none; a block's ephemeral cache marker with no TTL and
+one of `5m`, though on a tool, the body or a message's own fields, where it is
+part of a digest, the two differ; and a message's string
 content and one text block, and its null or missing content, or any that is
 neither a string nor a list, and an empty list. It writes alike an omitted and
-a null `model`, and an omitted and a null `max_tokens`, each of which the
-stand-in refuses. A `tool_choice`, even a null one, is refused as
+a null `model`, an omitted and a null `max_tokens`, and an omitted, null or
+empty `messages`, each of which the stand-in refuses. A `tool_choice`, even a null one, is refused as
 unclassified, as above, and the head writes a null one as none. A head is named only on the
 first line of its agent's under it, so a later request under a changed head
 keeps its line, and the view still names it.
 
 A line can also change when nothing its request sends does. Its delta is from
-its agent's previous compile, so a change to that compile moves it too. A
-summary is named by the messages context-manager's provenance says it covers,
-so a change to that provenance renames it. And `^` lists context-manager's own
-cache marks, so a mark moved between the compile and the request's assembly
-moves the line, with the body hash unchanged. No change to one text renames
-another, since each key comes from its own text. The record's other lines
-record the store and the run: summaries written and removed, reads that
-failed, actions, checkpoints and the end.
+its agent's previous compile of the same kind, so a change to that compile
+moves it too. A summary is named by the messages context-manager's provenance
+says it covers, so a change to that provenance renames it. And `^` lists
+context-manager's own cache marks, so a mark moved between the compile and the
+request's assembly moves the line, with the body hash unchanged. No change to
+one text renames another, since each key comes from its own text. The record's
+other lines record the store and the run: summaries written and removed, reads
+that failed, actions, checkpoints and the end.
 
 ## The view of what changed
 
@@ -400,7 +405,7 @@ shows the host's last lines names that file.
 
 - **Check 1: every turn answers.** It flags a request the stand-in refused or
   couldn't classify, an inference that failed or was exhausted, an operator
-  alert the host raised, a checkpoint that didn't settle, and a turn whose
+  alert the host raised, a step that didn't settle, and a turn whose
   answer the host reported it couldn't route to its channel. A step a workload
   marks `mayFail` may fail by design: its failure and its context refusal are
   its workload's property to judge. Workloads mark only the turns a budget cut

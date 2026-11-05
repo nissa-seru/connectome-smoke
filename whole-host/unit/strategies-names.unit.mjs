@@ -9,7 +9,7 @@ test('a stored message is named by its first canary, or by the nearest earlier m
   assert.deepEqual([3, 7, 9, 12, 14, 99].map(nameOf), ['start+1', 'a.in', 'a.in+1', 'a.in+2', 'a.r1', null]);
 });
 
-test('a write before a name\'s anchor, or in another store, renames nothing; a write between the anchor and the message does', () => {
+test('a write before a name\'s anchor that doesn\'t carry its canary, or in another store, renames nothing; a write between the anchor and the message does', () => {
   const map = { 7: '[[c:a.in]]', 14: '[[c:a.r1]]' };
   const before = messageNames([7, 9, 12, 14], canaries(map));
   const earlier = messageNames([5, 7, 9, 12, 14], canaries(map));

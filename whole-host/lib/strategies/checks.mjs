@@ -128,7 +128,7 @@ export function everyTurnAnswers(records, log = [], script = []) {
     if (e.kind === 'ipc' && owned(e)) continue;
     if (e.kind === 'ipc' && /^inference:(failed|exhausted)$/.test(e.event?.type ?? '')) flags.push({ check: 1, step: e.step, message: `${e.event.type}: ${e.event.error ?? e.event.reason ?? ''}`.trim() });
     if (e.kind === 'ipc' && e.event?.type === 'ops:alert') flags.push({ check: 1, step: e.step, what: e.event.kind, message: `the host raised an operator alert, ${e.event.kind}: ${e.event.message ?? ''}`.trim() });
-    if (e.kind === 'settle' && e.phase === 'end' && e.settled === false) flags.push({ check: 1, step: e.step, message: 'the checkpoint did not settle' });
+    if (e.kind === 'settle' && e.phase === 'end' && e.settled === false) flags.push({ check: 1, step: e.step, message: 'the step did not settle' });
     if (e.kind === 'undelivered') flags.push({ check: 1, step: e.step, message: `the turn's answer never reached its channel: the host reported mcpl:speech-route-failed${e.reason ? ` (${e.reason})` : ''}` });
   }
   for (const s of script) {
@@ -181,8 +181,7 @@ function segmentAgents(records, script, side = 'primary') {
 
 const segmentLasts = (records, script) => new Set([...segmentAgents(records, script).values()].map((agents) => agents.at(-1)));
 
-// agent-framework's `compileUnpinningOnRefusal` compiles again within the assembly whose compile refused, and a host
-// process numbers its compiles and assemblies from 1, so a seq that doesn't rise starts another process's lines.
+// agent-framework 0.32.0's `compileUnpinningOnRefusal` compiles again within the assembly whose compile refused.
 export function assemblies(log = [], agent = FIXTURE_AGENT) {
   const out = [];
   let previous = null;

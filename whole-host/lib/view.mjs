@@ -150,7 +150,7 @@ export function summaryOf({ rows, flagged = [] }) {
   const clean = rows.every((r) => r.outcome === 'pass' && ['same', 'written'].includes(r.record) && (!r.selfCheck || r.selfCheck.outcome === 'same') && !unmeasured(r) && !readsFailedOf(r));
   const parts = [summaryTable(rows)];
   if (!clean) {
-    parts.push("Each run's `report.txt`, record and view are under its directory in this job's evidence, its name with `/` written as `_`.");
+    parts.push("Each run's `report.txt`, and its record and view where it wrote them, are under its directory in this job's evidence, its name with `/` written as `_`.");
   }
   for (const { run, flags } of flagged) {
     parts.push([`### ${run}: ${flags.length} flag(s)`, ...flags.map((f) => `- check ${f.check} at ${f.step}${f.request ? ` (${f.request})` : ''}: ${f.message}`)].join('\n'));

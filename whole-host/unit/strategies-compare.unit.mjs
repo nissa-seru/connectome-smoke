@@ -38,7 +38,7 @@ test('N12: two runs\' bodies that differ only in a fork call\'s random UUID comp
   assert.equal(sameAcrossRuns(result('d5641659-0a1b-4c2d-8e3f-123456789abc'), result('7271e5fa-9f8e-4d7c-b6a5-cba987654321')), true, 'its result names it the same way');
 });
 
-test('N12: any other difference compares unequal, the ref\'s sequence number and the order of keys included', { timeout: 30_000 }, () => {
+test('N12: any difference outside the run-varying patterns compares unequal, the ref\'s sequence number and the order of keys included', { timeout: 30_000 }, () => {
   const a = body();
   for (const [what, b] of [
     ['the ref\'s sequence number', body({ seq: 2 })],

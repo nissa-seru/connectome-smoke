@@ -457,7 +457,7 @@ test('K2b: a continuation round with no usage recorded, or with no window given,
   assert.match(windowless[1].message, /couldn't judge this continuation round: the check was given no window/);
 });
 
-test('W5 judges only bodies stored in parts that context-manager sent whole: one without its tool blocks flags and one with them counts; one sent altered or missing a shard, and an ordinary message, count for nothing; a failed read is couldn\'t-judge', () => {
+test('W5 judges bodies stored in parts that context-manager sent whole, and that the store holds both blocks of each of its own calls: a body without its tool blocks flags and one with them counts; one sent altered or missing a shard, and an ordinary message, count for nothing as bodies; a call missing a block flags; a failed read is couldn\'t-judge', () => {
   const run = (read, sources, ...blocks) => ({
     log: [
       { kind: 'read', op: 'messages', answer: read },

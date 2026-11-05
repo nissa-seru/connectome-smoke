@@ -617,7 +617,7 @@ test('T13d: on a configuration that doesn\'t bind, thinking altered in the lates
   assert.equal((await post(s.url, next([thought, { type: 'text', text: 'first' }], opening.system, older))).status, 200, 'the page says nothing of an earlier message');
 }));
 
-test('T1: a request to count_tokens, or to any route but a POST to a path ending in /v1/messages, is recorded as unclassified, naming its route, and refused', async () => {
+test('T1: a POST to count_tokens, or to another path not ending in /v1/messages, is recorded as unclassified, naming its method and route, and refused', async () => {
   const s = await startStandin({ configuration: { windowTokens: 50_000 } });
   s.setStep(step('ct'));
   const body = { model: 'claude-opus-5-5', messages: [{ role: 'user', content: [{ type: 'text', text: 'user: [[c:ct.in]] count me' }] }] };
@@ -763,7 +763,7 @@ test('T28: with a raw directory, each answer\'s content goes beside its request 
   } finally { rmSync(rawDir, { recursive: true, force: true }); }
 });
 
-test('T29: every cache marker moves the record: on the system, a message block or inside a tool result it shows as sent, a plain one as its TTL and any other shape whole; on a tool or the body it is held in that one\'s digest', async () => {
+test('T29: every non-null cache marker moves the record: on the system, a message block or inside a tool result it shows as sent, a plain one as its TTL and any other shape whole; on a tool or the body it is held in that one\'s digest', async () => {
   const s = await startStandin({ configuration: { windowTokens: 50_000 } });
   let records = null;
   try {
