@@ -69,6 +69,26 @@ function unreadSources(compiled) {
   return malformed.length ? `the compile's provenance gives ${malformed.join(', ')} sources without the fields context-manager 0.24.0 gives them` : null;
 }
 
+// context-manager 0.24.0's RenderedLayout: its members' ids, and units that cover them in order, each one message raw
+// (`r`, its tokens `t`, `p` 1 when partial), `n` messages under summaries (`s`, each `[id, level, method, partial,
+// tokens]`), or `n` messages left out (`o`).
+const summaryUnit = (x) => Array.isArray(x) && x.length === 5 && typeof x[0] === 'string' && typeof x[1] === 'number'
+  && typeof x[2] === 'string' && (x[3] === 0 || x[3] === 1) && typeof x[4] === 'number';
+const unitCovers = (u) => (u?.k === 'r' && typeof u.t === 'number' && (u.p === undefined || u.p === 1) ? 1
+  : u?.k === 'o' && Number.isInteger(u.n) && u.n >= 0 ? u.n
+    : u?.k === 's' && Number.isInteger(u.n) && u.n >= 0 && Array.isArray(u.sm) && u.sm.every(summaryUnit) ? u.n : null);
+
+function unreadLayout(layout) {
+  if (!Array.isArray(layout?.memberIds) || !Array.isArray(layout?.units)) return null;
+  let covered = 0;
+  for (const u of layout.units) {
+    const n = unitCovers(u);
+    if (n === null) return `the compile's layout has a unit context-manager 0.24.0 doesn't give: ${String(JSON.stringify(u) ?? u).slice(0, 80)}`;
+    covered += n;
+  }
+  return covered === layout.memberIds.length ? null : `the compile's layout units cover ${covered} of its ${layout.memberIds.length} members`;
+}
+
 export function compiledLine(manager, budget, compiled, blobs, elsewhere) {
   const prov = compiled?.provenance?.messages;
   const sourcesUnread = unreadSources(compiled);
@@ -83,6 +103,8 @@ export function compiledLine(manager, budget, compiled, blobs, elsewhere) {
   const violations = checkCompile(manager, budget, compiled, entries, { compresses: compresses(manager), elsewhere: reading });
   if (sourcesUnread) violations.push({ invariant: 'unreadable', detail: sourcesUnread });
   const layout = compiled?.provenance?.layout;
+  const layoutUnread = unreadLayout(layout);
+  if (layoutUnread) violations.push({ invariant: 'unreadable', detail: layoutUnread });
   return {
     outcome: 'compiled',
     messages: entries,

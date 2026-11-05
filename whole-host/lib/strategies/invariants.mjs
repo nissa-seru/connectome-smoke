@@ -333,7 +333,9 @@ export function checkCompile(manager, budget, compiled, messages, { compresses =
   if (isUnreadable(configured)) out.push({ invariant: 'unreadable', detail: `getStrategy: ${configured.unreadable}; budget wasn't judged` });
   const config = isUnreadable(configured) ? {} : configured;
   const tokens = !isUnreadable(configured) && compiled?.renderStats?.total?.tokens;
-  if (!isUnreadable(configured) && typeof tokens !== 'number') {
+  if (!isUnreadable(configured) && typeof tokens !== 'number' && compiled?.renderStats != null) {
+    out.push({ invariant: 'unreadable', detail: 'the compile\'s render stats give no numeric total.tokens; budget wasn\'t judged' });
+  } else if (!isUnreadable(configured) && typeof tokens !== 'number') {
     const strategy = readable(() => manager.getStrategy());
     if (isUnreadable(strategy)) out.push({ invariant: 'unreadable', detail: `getStrategy: ${strategy.unreadable}; budget wasn't judged` });
     else if (typeof strategy?.getRenderStats === 'function') out.push({ invariant: 'unreadable', read: false, detail: `the compile gave no render stats, though its strategy ${strategy.constructor?.name || 'unnamed'} reports them; budget wasn't judged` });
@@ -411,8 +413,13 @@ export function checkCompile(manager, budget, compiled, messages, { compresses =
 
   const pins = readable(() => manager.listPins());
   if (isUnreadable(pins)) out.push({ invariant: 'unreadable', detail: `listPins: ${pins.unreadable}; pins weren't judged` });
+  else if (!Array.isArray(pins)) out.push({ invariant: 'unreadable', detail: 'listPins gave no list; pins weren\'t judged' });
   else if (!summaryUnread) {
     for (const p of pins) {
+      if (pinLacks(p)) {
+        out.push({ invariant: 'unreadable', detail: `pin ${p?.id ?? '?'} has no string firstMessageId and lastMessageId, or a level that isn't a number; that pin wasn't judged` });
+        continue;
+      }
       const from = sequenceOf.get(String(p.firstMessageId)), to = sequenceOf.get(String(p.lastMessageId));
       if (from === undefined || to === undefined) {
         out.push({ invariant: 'unreadable', read: false, detail: `pin ${spanName('pin', nameOf(p.firstMessageId), nameOf(p.lastMessageId))} names a message the compile's view doesn't hold; that pin wasn't judged` });
@@ -431,5 +438,9 @@ export function checkCompile(manager, budget, compiled, messages, { compresses =
   for (const f of failed) out.push({ invariant: 'unreadable', detail: `${f}; what depends on it wasn't judged`, ...(wholeOf.get(f) ? { full: `${wholeOf.get(f)}; what depends on it wasn't judged` } : {}) });
   return Object.defineProperty(dedupe(out), 'unjudged', { value: unjudged, enumerable: false });
 }
+
+// context-manager 0.24.0's ProtectedRange: string firstMessageId and lastMessageId, and a numeric level or maxLevel when set.
+const pinLacks = (p) => typeof p?.firstMessageId !== 'string' || typeof p.lastMessageId !== 'string'
+  || ![p.level, p.maxLevel].every((x) => x === undefined || typeof x === 'number');
 
 const dedupe = (violations) => [...new Map(violations.map((v) => [`${v.invariant}|${v.detail}`, v])).values()];

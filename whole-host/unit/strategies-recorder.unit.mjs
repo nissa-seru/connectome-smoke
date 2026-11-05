@@ -145,6 +145,25 @@ test('compiledLine: a compile whose provenance gives no sources list matching it
   assert.deepEqual(unreadable(line({ messages: [], provenance: { layout: { memberIds: [], units: [] } } })), [], 'a compile of nothing has no sources to misread');
 });
 
+test('compiledLine: a layout whose units aren\'t those context-manager 0.24.0 gives, or don\'t cover its members, has an unreadable violation', () => {
+  class AutobiographicalStrategy { config = {}; getRenderStats() { return { total: { tokens: 10 } }; } }
+  const stored = [{ id: '1', sequence: 1, role: 'user', content: [text('one')] }];
+  const line = (layout) => compiledLine(
+    { ...manager(stored), getStrategy: () => new AutobiographicalStrategy(), listPins: () => [], getRenderStats: () => null },
+    { maxTokens: 1_000, reserveForResponse: 0 },
+    { renderStats: { total: { tokens: 10 } }, messages: [{ role: 'user', content: [text('one')] }], provenance: { messages: [{ kind: 'raw', bodies: [{ messageId: '1', complete: true }] }], layout } },
+    blobStore(),
+  );
+  const layoutUnread = (layout) => line(layout).violations.filter((v) => v.invariant === 'unreadable' && /layout/.test(v.detail)).map((v) => v.detail);
+  for (const units of [[{ k: 'r', t: 1 }], [{ k: 'r', t: 1, p: 1 }], [{ k: 'o', n: 1 }], [{ k: 's', n: 1, sm: [['S', 1, 'llm', 0, 40]] }]]) {
+    assert.deepEqual(layoutUnread({ memberIds: ['1'], units }), [], JSON.stringify(units));
+  }
+  for (const units of [[{ k: 'raw', t: 1 }], [{ k: 'r' }], [{ k: 'r', t: 1, p: true }], [{ k: 'o' }], [{ k: 's', n: 1 }], [{ k: 's', n: 1, sm: [['S', 1, 'llm', 0]] }]]) {
+    assert.match(layoutUnread({ memberIds: ['1'], units }).join(), /a unit context-manager 0\.24\.0 doesn't give/, JSON.stringify(units));
+  }
+  assert.deepEqual(layoutUnread({ memberIds: ['1'], units: [{ k: 'o', n: 2 }] }), ['the compile\'s layout units cover 2 of its 1 members']);
+});
+
 test('compiledLine: a source of a kind context-manager 0.24.0 gives, without the fields 0.24.0 gives it, has an unreadable violation, and no sources are read from it', () => {
   class AutobiographicalStrategy { config = {}; getRenderStats() { return { total: { tokens: 10 } }; } }
   const stored = [{ id: '1', sequence: 1, role: 'user', content: [text('one')] }];
