@@ -246,6 +246,19 @@ test('run.mjs refuses an --against whose base arm wrote no run.json, before it c
   } finally { for (const d of [host, against]) rmSync(d, { recursive: true, force: true }); }
 });
 
+test('run.mjs refuses a value option given no value, before it clones or installs anything', () => {
+  const host = tree({ 'package.json': JSON.stringify({ name: '@animalabs/connectome-host' }) });
+  try {
+    const last = (...args) => spawnSync(process.execPath, [join(import.meta.dirname, '..', 'run.mjs'), '--workdir', join(tmpdir(), 'never-made-whole-host'), ...args], { encoding: 'utf-8', timeout: 30_000 });
+    for (const args of [['--against'], ['--against', '--runs', 'H1/W1'], ['--against', '']]) {
+      const r = args.length === 1 ? last('--host', host, ...args) : runMjs('--host', host, ...args);
+      assert.equal(r.status, 2, args.join(' '));
+      assert.match(r.stderr, /--against needs a value/);
+      assert.doesNotMatch(r.stdout + r.stderr, /lane |release /);
+    }
+  } finally { rmSync(host, { recursive: true, force: true }); }
+});
+
 test('run.mjs refuses an --out that isn\'t empty, since an --out holds one invocation\'s evidence, before it clones or installs anything', () => {
   const host = tree({ 'package.json': JSON.stringify({ name: '@animalabs/connectome-host' }) });
   const out = tree({ 'run.json': '{}' });
