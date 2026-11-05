@@ -29,7 +29,7 @@ test('the base arm\'s evidence is refused unless the same harness ran the same r
     assert.ok(readAgainst(arm({}), opts), 'the same lane, runs and share');
     const absent = mkdtempSync(join(tmpdir(), 'against-'));
     dirs.push(absent);
-    assert.throws(() => readAgainst(absent, opts), /holds no run\.json, so the base arm didn't finish/);
+    assert.throws(() => readAgainst(absent, opts), /holds no run\.json: it isn't the --out of a base arm that finished/);
     assert.throws(() => readAgainst(arm({ lane: 'b'.repeat(64) }), opts), /written by the harness at lane bbbbbbbbbbbb, and this one is aaaaaaaaaaaa/);
     assert.throws(() => readAgainst(arm({ runs: ['H1/W1', 'H1/W2'] }), opts), /drew its shares from H1\/W1, H1\/W2, and this invocation from H1\/W1, H1\/W2, H2\/W7: give both arms the same --runs/);
     assert.throws(() => readAgainst(arm({}), { ...opts, names: ['H2/W7'] }), /ran H1\/W1, H1\/W2, and this share runs H2\/W7: give both arms the same --shard/);

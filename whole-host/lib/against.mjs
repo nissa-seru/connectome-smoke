@@ -8,7 +8,7 @@ const under = (r) => `Node ${r?.node ?? '?'} on ${r?.platform ?? '?'} ${r?.arch 
 
 export function readAgainst(dir, { lane, runs, names, runtime }) {
   const file = join(dir, 'run.json');
-  if (!existsSync(file)) throw new Error(`--against ${dir} holds no run.json, so the base arm didn't finish`);
+  if (!existsSync(file)) throw new Error(`--against ${dir} holds no run.json: it isn't the --out of a base arm that finished`);
   let base;
   try { base = JSON.parse(readFileSync(file, 'utf-8')); } catch (e) { throw new Error(`--against ${file} couldn't be read: ${e.message}`); }
   if (base.lane !== lane) throw new Error(`--against ${dir} was written by the harness at lane ${String(base.lane).slice(0, 12)}, and this one is ${lane.slice(0, 12)}, so their records can't be compared`);

@@ -241,7 +241,7 @@ test('run.mjs refuses an --against whose base arm wrote no run.json, before it c
   try {
     const r = runMjs('--host', host, '--against', against);
     assert.equal(r.status, 2);
-    assert.match(r.stderr, /--against \S+ holds no run\.json, so the base arm didn't finish/);
+    assert.match(r.stderr, /--against \S+ holds no run\.json: it isn't the --out of a base arm that finished/);
     assert.doesNotMatch(r.stdout + r.stderr, /lane |release /);
   } finally { for (const d of [host, against]) rmSync(d, { recursive: true, force: true }); }
 });
@@ -270,6 +270,27 @@ test('run.mjs refuses a value option given no value, before it clones or install
       assert.doesNotMatch(r.stdout + r.stderr, /lane |release /);
     }
   } finally { rmSync(host, { recursive: true, force: true }); }
+});
+
+test('run.mjs refuses an --out or --workdir it can\'t list, a --runs naming a run twice, and a non-empty --out even for an empty share, before it clones or installs anything', () => {
+  const host = tree({ 'package.json': JSON.stringify({ name: '@animalabs/connectome-host' }) });
+  const file = join(host, 'package.json');
+  const out = tree({ 'run.json': '{}' });
+  try {
+    for (const [args, said] of [
+      [['--out', file], /--out \S+ can't be listed: ENOTDIR/],
+      [['--runs', 'H1/W1,H1/W2,H1/W1'], /--runs names H1\/W1 more than once/],
+      [['--runs', 'H1/W1', '--shard', '2/2', '--out', out], /--out \S+ isn't empty/],
+    ]) {
+      const r = runMjs('--host', host, ...args);
+      assert.equal(r.status, 2, args.join(' '));
+      assert.match(r.stderr, said);
+      assert.doesNotMatch(r.stdout + r.stderr, /lane |release /);
+    }
+    const w = spawnSync(process.execPath, [join(import.meta.dirname, '..', 'run.mjs'), '--host', host, '--workdir', file], { encoding: 'utf-8', timeout: 30_000 });
+    assert.equal(w.status, 2);
+    assert.match(w.stderr, /--workdir \S+ can't be listed: ENOTDIR/);
+  } finally { for (const d of [host, out]) rmSync(d, { recursive: true, force: true }); }
 });
 
 test('run.mjs refuses an --out that isn\'t empty, since an --out holds one invocation\'s evidence, before it clones or installs anything', () => {
