@@ -316,9 +316,10 @@ export function contentAt(body, level) {
   const at = messages.indexOf(REFUSED_CONTENT);
   if (at === -1 && !outside) return null;
   if (level >= 2) return 'merge';
+  if (outside) return 'ahead';
   const opens = messages.indexOf(SLICE_OPENS);
   if (opens === -1 || messages.includes(SLICE_OPENS, opens + 1)) return 'unplaced';
-  return !outside && at > opens ? 'slice' : 'ahead';
+  return at > opens ? 'slice' : 'ahead';
 }
 
 const summariserTexts = (body, mask) => (body.messages || []).flatMap((m) => blocksOf(m.content).filter((b) => b.type === 'text' && !(b.text || '').match(CANARY)).map((b) => mask(b.text || '')));

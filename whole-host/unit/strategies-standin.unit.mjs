@@ -363,6 +363,8 @@ test('T34: with refuseContent a summariser request carrying the refused content 
   const quoted = l1('', 'REFUSED-CONTENT');
   quoted.messages[0].content.splice(0, 0, { type: 'text', text: NOTICE });
   const inSystem = { ...l1('', ''), system: [{ type: 'text', text: 'REFUSED-CONTENT' }] };
+  const inSystemUnnoticed = { ...l1('', ''), system: [{ type: 'text', text: 'REFUSED-CONTENT' }] };
+  inSystemUnnoticed.messages = [{ ...inSystemUnnoticed.messages[0], content: inSystemUnnoticed.messages[0].content.filter((b) => b.text !== NOTICE) }];
   const inTools = { ...l1('', ''), tools: [{ ...TOOLS[0], description: 'REFUSED-CONTENT' }, ...TOOLS.slice(1)] };
   const inCall = l1('', '');
   inCall.messages[0].content.splice(3, 0, { type: 'tool_use', id: 'toolu_x', name: 'read', input: { path: 'REFUSED-CONTENT' } });
@@ -375,6 +377,7 @@ test('T34: with refuseContent a summariser request carrying the refused content 
     ['unplaced', unnoticed, 'refusal'],
     ['unplaced', quoted, 'refusal'],
     ['ahead', inSystem, 'refusal'],
+    ['ahead', inSystemUnnoticed, 'refusal'],
     ['ahead', inTools, 'refusal'],
     ['slice', inCall, 'refusal'],
     ['ahead', unsized, undefined],
@@ -385,7 +388,7 @@ test('T34: with refuseContent a summariser request carrying the refused content 
   for (const [, body, stop] of sent) assert.equal((await post(s.url, body)).json.stop_reason, stop);
   const records = (await s.close()).filter((r) => r.kind === 'summariser');
   assert.deepEqual(records.map((r) => r.carried), sent.map(([carried]) => carried));
-  assert.deepEqual(records.map((r) => r.answer.shape), ['refusal', 'refusal', 'refusal', 'refusal', 'refusal', 'refusal', 'refusal', 'refusal', 'refused', 'summary']);
+  assert.deepEqual(records.map((r) => r.answer.shape), ['refusal', 'refusal', 'refusal', 'refusal', 'refusal', 'refusal', 'refusal', 'refusal', 'refusal', 'refused', 'summary']);
   assert.equal(records.at(-2).refused, 'max_tokens');
   const plain = await startStandin({ configuration: { windowTokens: 50_000 } });
   plain.setStep(step('m', []));
