@@ -309,7 +309,8 @@ export function contentAt(body, level) {
   if (at === -1) return null;
   if (level >= 2) return 'merge';
   const opens = all.indexOf(SLICE_OPENS);
-  return opens !== -1 && at > opens ? 'slice' : 'ahead';
+  if (opens === -1) return 'unnoticed';
+  return at > opens ? 'slice' : 'ahead';
 }
 
 const summariserTexts = (body, mask) => (body.messages || []).flatMap((m) => blocksOf(m.content).filter((b) => b.type === 'text' && !(b.text || '').match(CANARY)).map((b) => mask(b.text || '')));

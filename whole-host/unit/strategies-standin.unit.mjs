@@ -279,7 +279,7 @@ test('T20: with refuseMerges every merge request is refused and an L1 answered; 
   }
 });
 
-test('T34: with refuseContent a summariser request carrying the refused content is refused, and its record says whether the content sat in the slice, ahead of it, or in a merge', async () => {
+test('T34: with refuseContent a summariser request carrying the refused content is refused, and its record says whether the content sat in the slice, ahead of it, in a merge, or in an L1 request with no notice opening a slice', async () => {
   const NOTICE = 'Context Manager: System: You will soon form a new memory, get ready. The messages that follow are the slice of recent experience you are about to compress. After them, write the memory in your own voice.';
   const l1 = (ahead, slice) => ({
     model: 'claude-opus-5-5', max_tokens: 16000, stream: false, tools: TOOLS,
@@ -292,10 +292,13 @@ test('T34: with refuseContent a summariser request carrying the refused content 
   });
   const merge = summariserBody({ instruction: MERGE });
   merge.messages[0].content[0].text = `user: [[c:x.1]] REFUSED-CONTENT ${prose(400, 3)}`;
+  const unnoticed = l1('', 'REFUSED-CONTENT');
+  unnoticed.messages[0].content.splice(1, 1);
   const sent = [
     ['ahead', l1('REFUSED-CONTENT', ''), 'refusal'],
     ['slice', l1('', 'REFUSED-CONTENT'), 'refusal'],
     ['merge', merge, 'refusal'],
+    ['unnoticed', unnoticed, 'refusal'],
     [undefined, l1('', ''), 'end_turn'],
   ];
   const s = await startStandin({ configuration: { windowTokens: 50_000 }, refuseContent: true });
@@ -303,7 +306,7 @@ test('T34: with refuseContent a summariser request carrying the refused content 
   for (const [, body, stop] of sent) assert.equal((await post(s.url, body)).json.stop_reason, stop);
   const records = (await s.close()).filter((r) => r.kind === 'summariser');
   assert.deepEqual(records.map((r) => r.carried), sent.map(([carried]) => carried));
-  assert.deepEqual(records.map((r) => r.answer.shape), ['refusal', 'refusal', 'refusal', 'summary']);
+  assert.deepEqual(records.map((r) => r.answer.shape), ['refusal', 'refusal', 'refusal', 'refusal', 'summary']);
   const plain = await startStandin({ configuration: { windowTokens: 50_000 } });
   plain.setStep(step('m', []));
   assert.equal((await post(plain.url, l1('REFUSED-CONTENT', ''))).json.stop_reason, 'end_turn');
