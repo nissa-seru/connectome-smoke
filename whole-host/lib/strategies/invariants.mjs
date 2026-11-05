@@ -51,7 +51,7 @@ export function readable(read) {
     return value === undefined ? { unreadable: 'returned undefined' } : value;
   } catch (err) {
     const { shown, full } = cutError(err, 200);
-    return { unreadable: shown, ...(full ? { full } : {}) };
+    return { unreadable: shown || `${err?.constructor?.name ?? 'an error'} with no message`, ...(full ? { full } : {}) };
   }
 }
 

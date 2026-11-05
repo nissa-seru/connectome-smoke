@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { blobStore, compiledLine, storeDelta } from '../lib/strategies/recorder.mjs';
+import { readsFailed } from '../lib/strategies/ledger.mjs';
 class PassthroughStrategy {}
 const manager = (messages) => ({
   getAllMessages: () => messages,
@@ -61,6 +62,13 @@ test('storeDelta: a quarantined span or merge record with no identity is a read 
   assert.match(storeDelta(withSpan({ hash: 'renamed' }), undefined, blobs).out.quarantine?.unreadable ?? '', /chunkSourceHash/);
   const withRecord = { ...manager([]), getStrategy: () => ({ getCompressionQuarantineStatus: () => ({ count: 0, keys: [], spans: [] }), getMergeQuarantineStatus: () => ({ count: 1, records: [{ id: 'renamed' }] }) }) };
   assert.match(storeDelta(withRecord, undefined, blobs).out.quarantine?.unreadable ?? '', /key/);
+});
+
+test('storeDelta: a read that throws an error with no message is unreadable with a reason, so the receipt it was to read is a failed read, not a receipt', () => {
+  class PassthroughStrategy { beginKvUnifiedSubmission() {} get kvUnifiedReceipts() { throw new Error(); } }
+  const out = storeDelta({ ...manager([]), getStrategy: () => new PassthroughStrategy() }, undefined, blobStore()).out;
+  assert.equal(out.receiptHead?.unreadable, 'Error with no message');
+  assert.deepEqual(readsFailed([{ kind: 'compiles', step: 'a', boot: 1, lines: [], store: { fixture: out }, blobs: {} }]), ['receipt']);
 });
 
 test('storeDelta: a strategy that takes kv-unified submissions but has no receipt chain to read is reported unreadable, not as no receipt', () => {
