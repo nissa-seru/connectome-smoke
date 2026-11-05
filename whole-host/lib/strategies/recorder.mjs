@@ -47,6 +47,20 @@ export function blobStore() {
   };
 }
 
+// context-manager 0.24.0 gives a compile's provenance a `messages` list parallel to its messages, each of these kinds
+// (CompiledMessageSources). A compile with no provenance at all has no layout either, which check 11 already flags.
+const SOURCE_KINDS = new Set(['raw', 'summary', 'injection', 'other']);
+
+function unreadSources(compiled) {
+  const sent = compiled?.messages ?? [];
+  if (!compiled?.provenance || sent.length === 0) return null;
+  const list = compiled.provenance.messages;
+  if (!Array.isArray(list)) return `the compile's provenance gives no messages list, so its ${sent.length} messages' sources couldn't be read`;
+  if (list.length !== sent.length) return `the compile's provenance gives sources for ${list.length} of its ${sent.length} messages`;
+  const odd = [...new Set(list.filter((s) => !SOURCE_KINDS.has(s?.kind)).map((s) => String(s?.kind)))];
+  return odd.length ? `the compile's provenance gives sources of a kind context-manager 0.24.0 doesn't: ${odd.join(', ')}` : null;
+}
+
 export function compiledLine(manager, budget, compiled, blobs, elsewhere) {
   const prov = compiled?.provenance?.messages;
   const entries = (compiled?.messages ?? []).map((m, i) => {
@@ -58,6 +72,8 @@ export function compiledLine(manager, budget, compiled, blobs, elsewhere) {
   let slots = [];
   const reading = elsewhere && ((ids) => { const r = elsewhere(ids); slots = r.from ?? []; return r; });
   const violations = checkCompile(manager, budget, compiled, entries, { compresses: compresses(manager), elsewhere: reading });
+  const sourcesUnread = unreadSources(compiled);
+  if (sourcesUnread) violations.push({ invariant: 'unreadable', detail: sourcesUnread });
   const layout = compiled?.provenance?.layout;
   return {
     outcome: 'compiled',
@@ -99,15 +115,25 @@ export function receiptHeadOf(manager) {
     if (!('head' in chain)) throw new Error('kvUnifiedReceipts has no head');
     const head = chain.head;
     if (!head) return null;
+    if (typeof head.sequence !== 'number') throw new Error('the receipt head has no numeric sequence');
+    if (!Array.isArray(head.changes)) throw new Error('the receipt head has no changes list');
+    if (!head.changes.every(readableChange)) throw new Error('a receipt change lacks its leafId or value, or its value a string repHash and a numeric level and lastChangedSeq');
     return {
       sequence: head.sequence,
       receiptHash: head.receiptHash,
       parentReceiptHash: head.parentReceiptHash,
       requestHash: head.requestHash,
       layoutHash: head.layoutHash,
-      changes: (head.changes ?? []).map((c) => [String(c.leafId), c.value ? [c.value.repHash, c.value.level, c.value.lastChangedSeq] : null]),
+      changes: head.changes.map((c) => [String(c.leafId), c.value ? [c.value.repHash, c.value.level, c.value.lastChangedSeq] : null]),
     };
   }));
+}
+
+// context-manager 0.24.0's PresentationDelta: a leafId, and a value that is null for a leaf removed, or a PresentedLeaf.
+function readableChange(change) {
+  if (!change || typeof change !== 'object' || change.leafId == null || !('value' in change)) return false;
+  const v = change.value;
+  return v === null || (typeof v?.repHash === 'string' && typeof v.level === 'number' && typeof v.lastChangedSeq === 'number');
 }
 
 export function storeDelta(manager, seen, blobs) {
@@ -167,7 +193,11 @@ export function storeDelta(manager, seen, blobs) {
 function quarantineOf(manager) {
   const strategy = readable(() => manager.getStrategy());
   if (isUnreadable(strategy)) return strategy;
-  if (typeof strategy?.getMergeQuarantineStatus !== 'function') return null;
+  if (typeof strategy?.getMergeQuarantineStatus !== 'function') {
+    const compressing = compresses(manager);
+    if (isUnreadable(compressing)) return compressing;
+    return compressing ? { unreadable: 'the strategy compresses but has no getMergeQuarantineStatus to read its quarantines from' } : null;
+  }
   return plain(readable(() => {
     const compression = strategy.getCompressionQuarantineStatus();
     const merge = strategy.getMergeQuarantineStatus();

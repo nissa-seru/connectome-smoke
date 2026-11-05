@@ -1,6 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { HarnessModule } from '../lib/strategies/module.mjs';
+class AutobiographicalStrategy {
+  getCompressionQuarantineStatus() { return { count: 0, keys: [], spans: [] }; }
+  getMergeQuarantineStatus() { return { count: 0, records: [] }; }
+}
 class Manager {
   constructor(tokens = 1_000) {
     this.tokens = tokens;
@@ -9,7 +13,7 @@ class Manager {
   getAllMessages() { return this.messages; }
   getSummariesInRange() { return []; }
   getSummary() { return null; }
-  getStrategy() { return {}; }
+  getStrategy() { return new AutobiographicalStrategy(); }
   getRenderStats() { return null; }
   getMaxSummaryLevel() { return 0; }
   listPins() { return []; }
@@ -191,12 +195,12 @@ test('module: an agent that has left is kept while any read of it fails, a recei
   await sub.compile();
   await module.answer({ op: 'take' });
   registered.length = 0;
-  sub.getStrategy = () => ({ get kvUnifiedReceipts() { throw new Error('busy'); } });
+  sub.getStrategy = () => Object.defineProperty(new AutobiographicalStrategy(), 'kvUnifiedReceipts', { get() { throw new Error('busy'); } });
   const once = await module.answer({ op: 'take' });
   assert.deepEqual(once.store.sub.receiptHead, { unreadable: 'busy' }, 'the premise: its receipt couldn\'t be read');
   const twice = await module.answer({ op: 'take' });
   assert.equal(twice.store.sub, undefined, 'the same failure again reports nothing new');
-  sub.getStrategy = () => ({});
+  sub.getStrategy = () => new AutobiographicalStrategy();
   const read = await module.answer({ op: 'take' });
   assert.deepEqual(read.store.sub, { receiptHead: null }, 'it was still kept, so the read that succeeds is reported');
   assert.deepEqual((await module.answer({ op: 'take' })).store, {}, 'then forgotten');

@@ -90,7 +90,7 @@ function quarantinesEntered(log) {
   for (const e of log) {
     if (e.kind !== 'compiles') continue;
     for (const [a, st] of Object.entries(e.store ?? {})) {
-      if (!st || !('quarantine' in st)) continue;
+      if (!st || !('quarantine' in st) || st.quarantine === null) continue;
       reported = true;
       for (const [kind, seen] of Object.entries(kinds)) {
         const ids = st.quarantine?.[kind];
@@ -100,9 +100,29 @@ function quarantinesEntered(log) {
       }
     }
   }
-  if (!reported) return {};
-  return Object.fromEntries(Object.entries(kinds).filter(([kind]) => !unknown.has(kind))
-    .map(([kind, seen]) => [kind, [...seen.values()].reduce((n, ids) => n + ids.size, 0)]));
+  if (!reported) return 'not-reported';
+  return Object.fromEntries(Object.entries(kinds).map(([kind, seen]) => [kind, unknown.has(kind) ? 'unreadable' : [...seen.values()].reduce((n, ids) => n + ids.size, 0)]));
+}
+
+export function readsFailed(log) {
+  const failed = new Set();
+  for (const e of log) {
+    if (e.kind !== 'compiles') continue;
+    for (const st of Object.values(e.store ?? {})) {
+      if (!st) continue;
+      for (const part of ['messages', 'summaries']) if (part in st && !Array.isArray(st[part])) failed.add(part);
+      if (st.receiptHead?.unreadable) failed.add('receipt');
+      if ('quarantine' in st && st.quarantine !== null) {
+        if (st.quarantine?.unreadable || typeof st.quarantine !== 'object') failed.add('quarantines');
+        else for (const kind of ['compression', 'merge']) if (!Array.isArray(st.quarantine[kind])) failed.add(`${kind} quarantines`);
+      }
+    }
+    for (const line of e.lines ?? []) {
+      if (line.outcome === 'unrecordable') failed.add('a compile');
+      if ((line.violations ?? []).some((v) => v.invariant === 'unreadable')) failed.add('a compile check\'s inputs');
+    }
+  }
+  return [...failed];
 }
 
 export function moduleCounts(log, records, agent = FIXTURE_AGENT) {
@@ -115,8 +135,7 @@ export function moduleCounts(log, records, agent = FIXTURE_AGENT) {
     refused: calls.filter((l) => l.outcome === 'refused').length,
     compressions: summariser.filter((r) => r.level === 1).length,
     merges: summariser.filter((r) => typeof r.level === 'number' && r.level > 1).length,
-    ...(entered.compression === undefined ? {} : { compressionQuarantines: entered.compression }),
-    ...(entered.merge === undefined ? {} : { mergeQuarantines: entered.merge }),
+    quarantines: entered,
     ...(last ? { raw: last.raw, summarised: last.summarised, out: last.out } : {}),
     invariantLines: log.filter((e) => e.kind === 'compiles').flatMap((e) => e.lines ?? []).filter((l) => (l.violations ?? []).length > 0).length,
   };

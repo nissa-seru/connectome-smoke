@@ -1,11 +1,12 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { blobStore, compiledLine, storeDelta } from '../lib/strategies/recorder.mjs';
+class PassthroughStrategy {}
 const manager = (messages) => ({
   getAllMessages: () => messages,
   getSummariesInRange: () => [],
   getSummary: () => null,
-  getStrategy: () => ({}),
+  getStrategy: () => new PassthroughStrategy(),
 });
 const text = (t) => ({ type: 'text', text: t });
 const thinking = { type: 'thinking', thinking: 'why', signature: 'sig' };
@@ -49,7 +50,9 @@ test('storeDelta: context-manager\'s quarantines, compression spans and merge re
   assert.deepEqual(storeDelta(m, first.seen, blobs).out.quarantine, { compression: ['span-a', 'span-b'], merge: ['merge-1'] }, 'each span once however many records it holds, and each merge record, by identity, in order');
   status = { count: 0, keys: [], spans: [], unreadable: true };
   assert.deepEqual(storeDelta(m, first.seen, blobs).out.quarantine, { compression: null, merge: ['merge-1'] }, 'a quarantine context-manager couldn\'t read is unknown, not none');
-  assert.equal(storeDelta(manager([]), undefined, blobs).out.quarantine, undefined, 'a strategy with no quarantine reports none');
+  assert.equal(storeDelta(manager([]), undefined, blobs).out.quarantine, undefined, 'a passthrough, which has no quarantine, reports none');
+  const renamed = { ...manager([]), getStrategy: () => ({ getCompressionQuarantineStatus: () => status }) };
+  assert.match(storeDelta(renamed, undefined, blobs).out.quarantine?.unreadable ?? '', /getMergeQuarantineStatus/, 'a strategy that compresses with no merge quarantine to read is unreadable, not one with none');
 });
 
 test('storeDelta: a quarantined span or merge record with no identity is a read this can\'t make, not a quarantine', () => {
@@ -68,6 +71,41 @@ test('storeDelta: a strategy that takes kv-unified submissions but has no receip
   assert.match(storeDelta(on({ beginKvUnifiedSubmission: begin, kvUnifiedReceipts: {} }), undefined, blobs).out.receiptHead?.unreadable ?? '', /head/, 'the chain has no head');
   assert.equal(storeDelta(on({ beginKvUnifiedSubmission: begin, kvUnifiedReceipts: { head: null } }), undefined, blobs).out.receiptHead, undefined, 'a chain with no receipt yet has none');
   assert.equal(storeDelta(on({}), undefined, blobs).out.receiptHead, undefined, 'a strategy that takes no kv-unified submissions has none');
+});
+
+test('storeDelta: a receipt head without a numeric sequence, a changes list, or a readable change is reported unreadable, not as a receipt', () => {
+  const blobs = blobStore();
+  const leaf = { repHash: 'r:1', level: 0, lastChangedSeq: 3 };
+  const headed = (head) => ({ ...manager([]), getStrategy: () => ({ beginKvUnifiedSubmission() {}, kvUnifiedReceipts: { head } }) });
+  const good = { sequence: 2, receiptHash: 'h', parentReceiptHash: null, requestHash: 'q', layoutHash: 'l', changes: [{ leafId: 'm1', value: leaf }, { leafId: 'm2', value: null }] };
+  assert.deepEqual(storeDelta(headed(good), undefined, blobs).out.receiptHead.changes, [['m1', ['r:1', 0, 3]], ['m2', null]], 'a leaf presented and a leaf removed');
+  const unread = (head) => storeDelta(headed(head), undefined, blobs).out.receiptHead?.unreadable ?? '';
+  assert.match(unread({ ...good, sequence: undefined }), /sequence/);
+  assert.match(unread({ ...good, changes: undefined }), /changes list/);
+  assert.match(unread({ ...good, changes: [{ leafId: 'm1', leaf }] }), /value/, 'a renamed value');
+  assert.match(unread({ ...good, changes: [{ leafId: 'm1', value: { hash: 'r:1', level: 0, lastChangedSeq: 3 } }] }), /repHash/, 'a renamed repHash');
+  assert.match(unread({ ...good, changes: [{ id: 'm1', value: leaf }] }), /leafId/, 'a renamed leafId');
+});
+
+test('compiledLine: a compile whose provenance gives no sources list matching its messages, or a source of a kind context-manager 0.24.0 doesn\'t give, has an unreadable violation', () => {
+  class AutobiographicalStrategy { config = {}; getRenderStats() { return { total: { tokens: 10 } }; } }
+  const stored = [{ id: '1', sequence: 1, role: 'user', content: [text('one')] }];
+  const layout = { memberIds: ['1'], units: [{ k: 'r', t: 1 }] };
+  const raw = { kind: 'raw', bodies: [{ messageId: '1', complete: true }] };
+  const line = (compiled) => compiledLine(
+    { ...manager(stored), getStrategy: () => new AutobiographicalStrategy(), listPins: () => [], getRenderStats: () => null },
+    { maxTokens: 1_000, reserveForResponse: 0 },
+    { renderStats: { total: { tokens: 10 } }, ...compiled },
+    blobStore(),
+  );
+  const sent = [{ role: 'user', content: [text('one')] }];
+  const unreadable = (l) => l.violations.filter((v) => v.invariant === 'unreadable').map((v) => v.detail);
+  assert.deepEqual(unreadable(line({ messages: sent, provenance: { messages: [raw], layout } })), [], 'the control');
+  assert.match(unreadable(line({ messages: sent, provenance: { layout } })).join(), /no messages list/);
+  assert.match(unreadable(line({ messages: sent, provenance: { messages: [], layout } })).join(), /sources for 0 of its 1 messages/);
+  assert.match(unreadable(line({ messages: sent, provenance: { messages: [{ kind: 'stored', bodies: [] }], layout } })).join(), /kind context-manager 0.24.0 doesn't: stored/);
+  assert.deepEqual(unreadable(line({ messages: sent, provenance: { messages: [{ kind: 'other' }], layout } })), [], 'a message that stands for nothing stored is a source of its own');
+  assert.deepEqual(unreadable(line({ messages: [], provenance: { layout: { memberIds: [], units: [] } } })), [], 'a compile of nothing has no sources to misread');
 });
 
 test('storeDelta: a strategy that can\'t be read when the quarantine is first sampled is reported unreadable, not as none', () => {
