@@ -15,14 +15,15 @@ function tree(files) {
   return root;
 }
 
-test('N1: the lane version moves with every file under lib and with run.mjs, and with nothing else', { timeout: 30_000 }, () => {
+test('N1: the lane version moves with every file under lib, with run.mjs and with stack.json less its seconds, and with nothing else', { timeout: 30_000 }, () => {
+  const stack = (prefixTurns, seconds) => JSON.stringify({ release: 'v1', prefixTurns, seconds }, null, 2);
   const root = tree({
     'lib/strategies/driver.mjs': 'driver',
     'lib/strategies/script.mjs': 'script',
     'lib/common.mjs': 'common',
     'lib/record.mjs': 'record',
     'run.mjs': 'run',
-    'stack.json': '{}',
+    'stack.json': stack({ H1: 49 }, { runs: { 'H1/W1': 3 } }),
     'package.json': '{}',
     'README.md': 'readme',
     'unit/x.unit.mjs': 'test',
@@ -31,7 +32,7 @@ test('N1: the lane version moves with every file under lib and with run.mjs, and
     const v = laneVersion(root);
     assert.match(v, /^[0-9a-f]{64}$/);
     assert.equal(laneVersion(root), v, 'the same files give the same version');
-    for (const [rel, text] of [['README.md', 'readme 2'], ['stack.json', '{"x":1}'], ['package.json', '{"x":1}'], ['unit/x.unit.mjs', 'test 2'], ['unit/y.unit.mjs', 'new']]) {
+    for (const [rel, text] of [['README.md', 'readme 2'], ['stack.json', stack({ H1: 49 }, { runs: { 'H1/W1': 4, 'H1/W2': 9 } })], ['package.json', '{"x":1}'], ['unit/x.unit.mjs', 'test 2'], ['unit/y.unit.mjs', 'new']]) {
       writeFileSync(join(root, rel), text);
       assert.equal(laneVersion(root), v, `${rel} is outside the lane`);
     }
@@ -40,6 +41,8 @@ test('N1: the lane version moves with every file under lib and with run.mjs, and
       ['lib/common.mjs', () => writeFileSync(join(root, 'lib/common.mjs'), 'common 2'), () => writeFileSync(join(root, 'lib/common.mjs'), 'common')],
       ['lib/record.mjs', () => writeFileSync(join(root, 'lib/record.mjs'), 'record 2'), () => writeFileSync(join(root, 'lib/record.mjs'), 'record')],
       ['run.mjs', () => writeFileSync(join(root, 'run.mjs'), 'run 2'), () => writeFileSync(join(root, 'run.mjs'), 'run')],
+      ['stack.json\'s prefixTurns', () => writeFileSync(join(root, 'stack.json'), stack({ H1: 50 }, { runs: {} })), () => writeFileSync(join(root, 'stack.json'), stack({ H1: 49 }, { runs: {} }))],
+      ['a field added to stack.json', () => writeFileSync(join(root, 'stack.json'), JSON.stringify({ release: 'v1', prefixTurns: { H1: 49 }, seconds: {}, more: 1 })), () => writeFileSync(join(root, 'stack.json'), stack({ H1: 49 }, {}))],
       ['a file added under lib/strategies', () => writeFileSync(join(root, 'lib/strategies/new.mjs'), ''), () => unlinkSync(join(root, 'lib/strategies/new.mjs'))],
       ['a file in a directory under lib/strategies', () => { mkdirSync(join(root, 'lib/strategies/sub')); writeFileSync(join(root, 'lib/strategies/sub/x.mjs'), 'x'); }, () => rmSync(join(root, 'lib/strategies/sub'), { recursive: true })],
       ['a file removed from lib/strategies', () => unlinkSync(join(root, 'lib/strategies/driver.mjs')), () => writeFileSync(join(root, 'lib/strategies/driver.mjs'), 'driver')],
@@ -241,4 +244,15 @@ test('run.mjs refuses an --against whose base arm wrote no run.json, before it c
     assert.match(r.stderr, /--against \S+ holds no run\.json, so the base arm didn't finish/);
     assert.doesNotMatch(r.stdout + r.stderr, /lane |release /);
   } finally { for (const d of [host, against]) rmSync(d, { recursive: true, force: true }); }
+});
+
+test('run.mjs refuses an --out that isn\'t empty, since an --out holds one invocation\'s evidence, before it clones or installs anything', () => {
+  const host = tree({ 'package.json': JSON.stringify({ name: '@animalabs/connectome-host' }) });
+  const out = tree({ 'run.json': '{}' });
+  try {
+    const r = runMjs('--host', host, '--out', out);
+    assert.equal(r.status, 2);
+    assert.match(r.stderr, /--out \S+ isn't empty: an --out holds one invocation's evidence, so give it an empty or new directory/);
+    assert.doesNotMatch(r.stdout + r.stderr, /lane |release /);
+  } finally { for (const d of [host, out]) rmSync(d, { recursive: true, force: true }); }
 });

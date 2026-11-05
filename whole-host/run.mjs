@@ -48,12 +48,14 @@ if (!names.length) { console.log(`${LABEL} shard ${shard[0]} holds none of ${lis
 if (+shard[2] > 1) console.log(`${LABEL} shard ${shard[0]}: ${names.length} of ${listed.length} runs, about ${share.seconds} s by stack.json's seconds`);
 const runs = everyRun.filter((n) => listed.includes(n));
 const lane = laneVersion();
+const runtime = { node: process.version, platform: process.platform, arch: process.arch };
 let against = null;
-if (opt('against')) { try { against = readAgainst(resolve(opt('against')), { lane, runs, names }); } catch (e) { fail(e.message); } }
+if (opt('against')) { try { against = readAgainst(resolve(opt('against')), { lane, runs, names, runtime }); } catch (e) { fail(e.message); } }
 const work = opt('workdir') ? resolve(opt('workdir')) : mkdtempSync(join(tmpdir(), 'whole-host-'));
 if (opt('workdir') && existsSync(work) && readdirSync(work).length) fail(`--workdir ${work} isn't empty: the release is installed there and every run's store starts there, so give it an empty or new directory`);
-mkdirSync(work, { recursive: true });
 const out = resolve(opt('out', join(work, 'out')));
+if (existsSync(out) && readdirSync(out).length) fail(`--out ${out} isn't empty: an --out holds one invocation's evidence, so give it an empty or new directory`);
+mkdirSync(work, { recursive: true });
 mkdirSync(out, { recursive: true });
 const checkpointsDir = opt('checkpoints') ? resolve(opt('checkpoints')) : null;
 const npmCi = (cwd) => sh('npm', ['ci', '--ignore-scripts', '--no-audit', '--no-fund', '--loglevel=error'], { cwd, timeout: 900_000 });
@@ -297,7 +299,7 @@ for (const id of names) {
 const table = summaryOf({ rows, flagged: flaggedRuns });
 writeFileSync(join(out, 'summary.md'), `${table}\n`);
 if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, stepSummary({ table, views }));
-writeFileSync(join(out, 'run.json'), JSON.stringify({ lane, runs, release: { tag: stack.release, versions: release.versions }, candidate: { versions: candidate.versions, overlays: packs }, seconds, results }, null, 1));
+writeFileSync(join(out, 'run.json'), JSON.stringify({ lane, runs, runtime, release: { tag: stack.release, versions: release.versions }, candidate: { versions: candidate.versions, overlays: packs }, seconds, results }, null, 1));
 if (flag('update-seconds')) {
   const merged = { runs: { ...stack.seconds?.runs, ...seconds.runs }, checkpoints: { ...stack.seconds?.checkpoints, ...seconds.checkpoints } };
   const written = join(HERE, `stack.json.${process.pid}`);

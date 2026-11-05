@@ -4,12 +4,15 @@ import { join, relative } from 'node:path';
 export const slug = (id) => id.replaceAll('/', '_');
 export const recordPath = (dir, id) => join(dir, slug(id), `${slug(id)}.record`);
 
-export function readAgainst(dir, { lane, runs, names }) {
+const under = (r) => `Node ${r?.node ?? '?'} on ${r?.platform ?? '?'} ${r?.arch ?? '?'}`;
+
+export function readAgainst(dir, { lane, runs, names, runtime }) {
   const file = join(dir, 'run.json');
   if (!existsSync(file)) throw new Error(`--against ${dir} holds no run.json, so the base arm didn't finish`);
   let base;
   try { base = JSON.parse(readFileSync(file, 'utf-8')); } catch (e) { throw new Error(`--against ${file} couldn't be read: ${e.message}`); }
   if (base.lane !== lane) throw new Error(`--against ${dir} was written by the harness at lane ${String(base.lane).slice(0, 12)}, and this one is ${lane.slice(0, 12)}, so their records can't be compared`);
+  if (under(base.runtime) !== under(runtime)) throw new Error(`--against ${dir} ran under ${under(base.runtime)}, and this invocation under ${under(runtime)}, so their records can't be compared`);
   const theirs = Array.isArray(base.runs) ? base.runs : [];
   if (theirs.join(',') !== runs.join(',')) throw new Error(`--against ${dir} drew its shares from ${theirs.join(', ') || 'no runs'}, and this invocation from ${runs.join(', ')}: give both arms the same --runs`);
   const results = Array.isArray(base.results) ? base.results : [];

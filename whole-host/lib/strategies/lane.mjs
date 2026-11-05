@@ -31,6 +31,9 @@ export function laneVersion(root = ROOT) {
     const bytes = readFileSync(join(root, rel));
     h.update(`${rel}\0${bytes.length}\0`).update(bytes);
   }
+  const { seconds, ...shaping } = JSON.parse(readFileSync(join(root, 'stack.json'), 'utf-8'));
+  const stack = JSON.stringify(shaping);
+  h.update(`stack.json less seconds\0${Buffer.byteLength(stack)}\0`).update(stack);
   return h.digest('hex');
 }
 
