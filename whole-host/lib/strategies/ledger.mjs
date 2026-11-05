@@ -110,6 +110,11 @@ const READS = { state: 'the store\'s summary level', messages: 'messages' };
 export function readsFailed(log) {
   const failed = new Set();
   for (const e of log) {
+    if ((e.kind === 'checkpoint' || e.kind === 'health') && !e.skipped) {
+      if (e.health?.ok === false) failed.add('the health panel');
+      if (Object.values(e.health?.data?.readFailures ?? {}).some((sections) => sections?.contextComposition !== undefined)) failed.add('the health panel\'s context composition');
+      continue;
+    }
     if (e.kind === 'read') {
       const a = e.answer;
       if (isUnreadable(a) || (a && typeof a === 'object' && !Array.isArray(a) && Object.values(a).some(isUnreadable))) failed.add(READS[e.op] ?? `the ${e.op} read`);

@@ -74,6 +74,15 @@ test('readsFailed names each read of the run\'s that failed, once, and nothing f
   assert.deepEqual(readsFailed([...log, at({ fixture: { quarantine: null } })]), [], 'a strategy that stopped reporting quarantines');
 });
 
+test('readsFailed names a health panel read that failed, and an agent\'s context composition the host reports it couldn\'t read, whatever the checks made of the panel', () => {
+  const panel = (kind, health, extra = {}) => ({ kind, name: kind === 'health' ? 'end' : 's1', health, ...extra });
+  const composition = { fixture: { head: { messages: 4 }, tail: { messages: 6 } } };
+  assert.deepEqual(readsFailed([...log, panel('checkpoint', { ok: true, data: { contextComposition: composition } }), panel('health', { ok: true, data: { contextComposition: composition, readFailures: { fixture: { runtimeSettings: 'boom' } } } })]), [], 'reads that worked, and a failure in a section the harness doesn\'t read');
+  assert.deepEqual(readsFailed([...log, panel('health', { ok: false, error: 'no panel' })]), ['the health panel']);
+  assert.deepEqual(readsFailed([...log, panel('checkpoint', { ok: true, data: { contextComposition: composition, readFailures: { sub: { contextComposition: 'boom' } } } })]), ['the health panel\'s context composition'], 'any agent\'s');
+  assert.deepEqual(readsFailed([...log, panel('health', undefined, { skipped: 'the run\'s last step stopped its host' })]), [], 'a read the run skipped');
+});
+
 test('readsFailed names a module read the driver made that failed, by what it read: the store\'s summary level, or its messages', () => {
   const read = (op, answer) => ({ kind: 'read', step: 'e', op, answer });
   assert.deepEqual(readsFailed([...log, read('state', { maxLevel: 3 }), read('messages', []), read('dry', { seq: null })]), [], 'reads that worked');
