@@ -38,7 +38,7 @@ test('check 2: a configuration that doesn\'t summarise declares no summariser pr
   assert.deepEqual(missing.map((m) => m.segment), ['tool-round', 'parallel', 'thinking-call']);
 });
 
-test('check 1 flags unclassified and refused requests, failure events and unsettled checkpoints', () => {
+test('check 1 flags unclassified and refused requests, failure events and unsettled steps', () => {
   const flags = everyTurnAnswers(
     [{ id: 'r1', step: 's', kind: 'agent' }, { id: 'r2', step: 's', kind: 'unclassified', reason: 'x' }, { id: 'r3', step: 't', kind: 'agent', refused: 'window' }],
     [{ kind: 'ipc', step: 'u', event: { type: 'inference:failed', error: 'boom' } }, { kind: 'settle', phase: 'end', step: 'v', settled: false }, { kind: 'settle', phase: 'end', step: 'w', settled: true }],
