@@ -319,8 +319,6 @@ test('K2d: under a report that the window governs, a window other than the stand
     for (const f of flags) assert.match(f.message, new RegExp(`couldn't judge.*${printed.replace('.', '\\.')}.*${standin}`));
     assert.deepEqual(notes, []);
   }
-  const unnamed = budgets(crossing(), [turnStep('a')], under(budgetReport('  fixture: 30.0k (last: 0, 0%); its stream doesn\'t break at this budget mid-turn')), { streamBound: 30_000, windowTokens: 1_000_000 }).flags;
-  assert.deepEqual(unnamed.map((f) => f.request), ['r2', 'r3'], 'a clause that names no window');
 });
 
 test('K2d: a continuation under a report without that clause is held to the stream bound', () => {
@@ -330,8 +328,8 @@ test('K2d: a continuation under a report without that clause is held to the stre
   assert.deepEqual(notes, []);
 });
 
-test('K2d: with no report for the agent, only a continuation after a round over the stream bound is couldn\'t-judge', () => {
-  for (const log of [under(null), under(budgetReport()), under(budgetReport('  other: 30.0k (last: 0, 0%)'))]) {
+test('K2d: with no report logged, only a continuation after a round over the stream bound is couldn\'t-judge', () => {
+  for (const log of [under(null)]) {
     const { flags } = budgets(crossing(), [turnStep('a')], log, { streamBound: 30_000, windowTokens: 1_000_000 });
     assert.deepEqual(flags.map((f) => f.request), ['r3'], JSON.stringify(log.map((e) => e.kind)));
     assert.match(flags[0].message, /couldn't judge/);
@@ -339,6 +337,22 @@ test('K2d: with no report for the agent, only a continuation after a round over 
   const late = budgets(crossing(), [turnStep('a')], [...R1_COMPILED, sent('r1'), sent('r2'), sent('r3'), budgetReport(`  fixture: 30.0k (last: 0, 0%)${WINDOW_CLAUSE}`), panel('s')], { streamBound: 30_000, windowTokens: 1_000_000 }).flags;
   assert.deepEqual(late.map((f) => f.request), ['r3']);
   assert.match(late[0].message, /couldn't judge/);
+});
+
+test('K2d: a /budget report with no line for the run\'s agent, or one in neither form the host writes, leaves check 3 judging nothing, since which bound governs can\'t be read; a subagent\'s line isn\'t looked for', () => {
+  const lines = [
+    [], ['  other: 30.0k (last: 0, 0%)'], ['  fixture: 30.0k (last: 0, 0%); its stream doesn\'t break at this budget mid-turn'],
+    ['  fixture: 30.0k (last: 0, 0%); only the context window interrupts this stream'], ['  fixture: 30.0k'],
+  ];
+  const logs = [...lines.map((l) => under(budgetReport(...l))), under({ kind: 'budget-report', boot: 1, lines: ['--- Budgets ---'], ms: 5 }), under({ kind: 'budget-report', boot: 1, lines: ['No agents.'], ms: 5 }), under({ kind: 'budget-report', boot: 1, lines: ['Unknown command: /budget'], ms: 5 })];
+  for (const log of logs) {
+    const { flags, judged, headroom, notes } = budgets(crossing(), [turnStep('a')], log, { streamBound: 30_000, windowTokens: 1_000_000 });
+    assert.deepEqual([judged, flags.map((f) => [f.check, f.what]), headroom, notes], [0, [[3, 'budget-unreadable']], [], []], JSON.stringify(log[0].lines));
+  }
+  assert.match(budgets(crossing(), [turnStep('a')], logs[0], { streamBound: 30_000, windowTokens: 1_000_000 }).flags[0].message, /^couldn't judge fixture's 3 request\(s\): the host's \/budget report at boot 1 has no line for fixture, so the bound that governs its continuation rounds can't be read$/);
+  assert.match(budgets(crossing(), [turnStep('a')], logs[2], { streamBound: 30_000, windowTokens: 1_000_000 }).flags[0].message, /at boot 1 writes fixture's line in no form the check reads/);
+  const sub = budgets(crossing().map((r) => ({ ...r, agent: 'sub' })), [turnStep('a')], under(budgetReport('  fixture: 30.0k (last: 0, 0%)')), { agent: 'knowledge-1', streamBound: 30_000, windowTokens: 1_000_000 });
+  assert.ok(!sub.flags.some((f) => f.what === 'budget-unreadable'), 'a subagent launched after the boot isn\'t in its report');
 });
 
 test('K2d: a report whose figure isn\'t the stream bound as the host formats it makes every continuation under it couldn\'t-judge', () => {

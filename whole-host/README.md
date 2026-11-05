@@ -469,6 +469,11 @@ shows the host's last lines names that file.
   - **It can't judge** a request with no usage, a host report of a bound other
     than the one it holds, or an agent with requests and no compile line. Each
     is a flag of its own.
+  - **Where a `/budget` report has no line for the run's agent,** or writes it
+    in neither of the two forms the host writes, its budget and last use alone
+    or followed by the window clause, which bound governs can't be read, so the
+    check judges nothing and the run can't be compared. A subagent, launched
+    after the boot's report, isn't looked for in it.
 - **Check 4: coverage.** Every stored input and reply goes out in each request,
   raw or inside a summary sent, once, and in store order within its window.
   It applies where the run's store was read and holds a summary: a run that

@@ -256,21 +256,24 @@ export function hostTokens(n) {
   return String(n);
 }
 
-// connectome-host's `/budget` adds this to an agent's line when agent-framework breaks its stream mid-turn only at its
-// window, for a model whose thinking binds (`windowInsteadOfBudget`, #508).
-const WINDOW_GOVERNS = 'its stream doesn\'t break at this budget mid-turn';
+// connectome-host's `/budget` writes an agent's line as its stream budget and last use, and adds the rest when
+// agent-framework breaks its stream mid-turn only at its window, for a model whose thinking binds
+// (`handleBudget`, src/commands.ts:846; `windowInsteadOfBudget`, #508).
+const BUDGET_LINE = /^(\S+) \(last: [^()]*\)(?:; its stream doesn't break at this budget mid-turn: for its size, only before a request its (\S+) window can't hold)?$/;
 
-function budgetReports(log, agent) {
+function budgetReports(log, agent, listed) {
   const governs = new Map();
   let current = null;
   for (const e of log) {
     if (e.kind === 'budget-report') {
       const line = (e.lines ?? []).find((l) => l.startsWith(`  ${agent}: `));
-      current = line === undefined ? null : { boot: e.boot, figure: line.slice(agent.length + 4).split(' ')[0], window: line.includes(WINDOW_GOVERNS), windowFigure: / its (\S+) window can't hold/.exec(line)?.[1] ?? null };
+      const read = line === undefined ? null : BUDGET_LINE.exec(line.slice(agent.length + 4));
+      if (listed && !read) return { governs, unreadable: `at boot ${e.boot} ${line === undefined ? `has no line for ${agent}` : `writes ${agent}'s line in no form the check reads`}` };
+      current = read ? { boot: e.boot, figure: read[1], window: read[2] !== undefined, windowFigure: read[2] ?? null } : null;
     }
     if (e.kind === 'request' && e.request?.kind === 'agent') governs.set(e.request.id, current);
   }
-  return governs;
+  return { governs, unreadable: null };
 }
 
 // membrane's usage event sums the provider's `input_tokens`, which leave out cache reads and writes, over a stream's
@@ -298,11 +301,12 @@ export function budgets(records, script, log = [], { agent = FIXTURE_AGENT, stre
   let judged = 0;
   const paired = compileKinds(records, log, agent);
   const kinds = paired?.kinds ?? new Map();
-  const reports = budgetReports(log, agent);
-  const windowBoots = new Set();
   const side = agent === FIXTURE_AGENT ? 'primary' : 'sub';
+  const { governs: reports, unreadable } = budgetReports(log, agent, side === 'primary');
+  const windowBoots = new Set();
   const own = records.filter((r) => r.kind === 'agent' && (r.agent ?? 'primary') === side);
   const agentRequests = own;
+  if (unreadable && own.length) return { flags: [{ check: 3, step: 'the run', what: 'budget-unreadable', message: `couldn't judge ${agent}'s ${own.length} request(s): the host's /budget report ${unreadable}, so the bound that governs its continuation rounds can't be read` }], headroom: [], notes: [], judged: 0, requests: own.length };
   if (!paired && own.length) {
     return { flags: [{ check: 3, step: 'the run', what: 'no-compile-lines', message: `couldn't judge ${agent}'s ${own.length} request(s): the log holds no request compile line of ${agent}'s, so nothing tells a compiled request from a continuation round` }], headroom: [], notes: [], judged: null, requests: own.length };
   }
