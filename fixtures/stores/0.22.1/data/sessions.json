@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "activeSessionId": "95ca15da",
+  "sessions": {
+    "95ca15da": {
+      "id": "95ca15da",
+      "name": "Session 1",
+      "manuallyNamed": false,
+      "createdAt": "2026-11-06T13:14:26.233Z",
+      "lastAccessedAt": "2026-11-06T13:14:26.233Z"
+    }
+  }
+}
