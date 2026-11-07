@@ -110,6 +110,24 @@ The source lane runs the check on the combined tree's host, after its two boots:
 
 **What this can't see:** a mock session holds only the shapes ordinary turns write, not what a resident's long history holds (summaries, compression state, images, tool results at scale). Each release is resolved at one point of its range. The fixtures are written by today's node and bun. And releases stand in for residents who run `main`.
 
+## Long stores (`fixtures/long-stores/`)
+
+Each `fixtures/long-stores/<host version>-<variant>/` holds the data directory a published host release left after 40 turns over two boots, so it holds what the two-turn fixtures can't: context-manager's summaries, merges of summaries, and the windows that give the resident summaries in place of older turns. To get there in 40 turns, its recipe runs on small budgets: `agent.maxTokens` 1024, `agent.contextBudgetTokens` 10000, and a strategy with `recentWindowTokens` 2000, `targetChunkTokens` 500 and `summaryTargetTokens` 150. The variants are `plain`, the stored-store recipe with those budgets, and `subconscious`, which adds a subconscious with reader forks and subagents.
+
+The stand-in answers context-manager's calls with summaries of its own (`longReplier` in `lib/long-stores.mjs`). It tells a chunk's compression by context-manager's in-band compression marker and a merge by its merge instruction, and answers both with `SMOKE-SUMMARY <nonce> s<k>`. Every other call gets `SMOKE-REPLY <nonce> <turn tag>`. Each turn waits until the stand-in has had no request for 1.5 s (`waitQuiet`), since a resident's turns come minutes apart and compression runs between them. Without that wait, turns outrun compression and the picker refuses the budget.
+
+`fixture.json` holds the provenance as for the two-turn fixtures, and besides:
+- `recipe`, the recipe as captured, with `{{heartbeatEntry}}`, `{{dataDir}}`, `{ "$run": "webPort" }` and `{ "$run": "auth" }` in place of the run's own values; `fillRecipe(recipe, values)` puts a boot's own back;
+- `standIn`, which stand-in answered and how;
+- `nonce`, the 40 `turns` and every `summaries` entry (`k`, `kind`, `text`), so a request shows which of them it carries;
+- `requestKinds`, every request the capture's boots sent, by kind;
+- `manifest`, each session's `MANIFEST` format version after the capture;
+- `check`, what the release itself gave the resident when it booted on a copy and took one turn: the summaries and the turns its request carried, by tag, and the `MANIFEST` versions after.
+
+`node scripts/capture-long-store.mjs --variant plain|subconscious [--version V]` makes one, from the release npm gives a consumer now.
+
+**What these can't see:** the summaries are the stand-in's short canned text, not a model's, and every turn is plain text, so the stores hold no tool use, images or tune-out. Nothing is tuned out, so the subconscious's reader forks never run, and that store's records are of the same kinds as the plain one's. A resident's store holds thousands of turns, not 40, under its own budgets.
+
 ## The strategy fixture (`lib/strategies/`)
 
 **In a check of a change.** The `source` lane runs it on the combined tree's host, as the step `connectome-host:combined:strategies:default`, whenever the host is a changed package or one of their dependents, and always in main mode. It copies the newest cached store for the default configuration, continues it under the host checked, and judges the run. A flag, or a product the run should have produced and didn't, fails the step, and the step's `failures` name each one as `check N at STEP` or `check 2 at SEGMENT: PRODUCT`, the same from run to run, so the known red list can name one. When the candidate fails something, the same run goes again under each changed repository's `main`, built in a worktree beside its checkout and swapped in at the composed root for that run alone; the step's text then says which failures `main` shares. A failure `main` shares still fails the step, until its owner lists it as known red. A product neither side produced isn't a failure: that segment didn't run, and the text says so. Nor is an L3 merge, where the store's trial found none within its bound: the text says L3 wasn't exercised at this cut.
