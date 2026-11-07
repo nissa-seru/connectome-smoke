@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { readManifest, treeDigest, treeChanges, storesIn, withinStores, givenIn, givenCheck, rowsOf, unreachable, hasHistoryTools, rollbackVerdict, FEATURES } from '../lib/store-move.mjs';
+import { readManifest, treeDigest, treeChanges, storesIn, withinStores, givenIn, copiesIn, givenCheck, rowsOf, unreachable, hasHistoryTools, rollbackVerdict, FEATURES } from '../lib/store-move.mjs';
 
 const v1 = Buffer.from('RST\0\x01', 'latin1');
 const v2 = (features) => { const b = Buffer.alloc(13); b.write('RST\0', 0, 'latin1'); b[4] = 2; b.writeBigUInt64LE(BigInt(features), 5); return b; };
@@ -64,6 +64,18 @@ test('givenCheck counts a row as given before only where every control run gave 
   assert.deepEqual(g.unsteady.map((r) => r.id), ['m4']);
   assert.equal(g.untexted, 1);
   assert.deepEqual(givenCheck(rows, [req('turn one')], req('turn one')).lost, []);
+});
+
+test('givenCheck judges rows with the same text as a group, by how many copies each request carries', () => {
+  const notice = '[send-undeliverable] Your previous reply had no channel';
+  const rows = rowsOf({ messages: [1, 2, 3].map((n) => ({ id: `n${n}`, texts: [notice] })), summaries: [] });
+  const g = givenCheck(rows, [req(notice, 'x', notice), req(notice, notice, notice)], req(notice));
+  assert.equal(g.given, 2);
+  assert.deepEqual(g.givenRows.map((r) => r.id), ['n1', 'n2']);
+  assert.deepEqual(g.unsteady.map((r) => r.id), ['n3']);
+  assert.deepEqual(g.lost.map((r) => r.id), ['n2']);
+  assert.equal(copiesIn(JSON.stringify(req(notice, notice)), [notice]), 2);
+  assert.deepEqual(givenCheck(rows, [req(notice, notice)], req(notice, notice, notice, notice)).lost, []);
 });
 
 test('unreachable: everything lost without history tools; with them, what the indexed query and the summaries no longer hold', () => {
