@@ -112,21 +112,25 @@ The source lane runs the check on the combined tree's host, after its two boots:
 
 ## Long stores (`fixtures/long-stores/`)
 
-Each `fixtures/long-stores/<host version>-<variant>/` holds the data directory a published host release left after 40 turns over two boots, so it holds what the two-turn fixtures can't: context-manager's summaries, merges of summaries, and the windows that give the resident summaries in place of older turns. To get there in 40 turns, its recipe runs on small budgets: `agent.maxTokens` 1024, `agent.contextBudgetTokens` 10000, and a strategy with `recentWindowTokens` 2000, `targetChunkTokens` 500 and `summaryTargetTokens` 150. The variants are `plain`, the stored-store recipe with those budgets, and `subconscious`, which adds a subconscious with reader forks and subagents.
+Each `fixtures/long-stores/<host version>-<variant>/` holds the data directory a published host release left after 40 turns over two boots, so it holds what the two-turn fixtures can't: context-manager's summaries, merges of summaries, and the windows that give the resident summaries in place of older turns. To get there in 40 turns, its recipe runs on small budgets: `agent.maxTokens` 1024, `agent.contextBudgetTokens` 10000, and a strategy with `recentWindowTokens` 2000, `targetChunkTokens` 500 and `summaryTargetTokens` 150. The variants are:
+- `plain`, the stored-store recipe with those budgets;
+- `subconscious`, which adds a subconscious with reader forks and subagents;
+- `tuneout`, which is `subconscious` with the strategy fixture's MCPL server (`lib/strategies/mcpl-server.mjs`) registering one channel, `smoke-room`, since a tune-out needs a registered channel. At turn 30 the resident tunes it out, three messages arrive in it, and the subconscious's reader reads them and delivers a summary. The tune-out is never cancelled.
 
-The stand-in answers context-manager's calls with summaries of its own (`longReplier` in `lib/long-stores.mjs`). It tells a chunk's compression by context-manager's in-band compression marker and a merge by its merge instruction, and answers both with `SMOKE-SUMMARY <nonce> s<k>`. Every other call gets `SMOKE-REPLY <nonce> <turn tag>`. Each turn waits until the stand-in has had no request for 1.5 s (`waitQuiet`), since a resident's turns come minutes apart and compression runs between them. Without that wait, turns outrun compression and the picker refuses the budget.
+The stand-in answers context-manager's calls with summaries of its own (`longReplier` in `lib/long-stores.mjs`). It tells a chunk's compression by context-manager's in-band compression marker and a merge by its merge instruction, and answers both with `SMOKE-SUMMARY <nonce> s<k>`. Every other call gets `SMOKE-REPLY <nonce> <turn tag>`, except in `tuneout`: there, turn 30 is answered with a `tune_out` call first, and the reader, whose requests carry the recipe's subconscious voice, with a `deliver_summary` call (`SMOKE-READER <nonce> r<k>`). Each turn waits until the stand-in has had no request for 1.5 s (`waitQuiet`), since a resident's turns come minutes apart and compression runs between them. Without that wait, turns outrun compression and the picker refuses the budget.
 
 `fixture.json` holds the provenance as for the two-turn fixtures, and besides:
-- `recipe`, the recipe as captured, with `{{heartbeatEntry}}`, `{{dataDir}}`, `{ "$run": "webPort" }` and `{ "$run": "auth" }` in place of the run's own values; `fillRecipe(recipe, values)` puts a boot's own back;
+- `recipe`, the recipe as captured, with `{{heartbeatEntry}}`, `{{dataDir}}`, `{ "$run": "webPort" }` and `{ "$run": "auth" }` in place of the run's own values, and for `tuneout` also `{{smokeRoot}}`, `{{controlPath}}` (the fixture server's control socket, `lib/strategies/control.mjs`) and `{{boot}}`; `fillRecipe(recipe, values)` puts a boot's own back;
 - `standIn`, which stand-in answered and how;
 - `nonce`, the 40 `turns` and every `summaries` entry (`k`, `kind`, `text`), so a request shows which of them it carries;
 - `requestKinds`, every request the capture's boots sent, by kind;
 - `manifest`, each session's `MANIFEST` format version after the capture;
-- `check`, what the release itself gave the resident when it booted on a copy and took one turn: the summaries and the turns its request carried, by tag, and the `MANIFEST` versions after.
+- for `tuneout`, `tuneOut`: the `tune_out` call's result, the messages delivered to the channel, and each of the reader's summaries with its result;
+- `check`, what the release itself gave the resident when it booted on a copy and took one turn: the summaries and the turns its request carried, by tag, and the `MANIFEST` versions after. For `tuneout` the check turn first asks `tune_out` what's held (`tuneOutHeld`).
 
-`node scripts/capture-long-store.mjs --variant plain|subconscious [--version V]` makes one, from the release npm gives a consumer now.
+`node scripts/capture-long-store.mjs --variant plain|subconscious|tuneout [--version V]` makes one, from the release npm gives a consumer now.
 
-**What these can't see:** the summaries are the stand-in's short canned text, not a model's, and every turn is plain text, so the stores hold no tool use, images or tune-out. Nothing is tuned out, so the subconscious's reader forks never run, and that store's records are of the same kinds as the plain one's. A resident's store holds thousands of turns, not 40, under its own budgets.
+**What these can't see:** the summaries are the stand-in's short canned text, not a model's. Every turn but the tune-out's is plain text, so the stores hold no other tool use, and no images. In `subconscious` nothing is tuned out, so its reader forks never run, and that store's records are of the same kinds as the plain one's. A resident's store holds thousands of turns, not 40, under its own budgets.
 
 ## The strategy fixture (`lib/strategies/`)
 

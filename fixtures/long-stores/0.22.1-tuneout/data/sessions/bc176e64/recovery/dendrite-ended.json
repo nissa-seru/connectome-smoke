@@ -1,0 +1,88 @@
+{
+  "version": 1,
+  "ended": [
+    {
+      "name": "reader/smoke/f1516a43/1",
+      "kind": "subconscious-fork",
+      "model": "claude-sonnet-4-5",
+      "incarnation": 1,
+      "roles": {
+        "defaultDelivery": false,
+        "receivesUntargeted": false,
+        "receivesGateWakes": false,
+        "ownsProviderScheduling": false
+      },
+      "lifetime": {
+        "kind": "task",
+        "idleTimeoutMs": 600000
+      },
+      "onParentEnd": "end",
+      "relationships": {
+        "spawnedBy": "smoke",
+        "observes": [],
+        "messagePeers": [],
+        "resultTo": {
+          "to": "smoke",
+          "as": "message"
+        }
+      },
+      "inherit": {
+        "from": "smoke",
+        "mode": "shared",
+        "refusals": true,
+        "solve": "reuse",
+        "ownBranch": "dendrite/reader/smoke/f1516a43/1",
+        "branch": "main",
+        "atSequence": 375,
+        "derivation": {
+          "parentBranch": "main",
+          "branch": "dendrite/reader/smoke/f1516a43/1",
+          "atSequence": 375,
+          "solve": "reuse",
+          "inherited": {
+            "stateIds": [
+              "messages",
+              "agents/smoke/context",
+              "agents/smoke/thinking-binding",
+              "mint-preimage-envelopes",
+              "agents/smoke/autobio:compression-refusal-quarantine-events",
+              "agents/smoke/autobio:compression-refusal-quarantine",
+              "agents/smoke/autobio:compression-family-progress",
+              "agents/smoke/autobio:summaries",
+              "agents/smoke/autobio:chunks",
+              "agents/smoke/autobio:counter",
+              "agents/smoke/autobio:pins",
+              "agents/smoke/autobio:resolutions",
+              "agents/smoke/autobio:locks",
+              "agents/smoke/autobio:calibration",
+              "agents/smoke/autobio:merge-quarantine",
+              "agents/smoke/kvunified:presentation-receipt"
+            ],
+            "statePrefixes": []
+          },
+          "slots": {
+            "messageNamespace": null,
+            "contextNamespace": "agents/smoke",
+            "auxiliaryNamespaces": []
+          }
+        }
+      },
+      "selfParticipants": [
+        "smoke"
+      ],
+      "presentAs": "smoke",
+      "readsSharedSlot": false,
+      "namespace": "agents/smoke",
+      "metadata": {
+        "epochId": "f1516a43-d749-4610-baeb-7e87ce21ac1a",
+        "channelId": "smoke-room",
+        "trigger": "cadence"
+      },
+      "createdAt": 1794037478441,
+      "ended": {
+        "at": 1794037478548,
+        "reason": "completed"
+      }
+    }
+  ]
+}

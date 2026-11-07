@@ -1,0 +1,69 @@
+{
+  "$unresolved": true,
+  "name": "Connectome Smoke (long store: tuneout)",
+  "description": "long stored-store capture (tuneout): anthropic provider against a local stand-in, headless, heartbeat MCPL, small strategy budgets",
+  "agent": {
+    "name": "smoke",
+    "provider": "anthropic",
+    "model": "claude-sonnet-4-5",
+    "systemPrompt": "You are the connectome smoke agent.",
+    "maxTokens": 1024,
+    "contextBudgetTokens": 10000,
+    "strategy": {
+      "recentWindowTokens": 2000,
+      "targetChunkTokens": 500,
+      "summaryTargetTokens": 150
+    }
+  },
+  "mcpServers": {
+    "heartbeat": {
+      "command": "node",
+      "args": [
+        "/home/work/t/d0ea1cac0809/long/0.22.1-tuneout/install/node_modules/@animalabs/heartbeat-mcpl/dist/src/index.js",
+        "--stdio"
+      ],
+      "env": {
+        "HEARTBEAT_CONFIG_FILE": "/home/work/t/d0ea1cac0809/long/0.22.1-tuneout/data/heartbeat-config.json",
+        "HEARTBEAT_REMINDERS_FILE": "/home/work/t/d0ea1cac0809/long/0.22.1-tuneout/data/heartbeat-reminders.json"
+      },
+      "enabledFeatureSets": [
+        "heartbeat"
+      ]
+    },
+    "fixture": {
+      "command": "node",
+      "args": [
+        "/home/work/ws/barnaby-1939-d0ea1cac0809/root/home/nissa/.local/state/astra-worktrees/connectome-smoke/barnaby-1939/lib/strategies/mcpl-server.mjs"
+      ],
+      "env": {
+        "FIXTURE_CONTROL": "/home/work/t/d0ea1cac0809/cs-lsc-3186362.sock",
+        "FIXTURE_CHANNELS": "smoke-room",
+        "FIXTURE_BOOT": "2"
+      },
+      "enabledFeatureSets": [
+        "fixture"
+      ]
+    }
+  },
+  "modules": {
+    "subagents": true,
+    "lessons": false,
+    "retrieval": false,
+    "wake": false,
+    "workspace": false,
+    "webui": {
+      "host": "127.0.0.1",
+      "port": 23921,
+      "basicAuth": {
+        "username": "smoke",
+        "password": "pw-2sesh63iub5"
+      }
+    }
+  },
+  "subconscious": {
+    "enabled": true,
+    "reader": "forks",
+    "model": "claude-sonnet-4-5",
+    "voice": "You read for smoke while they are tuned out. Report briefly."
+  }
+}

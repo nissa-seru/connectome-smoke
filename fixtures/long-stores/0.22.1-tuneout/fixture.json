@@ -1,0 +1,654 @@
+{
+  "host": "0.22.1",
+  "variant": "tuneout",
+  "before": "2026-11-07T07:42:55.819Z",
+  "capturedAt": "2026-11-07T07:42:55.820Z",
+  "source": "run",
+  "smokeCommit": "24b2815",
+  "toolchain": {
+    "node": "v24.22.2",
+    "bun": "1.4.4",
+    "npm": "11.19.1",
+    "platform": "linux-x64"
+  },
+  "resolved": {
+    "@animalabs/chronicle": "0.5.1",
+    "@animalabs/membrane": "0.8.0",
+    "@animalabs/context-manager": "0.24.2",
+    "@animalabs/agent-framework": "0.32.0",
+    "@animalabs/connectome-host": "0.22.1",
+    "@animalabs/mcpl-core": "0.4.0",
+    "@animalabs/heartbeat-mcpl": "0.4.1"
+  },
+  "agent": {
+    "maxTokens": 1024,
+    "contextBudgetTokens": 10000,
+    "strategy": {
+      "recentWindowTokens": 2000,
+      "targetChunkTokens": 500,
+      "summaryTargetTokens": 150
+    }
+  },
+  "recipe": {
+    "name": "Connectome Smoke (long store: tuneout)",
+    "description": "long stored-store capture (tuneout): anthropic provider against a local stand-in, headless, heartbeat MCPL, small strategy budgets",
+    "agent": {
+      "name": "smoke",
+      "provider": "anthropic",
+      "model": "claude-sonnet-4-5",
+      "systemPrompt": "You are the connectome smoke agent.",
+      "maxTokens": 1024,
+      "contextBudgetTokens": 10000,
+      "strategy": {
+        "recentWindowTokens": 2000,
+        "targetChunkTokens": 500,
+        "summaryTargetTokens": 150
+      }
+    },
+    "mcpServers": {
+      "heartbeat": {
+        "command": "node",
+        "args": [
+          "{{heartbeatEntry}}",
+          "--stdio"
+        ],
+        "env": {
+          "HEARTBEAT_CONFIG_FILE": "{{dataDir}}/heartbeat-config.json",
+          "HEARTBEAT_REMINDERS_FILE": "{{dataDir}}/heartbeat-reminders.json"
+        },
+        "enabledFeatureSets": [
+          "heartbeat"
+        ]
+      },
+      "fixture": {
+        "command": "node",
+        "args": [
+          "{{smokeRoot}}/lib/strategies/mcpl-server.mjs"
+        ],
+        "env": {
+          "FIXTURE_CONTROL": "{{controlPath}}",
+          "FIXTURE_CHANNELS": "smoke-room",
+          "FIXTURE_BOOT": "{{boot}}"
+        },
+        "enabledFeatureSets": [
+          "fixture"
+        ]
+      }
+    },
+    "modules": {
+      "subagents": true,
+      "lessons": false,
+      "retrieval": false,
+      "wake": false,
+      "workspace": false,
+      "webui": {
+        "host": "127.0.0.1",
+        "port": {
+          "$run": "webPort"
+        },
+        "basicAuth": {
+          "$run": "auth"
+        }
+      }
+    },
+    "subconscious": {
+      "enabled": true,
+      "reader": "forks",
+      "model": "claude-sonnet-4-5",
+      "voice": "You read for smoke while they are tuned out. Report briefly."
+    }
+  },
+  "standIn": {
+    "module": "lib/fake-anthropic.mjs",
+    "replier": "longReplier(nonce), lib/long-stores.mjs",
+    "compression": "a request whose messages carry \"You will soon form a new memory, get ready.\" (context-manager's compression marker), or whose last message is its merge instruction (/consolidate into a single L\\d+ memory|Consolidate them into a single L\\d+ memory|consolidating at L\\d+/), gets \"SMOKE-SUMMARY <nonce> s<k>: \" and 40 words, k counting from 1 across both kinds",
+    "otherwise": "every other request gets \"SMOKE-REPLY <nonce> <turn tag>. \" and 120 words, the tag (t001...) taken from the last user message"
+  },
+  "turns": [
+    {
+      "n": 1,
+      "text": "smoke long tuneout turn t001 qfsuemi6. each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered.",
+      "reply": "SMOKE-REPLY qfsuemi6 t001",
+      "ok": true
+    },
+    {
+      "n": 2,
+      "text": "smoke long tuneout turn t002 qfsuemi6. the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its.",
+      "reply": "SMOKE-REPLY qfsuemi6 t002",
+      "ok": true
+    },
+    {
+      "n": 3,
+      "text": "smoke long tuneout turn t003 qfsuemi6. one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a.",
+      "reply": "SMOKE-REPLY qfsuemi6 t003",
+      "ok": true
+    },
+    {
+      "n": 4,
+      "text": "smoke long tuneout turn t004 qfsuemi6. boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of.",
+      "reply": "SMOKE-REPLY qfsuemi6 t004",
+      "ok": true
+    },
+    {
+      "n": 5,
+      "text": "smoke long tuneout turn t005 qfsuemi6. it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept.",
+      "reply": "SMOKE-REPLY qfsuemi6 t005",
+      "ok": true
+    },
+    {
+      "n": 6,
+      "text": "smoke long tuneout turn t006 qfsuemi6. careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it.",
+      "reply": "SMOKE-REPLY qfsuemi6 t006",
+      "ok": true
+    },
+    {
+      "n": 7,
+      "text": "smoke long tuneout turn t007 qfsuemi6. and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check.",
+      "reply": "SMOKE-REPLY qfsuemi6 t007",
+      "ok": true
+    },
+    {
+      "n": 8,
+      "text": "smoke long tuneout turn t008 qfsuemi6. through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one.",
+      "reply": "SMOKE-REPLY qfsuemi6 t008",
+      "ok": true
+    },
+    {
+      "n": 9,
+      "text": "smoke long tuneout turn t009 qfsuemi6. that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find.",
+      "reply": "SMOKE-REPLY qfsuemi6 t009",
+      "ok": true
+    },
+    {
+      "n": 10,
+      "text": "smoke long tuneout turn t010 qfsuemi6. part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said.",
+      "reply": "SMOKE-REPLY qfsuemi6 t010",
+      "ok": true
+    },
+    {
+      "n": 11,
+      "text": "smoke long tuneout turn t011 qfsuemi6. resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of.",
+      "reply": "SMOKE-REPLY qfsuemi6 t011",
+      "ok": true
+    },
+    {
+      "n": 12,
+      "text": "smoke long tuneout turn t012 qfsuemi6. message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while.",
+      "reply": "SMOKE-REPLY qfsuemi6 t012",
+      "ok": true
+    },
+    {
+      "n": 13,
+      "text": "smoke long tuneout turn t013 qfsuemi6. smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns.",
+      "reply": "SMOKE-REPLY qfsuemi6 t013",
+      "ok": true
+    },
+    {
+      "n": 14,
+      "text": "smoke long tuneout turn t014 qfsuemi6. by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later.",
+      "reply": "SMOKE-REPLY qfsuemi6 t014",
+      "ok": true
+    },
+    {
+      "n": 15,
+      "text": "smoke long tuneout turn t015 qfsuemi6. could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what.",
+      "reply": "SMOKE-REPLY qfsuemi6 t015",
+      "ok": true
+    },
+    {
+      "n": 16,
+      "text": "smoke long tuneout turn t016 qfsuemi6. had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a.",
+      "reply": "SMOKE-REPLY qfsuemi6 t016",
+      "ok": true
+    },
+    {
+      "n": 17,
+      "text": "smoke long tuneout turn t017 qfsuemi6. log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read.",
+      "reply": "SMOKE-REPLY qfsuemi6 t017",
+      "ok": true
+    },
+    {
+      "n": 18,
+      "text": "smoke long tuneout turn t018 qfsuemi6. answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked.",
+      "reply": "SMOKE-REPLY qfsuemi6 t018",
+      "ok": true
+    },
+    {
+      "n": 19,
+      "text": "smoke long tuneout turn t019 qfsuemi6. its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so.",
+      "reply": "SMOKE-REPLY qfsuemi6 t019",
+      "ok": true
+    },
+    {
+      "n": 20,
+      "text": "smoke long tuneout turn t020 qfsuemi6. a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every.",
+      "reply": "SMOKE-REPLY qfsuemi6 t020",
+      "ok": true
+    },
+    {
+      "n": 21,
+      "text": "smoke long tuneout turn t021 qfsuemi6. of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the.",
+      "reply": "SMOKE-REPLY qfsuemi6 t021",
+      "ok": true
+    },
+    {
+      "n": 22,
+      "text": "smoke long tuneout turn t022 qfsuemi6. kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each.",
+      "reply": "SMOKE-REPLY qfsuemi6 t022",
+      "ok": true
+    },
+    {
+      "n": 23,
+      "text": "smoke long tuneout turn t023 qfsuemi6. it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the.",
+      "reply": "SMOKE-REPLY qfsuemi6 t023",
+      "ok": true
+    },
+    {
+      "n": 24,
+      "text": "smoke long tuneout turn t024 qfsuemi6. check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one.",
+      "reply": "SMOKE-REPLY qfsuemi6 t024",
+      "ok": true
+    },
+    {
+      "n": 25,
+      "text": "smoke long tuneout turn t025 qfsuemi6. one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot.",
+      "reply": "SMOKE-REPLY qfsuemi6 t025",
+      "ok": true
+    },
+    {
+      "n": 26,
+      "text": "smoke long tuneout turn t026 qfsuemi6. find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it.",
+      "reply": "SMOKE-REPLY qfsuemi6 t026",
+      "ok": true
+    },
+    {
+      "n": 27,
+      "text": "smoke long tuneout turn t027 qfsuemi6. said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful.",
+      "reply": "SMOKE-REPLY qfsuemi6 t027",
+      "ok": true
+    },
+    {
+      "n": 28,
+      "text": "smoke long tuneout turn t028 qfsuemi6. of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and.",
+      "reply": "SMOKE-REPLY qfsuemi6 t028",
+      "ok": true
+    },
+    {
+      "n": 29,
+      "text": "smoke long tuneout turn t029 qfsuemi6. while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through.",
+      "reply": "SMOKE-REPLY qfsuemi6 t029",
+      "ok": true
+    },
+    {
+      "n": 30,
+      "text": "smoke long tuneout turn t030 qfsuemi6. turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that.",
+      "reply": "SMOKE-REPLY qfsuemi6 t030",
+      "ok": true
+    },
+    {
+      "n": 31,
+      "text": "smoke long tuneout turn t031 qfsuemi6. later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part.",
+      "reply": "SMOKE-REPLY qfsuemi6 t031",
+      "ok": true
+    },
+    {
+      "n": 32,
+      "text": "smoke long tuneout turn t032 qfsuemi6. what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident.",
+      "reply": "SMOKE-REPLY qfsuemi6 t032",
+      "ok": true
+    },
+    {
+      "n": 33,
+      "text": "smoke long tuneout turn t033 qfsuemi6. a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message.",
+      "reply": "SMOKE-REPLY qfsuemi6 t033",
+      "ok": true
+    },
+    {
+      "n": 34,
+      "text": "smoke long tuneout turn t034 qfsuemi6. read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke.",
+      "reply": "SMOKE-REPLY qfsuemi6 t034",
+      "ok": true
+    },
+    {
+      "n": 35,
+      "text": "smoke long tuneout turn t035 qfsuemi6. walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by.",
+      "reply": "SMOKE-REPLY qfsuemi6 t035",
+      "ok": true
+    },
+    {
+      "n": 36,
+      "text": "smoke long tuneout turn t036 qfsuemi6. so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could.",
+      "reply": "SMOKE-REPLY qfsuemi6 t036",
+      "ok": true
+    },
+    {
+      "n": 37,
+      "text": "smoke long tuneout turn t037 qfsuemi6. every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had.",
+      "reply": "SMOKE-REPLY qfsuemi6 t037",
+      "ok": true
+    },
+    {
+      "n": 38,
+      "text": "smoke long tuneout turn t038 qfsuemi6. the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log.",
+      "reply": "SMOKE-REPLY qfsuemi6 t038",
+      "ok": true
+    },
+    {
+      "n": 39,
+      "text": "smoke long tuneout turn t039 qfsuemi6. each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered.",
+      "reply": "SMOKE-REPLY qfsuemi6 t039",
+      "ok": true
+    },
+    {
+      "n": 40,
+      "text": "smoke long tuneout turn t040 qfsuemi6. the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its.",
+      "reply": "SMOKE-REPLY qfsuemi6 t040",
+      "ok": true
+    }
+  ],
+  "boots": [
+    {
+      "boot": 1,
+      "turns": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20
+      ],
+      "requests": 28
+    },
+    {
+      "boot": 2,
+      "turns": [
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40
+      ],
+      "requests": 43
+    }
+  ],
+  "steps": [
+    {
+      "name": "long tuneout 0.22.1: npm install as of 2026-11-07T07:42:55.819Z",
+      "ok": true
+    },
+    {
+      "name": "long tuneout 0.22.1: boot 1, 20 turns",
+      "ok": true
+    },
+    {
+      "name": "long tuneout 0.22.1: boot 2, 20 turns",
+      "ok": true
+    },
+    {
+      "name": "long tuneout 0.22.1: the release boots on a copy and gives the resident its summaries",
+      "ok": true
+    }
+  ],
+  "absolutePaths": [
+    {
+      "file": ".recipe.json",
+      "count": 3
+    },
+    {
+      "file": "headless.log",
+      "count": 2
+    }
+  ],
+  "requests": 71,
+  "compressionRequests": 25,
+  "summaries": [
+    {
+      "k": 1,
+      "kind": "chunk",
+      "text": "SMOKE-SUMMARY qfsuemi6 s1: earlier turns of the smoke conversation, each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message."
+    },
+    {
+      "k": 2,
+      "kind": "chunk",
+      "text": "SMOKE-SUMMARY qfsuemi6 s2: earlier turns of the smoke conversation, the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke."
+    },
+    {
+      "k": 3,
+      "kind": "chunk",
+      "text": "SMOKE-SUMMARY qfsuemi6 s3: earlier turns of the smoke conversation, one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by."
+    },
+    {
+      "k": 4,
+      "kind": "chunk",
+      "text": "SMOKE-SUMMARY qfsuemi6 s4: earlier turns of the smoke conversation, boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could."
+    },
+    {
+      "k": 5,
+      "kind": "chunk",
+      "text": "SMOKE-SUMMARY qfsuemi6 s5: earlier turns of the smoke conversation, it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had."
+    },
+    {
+      "k": 6,
+      "kind": "chunk",
+      "text": "SMOKE-SUMMARY qfsuemi6 s6: earlier turns of the smoke conversation, careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log."
+    },
+    {
+      "k": 7,
+      "kind": "merge",
+      "text": "SMOKE-SUMMARY qfsuemi6 s7: earlier memories of the smoke conversation, and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered."
+    },
+    {
+      "k": 8,
+      "kind": "chunk",
+      "text": "SMOKE-SUMMARY qfsuemi6 s8: earlier turns of the smoke conversation, through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its."
+    },
+    {
+      "k": 9,
+      "kind": "chunk",
+      "text": "SMOKE-SUMMARY qfsuemi6 s9: earlier turns of the smoke conversation, that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a."
+    },
+    {
+      "k": 10,
+      "kind": "chunk",
+      "text": "SMOKE-SUMMARY qfsuemi6 s10: earlier turns of the smoke conversation, part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of."
+    },
+    {
+      "k": 11,
+      "kind": "chunk",
+      "text": "SMOKE-SUMMARY qfsuemi6 s11: earlier turns of the smoke conversation, resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept."
+    },
+    {
+      "k": 12,
+      "kind": "chunk",
+      "text": "SMOKE-SUMMARY qfsuemi6 s12: earlier turns of the smoke conversation, message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it."
+    },
+    {
+      "k": 13,
+      "kind": "chunk",
+      "text": "SMOKE-SUMMARY qfsuemi6 s13: earlier turns of the smoke conversation, smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check."
+    },
+    {
+      "k": 14,
+      "kind": "merge",
+      "text": "SMOKE-SUMMARY qfsuemi6 s14: earlier memories of the smoke conversation, by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one."
+    },
+    {
+      "k": 15,
+      "kind": "chunk",
+      "text": "SMOKE-SUMMARY qfsuemi6 s15: earlier turns of the smoke conversation, could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find."
+    },
+    {
+      "k": 16,
+      "kind": "chunk",
+      "text": "SMOKE-SUMMARY qfsuemi6 s16: earlier turns of the smoke conversation, had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said."
+    },
+    {
+      "k": 17,
+      "kind": "chunk",
+      "text": "SMOKE-SUMMARY qfsuemi6 s17: earlier turns of the smoke conversation, log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of."
+    },
+    {
+      "k": 18,
+      "kind": "chunk",
+      "text": "SMOKE-SUMMARY qfsuemi6 s18: earlier turns of the smoke conversation, answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while."
+    },
+    {
+      "k": 19,
+      "kind": "chunk",
+      "text": "SMOKE-SUMMARY qfsuemi6 s19: earlier turns of the smoke conversation, its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns."
+    },
+    {
+      "k": 20,
+      "kind": "chunk",
+      "text": "SMOKE-SUMMARY qfsuemi6 s20: earlier turns of the smoke conversation, a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later."
+    },
+    {
+      "k": 21,
+      "kind": "chunk",
+      "text": "SMOKE-SUMMARY qfsuemi6 s21: earlier turns of the smoke conversation, of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what."
+    },
+    {
+      "k": 22,
+      "kind": "merge",
+      "text": "SMOKE-SUMMARY qfsuemi6 s22: earlier memories of the smoke conversation, kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a."
+    },
+    {
+      "k": 23,
+      "kind": "chunk",
+      "text": "SMOKE-SUMMARY qfsuemi6 s23: earlier turns of the smoke conversation, it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read."
+    },
+    {
+      "k": 24,
+      "kind": "chunk",
+      "text": "SMOKE-SUMMARY qfsuemi6 s24: earlier turns of the smoke conversation, check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked."
+    },
+    {
+      "k": 25,
+      "kind": "chunk",
+      "text": "SMOKE-SUMMARY qfsuemi6 s25: earlier turns of the smoke conversation, one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so."
+    }
+  ],
+  "manifest": {
+    "bc176e64": 1
+  },
+  "check": {
+    "text": "smoke long check on tuneout iu5y28wq",
+    "requests": 3,
+    "summariesGiven": [
+      "s7",
+      "s14",
+      "s22",
+      "s23",
+      "s24",
+      "s25"
+    ],
+    "turnsGiven": [
+      "t001",
+      "t002",
+      "t003",
+      "t004",
+      "t005",
+      "t006",
+      "t007",
+      "t035",
+      "t036",
+      "t037",
+      "t038",
+      "t039",
+      "t040"
+    ],
+    "manifestAfter": {
+      "bc176e64": 1
+    },
+    "readerTextsGiven": [],
+    "tuneOutNotices": 0,
+    "tuneOutHeld": [
+      {
+        "isError": false,
+        "text": "{\"allExcept\":null,\"channels\":[{\"serverId\":\"fixture\",\"channelId\":\"smoke-room\",\"epochId\":\"f1516a43-d749-4610-baeb-7e87ce21ac1a\",\"held\":3}]}"
+      }
+    ]
+  },
+  "nonce": "qfsuemi6",
+  "requestKinds": {
+    "claude-sonnet-4-5 max_tokens 1024": 44,
+    "claude-haiku-4-5-20251001 max_tokens 30": 2,
+    "chunk": 22,
+    "merge": 3,
+    "reader": 2
+  },
+  "tuneOut": {
+    "plan": {
+      "channelId": "smoke-room",
+      "at": 30,
+      "cadenceSeconds": 30,
+      "deliveries": 3
+    },
+    "asked": true,
+    "results": [
+      {
+        "isError": false,
+        "text": "{\"tunedOut\":\"smoke-room\",\"cadenceSeconds\":30,\"backlogCap\":200,\"maxWakes\":5,\"openError\":\"The tune-out is recorded, but this host isn't permitted to open or close the \\\"fixture\\\" server's channels, so its messages reach the subconscious only as that server sends them, and calling tune_out again won't change that. If you need this host to open it, ask whoever runs this host.\"}"
+      }
+    ],
+    "deliveries": [
+      {
+        "messageId": "smoke-room-qfsuemi6-1",
+        "text": "smoke room message 1 qfsuemi6: of what it had said the resident kept a careful log of each message it read and answered while the.",
+        "accepted": true
+      },
+      {
+        "messageId": "smoke-room-qfsuemi6-2",
+        "text": "smoke room message 2 qfsuemi6: kept a careful log of each message it read and answered while the smoke check walked through its turns one.",
+        "accepted": true
+      },
+      {
+        "messageId": "smoke-room-qfsuemi6-3",
+        "text": "smoke room message 3 qfsuemi6: it read and answered while the smoke check walked through its turns one by one so that a later boot.",
+        "accepted": true
+      }
+    ],
+    "readers": [
+      {
+        "k": 1,
+        "text": "SMOKE-READER qfsuemi6 r1: the smoke-room traffic so far, message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said.",
+        "results": [
+          {
+            "isError": false,
+            "text": "{\"delivered\":true}"
+          }
+        ]
+      }
+    ]
+  },
+  "pass": true
+}
