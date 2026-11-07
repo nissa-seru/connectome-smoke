@@ -100,7 +100,7 @@
   },
   "standIn": {
     "module": "lib/fake-anthropic.mjs",
-    "replier": "longReplier(nonce), lib/long-stores.mjs",
+    "replier": "longReplier(nonce, { tuneOut: TUNE_OUT }), lib/long-stores.mjs",
     "compression": "a request whose messages carry \"You will soon form a new memory, get ready.\" (context-manager's compression marker), or whose last message is its merge instruction (/consolidate into a single L\\d+ memory|Consolidate them into a single L\\d+ memory|consolidating at L\\d+/), gets \"SMOKE-SUMMARY <nonce> s<k>: \" and 40 words, k counting from 1 across both kinds",
     "otherwise": "every other request gets \"SMOKE-REPLY <nonce> <turn tag>. \" and 120 words, the tag (t001...) taken from the last user message"
   },
