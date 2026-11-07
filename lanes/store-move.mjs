@@ -129,6 +129,12 @@ function readRecord(installName, dataDir, readDir, agent, stores) {
   return JSON.parse(r.stdout.trim().split('\n').at(-1));
 }
 
+/** A row as the report names it: kind, id, participant, and the start of its first text. */
+const rowLine = (r) => `${r.kind} ${r.id}${r.participant ? ` (${r.participant})` : ''}: ${JSON.stringify(String(r.texts[0] ?? '').slice(0, 60))}`;
+
+/** What the cache check covers here: each fixture's own recipe. */
+const MOVE_CACHE_LIMIT = "each fixture's own recipe (fixtures/stores: the stored-store recipe; fixtures/long-stores: the recipe its fixture.json carries), claude-sonnet-4-5 on the anthropic provider with heartbeat-mcpl as the only MCPL server, the same heartbeat-mcpl for both releases";
+
 /** What a request gives the resident, for givenCheck: its system prompt and every message. */
 const givenOf = (turn) => ({ system: turn.request.body?.system ?? null, messages: turn.request.body?.messages ?? [] });
 
@@ -195,7 +201,7 @@ const givenOf = (turn) => ({ system: turn.request.body?.system ?? null, messages
       await step(`given:${fx.name}`, () => {
         const g = givenCheck(rowsOf(fixtureRecord), [givenOf(runs['base-1']), givenOf(runs['base-2'])], givenOf(runs.candidate));
         const lostFor = unreachable(g.lost, { historyTools: move.historyTools, record: movedRecord });
-        move.given = { given: g.given, lost: g.lost.map((r) => `${r.kind} ${r.id}`), unreachable: lostFor.map((r) => `${r.kind} ${r.id}`), unsteady: g.unsteady.map((r) => `${r.kind} ${r.id}`), untexted: g.untexted };
+        move.given = { given: g.given, rows: g.givenRows.map(rowLine), lost: g.lost.map((r) => `${r.kind} ${r.id}`), unreachable: lostFor.map((r) => `${r.kind} ${r.id}`), unsteady: g.unsteady.map((r) => `${r.kind} ${r.id}`), untexted: g.untexted };
         if (lostFor.length) { move.findings.push('rows the base gave are neither given nor reachable'); throw new Error(`neither given nor reachable: ${move.given.unreachable.join(', ')}`); }
         return `${g.given} rows given by the base; ${g.lost.length} not given by the candidate (${g.lost.length - lostFor.length} reachable); ${g.unsteady.length} unsteady; ${g.untexted} without text`;
       });
@@ -235,7 +241,7 @@ const givenOf = (turn) => ({ system: turn.request.body?.system ?? null, messages
   }
 
   report.cache = compareRuns(cacheRuns['base-1'], cacheRuns['base-2'], cacheRuns.candidate, chosen.map((f) => f.name));
-  report.cacheLine = cacheLine(report.cache);
+  report.cacheLine = cacheLine(report.cache, MOVE_CACHE_LIMIT);
   report.exitCode = report.moves.some((m) => m.findings.length) ? 1 : report.moves.some((m) => m.untold.length) || report.steps.some((s) => !s.ok) ? 2 : 0;
   done();
 })().catch((e) => { log(`FATAL ${e?.stack || e}`); report.fatal = String(e?.stack || e); report.exitCode = 2; done(); });
