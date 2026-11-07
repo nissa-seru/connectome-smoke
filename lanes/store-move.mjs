@@ -228,7 +228,7 @@ const givenOf = (turn) => ({ system: turn.request.body?.system ?? null, messages
       try { await turn('rollback', 'base', rollbackDir, { bootTimeoutMs: 60_000 }); outcome.opened = true; } catch (e) { outcome.error = String(e?.message || e); }
       const after = withinStores(treeDigest(rollbackDir), stores);
       const v = rollbackVerdict({ outcome, changes: treeChanges(before, after) });
-      move.rollback = { ...v, said: (outcome.error ?? '').split('\n').filter((l) => /version|MANIFEST|copy|store/i.test(l)).slice(0, 6) };
+      move.rollback = { ...v, said: (outcome.error ?? '').split('\n').filter((l) => /error|unsupported|refus/i.test(l) && !/^\s*\d+ \|/.test(l)).slice(0, 6) };
       if (!v.clean) { move.findings.push('the rollback was not a clean refusal'); throw new Error(JSON.stringify(move.rollback)); }
       return `refused, naming version 2; nothing in the store changed (${Object.keys(before).length} entries compared)`;
     });
