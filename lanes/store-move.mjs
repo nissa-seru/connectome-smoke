@@ -104,7 +104,7 @@ async function planFor(fx) {
   const { fillRecipe, longReplier, waitQuiet } = await import(pathToFileURL(long).href);
   // As the capture ends each boot: the stand-in quiet for 5 s before the shutdown, so no
   // compression is in flight when the host stops.
-  return { makeRecipe: (values) => fillRecipe(fx.prov.recipe, values), replier: (nonce) => longReplier(nonce), settle: (fake) => waitQuiet(fake, 5_000), agent: fx.prov.recipe.agent?.name, recipe: fx.prov.recipe };
+  return { makeRecipe: (values) => fillRecipe(fx.prov.recipe, values), replier: (nonce) => longReplier(nonce).reply, settle: (fake) => waitQuiet(fake, 5_000), agent: fx.prov.recipe.agent?.name, recipe: fx.prov.recipe };
 }
 
 async function install(name, specs, before) {
