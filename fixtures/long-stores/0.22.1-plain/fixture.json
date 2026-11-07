@@ -1,0 +1,575 @@
+{
+  "host": "0.22.1",
+  "variant": "plain",
+  "before": "2026-11-07T07:27:22.829Z",
+  "capturedAt": "2026-11-07T07:27:22.830Z",
+  "source": "run",
+  "smokeCommit": "c375f7f",
+  "toolchain": {
+    "node": "v24.22.2",
+    "bun": "1.4.4",
+    "npm": "11.19.1",
+    "platform": "linux-x64"
+  },
+  "resolved": {
+    "@animalabs/chronicle": "0.5.1",
+    "@animalabs/membrane": "0.8.0",
+    "@animalabs/context-manager": "0.24.2",
+    "@animalabs/agent-framework": "0.32.0",
+    "@animalabs/connectome-host": "0.22.1",
+    "@animalabs/mcpl-core": "0.4.0",
+    "@animalabs/heartbeat-mcpl": "0.4.1"
+  },
+  "agent": {
+    "maxTokens": 1024,
+    "contextBudgetTokens": 10000,
+    "strategy": {
+      "recentWindowTokens": 2000,
+      "targetChunkTokens": 500,
+      "summaryTargetTokens": 150
+    }
+  },
+  "recipe": {
+    "name": "Connectome Smoke (long store: plain)",
+    "description": "long stored-store capture (plain): anthropic provider against a local stand-in, headless, heartbeat MCPL, small strategy budgets",
+    "agent": {
+      "name": "smoke",
+      "provider": "anthropic",
+      "model": "claude-sonnet-4-5",
+      "systemPrompt": "You are the connectome smoke agent.",
+      "maxTokens": 1024,
+      "contextBudgetTokens": 10000,
+      "strategy": {
+        "recentWindowTokens": 2000,
+        "targetChunkTokens": 500,
+        "summaryTargetTokens": 150
+      }
+    },
+    "mcpServers": {
+      "heartbeat": {
+        "command": "node",
+        "args": [
+          "{{heartbeatEntry}}",
+          "--stdio"
+        ],
+        "env": {
+          "HEARTBEAT_CONFIG_FILE": "{{dataDir}}/heartbeat-config.json",
+          "HEARTBEAT_REMINDERS_FILE": "{{dataDir}}/heartbeat-reminders.json"
+        },
+        "enabledFeatureSets": [
+          "heartbeat"
+        ]
+      }
+    },
+    "modules": {
+      "subagents": false,
+      "lessons": false,
+      "retrieval": false,
+      "wake": false,
+      "workspace": false,
+      "webui": {
+        "host": "127.0.0.1",
+        "port": {
+          "$run": "webPort"
+        },
+        "basicAuth": {
+          "$run": "auth"
+        }
+      }
+    }
+  },
+  "standIn": {
+    "module": "lib/fake-anthropic.mjs",
+    "replier": "longReplier(nonce), lib/long-stores.mjs",
+    "compression": "a request whose messages carry \"You will soon form a new memory, get ready.\" (context-manager's compression marker), or whose last message is its merge instruction (/consolidate into a single L\\d+ memory|Consolidate them into a single L\\d+ memory|consolidating at L\\d+/), gets \"SMOKE-SUMMARY <nonce> s<k>: \" and 40 words, k counting from 1 across both kinds",
+    "otherwise": "every other request gets \"SMOKE-REPLY <nonce> <turn tag>. \" and 120 words, the tag (t001...) taken from the last user message"
+  },
+  "turns": [
+    {
+      "n": 1,
+      "text": "smoke long plain turn t001 nvb5ps5o. each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered.",
+      "reply": "SMOKE-REPLY nvb5ps5o t001",
+      "ok": true
+    },
+    {
+      "n": 2,
+      "text": "smoke long plain turn t002 nvb5ps5o. the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its.",
+      "reply": "SMOKE-REPLY nvb5ps5o t002",
+      "ok": true
+    },
+    {
+      "n": 3,
+      "text": "smoke long plain turn t003 nvb5ps5o. one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a.",
+      "reply": "SMOKE-REPLY nvb5ps5o t003",
+      "ok": true
+    },
+    {
+      "n": 4,
+      "text": "smoke long plain turn t004 nvb5ps5o. boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of.",
+      "reply": "SMOKE-REPLY nvb5ps5o t004",
+      "ok": true
+    },
+    {
+      "n": 5,
+      "text": "smoke long plain turn t005 nvb5ps5o. it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept.",
+      "reply": "SMOKE-REPLY nvb5ps5o t005",
+      "ok": true
+    },
+    {
+      "n": 6,
+      "text": "smoke long plain turn t006 nvb5ps5o. careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it.",
+      "reply": "SMOKE-REPLY nvb5ps5o t006",
+      "ok": true
+    },
+    {
+      "n": 7,
+      "text": "smoke long plain turn t007 nvb5ps5o. and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check.",
+      "reply": "SMOKE-REPLY nvb5ps5o t007",
+      "ok": true
+    },
+    {
+      "n": 8,
+      "text": "smoke long plain turn t008 nvb5ps5o. through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one.",
+      "reply": "SMOKE-REPLY nvb5ps5o t008",
+      "ok": true
+    },
+    {
+      "n": 9,
+      "text": "smoke long plain turn t009 nvb5ps5o. that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find.",
+      "reply": "SMOKE-REPLY nvb5ps5o t009",
+      "ok": true
+    },
+    {
+      "n": 10,
+      "text": "smoke long plain turn t010 nvb5ps5o. part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said.",
+      "reply": "SMOKE-REPLY nvb5ps5o t010",
+      "ok": true
+    },
+    {
+      "n": 11,
+      "text": "smoke long plain turn t011 nvb5ps5o. resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of.",
+      "reply": "SMOKE-REPLY nvb5ps5o t011",
+      "ok": true
+    },
+    {
+      "n": 12,
+      "text": "smoke long plain turn t012 nvb5ps5o. message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while.",
+      "reply": "SMOKE-REPLY nvb5ps5o t012",
+      "ok": true
+    },
+    {
+      "n": 13,
+      "text": "smoke long plain turn t013 nvb5ps5o. smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns.",
+      "reply": "SMOKE-REPLY nvb5ps5o t013",
+      "ok": true
+    },
+    {
+      "n": 14,
+      "text": "smoke long plain turn t014 nvb5ps5o. by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later.",
+      "reply": "SMOKE-REPLY nvb5ps5o t014",
+      "ok": true
+    },
+    {
+      "n": 15,
+      "text": "smoke long plain turn t015 nvb5ps5o. could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what.",
+      "reply": "SMOKE-REPLY nvb5ps5o t015",
+      "ok": true
+    },
+    {
+      "n": 16,
+      "text": "smoke long plain turn t016 nvb5ps5o. had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a.",
+      "reply": "SMOKE-REPLY nvb5ps5o t016",
+      "ok": true
+    },
+    {
+      "n": 17,
+      "text": "smoke long plain turn t017 nvb5ps5o. log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read.",
+      "reply": "SMOKE-REPLY nvb5ps5o t017",
+      "ok": true
+    },
+    {
+      "n": 18,
+      "text": "smoke long plain turn t018 nvb5ps5o. answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked.",
+      "reply": "SMOKE-REPLY nvb5ps5o t018",
+      "ok": true
+    },
+    {
+      "n": 19,
+      "text": "smoke long plain turn t019 nvb5ps5o. its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so.",
+      "reply": "SMOKE-REPLY nvb5ps5o t019",
+      "ok": true
+    },
+    {
+      "n": 20,
+      "text": "smoke long plain turn t020 nvb5ps5o. a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every.",
+      "reply": "SMOKE-REPLY nvb5ps5o t020",
+      "ok": true
+    },
+    {
+      "n": 21,
+      "text": "smoke long plain turn t021 nvb5ps5o. of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the.",
+      "reply": "SMOKE-REPLY nvb5ps5o t021",
+      "ok": true
+    },
+    {
+      "n": 22,
+      "text": "smoke long plain turn t022 nvb5ps5o. kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each.",
+      "reply": "SMOKE-REPLY nvb5ps5o t022",
+      "ok": true
+    },
+    {
+      "n": 23,
+      "text": "smoke long plain turn t023 nvb5ps5o. it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the.",
+      "reply": "SMOKE-REPLY nvb5ps5o t023",
+      "ok": true
+    },
+    {
+      "n": 24,
+      "text": "smoke long plain turn t024 nvb5ps5o. check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one.",
+      "reply": "SMOKE-REPLY nvb5ps5o t024",
+      "ok": true
+    },
+    {
+      "n": 25,
+      "text": "smoke long plain turn t025 nvb5ps5o. one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot.",
+      "reply": "SMOKE-REPLY nvb5ps5o t025",
+      "ok": true
+    },
+    {
+      "n": 26,
+      "text": "smoke long plain turn t026 nvb5ps5o. find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it.",
+      "reply": "SMOKE-REPLY nvb5ps5o t026",
+      "ok": true
+    },
+    {
+      "n": 27,
+      "text": "smoke long plain turn t027 nvb5ps5o. said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful.",
+      "reply": "SMOKE-REPLY nvb5ps5o t027",
+      "ok": true
+    },
+    {
+      "n": 28,
+      "text": "smoke long plain turn t028 nvb5ps5o. of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and.",
+      "reply": "SMOKE-REPLY nvb5ps5o t028",
+      "ok": true
+    },
+    {
+      "n": 29,
+      "text": "smoke long plain turn t029 nvb5ps5o. while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through.",
+      "reply": "SMOKE-REPLY nvb5ps5o t029",
+      "ok": true
+    },
+    {
+      "n": 30,
+      "text": "smoke long plain turn t030 nvb5ps5o. turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that.",
+      "reply": "SMOKE-REPLY nvb5ps5o t030",
+      "ok": true
+    },
+    {
+      "n": 31,
+      "text": "smoke long plain turn t031 nvb5ps5o. later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part.",
+      "reply": "SMOKE-REPLY nvb5ps5o t031",
+      "ok": true
+    },
+    {
+      "n": 32,
+      "text": "smoke long plain turn t032 nvb5ps5o. what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident.",
+      "reply": "SMOKE-REPLY nvb5ps5o t032",
+      "ok": true
+    },
+    {
+      "n": 33,
+      "text": "smoke long plain turn t033 nvb5ps5o. a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message.",
+      "reply": "SMOKE-REPLY nvb5ps5o t033",
+      "ok": true
+    },
+    {
+      "n": 34,
+      "text": "smoke long plain turn t034 nvb5ps5o. read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke.",
+      "reply": "SMOKE-REPLY nvb5ps5o t034",
+      "ok": true
+    },
+    {
+      "n": 35,
+      "text": "smoke long plain turn t035 nvb5ps5o. walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by.",
+      "reply": "SMOKE-REPLY nvb5ps5o t035",
+      "ok": true
+    },
+    {
+      "n": 36,
+      "text": "smoke long plain turn t036 nvb5ps5o. so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could.",
+      "reply": "SMOKE-REPLY nvb5ps5o t036",
+      "ok": true
+    },
+    {
+      "n": 37,
+      "text": "smoke long plain turn t037 nvb5ps5o. every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had.",
+      "reply": "SMOKE-REPLY nvb5ps5o t037",
+      "ok": true
+    },
+    {
+      "n": 38,
+      "text": "smoke long plain turn t038 nvb5ps5o. the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log.",
+      "reply": "SMOKE-REPLY nvb5ps5o t038",
+      "ok": true
+    },
+    {
+      "n": 39,
+      "text": "smoke long plain turn t039 nvb5ps5o. each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered.",
+      "reply": "SMOKE-REPLY nvb5ps5o t039",
+      "ok": true
+    },
+    {
+      "n": 40,
+      "text": "smoke long plain turn t040 nvb5ps5o. the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its.",
+      "reply": "SMOKE-REPLY nvb5ps5o t040",
+      "ok": true
+    }
+  ],
+  "boots": [
+    {
+      "boot": 1,
+      "turns": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20
+      ],
+      "requests": 28
+    },
+    {
+      "boot": 2,
+      "turns": [
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40
+      ],
+      "requests": 38
+    }
+  ],
+  "steps": [
+    {
+      "name": "long plain 0.22.1: npm install as of 2026-11-07T07:27:22.829Z",
+      "ok": true
+    },
+    {
+      "name": "long plain 0.22.1: boot 1, 20 turns",
+      "ok": true
+    },
+    {
+      "name": "long plain 0.22.1: boot 2, 20 turns",
+      "ok": true
+    },
+    {
+      "name": "long plain 0.22.1: the release boots on a copy and gives the resident its summaries",
+      "ok": true
+    }
+  ],
+  "absolutePaths": [
+    {
+      "file": ".recipe.json",
+      "count": 3
+    },
+    {
+      "file": "headless.log",
+      "count": 2
+    }
+  ],
+  "requests": 66,
+  "compressionRequests": 24,
+  "summaries": [
+    {
+      "k": 1,
+      "kind": "chunk",
+      "text": "SMOKE-SUMMARY nvb5ps5o s1: earlier turns of the smoke conversation, each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message."
+    },
+    {
+      "k": 2,
+      "kind": "chunk",
+      "text": "SMOKE-SUMMARY nvb5ps5o s2: earlier turns of the smoke conversation, the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke."
+    },
+    {
+      "k": 3,
+      "kind": "chunk",
+      "text": "SMOKE-SUMMARY nvb5ps5o s3: earlier turns of the smoke conversation, one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by."
+    },
+    {
+      "k": 4,
+      "kind": "chunk",
+      "text": "SMOKE-SUMMARY nvb5ps5o s4: earlier turns of the smoke conversation, boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could."
+    },
+    {
+      "k": 5,
+      "kind": "chunk",
+      "text": "SMOKE-SUMMARY nvb5ps5o s5: earlier turns of the smoke conversation, it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had."
+    },
+    {
+      "k": 6,
+      "kind": "chunk",
+      "text": "SMOKE-SUMMARY nvb5ps5o s6: earlier turns of the smoke conversation, careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log."
+    },
+    {
+      "k": 7,
+      "kind": "merge",
+      "text": "SMOKE-SUMMARY nvb5ps5o s7: earlier memories of the smoke conversation, and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered."
+    },
+    {
+      "k": 8,
+      "kind": "chunk",
+      "text": "SMOKE-SUMMARY nvb5ps5o s8: earlier turns of the smoke conversation, through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its."
+    },
+    {
+      "k": 9,
+      "kind": "chunk",
+      "text": "SMOKE-SUMMARY nvb5ps5o s9: earlier turns of the smoke conversation, that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a."
+    },
+    {
+      "k": 10,
+      "kind": "chunk",
+      "text": "SMOKE-SUMMARY nvb5ps5o s10: earlier turns of the smoke conversation, part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of."
+    },
+    {
+      "k": 11,
+      "kind": "chunk",
+      "text": "SMOKE-SUMMARY nvb5ps5o s11: earlier turns of the smoke conversation, resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept."
+    },
+    {
+      "k": 12,
+      "kind": "chunk",
+      "text": "SMOKE-SUMMARY nvb5ps5o s12: earlier turns of the smoke conversation, message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it."
+    },
+    {
+      "k": 13,
+      "kind": "chunk",
+      "text": "SMOKE-SUMMARY nvb5ps5o s13: earlier turns of the smoke conversation, smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check."
+    },
+    {
+      "k": 14,
+      "kind": "merge",
+      "text": "SMOKE-SUMMARY nvb5ps5o s14: earlier memories of the smoke conversation, by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one."
+    },
+    {
+      "k": 15,
+      "kind": "chunk",
+      "text": "SMOKE-SUMMARY nvb5ps5o s15: earlier turns of the smoke conversation, could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find."
+    },
+    {
+      "k": 16,
+      "kind": "chunk",
+      "text": "SMOKE-SUMMARY nvb5ps5o s16: earlier turns of the smoke conversation, had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said."
+    },
+    {
+      "k": 17,
+      "kind": "chunk",
+      "text": "SMOKE-SUMMARY nvb5ps5o s17: earlier turns of the smoke conversation, log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of."
+    },
+    {
+      "k": 18,
+      "kind": "chunk",
+      "text": "SMOKE-SUMMARY nvb5ps5o s18: earlier turns of the smoke conversation, answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while."
+    },
+    {
+      "k": 19,
+      "kind": "chunk",
+      "text": "SMOKE-SUMMARY nvb5ps5o s19: earlier turns of the smoke conversation, its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns."
+    },
+    {
+      "k": 20,
+      "kind": "chunk",
+      "text": "SMOKE-SUMMARY nvb5ps5o s20: earlier turns of the smoke conversation, a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later."
+    },
+    {
+      "k": 21,
+      "kind": "merge",
+      "text": "SMOKE-SUMMARY nvb5ps5o s21: earlier memories of the smoke conversation, of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what."
+    },
+    {
+      "k": 22,
+      "kind": "chunk",
+      "text": "SMOKE-SUMMARY nvb5ps5o s22: earlier turns of the smoke conversation, kept a careful log of each message it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a."
+    },
+    {
+      "k": 23,
+      "kind": "chunk",
+      "text": "SMOKE-SUMMARY nvb5ps5o s23: earlier turns of the smoke conversation, it read and answered while the smoke check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read."
+    },
+    {
+      "k": 24,
+      "kind": "chunk",
+      "text": "SMOKE-SUMMARY nvb5ps5o s24: earlier turns of the smoke conversation, check walked through its turns one by one so that a later boot could find every part of what it had said the resident kept a careful log of each message it read and answered while the smoke check walked."
+    }
+  ],
+  "manifest": {
+    "9d479bf7": 1
+  },
+  "check": {
+    "text": "smoke long check on plain l38q8c4c",
+    "requests": 1,
+    "summariesGiven": [
+      "s7",
+      "s14",
+      "s21",
+      "s22",
+      "s23"
+    ],
+    "turnsGiven": [
+      "t001",
+      "t002",
+      "t003",
+      "t004",
+      "t005",
+      "t006",
+      "t007",
+      "t035",
+      "t036",
+      "t037",
+      "t038",
+      "t039",
+      "t040"
+    ],
+    "manifestAfter": {
+      "9d479bf7": 1
+    }
+  },
+  "nonce": "nvb5ps5o",
+  "requestKinds": {
+    "claude-sonnet-4-5 max_tokens 1024": 40,
+    "claude-haiku-4-5-20251001 max_tokens 30": 2,
+    "chunk": 21,
+    "merge": 3
+  },
+  "pass": true
+}

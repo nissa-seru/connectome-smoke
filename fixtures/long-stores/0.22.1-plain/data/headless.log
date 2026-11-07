@@ -1,0 +1,52 @@
+
+--- session 2026-11-07T07:27:30.011Z ---
+[2026-11-07T07:27:30.012Z] headless start pid=2816003 dataDir=/home/work/t/d0ea1cac0809/long/0.22.1-plain/data socket=/home/work/t/d0ea1cac0809/cs-ls-2813039-capture1.sock
+[2026-11-07T07:27:30.013Z] socket listening at /home/work/t/d0ea1cac0809/cs-ls-2813039-capture1.sock
+[2026-11-07T07:27:30.066Z] client connected
+[2026-11-07T07:27:30.820Z] quiescent — emitting lifecycle:idle
+[2026-11-07T07:27:32.937Z] quiescent — emitting lifecycle:idle
+[2026-11-07T07:27:35.046Z] quiescent — emitting lifecycle:idle
+[2026-11-07T07:27:37.155Z] quiescent — emitting lifecycle:idle
+[2026-11-07T07:27:39.265Z] quiescent — emitting lifecycle:idle
+[2026-11-07T07:27:41.367Z] quiescent — emitting lifecycle:idle
+[2026-11-07T07:27:43.471Z] quiescent — emitting lifecycle:idle
+[2026-11-07T07:27:45.575Z] quiescent — emitting lifecycle:idle
+[2026-11-07T07:27:47.679Z] quiescent — emitting lifecycle:idle
+[2026-11-07T07:27:49.783Z] quiescent — emitting lifecycle:idle
+[2026-11-07T07:27:51.887Z] quiescent — emitting lifecycle:idle
+[2026-11-07T07:27:53.991Z] quiescent — emitting lifecycle:idle
+[2026-11-07T07:27:56.101Z] quiescent — emitting lifecycle:idle
+[2026-11-07T07:27:58.207Z] quiescent — emitting lifecycle:idle
+[2026-11-07T07:28:00.312Z] quiescent — emitting lifecycle:idle
+[2026-11-07T07:28:02.414Z] quiescent — emitting lifecycle:idle
+[2026-11-07T07:28:04.520Z] quiescent — emitting lifecycle:idle
+[2026-11-07T07:28:06.624Z] quiescent — emitting lifecycle:idle
+[2026-11-07T07:28:08.732Z] quiescent — emitting lifecycle:idle
+[2026-11-07T07:28:10.834Z] quiescent — emitting lifecycle:idle
+[2026-11-07T07:28:17.393Z] shutdown: shutdown:graceful
+
+--- session 2026-11-07T07:28:18.270Z ---
+[2026-11-07T07:28:18.271Z] headless start pid=2837317 dataDir=/home/work/t/d0ea1cac0809/long/0.22.1-plain/data socket=/home/work/t/d0ea1cac0809/cs-ls-2813039-capture2.sock
+[2026-11-07T07:28:18.273Z] socket listening at /home/work/t/d0ea1cac0809/cs-ls-2813039-capture2.sock
+[2026-11-07T07:28:18.298Z] client connected
+[2026-11-07T07:28:19.121Z] quiescent — emitting lifecycle:idle
+[2026-11-07T07:28:21.241Z] quiescent — emitting lifecycle:idle
+[2026-11-07T07:28:23.449Z] quiescent — emitting lifecycle:idle
+[2026-11-07T07:28:25.554Z] quiescent — emitting lifecycle:idle
+[2026-11-07T07:28:27.662Z] quiescent — emitting lifecycle:idle
+[2026-11-07T07:28:29.770Z] quiescent — emitting lifecycle:idle
+[2026-11-07T07:28:31.875Z] quiescent — emitting lifecycle:idle
+[2026-11-07T07:28:33.978Z] quiescent — emitting lifecycle:idle
+[2026-11-07T07:28:36.086Z] quiescent — emitting lifecycle:idle
+[2026-11-07T07:28:38.189Z] quiescent — emitting lifecycle:idle
+[2026-11-07T07:28:40.291Z] quiescent — emitting lifecycle:idle
+[2026-11-07T07:28:42.406Z] quiescent — emitting lifecycle:idle
+[2026-11-07T07:28:44.508Z] quiescent — emitting lifecycle:idle
+[2026-11-07T07:28:46.713Z] quiescent — emitting lifecycle:idle
+[2026-11-07T07:28:48.817Z] quiescent — emitting lifecycle:idle
+[2026-11-07T07:28:50.920Z] quiescent — emitting lifecycle:idle
+[2026-11-07T07:28:53.029Z] quiescent — emitting lifecycle:idle
+[2026-11-07T07:28:55.132Z] quiescent — emitting lifecycle:idle
+[2026-11-07T07:28:57.336Z] quiescent — emitting lifecycle:idle
+[2026-11-07T07:28:59.451Z] quiescent — emitting lifecycle:idle
+[2026-11-07T07:29:05.972Z] shutdown: shutdown:graceful
