@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "records": [
+    {
+      "name": "smoke",
+      "kind": "resident",
+      "model": "claude-sonnet-4-5",
+      "incarnation": 2,
+      "roles": {
+        "defaultDelivery": true,
+        "receivesUntargeted": true,
+        "receivesGateWakes": true,
+        "ownsProviderScheduling": true
+      },
+      "lifetime": {
+        "kind": "persistent"
+      },
+      "onParentEnd": "orphan",
+      "relationships": {
+        "observes": [],
+        "messagePeers": []
+      },
+      "readsSharedSlot": true,
+      "namespace": "agents/smoke",
+      "createdAt": 1794037380813
+    }
+  ],
+  "incarnations": {
+    "smoke": 2,
+    "reader/smoke/f1516a43/1": 1
+  },
+  "mail": []
+}

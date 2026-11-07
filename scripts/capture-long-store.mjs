@@ -4,7 +4,7 @@
  * of turns on a recipe with small strategy budgets, so it holds context-manager's
  * summaries and compressed windows (lib/long-stores.mjs, captureLongStore).
  *
- *   node scripts/capture-long-store.mjs --variant plain|subconscious [--version 0.22.1] [--turns 40]
+ *   node scripts/capture-long-store.mjs --variant plain|subconscious|tuneout [--version 0.22.1] [--turns 40]
  *        [--before <ISO time>] [--out <dir>] [--workdir <dir>] [--keep]
  *
  * --version defaults to the host's `latest`, --before to now (what an npm consumer of
@@ -26,8 +26,8 @@ import { captureLongStore } from '../lib/long-stores.mjs';
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const { opt, flag } = parseArgs(process.argv.slice(2));
 const VARIANT = opt('variant');
-if (!['plain', 'subconscious'].includes(VARIANT)) {
-  console.error('usage: capture-long-store.mjs --variant plain|subconscious [--version V] [--turns N] [--before ISO] [--out DIR] [--workdir DIR] [--keep]');
+if (!['plain', 'subconscious', 'tuneout'].includes(VARIANT)) {
+  console.error('usage: capture-long-store.mjs --variant plain|subconscious|tuneout [--version V] [--turns N] [--before ISO] [--out DIR] [--workdir DIR] [--keep]');
   process.exit(2);
 }
 const TURNS = Number(opt('turns', '40'));
