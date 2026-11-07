@@ -15,7 +15,9 @@
  * row, whether everything the base gave the resident (in both of its runs) the candidate
  * still gives, or the resident can reach again; and the same between the candidate's first
  * boot and its second, which must also carry the first boot's own turn
- * (lib/store-move.mjs). It prints cache-write's cache line for the same runs beside its
+ * (lib/store-move.mjs). And whatever the recipe, the indexed record query agent-framework's
+ * history tools read must return on the moved store every message it returned before the
+ * move, with every summary still held. It prints cache-write's cache line for the same runs beside its
  * own result, since what the resident is given anew is a cache matter, not a loss.
  *
  *   node lanes/store-move.mjs --candidate <spec or packed tarball> [--base <spec>]
@@ -30,7 +32,8 @@
  * Exit 1 when any fixture shows a finding: the candidate's turn failed where the base's
  * didn't, a store didn't move to version 2 with AppendMany, the second boot failed or
  * lost something, the rollback opened the store, didn't name its version, or wrote to it,
- * or a row the base gave is neither given nor reachable. Else 2 when anything couldn't be
+ * a row the base gave is neither given nor reachable, or the record query no longer
+ * returns a row it returned before. Else 2 when anything couldn't be
  * told: arguments it can't run, an install failed, no fixtures, a fixture unreadable, a
  * base run failed. Else 0. A passing run deletes its default workdir but for its report
  * and summary; any other keeps it whole, every copy included.
@@ -46,7 +49,8 @@ process.on('unhandledRejection', crash);
 const { makeReport, sh, finish, parseArgs } = await import('../lib/common.mjs');
 const { resolvedVersions, storeRecipe, turnOnStore, CouldNotRun } = await import('../lib/stores.mjs');
 const { compareRuns, cacheLine, cleanupWorkdir, installSpecs } = await import('../lib/cache-write.mjs');
-const { treeDigest, treeChanges, storesIn, withinStores, givenCheck, rowsOf, unreachable, hasHistoryTools, rollbackVerdict, FEATURES } = await import('../lib/store-move.mjs');
+const { treeDigest, treeChanges, storesIn, withinStores, givenCheck, rowsOf, unreachable, indexedCheck, hasHistoryTools, rollbackVerdict, FEATURES } = await import('../lib/store-move.mjs');
+const { listenForPeers } = await import('../lib/strategies/control.mjs');
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const ARGS = process.argv.slice(2);
@@ -101,10 +105,14 @@ async function planFor(fx) {
   if (fx.kind === 'two-turn') return { makeRecipe: storeRecipe, replier: null, agent: 'smoke', recipe: storeRecipe({ webPort: 0, auth: null, heartbeatEntry: '', dataDir: '' }) };
   const long = join(ROOT, 'lib', 'long-stores.mjs');
   if (!existsSync(long)) throw new CouldNotRun(`fixture ${fx.name} carries its own recipe, which needs lib/long-stores.mjs to fill`);
-  const { fillRecipe, longReplier, waitQuiet } = await import(pathToFileURL(long).href);
+  const { fillRecipe, longReplier, waitQuiet, TUNE_OUT } = await import(pathToFileURL(long).href);
+  // The tune-out store's channel comes from the strategy fixture's MCPL server, which the
+  // recipe runs with a control socket; its stand-in answers the subconscious's reader as
+  // the capture did, if the tune-out's cadence comes during a boot.
+  const tuneOut = fx.prov.variant === 'tuneout' ? TUNE_OUT : null;
   // As the capture ends each boot: the stand-in quiet for 5 s before the shutdown, so no
   // compression is in flight when the host stops.
-  return { makeRecipe: (values) => fillRecipe(fx.prov.recipe, values), replier: (nonce) => longReplier(nonce).reply, settle: (fake) => waitQuiet(fake, 5_000), agent: fx.prov.recipe.agent?.name, recipe: fx.prov.recipe };
+  return { makeRecipe: (values) => fillRecipe(fx.prov.recipe, values), replier: (nonce) => longReplier(nonce, { tuneOut }).reply, settle: (fake) => waitQuiet(fake, 5_000), control: Boolean(tuneOut), agent: fx.prov.recipe.agent?.name, recipe: fx.prov.recipe };
 }
 
 async function install(name, specs, before) {
@@ -150,6 +158,7 @@ const givenOf = (turn) => ({ system: turn.request.body?.system ?? null, messages
   const hostDir = (name) => join(WORK, `install-${name}`, 'node_modules', '@animalabs', 'connectome-host');
   const heartbeatEntry = join(WORK, 'install-base', 'node_modules', '@animalabs', 'heartbeat-mcpl', 'dist', 'src', 'index.js');
   const cacheRuns = { 'base-1': [], 'base-2': [], candidate: [] };
+  let boots = 0;
 
   for (const fx of chosen) {
     const move = { name: fx.name, kind: fx.kind, findings: [], untold: [] };
@@ -159,7 +168,15 @@ const givenOf = (turn) => ({ system: turn.request.body?.system ?? null, messages
     if (!await step(`plan:${fx.name}`, async () => { plan = await planFor(fx); move.historyTools = hasHistoryTools(plan.recipe); return `${fx.kind}, resident ${plan.agent}, history tools ${move.historyTools ? 'on' : 'off'}`; })) { move.untold.push('fixture unreadable'); continue; }
     const turn = async (label, installName, dataDir, opts = {}) => {
       mkdirSync(join(at(label)), { recursive: true });
-      return turnOnStore({ hostDir: hostDir(installName), heartbeatEntry, dataDir, work: at(label), label, textPrefix: `store-move ${label} on ${fx.name}`, makeRecipe: plan.makeRecipe, replier: plan.replier, settle: plan.settle ?? null, ...opts });
+      // Every boot gets its own control socket, listened on, and its own ordinal; a recipe
+      // that names neither ignores them.
+      const boot = ++boots;
+      const controlPath = join(tmpdir(), `cs-sm-${process.pid}-${boot}.sock`);
+      const peers = plan.control ? await listenForPeers(controlPath) : null;
+      try {
+        const makeRecipe = (values) => plan.makeRecipe({ ...values, smokeRoot: ROOT, controlPath, boot });
+        return await turnOnStore({ hostDir: hostDir(installName), heartbeatEntry, dataDir, work: at(label), label, textPrefix: `store-move ${label} on ${fx.name}`, makeRecipe, replier: plan.replier, settle: plan.settle ?? null, ...opts });
+      } finally { await peers?.close(); }
     };
     const fresh = (label) => { const d = at(label, 'data'); cpSync(join(fx.dir, 'data'), d, { recursive: true }); return d; };
     move.storesBefore = storesIn(join(fx.dir, 'data'));
@@ -195,6 +212,20 @@ const givenOf = (turn) => ({ system: turn.request.body?.system ?? null, messages
       movedRecord = readRecord('candidate', moved, at('record-moved', 'data'), plan.agent, move.storesAfterFirst);
       return `fixture: ${fixtureRecord.messages.length} messages, ${fixtureRecord.summaries.length} summaries; moved: ${movedRecord.messages.length} messages, ${movedRecord.summaries.length} summaries, ${movedRecord.indexed.length} indexed`;
     });
+
+    // What the history tools' query returned before the move, it returns after it, whatever
+    // the recipe: residents with those tools reach their old rows through it.
+    if (fixtureRecord && movedRecord) {
+      await step(`indexed:${fx.name}`, () => {
+        const ix = indexedCheck(fixtureRecord, movedRecord);
+        move.indexed = { ...ix, unindexedBefore: fixtureRecord.messages.length - fixtureRecord.indexed.length };
+        if (ix.lostMessages.length || ix.lostSummaries.length) {
+          move.findings.push("the record query no longer returns rows it returned before the move");
+          throw new Error(`no longer returned: messages ${ix.lostMessages.join(', ') || 'none'}; summaries ${ix.lostSummaries.join(', ') || 'none'}`);
+        }
+        return `${ix.messages} messages the query returned before, all returned after; ${ix.summaries} summaries, all held (${move.indexed.unindexedBefore} of the fixture's messages the query didn't return before either)`;
+      });
+    }
 
     // The base's rows, given by the candidate or reachable.
     if (fixtureRecord && movedRecord) {

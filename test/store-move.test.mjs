@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { readManifest, treeDigest, treeChanges, storesIn, withinStores, givenIn, copiesIn, givenCheck, rowsOf, unreachable, hasHistoryTools, rollbackVerdict, FEATURES } from '../lib/store-move.mjs';
+import { readManifest, treeDigest, treeChanges, storesIn, withinStores, givenIn, copiesIn, givenCheck, rowsOf, unreachable, indexedCheck, hasHistoryTools, rollbackVerdict, FEATURES } from '../lib/store-move.mjs';
 
 const v1 = Buffer.from('RST\0\x01', 'latin1');
 const v2 = (features) => { const b = Buffer.alloc(13); b.write('RST\0', 0, 'latin1'); b[4] = 2; b.writeBigUInt64LE(BigInt(features), 5); return b; };
@@ -85,6 +85,12 @@ test('unreachable: everything lost without history tools; with them, what the in
   assert.equal(hasHistoryTools({ modules: { history: true } }), true);
   assert.equal(hasHistoryTools({ modules: { history: false } }), false);
   assert.equal(hasHistoryTools({}), false);
+});
+
+test('indexedCheck names what the record query returned before the move and not after, whatever the recipe', () => {
+  const before = { indexed: ['m1', 'm2', 'm3'], summaries: [{ id: 's1' }, { id: 's2' }] };
+  assert.deepEqual(indexedCheck(before, { indexed: ['m1', 'm2', 'm3', 'm9'], summaries: [{ id: 's1' }, { id: 's2' }] }), { messages: 3, lostMessages: [], summaries: 2, lostSummaries: [] });
+  assert.deepEqual(indexedCheck(before, { indexed: ['m1', 'm3'], summaries: [{ id: 's2' }] }), { messages: 3, lostMessages: ['m2'], summaries: 2, lostSummaries: ['s1'] });
 });
 
 test('rollbackVerdict is clean only for a refusal that names version 2 and leaves the store as it was', () => {
