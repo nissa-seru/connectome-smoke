@@ -60,7 +60,7 @@ import { createHash } from 'node:crypto';
 import { makeReport, bootTwice, parseArgs, spawnToFiles } from '../lib/common.mjs';
 import { checkStores, listFixtures } from '../lib/stores.mjs';
 import { fileURLToPath as pathOfUrl } from 'node:url';
-import { parseChange, satisfies, buildGraph, topoOrder, classifyInstallFailure, testFailureFields, diskFull, checkScope, typecheckCommand, testCommand, mergeCommand, startsBlocked } from '../lib/stack.mjs';
+import { parseChange, satisfies, buildGraph, topoOrder, classifyInstallFailure, testFailureFields, diskFull, checkScope, typecheckCommand, testCommand, mergeChange, startsBlocked } from '../lib/stack.mjs';
 import { parseLane, planUnits, laneUnits, notRunUnits, outcomeOf } from '../lib/lanes.mjs';
 import { check as strategiesCheck, cacheRoot as strategiesCacheRoot } from '../lib/strategies/lane.mjs';
 import { configurations as strategyConfigurations } from '../lib/strategies/script.mjs';
@@ -423,11 +423,9 @@ function cloneRepo(R, changes, id) {
     const mb = runCmd(id, dst, ['git', 'merge-base', 'HEAD', c.headSha]);
     if (mb.status !== 0) throw smokeError(`no merge base between ${merged.length ? 'main + ' + merged.join(' + ') : 'main'} and ${c.spec} (${c.headSha.slice(0, 12)})`, { cause: 'merge-base', infra: true });
     c.mergeBase = mb.stdout.trim();
-    const merge = mergeCommand(c.spec, c.headSha, git(['log', '-1', '--format=%cI', c.headSha]));
-    const m = runCmd(id, dst, merge.argv, { env: merge.env });
-    if (m.status !== 0) {
-      const files = runCmd(id, dst, ['git', 'diff', '--name-only', '--diff-filter=U']).stdout.trim().split('\n').filter(Boolean);
-      runCmd(id, dst, ['git', 'merge', '--abort']);
+    const m = mergeChange((argv, env) => runCmd(id, dst, argv, { env }), c.spec, c.headSha, git(['log', '-1', '--format=%cI', c.headSha]));
+    if (m.conflict) {
+      const files = m.conflict;
       const against = merged.length ? `main + ${merged.join(' + ')}` : 'main';
       report.conflict = { repo: R.repo, change: c.spec, against, files };
       throw smokeError(`${c.spec} doesn't merge cleanly onto ${against}${files.length ? `: conflicts in ${files.join(', ')}` : ''}`, { cause: 'conflict' });
