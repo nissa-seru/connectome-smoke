@@ -1,10 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { parseChange, satisfies, buildGraph, dependentsOf, topoOrder, classifyInstallFailure, parseTestFailures, runnerSummary, nodeFailingTests, testFailureFields, filesystemFull, diskFull, testCommand, mergeCommand, startsBlocked } from '../lib/stack.mjs';
+import { parseChange, satisfies, buildGraph, dependentsOf, topoOrder, classifyInstallFailure, parseTestFailures, runnerSummary, nodeFailingTests, testFailureFields, filesystemFull, diskFull, testCommand, mergeCommand, mergeChange, startsBlocked } from '../lib/stack.mjs';
 
 test('parseTestFailures names failing tests as bun, node, TAP and vitest print them', () => {
   const bun = [
@@ -333,9 +333,8 @@ test('the same changes merged onto the same main at two clock times make the sam
       git(['checkout', '-q', '--detach', main]);
       for (const [spec, head] of [['pull/1', one], ['pull/2', two]]) {
         const headDate = git(['log', '-1', '--format=%cI', head]);
-        const m = mergeCommand(spec, head, headDate);
-        const r = spawnSync(m.argv[0], m.argv.slice(1), { cwd: dir, encoding: 'utf-8', env: { ...process.env, ...machineEnv, ...m.env } });
-        assert.equal(r.status, 0, r.stderr);
+        const run = (argv, env = {}) => spawnSync(argv[0], argv.slice(1), { cwd: dir, encoding: 'utf-8', env: { ...process.env, ...machineEnv, ...env } });
+        assert.deepEqual(mergeChange(run, spec, head, headDate), { merged: true });
         assert.equal(git(['log', '-1', '--format=%aI %cI']), `${headDate} ${headDate}`, `${spec}'s merge is dated by its head`);
       }
       return git(['rev-parse', 'HEAD']);
@@ -349,4 +348,78 @@ test('the same changes merged onto the same main at two clock times make the sam
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
+});
+
+/**
+ * A repository whose main and change each commit a file, and a `run` for mergeChange that
+ * runs git there, records each command, and fails a command `failing` picks, as it says.
+ */
+function mergeFixture(t, { mainText, changeText, failing = () => null }) {
+  const dir = mkdtempSync(join(tmpdir(), 'smoke-merge-'));
+  t.after(() => rmSync(dir, { recursive: true, force: true }));
+  const git = (args) => {
+    const r = spawnSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@x', ...args], { cwd: dir, encoding: 'utf-8' });
+    assert.equal(r.status, 0, `git ${args.join(' ')}: ${r.stderr}`);
+    return r.stdout.trim();
+  };
+  const write = (name, text) => { writeFileSync(join(dir, name), text); git(['add', name]); };
+  git(['init', '-q', '-b', 'main']);
+  write('f.txt', 'one\ntwo\nthree\n');
+  git(['commit', '-q', '-m', 'base']);
+  git(['checkout', '-q', '-b', 'change']);
+  write(changeText.name, changeText.text);
+  git(['commit', '-q', '-m', 'change']);
+  const head = git(['rev-parse', 'HEAD']);
+  git(['checkout', '-q', 'main']);
+  write(mainText.name, mainText.text);
+  git(['commit', '-q', '-m', 'main moves on']);
+  const main = git(['rev-parse', 'HEAD']);
+  const calls = [];
+  const run = (argv, env = {}) => {
+    calls.push(argv.slice(1).join(' '));
+    const failed = failing(argv);
+    if (failed) return { status: 128, stdout: '', stderr: failed, all: failed, cmdline: argv.join(' ') };
+    const r = spawnSync(argv[0], argv.slice(1), { cwd: dir, encoding: 'utf-8', env: { ...process.env, ...env } });
+    return { ...r, all: `${r.stdout}${r.stderr}`, cmdline: argv.join(' ') };
+  };
+  return { git, run, calls, head, main, headDate: git(['log', '-1', '--format=%cI', head]) };
+}
+const merges = (calls) => calls.filter((c) => c.startsWith('merge --no-ff'));
+
+test('a real conflict is decided by merge-tree, names its files, and merges nothing', (t) => {
+  const f = mergeFixture(t, { mainText: { name: 'f.txt', text: 'one\nTWO on main\nthree\n' }, changeText: { name: 'f.txt', text: 'one\nTWO on the change\nthree\n' } });
+  assert.deepEqual(mergeChange(f.run, 'pull/1', f.head, f.headDate), { conflict: ['f.txt'] });
+  assert.deepEqual(merges(f.calls), [], 'nothing merges once merge-tree has found a conflict');
+  assert.equal(f.git(['rev-parse', 'HEAD']), f.main);
+  assert.equal(f.git(['status', '--porcelain']), '');
+});
+
+test("a merge that fails after a clean merge-tree means the check couldn't run, never a conflict", (t) => {
+  const why = 'fatal: remote error: upload-pack: not our ref e01e25c9f78a94bc83f06e1cf50c3b001b9d56e8';
+  const f = mergeFixture(t, {
+    mainText: { name: 'main.txt', text: 'main\n' }, changeText: { name: 'change.txt', text: 'change\n' },
+    failing: (argv) => (argv[1] === 'merge' ? why : null),
+  });
+  const m = mergeChange(f.run, 'pull/1', f.head, f.headDate);
+  assert.equal(m.conflict, undefined);
+  assert.equal(m.failed?.status, 128);
+  assert.equal(m.failed?.all, why);
+});
+
+test("merge-tree failing other than with a conflict means the check couldn't run", (t) => {
+  const why = 'fatal: could not fetch 434b2940bc3fd9952b24ef58572626897f2da1da from promisor remote';
+  const f = mergeFixture(t, {
+    mainText: { name: 'main.txt', text: 'main\n' }, changeText: { name: 'change.txt', text: 'change\n' },
+    failing: (argv) => (argv[1] === 'merge-tree' ? why : null),
+  });
+  const m = mergeChange(f.run, 'pull/1', f.head, f.headDate);
+  assert.equal(m.conflict, undefined);
+  assert.equal(m.failed?.all, why);
+  assert.deepEqual(merges(f.calls), [], 'nothing merges when merge-tree could not decide');
+});
+
+test('a clean merge makes the merge commit of main and the change', (t) => {
+  const f = mergeFixture(t, { mainText: { name: 'main.txt', text: 'main\n' }, changeText: { name: 'change.txt', text: 'change\n' } });
+  assert.deepEqual(mergeChange(f.run, 'pull/1', f.head, f.headDate), { merged: true });
+  assert.equal(f.git(['log', '-1', '--format=%P %s']), `${f.main} ${f.head} smoke: merge pull/1`);
 });

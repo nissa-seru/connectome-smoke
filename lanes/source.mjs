@@ -424,6 +424,7 @@ function cloneRepo(R, changes, id) {
     if (mb.status !== 0) throw smokeError(`no merge base between ${merged.length ? 'main + ' + merged.join(' + ') : 'main'} and ${c.spec} (${c.headSha.slice(0, 12)})`, { cause: 'merge-base', infra: true });
     c.mergeBase = mb.stdout.trim();
     const m = mergeChange((argv, env) => runCmd(id, dst, argv, { env }), c.spec, c.headSha, git(['log', '-1', '--format=%cI', c.headSha]));
+    if (m.failed) fail(m.failed, dst, { cause: 'merge', infra: true });
     if (m.conflict) {
       const files = m.conflict;
       const against = merged.length ? `main + ${merged.join(' + ')}` : 'main';
