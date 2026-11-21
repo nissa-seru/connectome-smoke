@@ -57,7 +57,7 @@ import { mkdtempSync, mkdirSync, existsSync, rmSync, symlinkSync, readdirSync, r
 import { tmpdir, homedir, release, cpus } from 'node:os';
 import { join, relative, resolve, sep } from 'node:path';
 import { createHash } from 'node:crypto';
-import { makeReport, bootTwice, parseArgs, spawnToFiles } from '../lib/common.mjs';
+import { makeReport, bootTwice, parseArgs, spawnToFiles, OUTPUT_BYTES, DETAIL_CHARS } from '../lib/common.mjs';
 import { checkStores, listFixtures } from '../lib/stores.mjs';
 import { fileURLToPath as pathOfUrl } from 'node:url';
 import { parseChange, satisfies, buildGraph, topoOrder, classifyInstallFailure, testFailureFields, diskFull, checkScope, typecheckCommand, testCommand, mergeChange, startsBlocked } from '../lib/stack.mjs';
@@ -135,23 +135,18 @@ function smokeError(message, { cause, infra, fields } = {}) {
   return e;
 }
 
-/**
- * Run a command, appending its whole output to the step's log. A test step's
- * command runs through spawnToFiles: its output goes to files, so a runner
- * that ends itself still leaves all it wrote, what it leaves running is killed
- * and named here, and what it writes is bounded.
- */
 function runCmd(id, cwd, argv, { timeout = 900_000, env = {}, test = false } = {}) {
   const [cmd, ...args] = Array.isArray(argv) ? argv : argv.split(' ');
   const options = { cwd, env: { ...process.env, CI: '1', FORCE_COLOR: '0', ...env }, timeout };
-  const r = test ? spawnToFiles(cmd, args, options) : spawnSync(cmd, args, { ...options, encoding: 'utf-8', maxBuffer: 256 << 20 });
+  const r = test ? spawnToFiles(cmd, args, options) : spawnSync(cmd, args, { ...options, encoding: 'utf-8', maxBuffer: OUTPUT_BYTES });
   const all = `${r.stdout ?? ''}${r.stderr ? `\n${r.stderr}` : ''}`;
   const after = test ? [
     ...r.leftovers.map((p) => `# still running when it exited, so killed: pid ${p.pid}, ${p.command}`),
     ...(r.leftoversChecked ? [] : ["# what it left running wasn't checked: no /proc here"]),
-    ...(r.bounded ? [] : ["# what it wrote had no bound: prlimit wasn't found"]),
   ].map((line) => `${line}\n`).join('') : '';
-  appendFileSync(logFile(id), `$ ${[cmd, ...args].join(' ')}\n# cwd ${cwd}\n${all}\n# exit ${r.status}${r.signal ? ` signal ${r.signal}` : ''}${r.error ? ` error ${r.error.code ?? r.error.message}` : ''}\n${after}\n`);
+  appendFileSync(logFile(id), `$ ${[cmd, ...args].join(' ')}\n# cwd ${cwd}\n`);
+  appendFileSync(logFile(id), all);
+  appendFileSync(logFile(id), `\n# exit ${r.status}${r.signal ? ` signal ${r.signal}` : ''}${r.error ? ` error ${r.error.code ?? r.error.message}` : ''}\n${after}\n`);
   return { ...r, all, cmdline: [cmd, ...args].join(' '), timedOut: r.error?.code === 'ETIMEDOUT' };
 }
 
@@ -169,10 +164,10 @@ function fail(r, cwd, extra = {}) {
   if (diskFull(r.all, [cwd, tmpdir(), homedir()], statfsSync)) throw smokeError(`\`${r.cmdline}\`: the disk is full`, { cause: 'disk', infra: true });
   if (r.timedOut) throw smokeError(`\`${r.cmdline}\` in ${rel(cwd)} timed out`, { cause: 'timeout', ...extra });
   if (r.signal === 'SIGKILL') throw smokeError(`\`${r.cmdline}\` in ${rel(cwd)} was killed (SIGKILL) from outside`, { cause: 'killed', infra: true });
-  if (r.error?.code === 'EFBIG') throw smokeError(`\`${r.cmdline}\` in ${rel(cwd)}: its output reached 256 MiB, where it was cut off`, extra);
+  if (r.error?.code === 'ENOBUFS') throw smokeError(`\`${r.cmdline}\` in ${rel(cwd)}: ${r.error.sizes ? r.error.message : `its stdout and stderr together passed the ${OUTPUT_BYTES} bytes that part 1 reads back`}`, extra);
   const lines = r.all.trim().split('\n');
   const interesting = lines.filter((l) => /error|fail|✗|not ok|Error:/i.test(l)).slice(-30);
-  throw smokeError(`\`${r.cmdline}\` in ${rel(cwd)} exited ${r.status}${r.signal ? ` ${r.signal}` : ''}\n${(interesting.length ? interesting : lines.slice(-30)).join('\n')}`, extra);
+  throw smokeError(`\`${r.cmdline}\` in ${rel(cwd)} exited ${r.status}${r.signal ? ` ${r.signal}` : ''}\n${(interesting.length ? interesting : lines.slice(-30)).map((l) => l.slice(0, DETAIL_CHARS)).join('\n')}`, extra);
 }
 
 function checked(id, cwd, argv, o) {
@@ -203,7 +198,7 @@ function testSummary(r) {
 }
 
 function version(cmd, args = ['--version']) {
-  const r = spawnSync(cmd, args, { encoding: 'utf-8' });
+  const r = spawnSync(cmd, args, { encoding: 'utf-8', maxBuffer: OUTPUT_BYTES });
   return r.status === 0 ? (r.stdout || r.stderr).trim().split('\n')[0] : null;
 }
 
@@ -318,7 +313,7 @@ let MY_UNITS = new Set();
     if (ok) installed.add(p.key);
   }
   for (const R of cloned) {
-    const r = spawnSync('git', ['status', '--porcelain', '--untracked-files=no'], { cwd: join(SRC, R.dir), encoding: 'utf-8' });
+    const r = spawnSync('git', ['status', '--porcelain', '--untracked-files=no'], { cwd: join(SRC, R.dir), encoding: 'utf-8', maxBuffer: OUTPUT_BYTES });
     report.repos[R.repo].installChangedTracked = (r.stdout ?? '').split('\n').filter(Boolean);
   }
 

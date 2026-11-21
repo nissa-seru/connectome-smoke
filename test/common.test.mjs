@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
-import { readdirSync, existsSync, readFileSync, mkdtempSync, rmSync } from 'node:fs';
+import { readdirSync, existsSync, readFileSync, mkdtempSync, rmSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { setTimeout as sleep } from 'node:timers/promises';
@@ -72,17 +72,42 @@ test('spawnToFiles kills and names what the command left running, and nothing el
   } finally { other.kill('SIGKILL'); }
 });
 
-test('spawnToFiles bounds what the command writes, and says when it reached the bound', () => {
-  // A writer that dies of SIGXFSZ at the bound.
-  const sh = spawnToFiles('sh', ['-c', 'head -c 5000 /dev/zero'], { maxBytes: 1000 });
-  assert.equal(sh.bounded, true);
-  assert.equal(sh.stdout.length, 1000);
-  assert.equal(sh.error?.code, 'EFBIG');
-  // Node ignores SIGXFSZ, and its stdout drops the write's EFBIG, so it exits 0 with its output cut off.
-  const n = node("process.stdout.write('a'.repeat(5000))", { maxBytes: 1000 });
-  assert.deepEqual([n.status, n.stdout.length, n.error?.code], [0, 1000, 'EFBIG']);
-  // Under the bound, nothing is said.
-  assert.equal(node("process.stdout.write('a'.repeat(999))", { maxBytes: 1000 }).error, undefined);
+test('spawnToFiles kills and names a leftover started with an environment of its own that still holds its output', async () => {
+  const r = node("require('child_process').spawn(process.execPath, ['-e', \"let n = 0; setInterval(() => process.stdout.write('own env ' + n++ + '\\\\n'), 100); setTimeout(() => process.exit(0), 20_000)\"], { stdio: ['ignore', 'inherit', 'inherit'], env: {} }); console.log('child exits'); process.exit(0)");
+  assert.equal(r.status, 0);
+  assert.equal(r.leftovers.length, 1);
+  assert.match(r.leftovers[0].command, /own env/);
+  assert.equal(await runs(r.leftovers[0].pid, 30_000), false, 'the leftover is gone');
+});
+
+test('spawnToFiles leaves the files a command writes unbounded, past the most it reads back of a stream', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'smoke-big-'));
+  const file = join(dir, 'big');
+  try {
+    const r = node(`require('node:fs').writeFileSync(${JSON.stringify(file)}, 'a'.repeat(5000)); process.stdout.write('done')`, { maxBytes: 1000 });
+    assert.deepEqual([r.status, r.signal, r.error, r.stdout], [0, null, undefined, 'done']);
+    assert.equal(statSync(file).size, 5000);
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+test('spawnToFiles fails a stream larger than it reads back, saying its size and the bound, and keeps its head', () => {
+  const n = node("process.stdout.write('a'.repeat(5000)); process.stderr.write('b'.repeat(10))", { maxBytes: 1000 });
+  assert.equal(n.status, 0);
+  assert.equal(n.error?.code, 'ENOBUFS');
+  assert.equal(n.error.message, 'its stdout was 5000 bytes, more than the 1000 that part 1 reads back of a stream');
+  assert.equal(n.stdout, 'a'.repeat(1000) + '\n[4000 more bytes of output not read]');
+  assert.equal(n.stderr, 'b'.repeat(10));
+  const both = node("process.stdout.write('a'.repeat(1001)); process.stderr.write('b'.repeat(2000))", { maxBytes: 1000 });
+  assert.equal(both.error?.message, 'its stdout was 1001 bytes and its stderr was 2000 bytes, more than the 1000 that part 1 reads back of a stream');
+  const alone = node("process.stdout.write('a'); process.stderr.write('b'.repeat(1001))", { maxBytes: 1000 });
+  assert.equal(alone.error?.message, 'its stderr was 1001 bytes, more than the 1000 that part 1 reads back of a stream');
+  const shell = spawnToFiles('sh', ['-c', 'head -c 5000 /dev/zero'], { maxBytes: 1000 });
+  assert.deepEqual([shell.status, shell.signal, shell.error?.code], [0, null, 'ENOBUFS']);
+  assert.equal(shell.error.message, 'its stdout was 5000 bytes, more than the 1000 that part 1 reads back of a stream');
+  const at = node("process.stdout.write('ab'.repeat(500))", { maxBytes: 1000 });
+  assert.deepEqual([at.error, at.stdout], [undefined, 'ab'.repeat(500)]);
+  const under = node("process.stdout.write('a'.repeat(999))", { maxBytes: 1000 });
+  assert.deepEqual([under.error, under.stdout.length], [undefined, 999]);
 });
 
 test('spawnToFiles leaves no files behind', async () => {
